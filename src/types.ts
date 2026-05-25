@@ -1,5 +1,7 @@
 export type TrackerType = 'day' | 'week' | 'month' | 'year' | 'custom';
 
+export type TrackerDisplayMode = 'percent_elapsed' | 'percent_remaining' | 'time_elapsed' | 'time_remaining';
+
 export interface Tracker {
   id: string;
   name: string;
@@ -8,6 +10,7 @@ export interface Tracker {
   endDate?: string;   // ISO string for custom
   color: string;      // Hex color
   precision: number;  // Number of decimal places
+  displayMode?: TrackerDisplayMode; // What the main value shows
   createdAt: number;
 }
 
@@ -34,7 +37,9 @@ export interface DayTodos {
 
 export interface ProgressData {
   percentage: number;
+  percentRemaining: number;
   timeLeft: string;
+  timeElapsed: string;
   label: string;
   subLabel: string;
 }

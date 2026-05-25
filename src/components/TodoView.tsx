@@ -7,11 +7,7 @@ import {
   isSameDay,
   parseISO,
   eachDayOfInterval,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  getDay,
-  subDays
+  endOfWeek
 } from 'date-fns';
 import {
   Plus,
@@ -24,7 +20,6 @@ import {
   Clock,
   CheckSquare,
   X,
-  Flame,
   Settings
 } from 'lucide-react';
 import {
@@ -47,18 +42,22 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Todo, DayTodos } from '../types';
+import { Todo, DayTodos, Tracker } from '../types';
 import { timeToPercentage, percentageToTime, formatTime12h } from '../utils/timeUtils';
 
-import { CompactDayTracker } from './CompactDayTracker';
+import { TrackerCard } from './TrackerCard';
 import { CalendarView } from './CalendarView';
 
 interface TodoViewProps {
   dayTodos: DayTodos[];
   onUpdateTodos: (date: string, todos: Todo[]) => void;
+  onMoveTodo: (fromDate: string, toDate: string, updatedTodo: Todo) => void;
   onStartTracking: (id: string) => void;
   activeTodoId: string | null;
   onToggleTodo: (id: string) => void;
+  trackers: Tracker[];
+  onDeleteTracker: (id: string) => void;
+  onEditTracker: (tracker: Tracker) => void;
 }
 
 interface SortableItemProps {
@@ -73,6 +72,7 @@ interface SortableItemProps {
   onStartTracking: (id: string) => void;
   isActive: boolean;
   now: Date;
+  countdownMode: 'off' | 'time' | 'percent';
 }
 
 interface TodoItemProps {
@@ -92,6 +92,7 @@ interface TodoItemProps {
   listeners?: any;
   setNodeRef?: (node: HTMLElement | null) => void;
   now: Date;
+  countdownMode: 'off' | 'time' | 'percent';
 }
 
 const TodoItem: React.FC<TodoItemProps> = ({
@@ -110,7 +111,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
   attributes,
   listeners,
   setNodeRef,
-  now
+  now,
+  countdownMode
 }) => {
   const [editText, setEditText] = useState(todo.text);
   const [editTime, setEditTime] = useState(todo.endTime || '');
@@ -126,27 +128,29 @@ const TodoItem: React.FC<TodoItemProps> = ({
   }, [todo, date]);
 
 
-  const countdown = useMemo(() => {
-    if (!todo.endTime) return null;
+  const countdownDisplay = useMemo(() => {
+    if (countdownMode === 'off' || !todo.endTime) return null;
 
     const [hours, minutes] = todo.endTime.split(':').map(Number);
     const [year, month, day] = date.split('-').map(Number);
     const target = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
     const diff = target.getTime() - now.getTime();
-    if (diff <= 0) return "00:00";
+    if (diff <= 0) {
+      return countdownMode === 'percent' ? '0%' : '00:00';
+    }
 
-    const totalSeconds = Math.floor(diff / 1000);
-    const h = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-
-    // if (h > 0) {
-    return `${h.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    // } else {
-    //   return `${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    // }
-  }, [todo.endTime, now]);
+    if (countdownMode === 'percent') {
+      const pct = Math.max(0, Math.round((diff / (24 * 60 * 60 * 1000)) * 100));
+      return `${pct}%`;
+    } else {
+      const totalSeconds = Math.floor(diff / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const mins = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      return `${h.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+  }, [todo.endTime, todo.startTime, date, now, countdownMode]);
 
   const handleTimeChange = (val: string) => {
     setEditTime(val);
@@ -179,7 +183,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           type="text"
           value={editText}
           onChange={(e) => setEditText(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[var(--accent2)] transition-colors text-sm"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white focus:outline-none focus:border-[var(--accent2)] transition-colors text-sm"
         />
         <div className="flex gap-3">
           <input
@@ -187,14 +191,14 @@ const TodoItem: React.FC<TodoItemProps> = ({
             value={editDate}
             onChange={(e) => setEditDate(e.target.value)}
             style={{ colorScheme: 'dark' }}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
           />
           <input
             type="time"
             value={editTime}
             onChange={(e) => handleTimeChange(e.target.value)}
             style={{ colorScheme: 'dark' }}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
           />
           <input
             type="number"
@@ -202,19 +206,19 @@ const TodoItem: React.FC<TodoItemProps> = ({
             value={editPercent}
             onChange={(e) => handlePercentChange(e.target.value)}
             placeholder="%"
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
           />
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => onSaveEdit(todo.id, editText, editTime, editPercent, editDate)}
-            className="flex-1 bg-[var(--accent2)] hover:opacity-90 text-black font-bold py-2 rounded-xl text-xs transition-all"
+            className="flex-1 bg-[var(--accent2)] hover:opacity-90 text-black font-bold py-2 rounded-lg text-xs transition-all"
           >
             Save Changes
           </button>
           <button
             onClick={onCancelEdit}
-            className="px-4 bg-white/5 hover:bg-white/10 text-white/60 rounded-xl text-xs font-bold transition-all"
+            className="px-4 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg text-xs font-bold transition-all"
           >
             Cancel
           </button>
@@ -227,7 +231,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center gap-4 py-1.5 border-b border-white/5 ${isDragging ? 'opacity-0' : ''
+      className={`group flex items-center gap-3 py-1 border-b border-white/5 ${isDragging ? 'opacity-0' : ''
         }`}
     >
       <button
@@ -247,7 +251,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           transition={{ duration: 0.3 }}
           className={`transition-colors ${todo.completed ? 'text-[var(--accent1)]' : 'text-white hover:text-[var(--accent1)]'}`}
         >
-          {todo.completed ? <CheckCircle2 size={26} /> : <Circle size={26} strokeWidth={2.5} />}
+          {todo.completed ? <CheckCircle2 size={24} /> : <Circle size={24} strokeWidth={2.5} />}
         </motion.div>
         {todo.completed && (
           <motion.div
@@ -260,8 +264,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
       </button>
 
       <div className="flex-1 min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
-        <p className={`text-lg transition duration-500 font-medium ${todo.completed
-          ? 'text-white/20 line-through translate-x-2'
+        <p className={`text-md transition duration-300 font-medium ${todo.completed
+          ? 'text-white/30 line-through translate-x-[2px]'
           : 'text-white group-hover/text:text-[var(--accent2)]'
           }`}>
           {todo.text}
@@ -279,7 +283,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 : 'bg-white/5 shadow-none hover:bg-white/10'
               }`}>
             {todo.endTime && (
-              <div className={`flex items-center gap-1.5 text-[14px] font-mono font-bold transition-colors duration-500 ${todo.completed
+              <div className={`flex items-center gap-1.5 text-sm font-mono font-bold transition-colors duration-500 ${todo.completed
                 ? 'text-white/20'
                 : isActive
                   ? 'text-black'
@@ -298,7 +302,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 }`} />
             )}
             {todo.percentageGoal !== undefined && (
-              <div className={`text-[14px] font-mono font-bold transition-colors duration-500 ${todo.completed
+              <div className={`text-sm font-mono font-bold transition-colors duration-500 ${todo.completed
                 ? 'text-white/20'
                 : isActive
                   ? 'text-black'
@@ -310,10 +314,10 @@ const TodoItem: React.FC<TodoItemProps> = ({
           </div>
         )}
 
-        {countdown && !todo.completed && (
+        {countdownDisplay && !todo.completed && (
           <div className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-colors duration-500 ${isActive ? 'bg-[#D93D42] text-white' : 'bg-white/5 text-[#D93D42]'}`}>
-            <div className="text-[14px] font-mono font-bold">
-              {countdown}
+            <div className="text-sm font-mono font-bold">
+              {countdownDisplay}
             </div>
           </div>
         )}
@@ -358,203 +362,23 @@ const SortableTodoItem: React.FC<SortableItemProps> = (props) => {
   );
 };
 
-// ─── Streak Heatmap Modal ────────────────────────────────────────────────────
-interface HeatmapModalProps {
-  dayTodos: DayTodos[];
-  onClose: () => void;
-}
 
-const HEAT_COLORS = [
-  'rgba(255,255,255,0.06)',   // 0 – no tasks / empty
-  '#3b0764',                  // 1 – partial
-  '#7c3aed',                  // 2
-  '#a855f7',                  // 3
-  '#c084fc',                  // 4
-  '#e879f9',                  // 5
-  '#f0abfc',                  // 6
-  '#fde68a',                  // 7 – max
-];
-
-const COLORS = [
-  "hsl(260 80% 55%)",  // Purple
-  "hsl(335 85% 60%)",  // Pink
-  "hsl(48 100% 52%)",   // Sunset
-  "hsl(100 75% 60%)",   // Yellow
-  "hsl(160 80% 50%)",  // Green
-  "hsl(215 80% 60%)", // Turquoise
-];
-
-
-
-function dayCompletionLevel(todos: DayTodos['todos']): number {
-  if (!todos || todos.length === 0) return 0;
-  const done = todos.filter(t => t?.completed).length;
-  const ratio = done / todos.length;
-  // Map 0-1 ratio to color levels 1-7
-  return Math.max(1, Math.ceil(ratio * 7));
-}
-
-function isFullyComplete(todos: DayTodos['todos']): boolean {
-  return todos.length > 0 && todos.every(t => t?.completed);
-}
-
-const StreakHeatmapModal: React.FC<HeatmapModalProps> = ({ dayTodos, onClose }) => {
-  const today = new Date();
-  const [viewMonth, setViewMonth] = useState(today);
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === overlayRef.current) onClose();
-  };
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
-
-  const monthStart = startOfMonth(viewMonth);
-  const monthEnd = endOfMonth(viewMonth);
-  // days in month
-  const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  // leading blank cells so Mon = col 0
-  const startDow = (getDay(monthStart) + 6) % 7; // 0=Mon
-
-  const getLevel = (day: Date): number => {
-    const key = format(day, 'yyyy-MM-dd');
-    const entry = dayTodos.find(d => d.date === key);
-    if (!entry || !entry.todos || entry.todos.length === 0) return 0;
-    return dayCompletionLevel(entry.todos);
-  };
-
-  const DOW_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  return (
-    <motion.div
-      ref={overlayRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-    >
-      <motion.div
-        initial={{ scale: 0.92, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.92, opacity: 0, y: 20 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-        className="relative w-[420px] rounded-3xl p-6 shadow-2xl"
-        style={{
-          background: 'linear-gradient(135deg, #0f0f1a 0%, #12041f 50%, #0a0f1e 100%)',
-          border: '1px solid rgba(168,85,247,0.25)',
-          boxShadow: '0 0 60px rgba(168,85,247,0.15), 0 25px 50px rgba(0,0,0,0.6)'
-        }}
-      >
-        {/* Close */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all"
-        >
-          <X size={16} />
-        </button>
-
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 rounded-xl" style={{ background: 'rgba(168,85,247,0.15)' }}>
-            <Flame size={18} className="text-purple-400" />
-          </div>
-          <div>
-            <p className="text-white font-bold text-base">Completion Heatmap</p>
-            <p className="text-white/30 text-xs">Daily task completion intensity</p>
-          </div>
-        </div>
-
-        {/* Month nav */}
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => setViewMonth(m => subDays(startOfMonth(m), 1))}
-            className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-white/80 text-sm font-semibold">
-            {format(viewMonth, 'MMMM yyyy')}
-          </span>
-          <button
-            onClick={() => setViewMonth(m => addDays(endOfMonth(m), 1))}
-            className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-
-        {/* DOW labels */}
-        <div className="grid grid-cols-7 mb-1">
-          {DOW_LABELS.map(d => (
-            <div key={d} className="text-center text-[10px] font-bold text-white/20 uppercase tracking-wider py-1">{d}</div>
-          ))}
-        </div>
-
-        {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1.5">
-          {Array.from({ length: startDow }).map((_, i) => (
-            <div key={`blank-${i}`} />
-          ))}
-          {monthDays.map(day => {
-            const level = getLevel(day);
-            const isToday = isSameDay(day, today);
-            const hasTodos = (dayTodos.find(d => d.date === format(day, 'yyyy-MM-dd'))?.todos?.length ?? 0) > 0;
-            return (
-              <motion.div
-                key={day.toISOString()}
-                whileHover={{ scale: 1.15 }}
-                title={`${format(day, 'MMM d')}: ${hasTodos ? `Level ${level}/7` : 'No tasks'}`}
-                className="aspect-square rounded-lg flex items-center justify-center text-[10px] font-bold cursor-default relative"
-                style={{
-                  background: level === 0 ? HEAT_COLORS[0] : HEAT_COLORS[Math.min(level, 7)],
-                  color: level >= 4 ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.5)',
-                  boxShadow: level >= 3 ? `0 0 8px ${HEAT_COLORS[Math.min(level, 7)]}88` : 'none',
-                  outline: isToday ? '2px solid rgba(255,255,255,0.4)' : 'none',
-                  outlineOffset: '1px',
-                }}
-              >
-                {format(day, 'd')}
-              </motion.div>
-            );
-          })}
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/5">
-          <span className="text-[10px] text-white/25 uppercase tracking-wider">Less</span>
-          <div className="flex gap-1">
-            {HEAT_COLORS.map((c, i) => (
-              <div
-                key={i}
-                className="w-5 h-5 rounded-md"
-                style={{ background: c }}
-              />
-            ))}
-          </div>
-          <span className="text-[10px] text-white/25 uppercase tracking-wider">More</span>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-// ─── Todo Settings Modal ─────────────────────────────────────────────────────
 
 interface TodoSettingsModalProps {
   weekStartsOn: number;
   onUpdate: (val: number) => void;
+  countdownMode: 'off' | 'time' | 'percent';
+  onUpdateCountdownMode: (val: 'off' | 'time' | 'percent') => void;
   onClose: () => void;
 }
 
-const TodoSettingsModal: React.FC<TodoSettingsModalProps> = ({ weekStartsOn, onUpdate, onClose }) => {
+const TodoSettingsModal: React.FC<TodoSettingsModalProps> = ({
+  weekStartsOn,
+  onUpdate,
+  countdownMode,
+  onUpdateCountdownMode,
+  onClose
+}) => {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -594,7 +418,7 @@ const TodoSettingsModal: React.FC<TodoSettingsModalProps> = ({ weekStartsOn, onU
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2">First Day of Week</label>
             <div className="grid grid-cols-2 gap-2">
@@ -612,6 +436,28 @@ const TodoSettingsModal: React.FC<TodoSettingsModalProps> = ({ weekStartsOn, onU
               </button>
             </div>
           </div>
+
+          <div>
+            <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2">Deadline Countdown</label>
+            <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 p-1 rounded-2xl border border-white/5">
+              {(['off', 'time', 'percent'] as const).map((mode) => {
+                const label = mode === 'off' ? 'Off' : mode === 'time' ? 'Time Left' : 'Percent Left';
+                const isActive = countdownMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => onUpdateCountdownMode(mode)}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all relative ${isActive
+                      ? 'bg-[var(--accent2)] text-black shadow-lg shadow-[var(--accent2)]/10'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -622,10 +468,20 @@ const TodoSettingsModal: React.FC<TodoSettingsModalProps> = ({ weekStartsOn, onU
 export const TodoView: React.FC<TodoViewProps> = ({
   dayTodos,
   onUpdateTodos,
+  onMoveTodo,
   onStartTracking,
   activeTodoId,
-  onToggleTodo
+  onToggleTodo,
+  trackers,
+  onDeleteTracker,
+  onEditTracker
 }) => {
+  const orderedTrackers = useMemo(() => {
+    const dayTracker = trackers.find(t => t.type === 'day');
+    const others = trackers.filter(t => t.type !== 'day');
+    return dayTracker ? [dayTracker, ...others] : others;
+  }, [trackers]);
+
   const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -633,8 +489,11 @@ export const TodoView: React.FC<TodoViewProps> = ({
   const [newTodoTime, setNewTodoTime] = useState('');
   const [newTodoPercent, setNewTodoPercent] = useState<string>('');
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [showHeatmap, setShowHeatmap] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [countdownMode, setCountdownMode] = useState<'off' | 'time' | 'percent'>(() => {
+    const saved = localStorage.getItem('chronos-countdown-mode');
+    return (saved as 'off' | 'time' | 'percent') || 'off';
+  });
   const [weekStartsOn, setWeekStartsOn] = useState<number>(() => {
     const saved = localStorage.getItem('chronos-week-starts-on');
     return saved ? parseInt(saved, 10) : 1;
@@ -649,6 +508,11 @@ export const TodoView: React.FC<TodoViewProps> = ({
   const handleUpdateWeekStartsOn = (val: number) => {
     setWeekStartsOn(val);
     localStorage.setItem('chronos-week-starts-on', val.toString());
+  };
+
+  const handleUpdateCountdownMode = (val: 'off' | 'time' | 'percent') => {
+    setCountdownMode(val);
+    localStorage.setItem('chronos-countdown-mode', val);
   };
 
   const handleNewTimeChange = (val: string) => {
@@ -766,101 +630,33 @@ export const TodoView: React.FC<TodoViewProps> = ({
     setSelectedDate(format(next, 'yyyy-MM-dd'));
   };
 
-  // ── Daily progress ───────────────────────────────────────────────────────
-  const { totalTodos, completedTodos, progressPct } = useMemo(() => {
-    const todos = currentDayData.todos || [];
-    const total = todos.length;
-    const done = todos.filter(t => t?.completed).length;
-    const dayIndex = new Date().getDay();
-    return {
-      totalTodos: total,
-      completedTodos: done,
-      progressPct: total === 0 ? 0 : done / total,
-      dayIndex: dayIndex
-    };
-  }, [currentDayData.todos]);
 
-  // ── Streak score ─────────────────────────────────────────────────────────
-  const streakScore = useMemo(() => {
-    const today = new Date();
-
-    // Count fully-completed days in last 7 days
-    let last7Count = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = format(subDays(today, i), 'yyyy-MM-dd');
-      const entry = dayTodos.find(x => x.date === d);
-      if (entry && isFullyComplete(entry.todos)) last7Count++;
-    }
-
-    // Count consecutive days ending today (or the last day that had tasks)
-    let consecutive = 0;
-    let cursor = 0;
-    while (true) {
-      const d = format(subDays(today, cursor), 'yyyy-MM-dd');
-      const entry = dayTodos.find(x => x.date === d);
-      if (entry && isFullyComplete(entry.todos)) {
-        consecutive++;
-        cursor++;
-      } else {
-        break;
-      }
-    }
-
-    return Math.max(last7Count, consecutive);
-  }, [dayTodos]);
-
-  const isTodayComplete = useMemo(() => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const entry = dayTodos.find(x => x.date === today);
-    return entry ? isFullyComplete(entry.todos) : false;
-  }, [dayTodos]);
-
-  const { c1, c2 } = useMemo(() => {
-    const colorIndex = Math.max(0, isTodayComplete ? streakScore - 1 : streakScore);
-    return {
-      c1: COLORS[colorIndex % COLORS.length],
-      c2: COLORS[(colorIndex + 1) % COLORS.length]
-    };
-  }, [streakScore, isTodayComplete]);
-
-  const streakStyles = useMemo(() => {
-    if (streakScore === 0) {
-      return {
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: 'none',
-        textColor: 'rgba(255,255,255,0.3)'
-      };
-    }
-
-    const baseColor = `color-mix(in oklab, ${c1} 90%, ${c2} 10%)`;
-
-    if (isTodayComplete) {
-      return {
-        background: `linear-gradient(135deg, color-mix(in oklab, ${baseColor} 25%, transparent 75%) 0%, color-mix(in oklab, ${baseColor} 15%, transparent 85%) 100%)`,
-        border: `1px solid color-mix(in oklab, ${baseColor} 30%, transparent 70%)`,
-        boxShadow: `0 0 12px hsl(from ${baseColor} h s l / 0.15)`,
-        textColor: `color-mix(in oklab, ${baseColor} 30%, white 70%)`
-      };
-    }
-
-    return {
-      background: `rgba(255,255,255,0.04)`,
-      border: '1px solid rgba(255,255,255,0.08)',
-      boxShadow: 'none',
-      textColor: `color-mix(in oklab, ${baseColor} 85%, white 15%)`
-    };
-  }, [streakScore, isTodayComplete, c1, c2]);
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 pt-4 flex gap-8 h-screen overflow-hidden">
-      {/* Left side: Todo List */}
-      <div className="flex-1 min-w-0 overflow-y-auto overflow-x-visible pr-2 pb-20 no-scrollbar">
+    <div className="mx-auto px-3 pt-2 flex gap-4 h-screen overflow-hidden">
+      {/* Left side: Trackers List */}
+      <div className="w-[18%] flex-shrink-0 overflow-y-auto pr-1 pb-12 no-scrollbar">
+        <div className="flex flex-col gap-3 pt-1">
+          <AnimatePresence>
+            {orderedTrackers.map((tracker) => (
+              <TrackerCard
+                key={tracker.id}
+                tracker={tracker}
+                onDelete={onDeleteTracker}
+                onEdit={onEditTracker}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Middle side: Todo List */}
+      <div className="flex-1 min-w-0 overflow-y-auto overflow-x-visible pl-5 pb-12 no-scrollbar">
         {/* Date Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-2xl font-bold text-white">
+              <h2 className="text-xl font-bold text-white">
                 {format(parseISO(selectedDate), 'MMMM yyyy')}
               </h2>
             </div>
@@ -880,7 +676,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-between items-end border-b border-white/5 pb-4 px-1">
+          <div className="flex justify-between items-end border-b border-white/5 pb-3 px-1">
             {weekDays.map((day) => {
               const isSelected = isSameDay(day, parseISO(selectedDate));
               const isToday = isSameDay(day, new Date());
@@ -888,13 +684,13 @@ export const TodoView: React.FC<TodoViewProps> = ({
                 <button
                   key={day.toISOString()}
                   onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
-                  className="flex flex-col items-center gap-2 group"
+                  className="flex flex-col items-center gap-1.5 group"
                 >
-                  <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-white/20 group-hover:text-white/40'
+                  <span className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-white/20 group-hover:text-white/40'
                     }`}>
                     {format(day, 'EEE')}
                   </span>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold transition-all ${isSelected
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${isSelected
                     ? 'bg-[var(--accent2)] text-black shadow-lg shadow-[var(--accent2)]/20 scale-110'
                     : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
                     } ${isToday && !isSelected ? 'ring-2 ring-[var(--accent2)]/20' : ''}`}>
@@ -905,8 +701,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
             })}
           </div>
         </div>
-
-        <CompactDayTracker />
 
         {/* Todo List */}
         <div className="space-y-0">
@@ -936,6 +730,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                     onStartTracking={onStartTracking}
                     isActive={activeTodoId === todo.id}
                     now={now}
+                    countdownMode={countdownMode}
                   />
                 );
               })}
@@ -954,6 +749,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                   onStartTracking={() => { }}
                   isActive={activeTodoId === activeTodo.id}
                   now={now}
+                  countdownMode={countdownMode}
                 />
               ) : null}
             </DragOverlay>
@@ -963,10 +759,11 @@ export const TodoView: React.FC<TodoViewProps> = ({
           {!isAdding ? (
             <button
               onClick={() => setIsAdding(true)}
-              className="flex items-center gap-4 py-2 px-2 text-white/30 hover:text-white/60 transition-all group"
+              className="flex items-center gap-3 py-1 text-white/25 hover:text-white/50 transition-all group"
             >
-              <Plus size={20} strokeWidth={2.5} />
-              <span className="text-lg font-medium">Add a todo</span>
+              <GripVertical size={18} className="invisible" />
+              <Plus size={24} strokeWidth={2.5} />
+              <span className="text-md font-medium">Add a todo</span>
             </button>
           ) : (
             <motion.form
@@ -980,7 +777,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                 }
                 if (e.key === 'Escape') setIsAdding(false);
               }}
-              className="p-6 bg-[#1A1A1A] border border-[var(--accent2)]/30 rounded-3xl shadow-2xl space-y-4"
+              className="p-4 bg-[#1A1A1A] border border-[var(--accent2)]/30 rounded-2xl shadow-xl space-y-3"
             >
               <input
                 autoFocus
@@ -988,22 +785,23 @@ export const TodoView: React.FC<TodoViewProps> = ({
                 value={newTodoText}
                 onChange={(e) => setNewTodoText(e.target.value)}
                 placeholder="What needs to be done?"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent2)] transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white focus:outline-none focus:border-[var(--accent2)] transition-colors text-sm
+"
               />
 
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">End Time</label>
+                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 pl-1">End Time</label>
                   <input
                     type="time"
                     value={newTodoTime}
                     onChange={(e) => handleNewTimeChange(e.target.value)}
                     style={{ colorScheme: 'dark' }}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Percentage</label>
+                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 pl-1">Percentage</label>
                   <input
                     type="number"
                     min="0"
@@ -1011,23 +809,24 @@ export const TodoView: React.FC<TodoViewProps> = ({
                     step="any"
                     value={newTodoPercent}
                     onChange={(e) => handleNewPercentChange(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
                     placeholder="e.g. 50"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-[var(--accent2)] hover:opacity-90 text-black font-bold py-3 rounded-xl transition-all"
+                  className="flex-1 bg-[var(--accent2)] hover:opacity-90 text-black font-bold h-8 rounded-lg text-xs transition-all"
                 >
                   Add Objective
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsAdding(false)}
-                  className="px-6 bg-white/5 hover:bg-white/10 text-white/60 rounded-xl font-bold transition-all"
+                  className="px-4 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg text-xs font-bold transition-all"
                 >
                   Cancel
                 </button>
@@ -1036,94 +835,11 @@ export const TodoView: React.FC<TodoViewProps> = ({
           )}
 
           {currentDayData.todos.length === 0 && !isAdding && (
-            <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-20">
-              <CheckSquare className="w-16 h-16" />
-              <p className="text-sm font-medium">Clear schedule for this day</p>
+            <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 opacity-20">
+              <CheckSquare className="w-12 h-12" />
+              <p className="text-xs font-medium">Clear schedule for this day</p>
             </div>
           )}
-        </div>
-
-        {/* ── Bottom: Streak + Progress Bar ─────────────────────────────── */}
-        <div className="mt-8 mb-4 py-2">
-          <div className="flex items-center gap-4 overflow-visible">
-
-            {/* Streak Badge */}
-            <button
-              onClick={() => setShowHeatmap(true)}
-              className="flex-shrink-0 w-16 h-16 flex flex-col items-center justify-center gap-1 rounded-2xl cursor-pointer transition-all duration-200 hover:brightness-125"
-              style={{
-                background: streakStyles.background,
-                border: streakStyles.border,
-                boxShadow: streakStyles.boxShadow,
-              }}
-              title="Click to see heatmap"
-            >
-              <span
-                className="text-3xl font-black tabular-nums leading-none"
-                style={{
-                  color: streakStyles.textColor,
-                }}
-              >
-                {streakScore}
-              </span>
-            </button>
-
-            {/* Prismatic Progress Bar */}
-            <div className="flex-1 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">Today's Progress</span>
-                <span className="text-[11px] font-bold tabular-nums" style={{
-                  color: totalTodos === 0 ? 'rgba(255,255,255,0.2)' : `hsl(from ${c2} h 90% 75%)`,
-                }}>
-                  {completedTodos}/{totalTodos}
-                </span>
-              </div>
-              <div
-                className="relative h-3 rounded-full overflow-hidden"
-                style={{ background: 'rgba(255,255,255,0.06)' }}
-              >
-                {/* Animated mesh gradient fill */}
-                <motion.div
-                  className="absolute inset-y-0 left-0 rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${progressPct * 100}%` }}
-                  transition={{ duration: 0.8, ease: [0.34, 1.56, 0.64, 1] }}
-                  style={{
-                    background: totalTodos === 0
-                      ? 'rgba(255,255,255,0.08)'
-                      : `linear-gradient(90deg, ${c1} 0%, ${c2} 100%)`,
-                    backgroundSize: `${100 / progressPct}%`,
-                    boxShadow: progressPct > 0
-                      ? `0 0 16px hsl(from ${c1} h s l / 0.4)`
-                      : 'none',
-                  }}
-                />
-                {/* Shimmer overlay
-                {progressPct > 0 && (
-                  <motion.div
-                    className="absolute inset-y-0 left-0 rounded-full pointer-events-none"
-                    animate={{ x: ['-100%', '400%'] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: 'linear', repeatDelay: 1 }}
-                    style={{
-                      width: '30%',
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)',
-                    }}
-                  />
-                )} */}
-              </div>
-              {/* Completion message */}
-              {progressPct === 1 && totalTodos > 0 && (
-                <motion.p
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-[10px] font-bold uppercase tracking-widest"
-                  style={{ color: `hsl(from ${c1} h 90% 75%)` }}
-                >
-                  ✦ All tasks complete!
-                </motion.p>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -1141,22 +857,14 @@ export const TodoView: React.FC<TodoViewProps> = ({
         </div>
       </div>
 
-      {/* Heatmap Modal */}
-      <AnimatePresence>
-        {showHeatmap && (
-          <StreakHeatmapModal
-            dayTodos={dayTodos}
-            onClose={() => setShowHeatmap(false)}
-          />
-        )}
-      </AnimatePresence>
-
       {/* Settings Modal */}
       <AnimatePresence>
         {showSettings && (
           <TodoSettingsModal
             weekStartsOn={weekStartsOn}
             onUpdate={handleUpdateWeekStartsOn}
+            countdownMode={countdownMode}
+            onUpdateCountdownMode={handleUpdateCountdownMode}
             onClose={() => setShowSettings(false)}
           />
         )}

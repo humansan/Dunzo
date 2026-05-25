@@ -53,6 +53,8 @@ export function calculateProgress(tracker: Tracker, now: Date = new Date()): Pro
   let percentage = (elapsedSeconds / totalSeconds) * 100;
   percentage = Math.max(0, Math.min(100, percentage));
 
+  const percentRemaining = Math.max(0, Math.min(100, 100 - percentage));
+
   const remainingSeconds = differenceInSeconds(end, now);
   let timeLeft = '';
 
@@ -74,9 +76,31 @@ export function calculateProgress(tracker: Tracker, now: Date = new Date()): Pro
     timeLeft = `${days}d left`;
   }
 
+  const clampedElapsed = Math.max(0, elapsedSeconds);
+  let timeElapsed = '';
+  if (clampedElapsed <= 0) {
+    timeElapsed = 'Not started';
+  } else if (clampedElapsed < 60) {
+    timeElapsed = `${clampedElapsed}s elapsed`;
+  } else if (clampedElapsed < 3600) {
+    const mins = Math.floor(clampedElapsed / 60);
+    const secs = clampedElapsed % 60;
+    timeElapsed = `${mins}m ${secs}s elapsed`;
+  } else if (clampedElapsed < 86400) {
+    const hours = Math.floor(clampedElapsed / 3600);
+    const mins = Math.floor((clampedElapsed % 3600) / 60);
+    const secs = clampedElapsed % 60;
+    timeElapsed = `${hours}h ${mins}m ${secs}s elapsed`;
+  } else {
+    const days = Math.floor(clampedElapsed / 86400);
+    timeElapsed = `${days}d elapsed`;
+  }
+
   return {
     percentage,
+    percentRemaining,
     timeLeft,
+    timeElapsed,
     label,
     subLabel
   };

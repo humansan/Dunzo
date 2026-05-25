@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { format } from 'date-fns';
-import { Tracker, TrackerType } from '../types';
+import { Tracker, TrackerType, TrackerDisplayMode } from '../types';
 
 interface AddTrackerModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
   const [endDate, setEndDate] = useState(editingTracker?.endDate ? format(new Date(editingTracker.endDate), 'yyyy-MM-dd') : '');
   const [color, setColor] = useState(editingTracker?.color || '#A3E635');
   const [precision, setPrecision] = useState(editingTracker?.precision || 2);
+  const [displayMode, setDisplayMode] = useState<TrackerDisplayMode>(editingTracker?.displayMode || 'percent_elapsed');
 
   useEffect(() => {
     if (isOpen) {
@@ -27,6 +28,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
       setEndDate(editingTracker?.endDate ? format(new Date(editingTracker.endDate), 'yyyy-MM-dd') : '');
       setColor(editingTracker?.color || '#A3E635');
       setPrecision(editingTracker?.precision || 2);
+      setDisplayMode(editingTracker?.displayMode || 'percent_elapsed');
     }
   }, [isOpen, editingTracker]);
 
@@ -40,6 +42,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
       endDate: type === 'custom' ? new Date(endDate + 'T23:59:59').toISOString() : undefined,
       color,
       precision,
+      displayMode,
       createdAt: editingTracker?.createdAt || Date.now()
     });
     onClose();
@@ -157,6 +160,30 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       <option key={p} value={p} className="bg-[#1A1A1A]">{p} digits</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Display Value</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { key: 'percent_elapsed' as TrackerDisplayMode, label: '% Elapsed' },
+                      { key: 'percent_remaining' as TrackerDisplayMode, label: '% Remaining' },
+                      { key: 'time_elapsed' as TrackerDisplayMode, label: 'Time Elapsed' },
+                      { key: 'time_remaining' as TrackerDisplayMode, label: 'Time Left' },
+                    ]).map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setDisplayMode(opt.key)}
+                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                          displayMode === opt.key
+                            ? 'bg-[var(--accent1)] text-black'
+                            : 'bg-white/5 text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

@@ -43,7 +43,7 @@ export default function App() {
     const saved = localStorage.getItem('chronos-theme');
     return saved ? JSON.parse(saved) : { accent1: '#A3E635', accent2: '#67E8F9' };
   });
-  const [activeView, setActiveView] = useState<'trackers' | 'todos' | 'calendar'>('trackers');
+  const [activeView, setActiveView] = useState<'trackers' | 'todos' | 'calendar'>('todos');
   const [dayTodos, setDayTodos] = useState<DayTodos[]>(() => {
     const saved = localStorage.getItem('chronos-todos');
     return saved ? JSON.parse(saved) : [];
@@ -363,6 +363,9 @@ export default function App() {
                   onStartTracking={handleStartTracking}
                   activeTodoId={activeTodoId}
                   onToggleTodo={handleToggleTodo}
+                  trackers={trackers}
+                  onDeleteTracker={handleDeleteTracker}
+                  onEditTracker={handleEditTracker}
                 />
               </motion.div>
             ) : (

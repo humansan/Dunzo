@@ -12,8 +12,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
   if (!isVisible) return null;
 
   const items = [
-    { key: 'trackers' as const, icon: Clock, title: 'Trackers', color: '--accent1' },
     { key: 'todos' as const, icon: CheckSquare, title: 'Daily Todos', color: '--accent2' },
+    { key: 'trackers' as const, icon: Clock, title: 'Trackers', color: '--accent1' },
     { key: 'calendar' as const, icon: Calendar, title: 'Calendar', color: '--accent2' },
   ];
 
