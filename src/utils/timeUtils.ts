@@ -62,15 +62,15 @@ export function calculateProgress(tracker: Tracker, now: Date = new Date()): Pro
     timeLeft = 'Completed';
   } else if (remainingSeconds < 60) {
     timeLeft = `${remainingSeconds}s left`;
-  } else if (remainingSeconds < 3600) {
+  } else if (remainingSeconds < (60*60)) {
     const mins = Math.floor(remainingSeconds / 60);
     const secs = remainingSeconds % 60;
     timeLeft = `${mins}m ${secs}s left`;
-  } else if (remainingSeconds < 86400) {
+  } else if (remainingSeconds < (60*60*24)) {
     const hours = Math.floor(remainingSeconds / 3600);
     const mins = Math.floor((remainingSeconds % 3600) / 60);
-    const secs = remainingSeconds % 60;
-    timeLeft = `${hours}h ${mins}m ${secs}s left`;
+    // const secs = remainingSeconds % 60;
+    timeLeft = `${hours}h ${mins}m left`;
   } else {
     const days = Math.floor(remainingSeconds / 86400);
     timeLeft = `${days}d left`;
@@ -90,7 +90,7 @@ export function calculateProgress(tracker: Tracker, now: Date = new Date()): Pro
     const hours = Math.floor(clampedElapsed / 3600);
     const mins = Math.floor((clampedElapsed % 3600) / 60);
     const secs = clampedElapsed % 60;
-    timeElapsed = `${hours}h ${mins}m ${secs}s elapsed`;
+    timeElapsed = `${hours}h ${mins}m elapsed`;
   } else {
     const days = Math.floor(clampedElapsed / 86400);
     timeElapsed = `${days}d elapsed`;
