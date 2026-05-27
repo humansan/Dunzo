@@ -259,7 +259,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         className="relative cursor-pointer py-1"
       >
         <motion.div
-          animate={todo.completed ? { scale: [1.2, 1], rotate: [10, 0] } : {}}
+          animate={todo.completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
           transition={{ duration: 0.3 }}
           className={`transition-colors duration-100 ${todo.completed ? 'text-[var(--accent1)]' : 'text-white/50 hover:text-white'}`}
         >

@@ -10,6 +10,7 @@ import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
 import { CalendarView } from './components/CalendarView';
 import { ActiveTodoTracker } from './components/ActiveTodoTracker';
+import { authClient } from "./auth"
 
 const DEFAULT_TRACKERS: Tracker[] = [
   {
@@ -49,6 +50,10 @@ export default function App() {
     const saved = localStorage.getItem('dun-countdown-mode');
     return (saved as 'off' | 'time' | 'percent') || 'off';
   });
+
+
+  const [session, setSession] = useState<any>(null);
+  
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     // TODO(neon-auth): replace with Neon Auth session check
     return localStorage.getItem('dun-auth-stub') === 'true';
@@ -426,10 +431,17 @@ export default function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        isAuthenticated={isAuthenticated}
         onAuthenticated={() => {
           // TODO(neon-auth): replace with real session persistence from Neon Auth
           localStorage.setItem('dun-auth-stub', 'true');
           setIsAuthenticated(true);
+          setIsAuthModalOpen(false);
+        }}
+        onLogout={() => {
+          // TODO(neon-auth): replace with Neon Auth sign-out call
+          localStorage.removeItem('dun-auth-stub');
+          setIsAuthenticated(false);
           setIsAuthModalOpen(false);
         }}
       />

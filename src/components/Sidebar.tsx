@@ -63,14 +63,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
         </button>
         <button
           onClick={onAccountClick}
-          className={`group relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
-            isAuthenticated
-              ? 'bg-[var(--accent1)] text-black shadow-lg shadow-[var(--accent1)]/20'
-              : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
-          }`}
+          className="group relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
           title={isAuthenticated ? 'Account' : 'Sign In'}
         >
-          <User size={22} strokeWidth={2.5} />
+          <User
+            size={22}
+            strokeWidth={2.5}
+            className={`transition-colors ${isAuthenticated ? 'text-[var(--accent1)]' : 'text-white/40 group-hover:text-white'}`}
+          />
         </button>
       </div>
     </motion.div>

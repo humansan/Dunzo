@@ -66,40 +66,42 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl"
+            className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-3xl shadow-2xl flex flex-col max-h-[90vh]"
           >
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-bold text-white">
+            {/* Sticky header */}
+            <div className="flex justify-between items-center px-6 pt-5 pb-3 shrink-0">
+              <h2 className="text-lg font-bold text-white">
                 {editingTracker ? 'Edit Tracker' : 'New Tracker'}
               </h2>
-              <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-white/40">
-                <X size={20} />
+              <button onClick={onClose} className="p-1.5 hover:bg-white/5 rounded-full text-white/40">
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Scrollable body */}
+            <form onSubmit={handleSubmit} className="overflow-y-auto px-6 pb-6 space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Name (Optional)</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Name (Optional)</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. My Project"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent1)] transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Interval</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Interval</label>
+                <div className="grid grid-cols-3 gap-1.5">
                   {(['day', 'week', 'month', 'year', 'custom'] as TrackerType[]).map((t) => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setType(t)}
-                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                        type === t 
-                          ? 'bg-[var(--accent1)] text-black' 
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        type === t
+                          ? 'bg-[var(--accent1)] text-black'
                           : 'bg-white/5 text-white/60 hover:bg-white/10'
                       }`}
                     >
@@ -110,115 +112,115 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               {type === 'custom' && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Start Date</label>
+                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Start Date</label>
                     <input
                       type="date"
                       required
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent1)]"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">End Date</label>
+                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">End Date</label>
                     <input
                       type="date"
                       required
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent1)]"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)]"
                     />
                   </div>
                 </div>
               )}
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Color</label>
-                  <div className="flex gap-3">
-                    <input
-                      type="color"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="w-12 h-12 bg-transparent border-none cursor-pointer shrink-0"
-                    />
-                    <input
-                      type="text"
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent1)]"
-                    />
-                  </div>
+              <div>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Color</label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-10 h-10 bg-transparent border-none cursor-pointer shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent1)]"
+                  />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Precision</label>
-                  <select
-                    value={precision}
-                    onChange={(e) => setPrecision(parseInt(e.target.value))}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[var(--accent1)]"
-                  >
-                    {[0, 1, 2, 3, 4].map(p => (
-                      <option key={p} value={p} className="bg-[#1A1A1A]">{p} digits</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Primary Value</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {([
-                      { key: 'percent_elapsed' as TrackerDisplayMode, label: '% Elapsed' },
-                      { key: 'percent_remaining' as TrackerDisplayMode, label: '% Remaining' },
-                      { key: 'time_elapsed' as TrackerDisplayMode, label: 'Time Elapsed' },
-                      { key: 'time_remaining' as TrackerDisplayMode, label: 'Time Left' },
-                    ]).map((opt) => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setDisplayMode(opt.key)}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                          displayMode === opt.key
-                            ? 'bg-[var(--accent1)] text-black'
-                            : 'bg-white/5 text-white/60 hover:bg-white/10'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Secondary Value</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {([
-                      { key: 'percent_elapsed' as TrackerSecondaryDisplayMode, label: '% Elapsed' },
-                      { key: 'percent_remaining' as TrackerSecondaryDisplayMode, label: '% Remaining' },
-                      { key: 'time_elapsed' as TrackerSecondaryDisplayMode, label: 'Time Elapsed' },
-                      { key: 'time_remaining' as TrackerSecondaryDisplayMode, label: 'Time Left' },
-                      { key: 'none' as TrackerSecondaryDisplayMode, label: 'None' },
-                    ]).map((opt) => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setSecondaryDisplayMode(opt.key)}
-                        className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
-                          secondaryDisplayMode === opt.key
-                            ? 'bg-[var(--accent1)] text-black'
-                            : 'bg-white/5 text-white/60 hover:bg-white/10'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+              <div>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Precision</label>
+                <select
+                  value={precision}
+                  onChange={(e) => setPrecision(parseInt(e.target.value))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)]"
+                >
+                  {[0, 1, 2, 3, 4].map(p => (
+                    <option key={p} value={p} className="bg-[#1A1A1A]">{p} digits</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Primary Value</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {([
+                    { key: 'percent_elapsed' as TrackerDisplayMode, label: '% Elapsed' },
+                    { key: 'percent_remaining' as TrackerDisplayMode, label: '% Remaining' },
+                    { key: 'time_elapsed' as TrackerDisplayMode, label: 'Time Elapsed' },
+                    { key: 'time_remaining' as TrackerDisplayMode, label: 'Time Left' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setDisplayMode(opt.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        displayMode === opt.key
+                          ? 'bg-[var(--accent1)] text-black'
+                          : 'bg-white/5 text-white/60 hover:bg-white/10'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Secondary Value</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {([
+                    { key: 'percent_elapsed' as TrackerSecondaryDisplayMode, label: '% Elapsed' },
+                    { key: 'percent_remaining' as TrackerSecondaryDisplayMode, label: '% Remaining' },
+                    { key: 'time_elapsed' as TrackerSecondaryDisplayMode, label: 'Time Elapsed' },
+                    { key: 'time_remaining' as TrackerSecondaryDisplayMode, label: 'Time Left' },
+                    { key: 'none' as TrackerSecondaryDisplayMode, label: 'None' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setSecondaryDisplayMode(opt.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        secondaryDisplayMode === opt.key
+                          ? 'bg-[var(--accent1)] text-black'
+                          : 'bg-white/5 text-white/60 hover:bg-white/10'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold py-4 rounded-2xl transition-all transform active:scale-[0.98] mt-4"
+                className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold py-3 rounded-2xl transition-all transform active:scale-[0.98]"
               >
                 {editingTracker ? 'Save Changes' : 'Create Tracker'}
               </button>
