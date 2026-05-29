@@ -203,21 +203,22 @@ const TodoItem: React.FC<TodoItemProps> = ({
             value={editTime}
             onChange={(e) => handleTimeChange(e.target.value)}
             style={{ colorScheme: 'dark' }}
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
           />
           <input
             type="number"
             step="any"
             value={editPercent}
             onChange={(e) => handlePercentChange(e.target.value)}
+            style={{ colorScheme: 'dark' }}
             placeholder="%"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
           />
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => onSaveEdit(todo.id, editText, editTime, editPercent, editDate)}
-            className="flex-1 bg-[var(--accent2)] hover:opacity-90 text-black font-bold py-2 rounded-lg text-xs transition-all"
+            className="flex-1 bg-(--accent2) hover:opacity-90 text-black font-bold py-2 rounded-lg text-xs transition-all"
           >
             Save Changes
           </button>
@@ -268,9 +269,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
       </button>
 
       <div className="flex-1 min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
-        <p className={`text-md transition duration-100 ease-out font-medium ${todo.completed
+        <p className={`text-md transition duration-200 ease-out font-medium ${todo.completed
           ? 'text-white/25 line-through translate-x-[3px]'
-          : 'text-white group-hover/text:text-[var(--accent2)]'
+          : 'text-white group-hover/text:text-(--accent2)'
           }`}>
           {todo.text}
         </p>
@@ -319,7 +320,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         )}
 
         {countdownDisplay && !todo.completed && (
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-colors duration-500 ${isActive ? 'bg-[#D93D42] text-white' : 'bg-white/5 text-[#D93D42]'}`}>
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-colors duration-500 ${isActive ? 'bg-[#d93d42] text-white' : 'bg-white/5 text-[#D93D42]'}`}>
             <div className="text-sm font-mono font-bold">
               {countdownDisplay}
             </div>
@@ -329,7 +330,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
       <button
         onClick={() => onDelete(todo.id)}
-        className="opacity-0 group-hover:opacity-100 p-2 text-white/10 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+        className="opacity-0 group-hover:opacity-100 p-2 text-white/10 hover:text-red-400 hover:bg-[#d93d42]/10 rounded-lg transition-all"
       >
         <Trash2 size={16} />
       </button>
@@ -655,7 +656,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
             </button>
           ) : (
             <motion.form
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 1, y: 0 }}
               animate={{ opacity: 1, y: 0 }}
               onSubmit={handleAddTodo}
               onKeyDown={(e) => {
@@ -665,7 +666,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                 }
                 if (e.key === 'Escape') setIsAdding(false);
               }}
-              className="p-4 bg-[#1A1A1A] border border-[var(--accent2)]/30 rounded-2xl shadow-xl space-y-3"
+              className="p-4 bg-[#1A1A1A] border border-(--accent2)/30 rounded-2xl shadow-xl space-y-3"
             >
               <input
                 autoFocus
@@ -673,7 +674,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                 value={newTodoText}
                 onChange={(e) => setNewTodoText(e.target.value)}
                 placeholder="What needs to be done?"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white focus:outline-none focus:border-[var(--accent2)] transition-colors text-sm
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white focus:outline-none focus:border-(--accent2) transition-colors text-sm
 "
               />
 
@@ -685,7 +686,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                     value={newTodoTime}
                     onChange={(e) => handleNewTimeChange(e.target.value)}
                     style={{ colorScheme: 'dark' }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
                   />
                 </div>
                 <div className="flex-1">
@@ -699,7 +700,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                     onChange={(e) => handleNewPercentChange(e.target.value)}
                     style={{ colorScheme: 'dark' }}
                     placeholder="e.g. 50"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
                   />
                 </div>
               </div>
@@ -707,7 +708,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="flex-1 bg-[var(--accent2)] hover:opacity-90 text-black font-bold h-8 rounded-lg text-xs transition-all"
+                  className="flex-1 bg-(--accent2) hover:opacity-90 text-black font-bold h-8 rounded-lg text-xs transition-all"
                 >
                   Add Objective
                 </button>
@@ -732,7 +733,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
       </div>
 
       {/* Right side: 1-Day Calendar */}
-      <div className="w-[360px] flex-shrink-0 hidden lg:block h-full">
+      <div className="w-90 shrink-0 hidden lg:block h-full">
         <div className="h-full overflow-hidden flex flex-col">
           <CalendarView
             dayTodos={dayTodos}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckSquare, Calendar, User, Settings } from 'lucide-react';
+import { Clock, CheckSquare, Calendar, User, Settings, Timer } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface SidebarProps {
@@ -9,9 +9,11 @@ interface SidebarProps {
   isAuthenticated: boolean;
   onAccountClick: () => void;
   onSettingsClick: () => void;
+  onStopwatchClick: () => void;
+  isStopwatchActive: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVisible, isAuthenticated, onAccountClick, onSettingsClick }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVisible, isAuthenticated, onAccountClick, onSettingsClick, onStopwatchClick, isStopwatchActive }) => {
   if (!isVisible) return null;
 
   const items = [
@@ -54,6 +56,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
       </div>
 
       <div className="flex flex-col gap-6">
+        <button
+          onClick={onStopwatchClick}
+          className="group relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+          title="Stopwatch"
+        >
+          <Timer
+            size={22}
+            strokeWidth={2.5}
+            className={`transition-colors ${isStopwatchActive ? 'text-[var(--accent1)]' : 'text-white/40 group-hover:text-white'}`}
+          />
+        </button>
         <button
           onClick={onSettingsClick}
           className="group relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"

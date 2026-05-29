@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Clock, LayoutGrid, List, Maximize2, Minimize2 } from 'lucide-react';
 import { Tracker, Theme, DayTodos, Todo } from './types';
@@ -10,6 +10,8 @@ import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
 import { CalendarView } from './components/CalendarView';
 import { ActiveTodoTracker } from './components/ActiveTodoTracker';
+import { StopwatchWidget, TimerState } from './components/StopwatchWidget';
+import { StopwatchFullscreen } from './components/StopwatchFullscreen';
 import { authClient } from "./auth"
 
 const DEFAULT_TRACKERS: Tracker[] = [
@@ -70,6 +72,58 @@ export default function App() {
   const [activeTodoId, setActiveTodoId] = useState<string | null>(() => {
     return localStorage.getItem('dun-active-todo');
   });
+
+  // Stopwatch state — lives here so the timer keeps running while the widget UI is hidden
+  const [timerState, setTimerState] = useState<TimerState>('idle');
+  const [elapsed, setElapsed] = useState(0);
+  const [isStopwatchVisible, setIsStopwatchVisible] = useState(false);
+  const [isStopwatchFullscreen, setIsStopwatchFullscreen] = useState(false);
+  const startTimeRef = useRef<number>(0);
+  const pausedElapsedRef = useRef<number>(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = useCallback(() => {
+    const now = Date.now();
+    setTimerState(prev => {
+      if (prev === 'idle') {
+        pausedElapsedRef.current = 0;
+      }
+      startTimeRef.current = now;
+      return 'running';
+    });
+  }, []);
+
+  const pauseTimer = useCallback(() => {
+    pausedElapsedRef.current = pausedElapsedRef.current + (Date.now() - startTimeRef.current);
+    setElapsed(pausedElapsedRef.current);
+    setTimerState('paused');
+  }, []);
+
+  const stopTimer = useCallback(() => {
+    setTimerState('idle');
+    setElapsed(0);
+    pausedElapsedRef.current = 0;
+  }, []);
+
+  const resetTimer = useCallback(() => {
+    setTimerState('idle');
+    setElapsed(0);
+    pausedElapsedRef.current = 0;
+  }, []);
+
+  useEffect(() => {
+    if (timerState === 'running') {
+      intervalRef.current = setInterval(() => {
+        setElapsed(pausedElapsedRef.current + (Date.now() - startTimeRef.current));
+      }, 50);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [timerState]);
 
   useEffect(() => {
     localStorage.setItem('dun-theme', JSON.stringify(theme));
@@ -219,22 +273,18 @@ export default function App() {
       <Sidebar
         activeView={activeView}
         onViewChange={handleViewChange}
-        isVisible={!isFullscreen}
+        isVisible={!isFullscreen && !isStopwatchFullscreen}
         isAuthenticated={isAuthenticated}
         onAccountClick={() => setIsAuthModalOpen(true)}
         onSettingsClick={() => setIsSettingsModalOpen(true)}
+        onStopwatchClick={() => setIsStopwatchVisible(v => !v)}
+        isStopwatchActive={timerState !== 'idle'}
       />
 
       <div className={`transition-all duration-500 ${!isFullscreen ? 'pl-20' : 'pl-0'}`}>
         {/* Header */}
-        <AnimatePresence>
           {!isFullscreen && activeView === 'trackers' && (
-            <motion.header
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur-md border-bottom border-white/5"
-            >
+            <header className="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur-md border-bottom border-white/5">
               <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-black transition-colors ${activeView === 'trackers' ? 'bg-[var(--accent1)]' : 'bg-[var(--accent2)]'}`}>
@@ -285,9 +335,8 @@ export default function App() {
                   )}
                 </div>
               </div>
-            </motion.header>
+            </header>
           )}
-        </AnimatePresence>
 
         {/* Exit Fullscreen Button */}
         <AnimatePresence>
@@ -305,7 +354,7 @@ export default function App() {
         </AnimatePresence>
 
         {/* Main Content */}
-        <main className={`${(activeView === 'calendar' || activeView === 'todos') ? 'mx-auto px-2 h-screen' : 'max-w-5xl mx-auto px-6'} transition-all duration-500 ${isFullscreen
+        <main className={`${(activeView === 'calendar' || activeView === 'todos') ? 'mx-auto px-2 h-screen' : 'max-w-5xl mx-auto px-6'} ${isFullscreen
           ? 'min-h-screen flex flex-col justify-center py-6'
           : activeView === 'todos'
             ? 'py-0'
@@ -313,15 +362,8 @@ export default function App() {
               ? 'py-0'
               : 'py-6'
           }`}>
-          <AnimatePresence mode="wait">
             {activeView === 'trackers' ? (
-              <motion.div
-                key="trackers-view"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
+              <div key="trackers-view">
                 <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'flex flex-col gap-6'}>
                   <AnimatePresence>
                     {trackers.map((tracker) => (
@@ -364,15 +406,9 @@ export default function App() {
                     </div>
                   )}
                 </AnimatePresence>
-              </motion.div>
+              </div>
             ) : activeView === 'todos' ? (
-              <motion.div
-                key="todos-view"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
+              <div key="todos-view">
                 <TodoView
                   dayTodos={dayTodos}
                   onUpdateTodos={handleUpdateTodos}
@@ -388,22 +424,15 @@ export default function App() {
                   countdownMode={countdownMode}
                   onUpdateCountdownMode={setCountdownMode}
                 />
-              </motion.div>
+              </div>
             ) : (
-              <motion.div
-                key="calendar-view"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
+              <div key="calendar-view">
                 <CalendarView
                   dayTodos={dayTodos}
                   onUpdateTodos={handleUpdateTodos}
                 />
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </main>
       </div>
 
@@ -445,6 +474,44 @@ export default function App() {
           setIsAuthModalOpen(false);
         }}
       />
+
+      {/* Stopwatch Widget */}
+      <AnimatePresence>
+        {isStopwatchVisible && (
+          <StopwatchWidget
+            timerState={timerState}
+            elapsed={elapsed}
+            onStart={startTimer}
+            onPause={pauseTimer}
+            onStop={stopTimer}
+            onReset={resetTimer}
+            onClose={() => setIsStopwatchVisible(false)}
+            onMaximize={() => {
+              setIsStopwatchVisible(false);
+              setIsStopwatchFullscreen(true);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Stopwatch Fullscreen */}
+      <AnimatePresence>
+        {isStopwatchFullscreen && (
+          <StopwatchFullscreen
+            timerState={timerState}
+            elapsed={elapsed}
+            onStart={startTimer}
+            onPause={pauseTimer}
+            onStop={stopTimer}
+            onReset={resetTimer}
+            onMinimize={() => {
+              setIsStopwatchFullscreen(false);
+              setIsStopwatchVisible(true);
+            }}
+            onClose={() => setIsStopwatchFullscreen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Footer Decoration */}
       <AnimatePresence>

@@ -29,6 +29,7 @@ import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 const HOUR_HEIGHT = 60; // px per hour
+const GUTTER_WIDTH = 64; // px — width of the left time-label gutter (the day grid + current-time line start here)
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_OPTIONS = [1, 3, 5, 7];
 
@@ -104,24 +105,24 @@ const MiniCalendar: React.FC<{
 
   return (
     <div className="select-none">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => onMonthChange(subDays(monthStart, 1))}
           className="p-1 text-white/40 hover:text-white transition-colors"
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={16} />
         </button>
-        <span className="text-xs font-bold text-white/60">{format(currentMonth, 'MMMM yyyy')}</span>
+        <span className="text-sm font-bold text-white/60">{format(currentMonth, 'MMMM yyyy')}</span>
         <button
           onClick={() => onMonthChange(addDays(monthEnd, 1))}
           className="p-1 text-white/40 hover:text-white transition-colors"
         >
-          <ChevronRight size={14} />
+          <ChevronRight size={16} />
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-0.5 text-center">
+      <div className="grid grid-cols-7 gap-1 text-center">
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-          <div key={d} className="text-[9px] font-bold text-white/20 py-1">{d}</div>
+          <div key={d} className="text-[11px] font-bold text-white/40 py-1">{d}</div>
         ))}
         {days.map((day) => {
           const inMonth = isSameMonth(day, currentMonth);
@@ -131,10 +132,14 @@ const MiniCalendar: React.FC<{
             <button
               key={day.toISOString()}
               onClick={() => onDateClick(day)}
-              className={`text-[11px] w-6 h-6 rounded-md flex items-center justify-center transition-all mx-auto
-                ${!inMonth ? 'text-white/10' : 'text-white/50 hover:text-white hover:bg-white/10'}
-                ${today && !selected ? 'bg-red-500/80 text-white font-bold' : ''}
-                ${selected ? 'bg-[var(--accent2)] text-black font-bold' : ''}
+              className={`text-xs aspect-square w-full rounded-md flex items-center justify-center transition-all
+                ${today
+                  ? 'bg-[#d93d42] text-white font-bold' 
+                  : selected
+                    ? 'bg-white/20 text-white font-bold'
+                    : inMonth
+                      ? 'text-white/60 hover:text-white hover:bg-white/10'
+                      : 'text-white/20 hover:bg-white/5'}
               `}
             >
               {format(day, 'd')}
@@ -744,7 +749,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} max-w-[1400px] mx-auto select-none w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-44 flex-shrink-0 pr-4 pt-2 hidden lg:block">
+        <div className="w-56 flex-shrink-0 pr-4 pt-2 hidden lg:block">
           <MiniCalendar
             currentMonth={miniCalMonth}
             onMonthChange={setMiniCalMonth}
@@ -829,7 +834,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         {/* Column headers */}
         <div className="flex flex-shrink-0 border-b border-white/5">
           {/* Gutter for time labels */}
-          <div className="w-16 flex-shrink-0" />
+          <div className="flex-shrink-0" style={{ width: GUTTER_WIDTH }} />
           {visibleDays.map((day) => {
             const today = isToday(day);
             return (
@@ -860,7 +865,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         >
           <div className="flex relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
             {/* Time labels gutter */}
-            <div className="w-16 flex-shrink-0 relative">
+            <div className="flex-shrink-0 relative" style={{ width: GUTTER_WIDTH }}>
               {HOURS.map((h) => (
                 <div
                   key={h}
@@ -878,16 +883,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 className="absolute left-0 right-0 z-30 pointer-events-none"
                 style={{ top: `${minutesToPx(nowMinutes)}px` }}
               >
-                {/* Global Thin Line */}
-                <div className="absolute left-20 right-0 h-[1px] bg-[#D93D42] opacity-30" />
+                {/* Global Thin Line — starts at the gutter edge so it spans the full day grid */}
+                <div className="absolute right-0 h-[1px] bg-[#d93d42] opacity-30" style={{ left: GUTTER_WIDTH }} />
 
                 {/* Badge Container */}
-                <div className="absolute left-0 w-16 h-[1px]">
-                  <div className="absolute right-[2px] px-1.5 py-[3px] bg-[#D93D42] rounded text-[10px] font-mono font-bold text-white leading-none z-10 -translate-y-1/2 whitespace-nowrap">
+                <div className="absolute left-0 h-[1px]" style={{ width: GUTTER_WIDTH }}>
+                  <div className="absolute right-[2px] px-1.5 py-[3px] bg-[#d93d42] rounded text-[10px] font-mono font-bold text-white leading-none z-10 -translate-y-1/2 whitespace-nowrap">
                     {format(now, 'h:mm a').toUpperCase()}
                   </div>
                   {/* Connector linking badge to global line */}
-                  <div className="absolute right-0 w-[2px] h-[1px] bg-[#D93D42]" />
+                  <div className="absolute right-0 w-[2px] h-[1px] bg-[#d93d42]" />
                 </div>
               </div>
             )}
@@ -907,7 +912,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {/* Current day bright red line */}
                   {today && (
                     <div
-                      className="absolute left-0 right-0 z-20 pointer-events-none h-[1px] bg-[#D93D42] mt-px -translate-y-1/2"
+                      className="absolute left-0 right-0 z-20 pointer-events-none h-[1px] bg-[#d93d42] mt-px -translate-y-1/2"
                       style={{ top: `${minutesToPx(nowMinutes)}px` }}
                     />
                   )}
@@ -1125,7 +1130,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 {isEditing && (
                   <button
                     onClick={deleteEditedTask}
-                    className="flex-1 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-xs font-bold transition-colors"
+                    className="flex-1 px-3 py-2 bg-[#d93d42]/10 hover:bg-[#d93d42]/20 text-[#d93d42] rounded-xl text-xs font-bold transition-colors"
                     tabIndex={-1}
                   >
                     Delete
