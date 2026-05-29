@@ -522,9 +522,9 @@ export const TodoView: React.FC<TodoViewProps> = ({
 
 
   return (
-    <div className="mx-auto px-3 pt-2 flex gap-4 h-screen overflow-hidden">
+    <div className="mx-auto px-1 pt-2 flex gap-4 h-screen overflow-hidden">
       {/* Left side: Trackers List */}
-      <div className="w-[18%] flex-shrink-0 overflow-y-auto pr-1 pb-12 no-scrollbar">
+      <div className="w-[20%] flex-shrink-0 overflow-y-auto pr-1 pb-12 no-scrollbar">
         <div className="flex flex-col gap-3 pt-1">
           <AnimatePresence>
             {orderedTrackers.map((tracker) => (
@@ -540,7 +540,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
       </div>
 
       {/* Middle side: Todo List */}
-      <div className="flex-1 min-w-0 overflow-y-auto overflow-x-visible pl-5 pb-12 no-scrollbar">
+      <div className="flex-1 min-w-0 overflow-y-auto overflow-x-visible no-scrollbar">
         {/* Date Header */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-3">
@@ -575,14 +575,14 @@ export const TodoView: React.FC<TodoViewProps> = ({
                   onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
                   className="flex flex-col items-center gap-1.5 group"
                 >
-                  <span className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-white/20 group-hover:text-white/40'
+                  <span className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-white/30 group-hover:text-white/60'
                     }`}>
                     {format(day, 'EEE')}
                   </span>
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${isSelected
-                    ? 'bg-[var(--accent2)] text-black shadow-lg shadow-[var(--accent2)]/20 scale-110'
-                    : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
-                    } ${isToday && !isSelected ? 'ring-2 ring-[var(--accent2)]/20' : ''}`}>
+                    ? 'bg-(--accent2) text-black scale-110'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+                    } ${isToday && !isSelected ? 'ring-2 ring-[var(--accent2)]/40' : ''}`}>
                     {format(day, 'd')}
                   </div>
                 </button>

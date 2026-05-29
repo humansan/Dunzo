@@ -92,15 +92,15 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
 
       {/* Timer */}
       <div className="relative z-10 flex flex-col items-center px-6 pb-8">
-        <div className="text-white font-bold tabular-nums tracking-tight text-6xl leading-none py-2">
+        <div className="text-white font-bold font-mono tracking-tight text-6xl leading-none py-2">
           {formatTime(elapsed)}
         </div>
 
-        <div className="flex items-center justify-center gap-3 text-sm">
+        <div className="flex items-center justify-center gap-3 text-sm duration-0">
           {timerState === 'idle' && (
             <button
               onClick={onStart}
-              className="flex items-center justify-center gap-2 min-w-[100px] px-2 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold transition-colors active:scale-95"
+              className="flex items-center justify-center gap-2 min-w-25 px-2 py-2 rounded-full bg-white/20 text-white font-bold active:bg-white/10 active:scale-90 cursor-pointer"
             >
               <Play size={16} fill="currentColor" />
               <span>Start</span>
@@ -111,21 +111,21 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
             <>
               <button
                 onClick={onPause}
-                className="flex items-center justify-center gap-2 min-w-[100px] px-2 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white font-semibold transition-colors active:scale-95"
+                className="flex items-center justify-center gap-2 min-w-[100px] px-2 py-2 rounded-full bg-white/20 text-white font-semibold active:bg-white/10 active:scale-90 cursor-pointer"
               >
                 <Pause size={16} fill="currentColor" />
                 <span>Pause</span>
               </button>
               <button
                 onClick={onStop}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 text-white transition-colors active:scale-95"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Stop"
               >
                 <Square size={16} fill="currentColor" />
               </button>
               <button
                 onClick={onReset}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors active:scale-95"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Reset"
               >
                 <RotateCcw size={16} />
@@ -137,21 +137,21 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
             <>
               <button
                 onClick={onStart}
-                className="flex items-center justify-center gap-2 min-w-[115px] px-2 py-2 rounded-full bg-white/25 hover:bg-white/35 text-white font-semibold transition-colors active:scale-95"
+                className="flex items-center justify-center gap-2 min-w-[115px] px-2 py-2 rounded-full bg-white/20 text-white font-semibold active:bg-white/10 active:scale-90 cursor-pointer"
               >
                 <Play size={16} fill="currentColor" />
                 <span>Resume</span>
               </button>
               <button
                 onClick={onStop}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 text-white transition-colors active:scale-95"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Stop"
               >
                 <Square size={16} fill="currentColor" />
               </button>
               <button
                 onClick={onReset}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors active:scale-95"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Reset"
               >
                 <RotateCcw size={16} />

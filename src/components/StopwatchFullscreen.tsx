@@ -93,7 +93,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[100] overflow-hidden"
+      className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
       style={{ backgroundImage: 'linear-gradient(135deg, #FF4E50 0%, #F9D423 100%)' }}
     >
       {/* Background image + dimming */}
@@ -109,73 +109,78 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
         <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
       )}
 
-      {/* Top-left: image + settings controls */}
-      <div className="absolute top-5 left-5 z-10 flex items-start gap-2">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
-          title="Set background image"
-        >
-          <ImageIcon size={26} />
-        </button>
-        {bgImage && (
+      {/* Header row — sits in normal flow at the top so the timer below it reads as
+          vertically centered (mirrors Tick's layout) */}
+      <div className="relative z-10 flex items-center justify-between px-5 pt-5">
+        {/* Left: image + settings controls */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowSettings(s => !s)}
+            onClick={() => fileInputRef.current?.click()}
             className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
-            title="Background settings"
+            title="Set background image"
           >
-            <Sun size={24} />
+            <ImageIcon size={26} />
           </button>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImagePick}
-        />
+          {bgImage && (
+            <button
+              onClick={() => setShowSettings(s => !s)}
+              className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+              title="Background settings"
+            >
+              <Sun size={24} />
+            </button>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImagePick}
+          />
+        </div>
 
-        {showSettings && bgImage && (
-          <div className="ml-1 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/10 shadow-2xl">
-            <p className="text-white text-sm font-semibold mb-2">Background Dimness</p>
-            <Slider value={bgDimness} onChange={handleDimnessChange} />
-            <p className="text-white text-sm font-semibold mt-5 mb-2">Background Blur</p>
-            <Slider value={bgBlur} onChange={handleBlurChange} />
-          </div>
-        )}
+        {/* Right: minimize + close */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onMinimize}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            title="Minimize to widget"
+          >
+            <Minimize2 size={24} />
+          </button>
+          <button
+            onClick={onClose}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            title="Close"
+          >
+            <X size={24} />
+          </button>
+        </div>
       </div>
 
-      {/* Top-right: minimize + close */}
-      <div className="absolute top-5 right-5 z-10 flex items-center gap-2">
-        <button
-          onClick={onMinimize}
-          className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
-          title="Minimize to widget"
-        >
-          <Minimize2 size={24} />
-        </button>
-        <button
-          onClick={onClose}
-          className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
-          title="Close"
-        >
-          <X size={24} />
-        </button>
-      </div>
+      {/* Settings dropdown — floats below the header without affecting layout */}
+      {showSettings && bgImage && (
+        <div className="absolute top-20 left-5 z-20 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/10 shadow-2xl">
+          <p className="text-white text-sm font-semibold mb-2">Background Dimness</p>
+          <Slider value={bgDimness} onChange={handleDimnessChange} />
+          <p className="text-white text-sm font-semibold mt-5 mb-2">Background Blur</p>
+          <Slider value={bgBlur} onChange={handleBlurChange} />
+        </div>
+      )}
 
-      {/* Timer */}
-      <div className="relative z-[5] h-full flex flex-col items-center justify-center px-6">
-        <div className="text-white font-bold tabular-nums tracking-tight leading-none text-center text-[clamp(4rem,18vw,11rem)] font-['JetBrains_Mono']">
+      {/* Timer — flex-1 region below the header, centers the time + controls */}
+      <div className="relative z-[5] flex-1 flex flex-col items-center justify-center px-6">
+        <div className="text-white font-bold font-mono tracking-tight leading-none text-center text-[clamp(4rem,18vw,11rem)] font-[">
           {formatTime(elapsed)}
         </div>
 
-        <div className="mt-10 flex items-center justify-center gap-4">
+        <div className="mt-6 flex items-center justify-center gap-4 text-base duration-0">
           {timerState === 'idle' && (
             <button
               onClick={onStart}
-              className="flex items-center justify-center gap-2 min-w-[160px] px-8 py-4 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold text-lg transition-colors active:scale-95"
+              className="flex items-center justify-center gap-2 min-w-30 px-2 py-2.5 rounded-full bg-white/20 text-white font-bold active:bg-white/10 active:scale-90 cursor-pointer"
             >
-              <Play size={24} fill="currentColor" />
+              <Play size={20} fill="currentColor" />
               <span>Start</span>
             </button>
           )}
@@ -184,24 +189,24 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
             <>
               <button
                 onClick={onPause}
-                className="flex items-center justify-center gap-2 min-w-[140px] px-7 py-4 rounded-full bg-white/20 hover:bg-white/30 text-white font-semibold text-lg transition-colors active:scale-95"
+                className="flex items-center justify-center gap-2 min-w-30 px-2 py-2.5 rounded-full bg-white/20 text-white font-semibold active:bg-white/10 active:scale-90 cursor-pointer"
               >
-                <Pause size={22} fill="currentColor" />
+                <Pause size={20} fill="currentColor" />
                 <span>Pause</span>
               </button>
               <button
                 onClick={onStop}
-                className="w-14 h-14 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 text-white transition-colors active:scale-95"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white/15 text-white transition-colors active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Stop"
               >
-                <Square size={22} fill="currentColor" />
+                <Square size={20} fill="currentColor" />
               </button>
               <button
                 onClick={onReset}
-                className="w-14 h-14 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors active:scale-95"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white/15 text-white transition-colors active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Reset"
               >
-                <RotateCcw size={22} />
+                <RotateCcw size={20} />
               </button>
             </>
           )}
@@ -210,24 +215,24 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
             <>
               <button
                 onClick={onStart}
-                className="flex items-center justify-center gap-2 min-w-[140px] px-7 py-4 rounded-full bg-white/25 hover:bg-white/35 text-white font-semibold text-lg transition-colors active:scale-95"
+                className="flex items-center justify-center gap-2 min-w-35 px-2 py-2.5 rounded-full bg-white/20 text-white font-semibold active:bg-white/10 active:scale-90 cursor-pointer"
               >
-                <Play size={22} fill="currentColor" />
+                <Play size={20} fill="currentColor" />
                 <span>Resume</span>
               </button>
               <button
                 onClick={onStop}
-                className="w-14 h-14 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 text-white transition-colors active:scale-95"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Stop"
               >
-                <Square size={22} fill="currentColor" />
+                <Square size={20} fill="currentColor" />
               </button>
               <button
                 onClick={onReset}
-                className="w-14 h-14 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors active:scale-95"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
                 title="Reset"
               >
-                <RotateCcw size={22} />
+                <RotateCcw size={20} />
               </button>
             </>
           )}
