@@ -13,6 +13,7 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  CalendarDays,
   GripVertical,
   Trash2,
   CheckCircle2,
@@ -519,6 +520,19 @@ export const TodoView: React.FC<TodoViewProps> = ({
     setSelectedDate(format(next, 'yyyy-MM-dd'));
   };
 
+  const datePickerRef = useRef<HTMLInputElement>(null);
+
+  const openDatePicker = () => {
+    const input = datePickerRef.current;
+    if (!input) return;
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+    } else {
+      input.focus();
+      input.click();
+    }
+  };
+
 
 
   return (
@@ -543,24 +557,51 @@ export const TodoView: React.FC<TodoViewProps> = ({
       <div className="flex-1 min-w-0 overflow-y-auto overflow-x-visible no-scrollbar">
         {/* Date Header */}
         <div className="mb-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4 mt-1">
             <div>
               <h2 className="text-xl font-bold text-white">
                 {format(parseISO(selectedDate), 'MMMM yyyy')}
               </h2>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              <div className="relative">
+                <button
+                  onClick={openDatePicker}
+                  title="Jump to date"
+                  className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
+                >
+                  <CalendarDays size={16} />
+                </button>
+                <input
+                  ref={datePickerRef}
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    if (e.target.value) setSelectedDate(e.target.value);
+                  }}
+                  style={{ colorScheme: 'dark' }}
+                  className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+              </div>
+              <button
+                onClick={() => setSelectedDate(format(new Date(), 'yyyy-MM-dd'))}
+                className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all text-xs font-semibold"
+              >
+                Today
+              </button>
               <button
                 onClick={() => navigateWeek('prev')}
-                className="p-2 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-xl transition-all"
+                className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
               >
-                <ChevronLeft size={20} />
+                <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => navigateWeek('next')}
-                className="p-2 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-xl transition-all"
+                className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
               >
-                <ChevronRight size={20} />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>

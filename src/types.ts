@@ -23,11 +23,14 @@ export interface Theme {
 
 export interface Todo {
   id: string;
-  text: string;
+  text: string;       // Todo name
   completed: boolean;
   percentageGoal?: number; // e.g. 50
   startTime?: string; // HH:MM format for calendar start
   endTime?: string;   // HH:MM format for calendar end
+  tags?: string[];    // Category/project labels (e.g. ['work', 'errands'])
+  notes?: string;     // Freeform notes text
+  xp?: number;        // Points granted on completion (XP system TBD)
   createdAt: number;
   trackingStartedAt?: number; // Timestamp when tracking started
 }
