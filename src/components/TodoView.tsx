@@ -46,11 +46,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Todo, DayTodos, Tracker } from '../types';
-import { timeToPercentage, percentageToTime, formatTime12h } from '../utils/timeUtils';
+import { formatTime12h } from '../utils/timeUtils';
 
 import { TrackerCard } from './TrackerCard';
 import { CalendarView } from './CalendarView';
 import { TodoFullView } from './TodoFullView';
+import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
 
 interface TodoViewProps {
   dayTodos: DayTodos[];
@@ -76,7 +77,7 @@ interface SortableItemProps {
   onEdit: (todo: Todo) => void;
   isEditing: boolean;
   onCancelEdit: () => void;
-  onSaveEdit: (id: string, text: string, time: string, percent: string, newDate: string) => void;
+  onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
   onStartTracking: (id: string) => void;
   isActive: boolean;
@@ -92,7 +93,7 @@ interface TodoItemProps {
   onEdit: (todo: Todo) => void;
   isEditing: boolean;
   onCancelEdit: () => void;
-  onSaveEdit: (id: string, text: string, time: string, percent: string, newDate: string) => void;
+  onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
   onStartTracking: (id: string) => void;
   isActive: boolean;
@@ -125,20 +126,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
   now,
   countdownMode
 }) => {
-  const [editText, setEditText] = useState(todo.text);
-  const [editTime, setEditTime] = useState(todo.endTime || '');
-  const [editPercent, setEditPercent] = useState(todo.percentageGoal?.toString() || '');
-  const [editDate, setEditDate] = useState(date);
-
-  // Sync internal state when todo or date changes
-  React.useEffect(() => {
-    setEditText(todo.text);
-    setEditTime(todo.endTime || '');
-    setEditPercent(todo.percentageGoal?.toString() || '');
-    setEditDate(date);
-  }, [todo, date]);
-
-
   const countdownDisplay = useMemo(() => {
     if (countdownMode === 'off' || !todo.endTime) return null;
 
@@ -163,78 +150,20 @@ const TodoItem: React.FC<TodoItemProps> = ({
     }
   }, [todo.endTime, todo.startTime, date, now, countdownMode]);
 
-  const handleTimeChange = (val: string) => {
-    setEditTime(val);
-    const p = timeToPercentage(val);
-    if (p !== undefined) setEditPercent(p.toString());
-  };
-
-  const handlePercentChange = (val: string) => {
-    setEditPercent(val);
-    const num = parseFloat(val);
-    if (!isNaN(num)) {
-      const t = percentageToTime(num);
-      if (t) setEditTime(t);
-    }
-  };
-
   if (isEditing) {
     return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="p-4 bg-[#1A1A1A] border border-[var(--accent2)]/30 rounded-2xl shadow-xl space-y-3"
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') onSaveEdit(todo.id, editText, editTime, editPercent, editDate);
-          if (e.key === 'Escape') onCancelEdit();
-        }}
-      >
-        <input
-          autoFocus
-          type="text"
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white focus:outline-none focus:border-[var(--accent2)] transition-colors text-sm"
+      <div ref={setNodeRef} style={style}>
+        <QuickEditTodo
+          mode="edit"
+          initialText={todo.text}
+          initialNotes={todo.notes || ''}
+          initialDate={date}
+          initialTime={todo.endTime}
+          initialPercent={todo.percentageGoal}
+          onSubmit={(vals) => onSaveEdit(todo.id, vals)}
+          onCancel={onCancelEdit}
+          onOpenFull={() => onOpenFull(todo.id)}
         />
-        <div className="flex gap-3">
-          <input
-            type="date"
-            value={editDate}
-            onChange={(e) => setEditDate(e.target.value)}
-            style={{ colorScheme: 'dark' }}
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)]"
-          />
-          <input
-            type="time"
-            value={editTime}
-            onChange={(e) => handleTimeChange(e.target.value)}
-            style={{ colorScheme: 'dark' }}
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
-          />
-          <input
-            type="number"
-            step="any"
-            value={editPercent}
-            onChange={(e) => handlePercentChange(e.target.value)}
-            style={{ colorScheme: 'dark' }}
-            placeholder="%"
-            className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
-          />
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => onSaveEdit(todo.id, editText, editTime, editPercent, editDate)}
-            className="flex-1 bg-(--accent2) hover:opacity-90 text-black font-bold py-2 rounded-lg text-xs transition-all"
-          >
-            Save Changes
-          </button>
-          <button
-            onClick={onCancelEdit}
-            className="px-4 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg text-xs font-bold transition-all"
-          >
-            Cancel
-          </button>
-        </div>
       </div>
     );
   }
@@ -299,21 +228,21 @@ const TodoItem: React.FC<TodoItemProps> = ({
         {(todo.endTime || todo.percentageGoal !== undefined) && (
           <div
             onClick={() => onStartTracking(todo.id)}
-            className={`flex items-center gap-2 px-3 cursor-pointer py-1 rounded-lg transition ${todo.completed
+            className={`flex items-center justify-center gap-2 px-2.75 cursor-pointer py-[5.5px] rounded-lg transition ${todo.completed
               ? 'bg-white/5 shadow-none'
               : isActive
                 ? 'bg-[var(--accent1)] shadow-lg shadow-[var(--accent1)]/10'
-                : 'bg-white/5 shadow-none hover:bg-white/10'
+                : 'bg-[var(--accent1)]/7 shadow-none hover:bg-[var(--accent1)]/15'
               }`}>
             {todo.endTime && (
-              <div className={`flex items-center gap-1.5 text-sm font-mono font-medium transition-colors duration-500 ${todo.completed
+              <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${todo.completed
                 ? 'text-white/20'
                 : isActive
                   ? 'text-black'
                   : 'text-[var(--accent1)]'
                 }`}>
                 <Clock size={16} />
-                {formatTime12h(todo.endTime)}
+                <span className="relative top-px">{formatTime12h(todo.endTime)}</span>
               </div>
             )}
             {todo.endTime && todo.percentageGoal !== undefined && (
@@ -325,22 +254,22 @@ const TodoItem: React.FC<TodoItemProps> = ({
                 }`} />
             )}
             {todo.percentageGoal !== undefined && (
-              <div className={`text-sm font-mono font-medium transition-colors duration-500 ${todo.completed
+              <div className={`text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${todo.completed
                 ? 'text-white/20'
                 : isActive
                   ? 'text-black'
                   : 'text-[var(--accent1)]'
                 }`}>
-                {Number.isInteger(todo.percentageGoal) ? todo.percentageGoal : Math.round(todo.percentageGoal)}%
+                <span className="relative top-px">{Number.isInteger(todo.percentageGoal) ? todo.percentageGoal : Math.round(todo.percentageGoal)}%</span>
               </div>
             )}
           </div>
         )}
 
         {countdownDisplay && !todo.completed && (
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-colors duration-500 ${isActive ? 'bg-[#d93d42] text-white' : 'bg-white/5 text-[#D93D42]'}`}>
-            <div className="text-sm font-mono font-bold">
-              {countdownDisplay}
+          <div className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg transition-colors duration-500 ${isActive ? 'bg-[#d93d42] text-white' : 'bg-white/5 text-[#D93D42]'}`}>
+            <div className="text-[13px] leading-none font-mono font-medium">
+              <span className="relative top-px"> {countdownDisplay} </span>
             </div>
           </div>
         )}
@@ -412,9 +341,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [fullViewId, setFullViewId] = useState<string | null>(null);
-  const [newTodoText, setNewTodoText] = useState('');
-  const [newTodoTime, setNewTodoTime] = useState('');
-  const [newTodoPercent, setNewTodoPercent] = useState<string>('');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
 
@@ -422,21 +348,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleNewTimeChange = (val: string) => {
-    setNewTodoTime(val);
-    const p = timeToPercentage(val);
-    if (p !== undefined) setNewTodoPercent(p.toString());
-  };
-
-  const handleNewPercentChange = (val: string) => {
-    setNewTodoPercent(val);
-    const num = parseFloat(val);
-    if (!isNaN(num)) {
-      const t = percentageToTime(num);
-      if (t) setNewTodoTime(t);
-    }
-  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -475,23 +386,26 @@ export const TodoView: React.FC<TodoViewProps> = ({
     }
   };
 
-  const handleAddTodo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTodoText.trim()) return;
+  const handleAddTodo = (vals: QuickEditValues) => {
+    if (!vals.text.trim()) return;
 
     const newTodo: Todo = {
       id: Math.random().toString(36).substr(2, 9),
-      text: newTodoText,
+      text: vals.text,
       completed: false,
-      endTime: newTodoTime || undefined,
-      percentageGoal: newTodoPercent ? parseFloat(newTodoPercent) : undefined,
+      notes: vals.notes || undefined,
+      endTime: vals.endTime,
+      percentageGoal: vals.percentageGoal,
       createdAt: Date.now()
     };
 
-    onUpdateTodos(selectedDate, [...currentDayData.todos, newTodo]);
-    setNewTodoText('');
-    setNewTodoTime('');
-    setNewTodoPercent('');
+    const target = vals.date;
+    if (target === selectedDate) {
+      onUpdateTodos(selectedDate, [...currentDayData.todos, newTodo]);
+    } else {
+      const targetDayData = dayTodos.find(d => d.date === target) || { date: target, todos: [] };
+      onUpdateTodos(target, [...targetDayData.todos, newTodo]);
+    }
     setIsAdding(false);
   };
 
@@ -500,27 +414,21 @@ export const TodoView: React.FC<TodoViewProps> = ({
     onUpdateTodos(selectedDate, newTodos);
   };
 
-  const saveEdit = (id: string, text: string, time: string, percent: string, newDate: string) => {
+  const saveEdit = (id: string, vals: QuickEditValues) => {
     const todoToEdit = currentDayData.todos.find(t => t && t.id === id);
     if (!todoToEdit) return;
 
-    const updatedTodo = {
+    const updatedTodo: Todo = {
       ...todoToEdit,
-      text,
-      endTime: time || undefined,
-      percentageGoal: percent ? parseFloat(percent) : undefined
+      text: vals.text,
+      notes: vals.notes || undefined,
+      endTime: vals.endTime,
+      percentageGoal: vals.percentageGoal
     };
 
-    if (newDate !== selectedDate) {
-      // Remove from current date
-      const newCurrentTodos = currentDayData.todos.filter(t => t && t.id !== id);
-      onUpdateTodos(selectedDate, newCurrentTodos);
-
-      // Add to new date
-      const targetDayData = dayTodos.find(d => d.date === newDate) || { date: newDate, todos: [] };
-      onUpdateTodos(newDate, [...targetDayData.todos, updatedTodo]);
+    if (vals.date !== selectedDate) {
+      onMoveTodo(selectedDate, vals.date, updatedTodo);
     } else {
-      // Just update in current date
       const newTodos = currentDayData.todos.map(t => t && t.id === id ? updatedTodo : t);
       onUpdateTodos(selectedDate, newTodos);
     }
@@ -753,72 +661,12 @@ export const TodoView: React.FC<TodoViewProps> = ({
               <span className="text-md font-medium">Add a todo</span>
             </button>
           ) : (
-            <motion.form
-              initial={{ opacity: 1, y: 0 }}
-              animate={{ opacity: 1, y: 0 }}
+            <QuickEditTodo
+              mode="add"
+              initialDate={selectedDate}
               onSubmit={handleAddTodo}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleAddTodo(e as any);
-                }
-                if (e.key === 'Escape') setIsAdding(false);
-              }}
-              className="p-4 bg-[#1A1A1A] border border-(--accent2)/30 rounded-2xl shadow-xl space-y-3"
-            >
-              <input
-                autoFocus
-                type="text"
-                value={newTodoText}
-                onChange={(e) => setNewTodoText(e.target.value)}
-                placeholder="What needs to be done?"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white focus:outline-none focus:border-(--accent2) transition-colors text-sm
-"
-              />
-
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 pl-1">End Time</label>
-                  <input
-                    type="time"
-                    value={newTodoTime}
-                    onChange={(e) => handleNewTimeChange(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1 pl-1">Percentage</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="any"
-                    value={newTodoPercent}
-                    onChange={(e) => handleNewPercentChange(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
-                    placeholder="e.g. 50"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-(--accent2)"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 bg-(--accent2) hover:opacity-90 text-black font-bold h-8 rounded-lg text-xs transition-all"
-                >
-                  Add Objective
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAdding(false)}
-                  className="px-4 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg text-xs font-bold transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.form>
+              onCancel={() => setIsAdding(false)}
+            />
           )}
 
           {currentDayData.todos.length === 0 && !isAdding && (
