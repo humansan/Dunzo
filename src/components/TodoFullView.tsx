@@ -10,7 +10,8 @@ import {
   Clock,
   Percent,
   Tag as TagIcon,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import CheckCircleCutout from '../assets/CheckCircleCutout';
 import { Todo } from '../types';
@@ -129,6 +130,10 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     });
   };
 
+  const handleStartTimeChange = (val: string) => {
+    update({ startTime: val || undefined });
+  };
+
   const handleTimeChange = (val: string) => {
     const p = timeToPercentage(val);
     update({
@@ -163,7 +168,12 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     setTagInput('');
   };
 
-  const addTag = () => addTagValue(tagInput);
+  // Enter selects the top suggestion when there is one; a brand-new tag is only
+  // created when nothing matches what's typed.
+  const addTag = () => {
+    if (tagSuggestions.length > 0) addTagValue(tagSuggestions[0]);
+    else addTagValue(tagInput);
+  };
 
   const removeTag = (tag: string) => {
     update({ tags: (draft.tags || []).filter(t => t !== tag) });
@@ -287,36 +297,52 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 />
               </PropertyRow>
 
-              {/* Time + % Time share one clear button (the two are synced) */}
+              {/* Time + % Time share one clear button (the two are synced).
+                  Start → End on one row; the % aligns under the End box since it
+                  tracks the end time. */}
               <div className="group/time relative">
                 <PropertyRow icon={<Clock size={13} />} label="Time" noDivider pad="pt-3 pb-1">
-                  <input
-                    type="time"
-                    value={draft.endTime || ''}
-                    onChange={(e) => handleTimeChange(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
-                    className={`${inputClass} font-mono text-xs`}
-                  />
+                  <div className="grid grid-cols-[140px_24px_140px] items-center gap-2">
+                    <input
+                      type="time"
+                      value={draft.startTime || ''}
+                      onChange={(e) => handleStartTimeChange(e.target.value)}
+                      style={{ colorScheme: 'dark' }}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
+                    />
+                    <ArrowRight size={14} className="justify-self-center text-white/30" />
+                    <input
+                      type="time"
+                      value={draft.endTime || ''}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      style={{ colorScheme: 'dark' }}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
+                    />
+                  </div>
                 </PropertyRow>
 
                 <PropertyRow icon={<Percent size={13} />} pad="pt-1 pb-3">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="any"
-                    value={draft.percentageGoal ?? ''}
-                    onChange={(e) => handlePercentChange(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
-                    placeholder="e.g. 50"
-                    className={`${inputClass} font-mono text-xs`}
-                  />
+                  <div className="grid grid-cols-[140px_24px_140px] items-center gap-2">
+                    <div />
+                    <div />
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="any"
+                      value={draft.percentageGoal ?? ''}
+                      onChange={(e) => handlePercentChange(e.target.value)}
+                      style={{ colorScheme: 'dark' }}
+                      placeholder="e.g. 50"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
+                    />
+                  </div>
                 </PropertyRow>
 
-                {(draft.endTime || draft.percentageGoal !== undefined) && (
+                {(draft.startTime || draft.endTime || draft.percentageGoal !== undefined) && (
                   <button
                     type="button"
-                    onClick={() => update({ endTime: undefined, percentageGoal: undefined })}
+                    onClick={() => update({ startTime: undefined, endTime: undefined, percentageGoal: undefined })}
                     title="Clear"
                     className="absolute top-1/2 -translate-y-1/2 right-0 p-1 rounded-md text-white/20 hover:text-white/70 hover:bg-white/5 opacity-0 group-hover/time:opacity-100 transition-all"
                   >

@@ -21,6 +21,7 @@ import {
   Clock,
   CheckSquare,
   Maximize2,
+  CalendarPlus,
   Sparkles,
   X
 } from 'lucide-react';
@@ -47,7 +48,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Todo, DayTodos, Tracker } from '../types';
-import { formatTime12h } from '../utils/timeUtils';
+import { formatTime12h, timeToPercentage } from '../utils/timeUtils';
 
 import { TrackerCard } from './TrackerCard';
 import { CalendarView } from './CalendarView';
@@ -85,10 +86,12 @@ interface SortableItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
+  onAddToCalendar: (id: string) => void;
   onStartTracking: (id: string) => void;
   isActive: boolean;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
+  allTags: string[];
 }
 
 interface TodoItemProps {
@@ -102,6 +105,7 @@ interface TodoItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
+  onAddToCalendar?: (id: string) => void;
   onStartTracking: (id: string) => void;
   isActive: boolean;
   isDragging?: boolean;
@@ -111,6 +115,7 @@ interface TodoItemProps {
   setNodeRef?: (node: HTMLElement | null) => void;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
+  allTags?: string[];
 }
 
 const TodoItem: React.FC<TodoItemProps> = ({
@@ -124,6 +129,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   onSaveEdit,
   onCommitEdit,
   onOpenFull,
+  onAddToCalendar,
   onStartTracking,
   isActive,
   isDragging,
@@ -132,7 +138,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
   listeners,
   setNodeRef,
   now,
-  countdownMode
+  countdownMode,
+  allTags = []
 }) => {
   const countdownDisplay = useMemo(() => {
     if (countdownMode === 'off' || !todo.endTime) return null;
@@ -169,6 +176,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialTime={todo.endTime}
           initialPercent={todo.percentageGoal}
           initialXp={todo.xp}
+          initialTags={todo.tags}
+          allTags={allTags}
           onSubmit={(vals) => onSaveEdit(todo.id, vals)}
           onCancel={onCancelEdit}
           onOpenFull={() => onOpenFull(todo.id)}
@@ -228,8 +237,18 @@ const TodoItem: React.FC<TodoItemProps> = ({
           title="Open full view"
           className="opacity-0 group-hover:opacity-100 p-1 text-white/50 hover:text-white/80 hover:bg-white/5 rounded-md transition-all shrink-0"
         >
-          <Maximize2 size={13} />
+          <Maximize2 size={14} />
         </button>
+
+        {!todo.startTime && !todo.endTime && onAddToCalendar && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddToCalendar(todo.id); }}
+            title="Add to calendar"
+            className="opacity-0 group-hover:opacity-100 p-1 text-white/50 hover:text-white/80 hover:bg-white/5 rounded-md transition-all shrink-0"
+          >
+            <CalendarPlus size={14} />
+          </button>
+        )}
       </div>
 
       <div className="flex-1" />
@@ -437,6 +456,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
       endTime: vals.endTime,
       percentageGoal: vals.percentageGoal,
       xp: vals.xp,
+      tags: vals.tags,
       createdAt: Date.now()
     };
 
@@ -455,6 +475,21 @@ export const TodoView: React.FC<TodoViewProps> = ({
     onUpdateTodos(selectedDate, newTodos);
   };
 
+  // Drop an untimed todo onto the calendar as a 30-minute block starting at the
+  // current hour, so the user can then drag it to whatever time they want.
+  const addToCalendar = (id: string) => {
+    const todo = (currentDayData.todos || []).find(t => t && t.id === id);
+    if (!todo) return;
+    const fmt = (m: number) =>
+      `${Math.floor(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
+    const startMins = new Date().getHours() * 60;
+    const endMins = Math.min(startMins + 30, 23 * 60 + 59);
+    const startTime = fmt(startMins);
+    const endTime = fmt(endMins);
+    const updated: Todo = { ...todo, startTime, endTime, percentageGoal: timeToPercentage(endTime) };
+    onUpdateTodos(selectedDate, currentDayData.todos.map(t => t && t.id === id ? updated : t));
+  };
+
   // Persist edits without closing the panel (used by Save and the unmount flush).
   const persistEdit = (id: string, vals: QuickEditValues) => {
     const todoToEdit = currentDayData.todos.find(t => t && t.id === id);
@@ -466,7 +501,8 @@ export const TodoView: React.FC<TodoViewProps> = ({
       notes: vals.notes || undefined,
       endTime: vals.endTime,
       percentageGoal: vals.percentageGoal,
-      xp: vals.xp
+      xp: vals.xp,
+      tags: vals.tags
     };
 
     if (vals.date !== selectedDate) {
@@ -669,10 +705,12 @@ export const TodoView: React.FC<TodoViewProps> = ({
                     onSaveEdit={saveEdit}
                     onCommitEdit={persistEdit}
                     onOpenFull={(id) => setFullViewId(id)}
+                    onAddToCalendar={addToCalendar}
                     onStartTracking={onStartTracking}
                     isActive={activeTodoId === todo.id}
                     now={now}
                     countdownMode={countdownMode}
+                    allTags={allTags}
                   />
                 );
               })}
@@ -713,6 +751,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
             <QuickEditTodo
               mode="add"
               initialDate={selectedDate}
+              allTags={allTags}
               onSubmit={handleAddTodo}
               onCancel={() => setIsAdding(false)}
             />
