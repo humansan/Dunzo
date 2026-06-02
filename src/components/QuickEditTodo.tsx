@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Sparkles, Maximize2 } from 'lucide-react';
+import { Calendar, Clock, Sparkles, Maximize2, X } from 'lucide-react';
 import { formatTime12h, timeToPercentage, percentageToTime } from '../utils/timeUtils';
 
 export interface QuickEditValues {
@@ -26,7 +26,7 @@ interface QuickEditTodoProps {
   onFlush?: (vals: QuickEditValues) => void; // edit mode: persist on forced close
 }
 
-const GOLD = '#e0a23a';
+const GOLD = '#ffba44';
 
 export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   mode,
@@ -42,8 +42,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   onFlush
 }) => {
   const [text, setText] = useState(initialText || '');
-  // Notes aren't edited here (no description field) but are preserved on save.
-  const [notes] = useState(initialNotes || '');
+  const [notes, setNotes] = useState(initialNotes || '');
   const [date, setDate] = useState(initialDate);
   const [time, setTime] = useState(initialTime || '');
   const [percentStr, setPercentStr] = useState(initialPercent?.toString() ?? '');
@@ -75,6 +74,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   // Re-seed when the target changes (e.g. switching which todo is being edited)
   useEffect(() => {
     setText(initialText || '');
+    setNotes(initialNotes || '');
     setDate(initialDate);
     setTime(initialTime || '');
     setPercentStr(initialPercent?.toString() ?? '');
@@ -135,6 +135,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     if (mode === 'add') {
       // Keep the panel open for rapid entry (Todoist-style): reset & refocus.
       setText('');
+      setNotes('');
       setTime('');
       setPercentStr('');
       setXpStr('');
@@ -158,7 +159,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   // Chips mirror the list-view time/percent badge: icon + mono value on a
   // low-opacity tint of the accent color, no border.
   const chipBase =
-    'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg';
+    'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer';
   const chipText =
     'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
   const fieldBase =
@@ -185,6 +186,14 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         onChange={(e) => setText(e.target.value)}
         placeholder="Task name"
         className="w-full bg-transparent text-white text-base font-medium placeholder:text-white/30 focus:outline-none"
+      />
+
+      <input
+        type="text"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Add notes…"
+        className="w-full bg-transparent text-white/70 text-sm placeholder:text-white/25 focus:outline-none mt-2"
       />
 
       {/* Chips — display only. Clicking opens a dropdown editor below the chip. */}
@@ -246,27 +255,39 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
 
           {openEditor === 'time' && (
             <div className={popover}>
-              <div className="flex items-center h-9 bg-white/5 border border-white/10 rounded-lg focus-within:border-[var(--accent2)] overflow-hidden">
-                <input
-                  autoFocus
-                  type="time"
-                  value={time}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  style={{ colorScheme: 'dark' }}
-                  className="bg-transparent px-3 h-full text-white text-sm font-mono focus:outline-none w-[128px]"
-                />
-                <div className="w-px h-4 bg-white/15 shrink-0" />
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="any"
-                  value={percentStr}
-                  onChange={(e) => handlePercentChange(e.target.value)}
-                  style={{ colorScheme: 'dark' }}
-                  placeholder="%"
-                  className="bg-transparent px-3 h-full text-white text-sm font-mono focus:outline-none w-[78px]"
-                />
+              <div className="flex items-center gap-2">
+                <div className="flex items-center h-9 bg-white/5 border border-white/10 rounded-lg focus-within:border-[var(--accent2)] overflow-hidden">
+                  <input
+                    autoFocus
+                    type="time"
+                    value={time}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className="bg-transparent px-3 h-full text-white text-sm font-mono focus:outline-none w-[128px]"
+                  />
+                  <div className="w-px h-4 bg-white/15 shrink-0" />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    value={percentStr}
+                    onChange={(e) => handlePercentChange(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    placeholder="%"
+                    className="bg-transparent px-3 h-full text-white text-sm font-mono focus:outline-none w-[78px]"
+                  />
+                </div>
+                {time && (
+                  <button
+                    type="button"
+                    onClick={() => { setTime(''); setPercentStr(''); setOpenEditor(null); }}
+                    title="Clear"
+                    className="shrink-0 p-1.5 rounded-md text-white/40 hover:text-white/80 hover:bg-white/5"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -277,7 +298,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           <button
             type="button"
             onClick={() => setOpenEditor(o => o === 'xp' ? null : 'xp')}
-            className={`${chipBase} ${xpVal !== null ? 'bg-[#e0a23a]/10 hover:bg-[#e0a23a]/20' : 'bg-white/5 hover:bg-white/10'}`}
+            className={`${chipBase} ${xpVal !== null ? 'bg-[#ffba44]/10 hover:bg-[#ffba44]/20' : 'bg-white/5 hover:bg-white/10'}`}
           >
             <span className={chipText} style={{ color: xpVal !== null ? GOLD : undefined }}>
               <Sparkles size={16} className={xpVal !== null ? '' : 'text-white/55'} />
@@ -289,17 +310,29 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
 
           {openEditor === 'xp' && (
             <div className={popover}>
-              <input
-                autoFocus
-                type="number"
-                min="0"
-                step="1"
-                value={xpStr}
-                onChange={(e) => setXpStr(e.target.value)}
-                style={{ colorScheme: 'dark' }}
-                placeholder="XP"
-                className={`${fieldBase} w-[110px]`}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={xpStr}
+                  onChange={(e) => setXpStr(e.target.value)}
+                  style={{ colorScheme: 'dark' }}
+                  placeholder="XP"
+                  className={`${fieldBase} w-[110px]`}
+                />
+                {xpStr !== '' && (
+                  <button
+                    type="button"
+                    onClick={() => { setXpStr(''); setOpenEditor(null); }}
+                    title="Clear"
+                    className="shrink-0 p-1.5 rounded-md text-white/40 hover:text-white/80 hover:bg-white/5"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

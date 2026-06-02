@@ -21,6 +21,7 @@ import {
   Clock,
   CheckSquare,
   Maximize2,
+  Sparkles,
   X
 } from 'lucide-react';
 // import CircleCheckCutout from "../assets/circle-check-cutout.svg?react";
@@ -230,6 +231,16 @@ const TodoItem: React.FC<TodoItemProps> = ({
       <div className="flex-1" />
 
       <div className="flex items-center gap-2">
+        {todo.xp !== undefined && (
+          <div className={`flex items-center justify-center gap-1.5 px-2.75 py-[5.5px] rounded-lg text-[13px] leading-none font-mono font-medium ${todo.completed
+            ? 'bg-white/5 text-white/20'
+            : 'bg-[#ffba44]/10 text-[#ffba44]'
+            }`}>
+            <Sparkles size={16} />
+            <span className="relative top-px">{todo.xp} XP</span>
+          </div>
+        )}
+
         {(todo.endTime || todo.percentageGoal !== undefined) && (
           <div
             onClick={() => onStartTracking(todo.id)}

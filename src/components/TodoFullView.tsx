@@ -34,13 +34,25 @@ const PropertyRow: React.FC<{
   children: React.ReactNode;
   noDivider?: boolean;
   pad?: string; // override default vertical padding (e.g. to tighten grouped rows)
-}> = ({ icon, label, children, noDivider, pad = 'py-3' }) => (
-  <div className={`flex items-start gap-3 ${pad} ${noDivider ? '' : 'border-b border-white/5'}`}>
+  onClear?: () => void; // when set & canClear, shows a clear (×) button on hover
+  canClear?: boolean;
+}> = ({ icon, label, children, noDivider, pad = 'py-3', onClear, canClear }) => (
+  <div className={`group/row flex items-start gap-3 ${pad} ${noDivider ? '' : 'border-b border-white/5'}`}>
     <div className="flex items-center gap-2 w-28 shrink-0 pt-1.5 text-white/40 text-[10px] font-bold uppercase tracking-widest">
       {icon}
       {label}
     </div>
     <div className="flex-1 min-w-0">{children}</div>
+    {onClear && canClear && (
+      <button
+        type="button"
+        onClick={onClear}
+        title="Clear"
+        className="shrink-0 mt-1 p-1 rounded-md text-white/20 hover:text-white/70 hover:bg-white/5 opacity-0 group-hover/row:opacity-100 transition-all"
+      >
+        <X size={14} />
+      </button>
+    )}
   </div>
 );
 
@@ -54,6 +66,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onDelete
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
   // Local draft — synced only when switching to a different todo
@@ -62,10 +75,10 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const [tagInput, setTagInput] = useState('');
   const [tagFocused, setTagFocused] = useState(false);
 
-  // Auto-size the notes textarea: a roomy default height, growing with content
-  // and capping at ~7 lines before it becomes scrollable.
-  const NOTES_MIN_HEIGHT = 104; // px, default ~4-5 lines so the panel feels open
-  const NOTES_MAX_HEIGHT = 176; // px, roughly 7 lines at this font/line-height
+  // Auto-size the notes textarea: a compact default (~2 lines), growing with
+  // content and capping at ~7 lines before it becomes scrollable.
+  const NOTES_MIN_HEIGHT = 48;  // px, ~2 lines at this font/line-height
+  const NOTES_MAX_HEIGHT = 176; // px, roughly 7 lines
   const resizeNotes = () => {
     const el = notesRef.current;
     if (!el) return;
@@ -75,8 +88,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     el.style.overflowY = el.scrollHeight > NOTES_MAX_HEIGHT ? 'auto' : 'hidden';
   };
 
-  // Re-measure when the notes value changes or a different todo opens.
+  // Auto-size the title textarea: grows to fit as many lines as needed (no cap).
+  const resizeTitle = () => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  // Re-measure when content changes or a different todo opens.
   useLayoutEffect(resizeNotes, [draft.notes, todo.id]);
+  useLayoutEffect(resizeTitle, [draft.text, todo.id]);
 
   useEffect(() => {
     setDraft(todo);
@@ -212,7 +234,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 <motion.div
                   animate={draft.completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
                   transition={{ duration: 0.3 }}
-                  className={`transition-colors duration-100 ${draft.completed ? 'text-[var(--accent1)]' : 'text-white/50 hover:text-white'}`}
+                  className={`transition-colors duration-200 ${draft.completed ? 'text-[var(--accent1)]' : 'text-white/50 hover:text-white'}`}
                 >
                   {draft.completed
                     ? <CheckCircleCutout size={22} strokeWidth={2.5} />
@@ -220,16 +242,18 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 </motion.div>
               </button>
               <textarea
+                ref={titleRef}
                 value={draft.text}
                 onChange={(e) => update({ text: e.target.value })}
+                onInput={resizeTitle}
                 rows={1}
                 placeholder="Task name"
-                className={`flex-1 bg-transparent resize-none text-xl font-bold focus:outline-none leading-snug pt-0.5 transition duration-200 ease-out placeholder:text-white/20 ${draft.completed ? 'text-white/25 line-through translate-x-[3px]' : 'text-white'}`}
+                className={`flex-1 bg-transparent resize-none overflow-hidden text-xl font-bold focus:outline-none leading-snug pt-0.5 transition-all duration-200 ease-out placeholder:text-white/20 ${draft.completed ? 'text-white/25 line-through translate-x-[4px]' : 'text-white'}`}
               />
             </div>
 
             {/* Notes / description — auto-grows up to ~6 lines, then scrolls */}
-            <div className="flex items-start gap-3 mt-5 pl-[34px]">
+            <div className="group/notes flex items-start gap-2 mt-3 pl-[34px]">
               <textarea
                 ref={notesRef}
                 value={draft.notes || ''}
@@ -239,6 +263,16 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 placeholder="Add notes…"
                 className="flex-1 bg-transparent resize-none text-sm text-white/80 placeholder:text-white/25 focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/25"
               />
+              {draft.notes && (
+                <button
+                  type="button"
+                  onClick={() => update({ notes: '' })}
+                  title="Clear notes"
+                  className="shrink-0 mt-0.5 p-1 rounded-md text-white/20 hover:text-white/70 hover:bg-white/5 opacity-0 group-hover/notes:opacity-100 transition-all"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
             {/* ── Properties ──────────────────────────── */}
@@ -253,31 +287,50 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 />
               </PropertyRow>
 
-              <PropertyRow icon={<Clock size={13} />} label="Time" noDivider pad="pt-3 pb-1">
-                <input
-                  type="time"
-                  value={draft.endTime || ''}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  style={{ colorScheme: 'dark' }}
-                  className={`${inputClass} font-mono text-xs`}
-                />
-              </PropertyRow>
+              {/* Time + % Time share one clear button (the two are synced) */}
+              <div className="group/time relative">
+                <PropertyRow icon={<Clock size={13} />} label="Time" noDivider pad="pt-3 pb-1">
+                  <input
+                    type="time"
+                    value={draft.endTime || ''}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    className={`${inputClass} font-mono text-xs`}
+                  />
+                </PropertyRow>
 
-              <PropertyRow icon={<Percent size={13} />} pad="pt-1 pb-3">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="any"
-                  value={draft.percentageGoal ?? ''}
-                  onChange={(e) => handlePercentChange(e.target.value)}
-                  style={{ colorScheme: 'dark' }}
-                  placeholder="e.g. 50"
-                  className={`${inputClass} font-mono text-xs`}
-                />
-              </PropertyRow>
+                <PropertyRow icon={<Percent size={13} />} pad="pt-1 pb-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="any"
+                    value={draft.percentageGoal ?? ''}
+                    onChange={(e) => handlePercentChange(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                    placeholder="e.g. 50"
+                    className={`${inputClass} font-mono text-xs`}
+                  />
+                </PropertyRow>
 
-              <PropertyRow icon={<TagIcon size={13} />} label="Tags">
+                {(draft.endTime || draft.percentageGoal !== undefined) && (
+                  <button
+                    type="button"
+                    onClick={() => update({ endTime: undefined, percentageGoal: undefined })}
+                    title="Clear"
+                    className="absolute top-1/2 -translate-y-1/2 right-0 p-1 rounded-md text-white/20 hover:text-white/70 hover:bg-white/5 opacity-0 group-hover/time:opacity-100 transition-all"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <PropertyRow
+                icon={<TagIcon size={13} />}
+                label="Tags"
+                onClear={() => { update({ tags: undefined }); setTagInput(''); }}
+                canClear={(draft.tags?.length ?? 0) > 0}
+              >
                 <div className="flex flex-wrap items-center gap-2">
                   {(draft.tags || []).map(tag => (
                     <span
@@ -336,7 +389,13 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 </div>
               </PropertyRow>
 
-              <PropertyRow icon={<Sparkles size={13} />} label="XP" noDivider>
+              <PropertyRow
+                icon={<Sparkles size={13} />}
+                label="XP"
+                noDivider
+                onClear={() => update({ xp: undefined })}
+                canClear={draft.xp !== undefined}
+              >
                 <input
                   type="number"
                   min="0"

@@ -109,7 +109,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
             </span>
           </>
         ) : (
-          <span className="text-xl font-bold tracking-tight" style={{ color: tracker.color }}>
+          <span className="text-[21px] font-bold tracking-tight" style={{ color: tracker.color }}>
             {mode === 'time_remaining' ? data.timeLeft : data.timeElapsed}
           </span>
         )}
