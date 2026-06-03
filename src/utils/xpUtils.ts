@@ -73,7 +73,7 @@ export function computeXpStats(
   let bestAllTime = 0;
   let totalAllTime = 0;
   for (const day of dayTodos) {
-    if (!hasDate(day.date)) continue; // skip the undated Todos Hub bucket
+    if (!hasDate(day.date)) continue; // skip the undated Task Planner bucket
     const dayEarned = getEarnedXp(dayTodos, day.date);
     totalAllTime += dayEarned;
     if (day.date !== date) bestAllTime = Math.max(bestAllTime, dayEarned);

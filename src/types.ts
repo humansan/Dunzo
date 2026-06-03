@@ -33,19 +33,25 @@ export interface Todo {
   xp?: number;        // Points granted on completion (XP system TBD)
   createdAt: number;
   trackingStartedAt?: number; // Timestamp when tracking started
-  showInDatabase?: boolean;   // When true, the todo appears in the Todos Hub
+  showInDatabase?: boolean;   // When true, the todo appears in the Task Planner
                               // (organizer). See src/utils/todoFilters.ts for
                               // how this interacts with the daily checklist.
-  archived?: boolean;         // When true, hidden from the Todos Hub (shown in a
+  archived?: boolean;         // When true, hidden from the Task Planner (shown in a
                               // future archived view). Distinct from a daily-only
                               // todo (showInDatabase false) — an archived todo is
                               // still a database todo, just put away.
-  hubOrder?: number;          // Manual ordering within the Todos Hub. The hub
+  hubOrder?: number;          // Manual ordering within the Task Planner. The hub
                               // spans many dates, so it needs its own order
                               // independent of per-day position.
-  parentId?: string | null;   // Todos Hub nesting: id of the parent todo, or
+  parentId?: string | null;   // Task Planner nesting: id of the parent todo, or
                               // null/undefined for a top-level todo. Subtasks can
                               // nest to any depth.
+  isCollection?: boolean;     // When true, this node is a Task Planner "collection"
+                              // — a top-level section that groups child tasks. It
+                              // renders as a colored pill header and ignores the
+                              // task fields (date/time/percent/xp/tags/notes).
+  color?: string;             // Collection pill color (hex). Only meaningful when
+                              // isCollection is true.
 }
 
 export interface DayTodos {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   DndContext,
@@ -32,6 +32,8 @@ import {
   ChevronRight,
   ChevronDown,
   CornerDownRight,
+  FolderPlus,
+  Palette,
 } from 'lucide-react';
 import { DayTodos, Todo } from '../types';
 import { getOrganizerTodos, OrganizerEntry, hasDate } from '../utils/todoFilters';
@@ -84,7 +86,24 @@ const COLUMNS: ColDef[] = [
 
 const MIN_COL_WIDTH = 80;
 const INDENT = 22; // px per nesting level (must match getProjection)
-const NAME_BASE_PAD = 6; // px of breathing room before the top-level controls
+const NAME_BASE_PAD = 6; // px of breathing room between the left edge and the top-level controls
+const SPACER_WIDTH = 120; // trailing dead-space track so the last column's resize handle is reachable
+const BOTTOM_SPACER = 260; // px of dead space below the last row so the context menu has room to open
+const LAST_COL_KEY = COLUMNS[COLUMNS.length - 1].key; // gets a right divider to mark where the spacer begins
+
+// Collection pill palette — 8 picks that read well as tinted-bg + colored-text on
+// the dark table. The first is the default applied when a task becomes a collection.
+const COLLECTION_COLORS = [
+  '#9ca3af', // gray
+  '#f87171', // red
+  '#fb923c', // orange
+  '#fbbf24', // amber
+  '#4ade80', // green
+  '#2dd4bf', // teal
+  '#60a5fa', // blue
+  '#c084fc', // purple
+];
+const DEFAULT_COLLECTION_COLOR = COLLECTION_COLORS[0];
 
 const WIDTHS_KEY = 'dun-hub-col-widths';
 const COLLAPSED_KEY = 'dun-hub-collapsed';
@@ -102,7 +121,7 @@ interface FlatNode {
 
 // Borderless input styling so the shared editors fill a spreadsheet cell.
 const cellEditCls =
-  'w-full h-full bg-[#1e1e1e] px-2.5 text-xs font-mono text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60';
+  'w-full h-full bg-[#1e1e1e] px-2.5 text-sm font-mono text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60';
 
 // ── Tree helpers ─────────────────────────────────────────────────────────────
 
@@ -151,6 +170,8 @@ function getProjection(
   if (overItemIndex === -1 || activeItemIndex === -1) return null;
 
   const activeItem = items[activeItemIndex];
+  // Collections are always top-level — never let one get nested under another node.
+  if (activeItem.entry.todo.isCollection) return { depth: 0, parentId: null };
   const newItems = arrayMove(items, activeItemIndex, overItemIndex);
   const previousItem = newItems[overItemIndex - 1];
   const nextItem = newItems[overItemIndex + 1];
@@ -247,7 +268,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     localStorage.setItem(WIDTHS_KEY, JSON.stringify(widths));
   }, [widths]);
 
-  const gridTemplateColumns = COLUMNS.map((c) => `${widths[c.key]}px`).join(' ');
+  // Trailing spacer track gives the last column breathing room and a draggable resize handle.
+  const gridTemplateColumns = `${COLUMNS.map((c) => `${widths[c.key]}px`).join(' ')} ${SPACER_WIDTH}px`;
 
   const startResize = (key: ColKey, e: React.MouseEvent) => {
     e.preventDefault();
@@ -273,14 +295,57 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   };
   const stopEdit = () => setEditing(null);
 
+  // Close the tags/notes popover when clicking outside it. A non-blocking listener
+  // (vs. a full-screen overlay) lets the click also land on another cell, so a single
+  // click both closes this editor and opens the next one.
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const popoverOpen = !!editing && (editing.col === 'tags' || editing.col === 'notes');
+  useEffect(() => {
+    if (!popoverOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (popoverRef.current?.contains(target)) return;
+      if (target.closest('[data-tag-suggestions]')) return; // tag autocomplete renders in its own portal
+      setEditing(null);
+    };
+    window.addEventListener('mousedown', onDown);
+    return () => window.removeEventListener('mousedown', onDown);
+  }, [popoverOpen]);
+
   // ── Row context menu & full-view ───────────────────────────────────────────
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false); // "Change color" sub-panel
   const [fullViewId, setFullViewId] = useState<string | null>(null);
-  const openMenu = (id: string, x: number, y: number) => setMenu({ id, x, y });
+  const openMenu = (id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); };
+  const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
+
+  // The todo the context menu currently targets (to branch task vs. collection items).
+  const menuEntry = menu ? entries.find((e) => e.todo.id === menu.id) || null : null;
+
+  // Convert a plain task into a top-level collection: flag it, give it a default
+  // color, strip the task-only fields, and move it to the UNDATED bucket so it
+  // can never leak onto the daily checklist.
+  const makeCollection = (entry: OrganizerEntry) => {
+    onSaveTodo(entry.date, null, {
+      ...entry.todo,
+      isCollection: true,
+      color: entry.todo.color || DEFAULT_COLLECTION_COLOR,
+      parentId: null,
+      completed: false,
+      percentageGoal: undefined,
+      startTime: undefined,
+      endTime: undefined,
+      xp: undefined,
+      tags: undefined,
+      notes: undefined,
+    });
+  };
+  const setCollectionColor = (entry: OrganizerEntry, color: string) =>
+    onSaveTodo(entry.date, entry.date, { ...entry.todo, color });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setEditing(null); setMenu(null); }
+      if (e.key === 'Escape') { setEditing(null); setMenu(null); setColorPickerOpen(false); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -354,14 +419,14 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   };
 
   const headerCellCls =
-    'relative flex items-center px-2.5 text-[10px] font-bold uppercase tracking-widest text-white/40 select-none';
+    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 select-none';
 
   return (
     <div className="h-full flex flex-col">
       {/* Page header — tight, Notion-like */}
-      <div className="shrink-0 flex items-baseline gap-3 px-3 pt-3 pb-2">
-        <h1 className="text-base font-bold tracking-tight">Todos Hub</h1>
-        <span className="text-xs text-white/30">{entries.length} item{entries.length === 1 ? '' : 's'}</span>
+      <div className="shrink-0 flex items-baseline gap-3 px-7.5 pt-4 pb-3">
+        <h1 className="text-lg font-bold">Task Planner</h1>
+        <span className="text-xs text-white/50">{entries.length} item{entries.length === 1 ? '' : 's'}</span>
       </div>
 
       {/* Single scroll container — both axes (spreadsheet style) */}
@@ -373,7 +438,14 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
             style={{ gridTemplateColumns }}
           >
             {COLUMNS.map((c, idx) => (
-              <div key={c.key} className={`${headerCellCls} ${idx > 0 ? 'border-l border-white/5' : ''}`}>
+              <div
+                key={c.key}
+                // The Name header gets the row's left padding so its label lines up with the row content.
+                style={idx === 0 ? { paddingLeft: 30 } : undefined}
+                className={`${headerCellCls} ${idx > 0 ? 'border-l border-white/8' : ''} ${
+                  idx === 0 ? 'sticky left-0 z-10 bg-[#141414]' : ''
+                } ${idx === COLUMNS.length - 1 ? 'border-r border-white/8' : ''}`}
+              >
                 <span className="truncate">{c.label}</span>
                 {/* Resize handle on the right edge */}
                 <div
@@ -418,25 +490,29 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           <button
             type="button"
             onClick={onAddTodo}
-            className="flex items-center gap-2 w-full h-9 px-3 text-xs text-white/40 hover:text-white hover:bg-white/[0.03] border-b border-white/5 transition-colors"
+            className="flex items-center gap-2 w-full h-9 px-3 text-sm text-white/60 hover:text-white hover:bg-white/[0.03] border-b border-white/8 cursor-pointer transition-colors"
           >
             <Plus size={14} />
             <span>New</span>
           </button>
 
           {entries.length === 0 && (
-            <div className="px-3 py-6 text-xs text-white/30">
+            <div className="px-3 py-6 text-xs text-white/50">
               No database todos yet. Click “New”, or set <code>showInDatabase: true</code> on a todo.
             </div>
           )}
+
+          {/* Bottom dead space so the last row isn't flush to the edge and the
+              right-click context menu has room to open fully below it. */}
+          <div aria-hidden style={{ height: BOTTOM_SPACER }} />
         </div>
       </div>
 
       {/* Tags / Notes popover editor (portal, escapes the scroll container) */}
       {editing && editingEntry && editing.rect && createPortal(
         <>
-          <div className="fixed inset-0 z-[55]" onMouseDown={stopEdit} />
           <div
+            ref={popoverRef}
             style={{
               position: 'fixed',
               left: editing.rect.left,
@@ -482,37 +558,84 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
         <>
           <div
             className="fixed inset-0 z-[65]"
-            onMouseDown={() => setMenu(null)}
-            onContextMenu={(e) => { e.preventDefault(); setMenu(null); }}
+            onMouseDown={closeMenu}
+            onContextMenu={(e) => { e.preventDefault(); closeMenu(); }}
           />
           <div
             style={{ position: 'fixed', left: menu.x, top: menu.y }}
             className="z-[66] min-w-[170px] rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-1 text-sm"
           >
+            {menuEntry?.todo.isCollection ? (
+              <>
+                <button
+                  onClick={() => {
+                    onAddSubtask(menu.id);
+                    setCollapsed((prev) => { const n = new Set(prev); n.delete(menu.id); return n; });
+                    closeMenu();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <CornerDownRight size={14} /> Create subtask
+                </button>
+                <button
+                  onClick={() => setColorPickerOpen((v) => !v)}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <Palette size={14} /> Change color
+                </button>
+                {colorPickerOpen && (
+                  <div className="grid grid-cols-4 gap-1.5 px-2.5 py-2">
+                    {COLLECTION_COLORS.map((color) => {
+                      const selected = (menuEntry.todo.color || DEFAULT_COLLECTION_COLOR) === color;
+                      return (
+                        <button
+                          key={color}
+                          title={color}
+                          onClick={() => { setCollectionColor(menuEntry, color); closeMenu(); }}
+                          className={`h-6 w-6 rounded-full transition-transform hover:scale-110 ${
+                            selected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1f1f1f]' : 'ring-1 ring-white/15'
+                          }`}
+                          style={{ backgroundColor: color }}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => { setFullViewId(menu.id); closeMenu(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <Maximize2 size={14} /> Expand
+                </button>
+                <button
+                  onClick={() => {
+                    onAddSubtask(menu.id);
+                    setCollapsed((prev) => { const n = new Set(prev); n.delete(menu.id); return n; });
+                    closeMenu();
+                  }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <CornerDownRight size={14} /> Create subtask
+                </button>
+                <button
+                  onClick={() => { if (menuEntry) makeCollection(menuEntry); closeMenu(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <FolderPlus size={14} /> Create collection
+                </button>
+              </>
+            )}
             <button
-              onClick={() => { setFullViewId(menu.id); setMenu(null); }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              <Maximize2 size={14} /> Expand
-            </button>
-            <button
-              onClick={() => {
-                onAddSubtask(menu.id);
-                setCollapsed((prev) => { const n = new Set(prev); n.delete(menu.id); return n; });
-                setMenu(null);
-              }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              <CornerDownRight size={14} /> Create subtask
-            </button>
-            <button
-              onClick={() => { onArchiveTodo(menu.id); setMenu(null); }}
+              onClick={() => { onArchiveTodo(menu.id); closeMenu(); }}
               className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
             >
               <Archive size={14} /> Archive
             </button>
             <button
-              onClick={() => { onDeleteTodo(menu.id); setMenu(null); }}
+              onClick={() => { onDeleteTodo(menu.id); closeMenu(); }}
               className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-red-400 hover:bg-[#d93d42]/10 hover:text-red-300 transition-colors"
             >
               <Trash2 size={14} /> Delete
@@ -586,38 +709,126 @@ const HubRow: React.FC<HubRowProps> = ({
   const DisplayCell: React.FC<{ col: ColKey; children: React.ReactNode }> = ({ col, children }) => (
     <div
       onClick={(e) => startEdit(todo.id, col, e)}
-      className="flex items-center h-full px-2.5 border-l border-white/5 overflow-hidden cursor-pointer hover:bg-white/[0.03]"
+      className={`flex items-center h-full px-2.5 border-l border-white/8 overflow-hidden cursor-pointer hover:bg-white/[0.03] ${
+        col === LAST_COL_KEY ? 'border-r border-white/8' : ''
+      }`}
     >
       {children}
     </div>
   );
 
-  const editCellWrap = 'flex items-stretch h-full border-l border-white/5';
-  const muted = <span className="text-white/20 text-xs">—</span>;
+  const editCellWrap = 'flex items-stretch h-full border-l border-white/8';
+  // Empty fields render nothing — a placeholder dash just adds clutter.
+  const muted = null;
+
+  // ── Collection row ──────────────────────────────────────────────────────────
+  // A section header, not a task: full-width (no column cells / dividers), taller,
+  // no checkbox, with the name as a bottom-anchored colored pill.
+  if (todo.isCollection) {
+    const color = todo.color || DEFAULT_COLLECTION_COLOR;
+    return (
+      <div
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+        onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
+        className={`flex items-end w-full min-h-[58px] border-b border-white/8 group/row ${
+          isDragging ? 'relative z-10 bg-[#262626] ring-1 ring-[var(--accent2)]/50 rounded-sm' : 'hover:bg-white/[0.015]'
+        }`}
+      >
+        {/* Header group, pinned to the left so it stays visible while scrolling. */}
+        <div
+          style={{ paddingLeft: NAME_BASE_PAD }}
+          className="sticky left-0 flex items-end gap-1 pb-2 pr-4 min-w-0 max-w-full"
+        >
+          {hasChildren ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
+              className="shrink-0 mb-1 p-0.5 flex items-center justify-center rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              title={isCollapsed ? 'Expand collection' : 'Collapse collection'}
+            >
+              {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+            </button>
+          ) : (
+            <span className="shrink-0 w-[20px]" />
+          )}
+
+          <button
+            {...attributes}
+            {...listeners}
+            className="shrink-0 mb-1.5 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity"
+            title="Drag to reorder"
+          >
+            <GripVertical size={14} className="mr-1" />
+          </button>
+
+          {isEditing('title') ? (
+            <input
+              type="text"
+              autoFocus
+              defaultValue={todo.text}
+              onChange={(e) => saveField({ text: e.target.value })}
+              onBlur={stopEdit}
+              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+              placeholder="Collection name"
+              style={{ backgroundColor: `${color}26`, color }}
+              className="min-w-0 max-w-full rounded-full px-2.5 py-1 text-sm font-medium focus:outline-none placeholder:text-white/40"
+            />
+          ) : (
+            <span
+              onClick={(e) => startEdit(todo.id, 'title', e)}
+              style={{ backgroundColor: `${color}26`, color }}
+              className="min-w-0 max-w-full truncate rounded-full px-2.5 py-1 text-sm medium cursor-text"
+            >
+              {todo.text || 'Untitled collection'}
+            </span>
+          )}
+
+          <button
+            type="button"
+            title="Options"
+            onClick={(e) => {
+              e.stopPropagation();
+              const r = e.currentTarget.getBoundingClientRect();
+              openMenu(todo.id, r.left, r.bottom + 4);
+            }}
+            className="shrink-0 mb-1.5 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+          >
+            <MoreHorizontal size={15} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-      className={`grid items-stretch min-h-[34px] border-b border-white/5 group/row ${
+      className={`grid items-stretch min-h-[36px] border-b border-white/8 group/row ${
         isDragging ? 'relative z-10 bg-[#262626] ring-1 ring-[var(--accent2)]/50 rounded-sm' : 'hover:bg-white/[0.015]'
       }`}
     >
-      {/* Name group: indent + collapse + handle + checkbox + name */}
-      <div className="flex items-center h-full overflow-hidden">
+      {/* Name group: indent + collapse + handle + checkbox + name.
+          Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
+      <div
+        className={`sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 ${
+          isDragging ? 'bg-[#262626]' : 'bg-[#0a0a0a] group-hover/row:bg-[#0e0e0e]'
+        }`}
+      >
         <div style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }} className="flex items-center h-full min-w-0 flex-1">
           {hasChildren ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
-              className="shrink-0 w-[22px] h-[22px] flex items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+              className="shrink-0 p-0.5 flex items-center justify-center rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
               title={isCollapsed ? 'Expand subtasks' : 'Collapse subtasks'}
             >
-              {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+              {isCollapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
             </button>
           ) : (
-            <span className="shrink-0 w-[22px]" />
+            <span className="shrink-0 w-[19px]" />
           )}
 
           <button
@@ -640,15 +851,15 @@ const HubRow: React.FC<HubRowProps> = ({
               onBlur={stopEdit}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               placeholder="Untitled"
-              className="flex-1 min-w-0 ml-1 h-full bg-[#1e1e1e] px-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
+              className="flex-1 min-w-0 ml-1 h-full bg-[#1e1e1e] px-1.5 text-[15px] text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
             />
           ) : (
             <>
               <span
                 onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 truncate ml-1 text-sm cursor-text ${todo.completed ? 'text-white/30 line-through' : 'text-white/90'}`}
+                className={`flex-1 truncate ml-1 text-[15px] cursor-text ${todo.completed ? 'text-white/45 line-through' : 'text-white'}`}
               >
-                {todo.text || <span className="text-white/25">Untitled</span>}
+                {todo.text || <span className="text-white/40">Untitled</span>}
               </span>
               <button
                 type="button"
@@ -658,7 +869,7 @@ const HubRow: React.FC<HubRowProps> = ({
                   const r = e.currentTarget.getBoundingClientRect();
                   openMenu(todo.id, r.left, r.bottom + 4);
                 }}
-                className="shrink-0 mr-1 p-0.5 rounded text-white/30 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+                className="shrink-0 mr-1 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
               >
                 <MoreHorizontal size={15} />
               </button>
@@ -674,7 +885,7 @@ const HubRow: React.FC<HubRowProps> = ({
         </div>
       ) : (
         <DisplayCell col="date">
-          <span className="truncate text-xs text-white/70">
+          <span className="truncate text-sm text-white/90">
             {date ? format(parseISO(date), 'MMM d, yyyy') : muted}
           </span>
         </DisplayCell>
@@ -687,7 +898,7 @@ const HubRow: React.FC<HubRowProps> = ({
         </div>
       ) : (
         <DisplayCell col="start">
-          <span className="truncate text-xs text-white/70">{todo.startTime ? formatTime12h(todo.startTime) : muted}</span>
+          <span className="truncate text-sm text-white/90">{todo.startTime ? formatTime12h(todo.startTime) : muted}</span>
         </DisplayCell>
       )}
 
@@ -698,7 +909,7 @@ const HubRow: React.FC<HubRowProps> = ({
         </div>
       ) : (
         <DisplayCell col="end">
-          <span className="truncate text-xs text-white/70">{todo.endTime ? formatTime12h(todo.endTime) : muted}</span>
+          <span className="truncate text-sm text-white/90">{todo.endTime ? formatTime12h(todo.endTime) : muted}</span>
         </DisplayCell>
       )}
 
@@ -709,7 +920,7 @@ const HubRow: React.FC<HubRowProps> = ({
         </div>
       ) : (
         <DisplayCell col="percent">
-          <span className="truncate text-xs text-white/70">
+          <span className="truncate text-sm text-white/90">
             {todo.percentageGoal !== undefined ? `${todo.percentageGoal}%` : muted}
           </span>
         </DisplayCell>
@@ -722,7 +933,7 @@ const HubRow: React.FC<HubRowProps> = ({
             {todo.tags!.map((t) => (
               <span
                 key={t}
-                className="shrink-0 px-1.5 py-0.5 rounded-full bg-[var(--accent2)]/15 text-[var(--accent2)] text-[10px] font-semibold whitespace-nowrap"
+                className="shrink-0 px-1.5 py-0.5 rounded-full bg-[var(--accent2)]/15 text-[var(--accent2)] text-xs font-semibold whitespace-nowrap"
               >
                 {t}
               </span>
@@ -740,14 +951,14 @@ const HubRow: React.FC<HubRowProps> = ({
         </div>
       ) : (
         <DisplayCell col="xp">
-          <span className="truncate text-xs text-white/70">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
+          <span className="truncate text-sm text-white/90">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
         </DisplayCell>
       )}
 
       {/* Notes (opens popover) */}
       <DisplayCell col="notes">
         {todo.notes ? (
-          <span className="truncate text-xs text-white/60">{todo.notes}</span>
+          <span className="truncate text-sm text-white/90">{todo.notes}</span>
         ) : (
           muted
         )}

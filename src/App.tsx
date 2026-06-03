@@ -293,7 +293,7 @@ export default function App() {
     .flatMap(d => d.todos || [])
     .find(t => t && t.id === activeTodoId);
 
-  // ── Todos Hub handlers ─────────────────────────────────────────────────────
+  // ── Task Planner handlers ─────────────────────────────────────────────────────
   // The hub spans every day plus the UNDATED bucket, so these operate across the
   // whole dayTodos array rather than a single day.
 

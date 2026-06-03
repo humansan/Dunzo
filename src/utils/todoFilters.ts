@@ -1,18 +1,18 @@
 import { Todo, DayTodos } from '../types';
 
-// ── Todos Hub (organizer) vs. Daily checklist routing ────────────────────────
+// ── Task Planner (organizer) vs. Daily checklist routing ────────────────────────
 //
 // There are two surfaces a todo can show up on:
 //   • The daily checklist — a temporary, per-day board for everything you need
 //     to do that day (important *and* throwaway: "take out the trash", "lunch").
-//   • The Todos Hub — a database-style organizer for important things you plan
+//   • The Task Planner — a database-style organizer for important things you plan
 //     ahead of time.
 //
 // A single boolean on the todo, `showInDatabase`, plus whether the todo has a
 // date assigned, decides where it appears. There is intentionally NO two-way
 // sync: these helpers just read the existing data and decide visibility.
 //
-//   showInDatabase | has date | Daily checklist | Todos Hub
+//   showInDatabase | has date | Daily checklist | Task Planner
 //   ---------------|----------|-----------------|-----------
 //        true      |   no     |       no        |    yes
 //        true      |   yes    |      yes        |    yes
@@ -28,7 +28,7 @@ import { Todo, DayTodos } from '../types';
 
 // Sentinel date key for todos that have no calendar date assigned. These live
 // in the same dayTodos array as dated todos but never appear on the daily
-// checklist — only in the Todos Hub.
+// checklist — only in the Task Planner.
 export const UNDATED = '__undated__';
 
 // True when the given DayTodos key represents a real calendar date (as opposed
@@ -41,7 +41,7 @@ export function showsOnDailyChecklist(_todo: Todo, date: string): boolean {
   return hasDate(date);
 }
 
-// Whether a todo should appear in the Todos Hub (organizer). Only todos
+// Whether a todo should appear in the Task Planner (organizer). Only todos
 // explicitly flagged showInDatabase qualify — dated or not — and not archived.
 export function showsInOrganizer(todo: Todo): boolean {
   return todo.showInDatabase === true && todo.archived !== true;
@@ -73,7 +73,7 @@ function collectOrganizer(
   return out;
 }
 
-// Every todo across all days that belongs in the Todos Hub (not archived).
+// Every todo across all days that belongs in the Task Planner (not archived).
 export function getOrganizerTodos(dayTodos: DayTodos[]): OrganizerEntry[] {
   return collectOrganizer(dayTodos, showsInOrganizer);
 }

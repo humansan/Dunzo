@@ -18,7 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
 
   const items = [
     { key: 'todos' as const, icon: CheckSquare, title: 'Daily Todos', color: '--accent2' },
-    { key: 'hub' as const, icon: Database, title: 'Todos Hub', color: '--accent1' },
+    { key: 'hub' as const, icon: Database, title: 'Task Planner', color: '--accent1' },
     { key: 'trackers' as const, icon: Clock, title: 'Trackers', color: '--accent1' },
     { key: 'calendar' as const, icon: Calendar, title: 'Calendar', color: '--accent2' },
     { key: 'stats' as const, icon: BarChart2, title: 'Stats', color: '--accent1' },

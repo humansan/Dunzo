@@ -7,7 +7,7 @@ import { timeToPercentage, percentageToTime } from '../utils/timeUtils';
 
 // ── Shared todo field editors ────────────────────────────────────────────────
 // Small controlled inputs for each todo field, shared by the full-view panel and
-// the Todos Hub spreadsheet so the editing behaviour stays identical in both.
+// the Task Planner spreadsheet so the editing behaviour stays identical in both.
 // The time/percent fields encapsulate the start↔end↔% sync and emit a patch.
 
 // Patch shape emitted by the time/percent fields (a subset of Todo).
@@ -318,6 +318,7 @@ export const TagsField: React.FC<{
 
         {showPopup && popupPos && createPortal(
           <div
+            data-tag-suggestions
             style={{
               position: 'fixed',
               left: popupPos.left,
