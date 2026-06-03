@@ -27,6 +27,7 @@ import {
   Download
 } from 'lucide-react';
 import { DayTodos, Todo } from '../types';
+import { hasDate } from '../utils/todoFilters';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface StatsViewProps {
@@ -93,6 +94,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     let sumXp = 0;
 
     dayTodos.forEach(d => {
+      if (!hasDate(d.date)) return; // skip the undated Todos Hub bucket
       let dailyXp = 0;
       let compCount = 0;
       const compList: Todo[] = [];
@@ -142,7 +144,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
 
   // 3. Streak Calculations (Current & Best)
   const streakInfo = useMemo(() => {
-    const recordedDates = dayTodos.map(d => d.date).filter(Boolean).sort();
+    const recordedDates = dayTodos.map(d => d.date).filter(hasDate).sort();
     if (recordedDates.length === 0) return { current: 0, best: 0 };
 
     const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -335,6 +337,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     let totalCatXp = 0;
 
     dayTodos.forEach(d => {
+      if (!hasDate(d.date)) return; // skip the undated Todos Hub bucket
       (d.todos || []).forEach(t => {
         if (t && t.completed && t.xp) {
           const tags = t.tags && t.tags.length > 0 ? t.tags : ['Untagged'];
@@ -367,6 +370,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   const rawRows = useMemo(() => {
     const rows: { date: string; text: string; xp: number; tags: string[]; notes: string }[] = [];
     dayTodos.forEach(d => {
+      if (!hasDate(d.date)) return; // skip the undated Todos Hub bucket
       (d.todos || []).forEach(t => {
         if (t && t.completed && typeof t.xp === 'number') {
           rows.push({

@@ -33,6 +33,19 @@ export interface Todo {
   xp?: number;        // Points granted on completion (XP system TBD)
   createdAt: number;
   trackingStartedAt?: number; // Timestamp when tracking started
+  showInDatabase?: boolean;   // When true, the todo appears in the Todos Hub
+                              // (organizer). See src/utils/todoFilters.ts for
+                              // how this interacts with the daily checklist.
+  archived?: boolean;         // When true, hidden from the Todos Hub (shown in a
+                              // future archived view). Distinct from a daily-only
+                              // todo (showInDatabase false) — an archived todo is
+                              // still a database todo, just put away.
+  hubOrder?: number;          // Manual ordering within the Todos Hub. The hub
+                              // spans many dates, so it needs its own order
+                              // independent of per-day position.
+  parentId?: string | null;   // Todos Hub nesting: id of the parent todo, or
+                              // null/undefined for a top-level todo. Subtasks can
+                              // nest to any depth.
 }
 
 export interface DayTodos {

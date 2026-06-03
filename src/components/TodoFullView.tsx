@@ -4,8 +4,6 @@ import { format, parseISO } from 'date-fns';
 import {
   X,
   Trash2,
-  Circle,
-  AlignLeft,
   CalendarDays,
   Clock,
   Percent,
@@ -13,9 +11,17 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
-import CheckCircleCutout from '../assets/CheckCircleCutout';
 import { Todo } from '../types';
-import { timeToPercentage, percentageToTime } from '../utils/timeUtils';
+import {
+  CompletedToggle,
+  DateField,
+  StartTimeField,
+  EndTimeField,
+  PercentField,
+  XpField,
+  NotesField,
+  TagsField,
+} from './todoFields';
 
 interface TodoFullViewProps {
   todo: Todo;
@@ -68,26 +74,10 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
-  const notesRef = useRef<HTMLTextAreaElement>(null);
 
   // Local draft — synced only when switching to a different todo
   const [draft, setDraft] = useState<Todo>(todo);
   const [dateStr, setDateStr] = useState(date);
-  const [tagInput, setTagInput] = useState('');
-  const [tagFocused, setTagFocused] = useState(false);
-
-  // Auto-size the notes textarea: a compact default (~2 lines), growing with
-  // content and capping at ~7 lines before it becomes scrollable.
-  const NOTES_MIN_HEIGHT = 48;  // px, ~2 lines at this font/line-height
-  const NOTES_MAX_HEIGHT = 176; // px, roughly 7 lines
-  const resizeNotes = () => {
-    const el = notesRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    const next = Math.min(Math.max(el.scrollHeight, NOTES_MIN_HEIGHT), NOTES_MAX_HEIGHT);
-    el.style.height = `${next}px`;
-    el.style.overflowY = el.scrollHeight > NOTES_MAX_HEIGHT ? 'auto' : 'hidden';
-  };
 
   // Auto-size the title textarea: grows to fit as many lines as needed (no cap).
   const resizeTitle = () => {
@@ -98,13 +88,11 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   };
 
   // Re-measure when content changes or a different todo opens.
-  useLayoutEffect(resizeNotes, [draft.notes, todo.id]);
   useLayoutEffect(resizeTitle, [draft.text, todo.id]);
 
   useEffect(() => {
     setDraft(todo);
     setDateStr(date);
-    setTagInput('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo.id]);
 
@@ -130,68 +118,14 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     });
   };
 
-  const handleStartTimeChange = (val: string) => {
-    update({ startTime: val || undefined });
-  };
-
-  const handleTimeChange = (val: string) => {
-    const p = timeToPercentage(val);
-    update({
-      endTime: val || undefined,
-      ...(p !== undefined ? { percentageGoal: p } : {})
-    });
-  };
-
-  const handlePercentChange = (val: string) => {
-    const num = parseFloat(val);
-    if (val === '') {
-      update({ percentageGoal: undefined });
-      return;
-    }
-    if (!isNaN(num)) {
-      const t = percentageToTime(num);
-      update({ percentageGoal: num, ...(t ? { endTime: t } : {}) });
-    }
-  };
-
   const handleDateChange = (val: string) => {
     if (!val) return;
     setDateStr(val);
     update({}, val);
   };
 
-  const addTagValue = (value: string) => {
-    const t = value.trim();
-    if (!t) return;
-    const existing = draft.tags || [];
-    if (!existing.includes(t)) update({ tags: [...existing, t] });
-    setTagInput('');
-  };
-
-  // Enter selects the top suggestion when there is one; a brand-new tag is only
-  // created when nothing matches what's typed.
-  const addTag = () => {
-    if (tagSuggestions.length > 0) addTagValue(tagSuggestions[0]);
-    else addTagValue(tagInput);
-  };
-
-  const removeTag = (tag: string) => {
-    update({ tags: (draft.tags || []).filter(t => t !== tag) });
-  };
-
-  // Existing tags not yet on this todo, filtered by what's typed.
-  const tagSuggestions = (() => {
-    const current = new Set(draft.tags || []);
-    const q = tagInput.trim().toLowerCase();
-    return allTags
-      .filter(t => !current.has(t))
-      .filter(t => !q || t.toLowerCase().includes(q));
-  })();
-
-  const showTagPopup = tagFocused && (tagSuggestions.length > 0 || tagInput.trim().length > 0);
-
   const inputClass =
-    'w-full max-w-[200px] bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-sm focus:outline-none focus:border-[var(--accent2)] transition-colors';
+    'w-full max-w-[140px] bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-sm focus:outline-none focus:border-[var(--accent2)] transition-colors';
 
   return (
     <motion.div
@@ -213,7 +147,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
           <div className="flex items-center justify-between px-5 h-12 border-b border-white/5 shrink-0">
             <div className="flex items-center gap-2 text-white/40 text-xs font-semibold">
               <CalendarDays size={14} />
-              {format(parseISO(dateStr), 'EEE, MMM d')}
+              {dateStr ? format(parseISO(dateStr), 'EEE, MMM d') : 'No date'}
             </div>
             <div className="flex items-center gap-1">
               <button
@@ -237,20 +171,11 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
           <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-5">
             {/* Title */}
             <div className="flex items-start gap-3">
-              <button
-                onClick={() => { onToggle(draft.id); }}
-                className="mt-1 shrink-0 cursor-pointer"
-              >
-                <motion.div
-                  animate={draft.completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
-                  transition={{ duration: 0.3 }}
-                  className={`transition-colors duration-200 ${draft.completed ? 'text-[var(--accent1)]' : 'text-white/50 hover:text-white'}`}
-                >
-                  {draft.completed
-                    ? <CheckCircleCutout size={22} strokeWidth={2.5} />
-                    : <Circle size={22} strokeWidth={2.5} />}
-                </motion.div>
-              </button>
+              <CompletedToggle
+                completed={draft.completed}
+                onToggle={() => onToggle(draft.id)}
+                className="mt-1"
+              />
               <textarea
                 ref={titleRef}
                 value={draft.text}
@@ -264,13 +189,11 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
             {/* Notes / description — auto-grows up to ~6 lines, then scrolls */}
             <div className="group/notes flex items-start gap-2 mt-4 pl-[34px]">
-              <textarea
-                ref={notesRef}
+              <NotesField
                 value={draft.notes || ''}
-                onChange={(e) => update({ notes: e.target.value })}
-                onInput={resizeNotes}
-                rows={1}
-                placeholder="Add notes…"
+                onChange={(val) => update({ notes: val })}
+                minHeight={48}
+                maxHeight={176}
                 className="flex-1 bg-transparent resize-none text-sm text-white/80 placeholder:text-white/25 focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/25"
               />
               {draft.notes && (
@@ -288,11 +211,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
             {/* ── Properties ──────────────────────────── */}
             <div className="mt-4">
               <PropertyRow icon={<CalendarDays size={13} />} label="Date">
-                <input
-                  type="date"
+                <DateField
                   value={dateStr}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  style={{ colorScheme: 'dark' }}
+                  onChange={handleDateChange}
                   className={`${inputClass} font-mono text-xs`}
                 />
               </PropertyRow>
@@ -303,19 +224,15 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <div className="group/time relative">
                 <PropertyRow icon={<Clock size={13} />} label="Time" noDivider pad="pt-3 pb-1">
                   <div className="grid grid-cols-[140px_24px_140px] items-center gap-2">
-                    <input
-                      type="time"
-                      value={draft.startTime || ''}
-                      onChange={(e) => handleStartTimeChange(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
+                    <StartTimeField
+                      value={draft.startTime}
+                      onChange={(patch) => update(patch)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
                     />
                     <ArrowRight size={14} className="justify-self-center text-white/30" />
-                    <input
-                      type="time"
-                      value={draft.endTime || ''}
-                      onChange={(e) => handleTimeChange(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
+                    <EndTimeField
+                      value={draft.endTime}
+                      onChange={(patch) => update(patch)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
                     />
                   </div>
@@ -325,15 +242,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                   <div className="grid grid-cols-[140px_24px_140px] items-center gap-2">
                     <div />
                     <div />
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="any"
-                      value={draft.percentageGoal ?? ''}
-                      onChange={(e) => handlePercentChange(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                      placeholder="e.g. 50"
+                    <PercentField
+                      value={draft.percentageGoal}
+                      onChange={(patch) => update(patch)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
                     />
                   </div>
@@ -354,65 +265,14 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <PropertyRow
                 icon={<TagIcon size={13} />}
                 label="Tags"
-                onClear={() => { update({ tags: undefined }); setTagInput(''); }}
+                onClear={() => update({ tags: undefined })}
                 canClear={(draft.tags?.length ?? 0) > 0}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  {(draft.tags || []).map(tag => (
-                    <span
-                      key={tag}
-                      className="group/tag flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full bg-[var(--accent2)]/15 text-[var(--accent2)] text-xs font-semibold"
-                    >
-                      {tag}
-                      <button
-                        onClick={() => removeTag(tag)}
-                        className="text-[var(--accent2)]/50 hover:text-[var(--accent2)] transition-colors"
-                      >
-                        <X size={12} />
-                      </button>
-                    </span>
-                  ))}
-                  <span className="relative">
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onFocus={() => setTagFocused(true)}
-                      onBlur={() => setTagFocused(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
-                        if (e.key === 'Backspace' && !tagInput && (draft.tags || []).length) {
-                          removeTag((draft.tags || [])[draft.tags!.length - 1]);
-                        }
-                      }}
-                      placeholder={(draft.tags || []).length ? 'Add…' : 'Add a tag…'}
-                      className="w-40 bg-transparent text-sm text-white placeholder:text-white/25 focus:outline-none h-7"
-                    />
-
-                    {/* Autocomplete popup — existing tags filtered as you type */}
-                    {showTagPopup && (
-                      <div className="absolute z-10 top-full left-0 mt-2 w-56 max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-[#222222] shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
-                        {tagSuggestions.length > 0 ? (
-                          tagSuggestions.map(tag => (
-                            <button
-                              key={tag}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => addTagValue(tag)}
-                              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-                            >
-                              <TagIcon size={12} className="text-[var(--accent2)] shrink-0" />
-                              <span className="truncate">{tag}</span>
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-2.5 py-2 text-xs text-white/40 leading-relaxed">
-                            Press <span className="text-white/70 font-semibold">Enter</span> to add new tag
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </span>
-                </div>
+                <TagsField
+                  tags={draft.tags || []}
+                  allTags={allTags}
+                  onChange={(tags) => update({ tags: tags.length ? tags : undefined })}
+                />
               </PropertyRow>
 
               <PropertyRow
@@ -422,17 +282,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 onClear={() => update({ xp: undefined })}
                 canClear={draft.xp !== undefined}
               >
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={draft.xp ?? ''}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    update({ xp: v === '' ? undefined : Math.max(0, parseInt(v) || 0) });
-                  }}
-                  style={{ colorScheme: 'dark' }}
-                  placeholder="0"
+                <XpField
+                  value={draft.xp}
+                  onChange={(val) => update({ xp: val })}
                   className={`${inputClass} font-mono text-xs`}
                 />
               </PropertyRow>

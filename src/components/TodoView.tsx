@@ -173,6 +173,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialText={todo.text}
           initialNotes={todo.notes || ''}
           initialDate={date}
+          initialStartTime={todo.startTime}
           initialTime={todo.endTime}
           initialPercent={todo.percentageGoal}
           initialXp={todo.xp}
@@ -453,6 +454,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
       text: vals.text,
       completed: false,
       notes: vals.notes || undefined,
+      startTime: vals.startTime,
       endTime: vals.endTime,
       percentageGoal: vals.percentageGoal,
       xp: vals.xp,
@@ -499,6 +501,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
       ...todoToEdit,
       text: vals.text,
       notes: vals.notes || undefined,
+      startTime: vals.startTime,
       endTime: vals.endTime,
       percentageGoal: vals.percentageGoal,
       xp: vals.xp,

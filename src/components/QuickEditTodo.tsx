@@ -7,6 +7,7 @@ export interface QuickEditValues {
   text: string;
   notes: string;
   date: string;            // YYYY-MM-DD
+  startTime?: string;      // HH:MM
   endTime?: string;        // HH:MM
   percentageGoal?: number;
   xp?: number;
@@ -18,6 +19,7 @@ interface QuickEditTodoProps {
   initialText?: string;
   initialNotes?: string;
   initialDate: string;
+  initialStartTime?: string;
   initialTime?: string;
   initialPercent?: number;
   initialXp?: number;
@@ -36,6 +38,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   initialText,
   initialNotes,
   initialDate,
+  initialStartTime,
   initialTime,
   initialPercent,
   initialXp,
@@ -49,6 +52,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const [text, setText] = useState(initialText || '');
   const [notes, setNotes] = useState(initialNotes || '');
   const [date, setDate] = useState(initialDate);
+  // The quick editor only exposes an end time, but it carries the start time
+  // through so the Clear button can wipe both (and not silently keep a start).
+  const [startTime, setStartTime] = useState(initialStartTime || '');
   const [time, setTime] = useState(initialTime || '');
   const [percentStr, setPercentStr] = useState(initialPercent?.toString() ?? '');
   const [xpStr, setXpStr] = useState(initialXp?.toString() ?? '');
@@ -117,6 +123,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     text: text.trim(),
     notes,
     date,
+    startTime: startTime || undefined,
     endTime: time || undefined,
     percentageGoal: percentStr ? parseFloat(percentStr) : undefined,
     xp: xpStr ? Math.max(0, parseInt(xpStr) || 0) : undefined,
@@ -131,6 +138,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setText(initialText || '');
     setNotes(initialNotes || '');
     setDate(initialDate);
+    setStartTime(initialStartTime || '');
     setTime(initialTime || '');
     setPercentStr(initialPercent?.toString() ?? '');
     setXpStr(initialXp?.toString() ?? '');
@@ -138,7 +146,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setTagInput('');
     setOpenEditor(null);
     committedRef.current = false;
-  }, [initialText, initialNotes, initialDate, initialTime, initialPercent, initialXp, initialTags]);
+  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, initialXp, initialTags]);
 
   // On unmount, if an edit panel is force-closed (not via Save/Cancel), persist
   // its current values so switching panels doesn't lose changes.
@@ -340,10 +348,10 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
                     className="bg-transparent px-3 h-full text-white text-sm font-mono focus:outline-none w-[78px]"
                   />
                 </div>
-                {time && (
+                {(time || startTime) && (
                   <button
                     type="button"
-                    onClick={() => { setTime(''); setPercentStr(''); setOpenEditor(null); }}
+                    onClick={() => { setStartTime(''); setTime(''); setPercentStr(''); setOpenEditor(null); }}
                     title="Clear"
                     className="shrink-0 p-1.5 rounded-md text-white/40 hover:text-white/80 hover:bg-white/5"
                   >

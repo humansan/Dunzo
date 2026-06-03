@@ -5,6 +5,7 @@ import {
   addDays
 } from 'date-fns';
 import { DayTodos } from '../types';
+import { hasDate } from './todoFilters';
 
 export interface XpStats {
   earned: number;             // XP from completed todos on the given date
@@ -72,6 +73,7 @@ export function computeXpStats(
   let bestAllTime = 0;
   let totalAllTime = 0;
   for (const day of dayTodos) {
+    if (!hasDate(day.date)) continue; // skip the undated Todos Hub bucket
     const dayEarned = getEarnedXp(dayTodos, day.date);
     totalAllTime += dayEarned;
     if (day.date !== date) bestAllTime = Math.max(bestAllTime, dayEarned);
@@ -176,7 +178,7 @@ export function computeStarStreak(dayTodos: DayTodos[], date: string): StarStrea
   const avg7 = avg7Of(parsedDate);
   const yesterday = earnedOf(dayKey(subDays(parsedDate, 1)));
 
-  const recorded = dayTodos.map(d => d.date).filter(Boolean).sort();
+  const recorded = dayTodos.map(d => d.date).filter(hasDate).sort();
   let streak = 0;
   if (recorded.length > 0) {
     const todayStr = format(new Date(), 'yyyy-MM-dd');

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Clock, LayoutGrid, List, Maximize2, Minimize2 } from 'lucide-react';
 import { Tracker, Theme, DayTodos, Todo } from './types';
@@ -8,6 +8,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
+import { TodosHubView } from './components/TodosHubView';
+import { UNDATED } from './utils/todoFilters';
 import { CalendarView } from './components/CalendarView';
 import { StatsView } from './components/StatsView';
 import { ActiveTodoTracker } from './components/ActiveTodoTracker';
@@ -33,6 +35,28 @@ const DEFAULT_TRACKERS: Tracker[] = [
     createdAt: Date.now() + 1,
   }
 ];
+
+// A todo id together with every descendant id (subtasks, recursively), for
+// cascading hub operations like delete/archive.
+function collectWithDescendants(todos: Todo[], rootId: string): Set<string> {
+  const childrenByParent = new Map<string, string[]>();
+  for (const t of todos) {
+    if (t && t.parentId) {
+      const arr = childrenByParent.get(t.parentId) ?? [];
+      arr.push(t.id);
+      childrenByParent.set(t.parentId, arr);
+    }
+  }
+  const result = new Set<string>([rootId]);
+  const stack = [rootId];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    for (const child of childrenByParent.get(cur) ?? []) {
+      if (!result.has(child)) { result.add(child); stack.push(child); }
+    }
+  }
+  return result;
+}
 
 export default function App() {
   const [trackers, setTrackers] = useState<Tracker[]>(() => {
@@ -68,7 +92,7 @@ export default function App() {
     const saved = localStorage.getItem('dun-theme');
     return saved ? JSON.parse(saved) : { accent1: '#e9ec6a', accent2: '#a2beb7' };
   });
-  const [activeView, setActiveView] = useState<'trackers' | 'todos' | 'calendar' | 'stats'>('todos');
+  const [activeView, setActiveView] = useState<'trackers' | 'todos' | 'hub' | 'calendar' | 'stats'>('todos');
   const [dayTodos, setDayTodos] = useState<DayTodos[]>(() => {
     const saved = localStorage.getItem('dun-todos');
     return saved ? JSON.parse(saved) : [];
@@ -269,15 +293,111 @@ export default function App() {
     .flatMap(d => d.todos || [])
     .find(t => t && t.id === activeTodoId);
 
-  const handleViewChange = (view: 'trackers' | 'todos' | 'calendar' | 'stats') => {
+  // ── Todos Hub handlers ─────────────────────────────────────────────────────
+  // The hub spans every day plus the UNDATED bucket, so these operate across the
+  // whole dayTodos array rather than a single day.
+
+  const hubBucketKey = (date: string | null) => date ?? UNDATED;
+
+  // Save an edited hub todo, moving it between date buckets (incl. UNDATED) when
+  // its date changes. Mirrors the move/update logic used by the daily view.
+  const handleHubSaveTodo = (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => {
+    const from = hubBucketKey(oldDate);
+    const to = hubBucketKey(newDate);
+    setDayTodos(prev => {
+      if (from === to) {
+        return prev.map(d => d.date === to
+          ? { ...d, todos: (d.todos || []).map(t => t && t.id === updatedTodo.id ? updatedTodo : t) }
+          : d
+        );
+      }
+      const withoutOld = prev.map(d => d.date === from
+        ? { ...d, todos: (d.todos || []).filter(t => t && t.id !== updatedTodo.id) }
+        : d
+      );
+      const existingTo = withoutOld.find(d => d.date === to);
+      return existingTo
+        ? withoutOld.map(d => d.date === to ? { ...d, todos: [...(d.todos || []), updatedTodo] } : d)
+        : [...withoutOld, { date: to, todos: [updatedTodo] }];
+    });
+  };
+
+  // Create a fresh undated database todo at the bottom of the hub. An optional
+  // parentId nests it as a subtask of an existing todo.
+  const addHubTodo = (parentId: string | null) => {
+    const maxOrder = dayTodos
+      .flatMap(d => d.todos || [])
+      .reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0);
+    const newTodo: Todo = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: '',
+      completed: false,
+      showInDatabase: true,
+      ...(parentId ? { parentId } : {}),
+      hubOrder: maxOrder + 1,
+      createdAt: Date.now(),
+    };
+    setDayTodos(prev => {
+      const existing = prev.find(d => d.date === UNDATED);
+      return existing
+        ? prev.map(d => d.date === UNDATED ? { ...d, todos: [...(d.todos || []), newTodo] } : d)
+        : [...prev, { date: UNDATED, todos: [newTodo] }];
+    });
+  };
+  const handleHubAddTodo = () => addHubTodo(null);
+  const handleAddSubtask = (parentId: string) => addHubTodo(parentId);
+
+  // Remove a todo entirely (cascading to its subtasks).
+  const handleDeleteTodoById = (id: string) => {
+    setDayTodos(prev => {
+      const all = prev.flatMap(d => d.todos || []).filter(Boolean) as Todo[];
+      const toRemove = collectWithDescendants(all, id);
+      return prev.map(d => ({ ...d, todos: (d.todos || []).filter(t => t && !toRemove.has(t.id)) }));
+    });
+    if (activeTodoId === id) setActiveTodoId(null);
+  };
+
+  // Archive a todo (and its subtasks): hides them from the hub.
+  const handleArchiveTodo = (id: string) => {
+    setDayTodos(prev => {
+      const all = prev.flatMap(d => d.todos || []).filter(Boolean) as Todo[];
+      const toArchive = collectWithDescendants(all, id);
+      return prev.map(d => ({
+        ...d,
+        todos: (d.todos || []).map(t => t && toArchive.has(t.id) ? { ...t, archived: true } : t),
+      }));
+    });
+  };
+
+  // Persist hub order + nesting: assign hubOrder by position and set parentId.
+  const handleReorderHubTodos = (items: { id: string; parentId: string | null }[]) => {
+    const map = new Map(items.map((it, i) => [it.id, { order: i, parentId: it.parentId }]));
+    setDayTodos(prev => prev.map(d => ({
+      ...d,
+      todos: (d.todos || []).map(t => {
+        const u = t && map.get(t.id);
+        return u ? { ...t, hubOrder: u.order, parentId: u.parentId } : t;
+      }),
+    })));
+  };
+
+  // Every tag in use, for hub/full-view autocomplete.
+  const allTags = useMemo(
+    () => Array.from(
+      new Set(dayTodos.flatMap(d => (d.todos || []).flatMap(t => (t && t.tags) || [])))
+    ).sort(),
+    [dayTodos]
+  );
+
+  const handleViewChange = (view: 'trackers' | 'todos' | 'hub' | 'calendar' | 'stats') => {
     setActiveView(view);
-    if (view === 'todos' || view === 'calendar' || view === 'stats') {
+    if (view === 'todos' || view === 'hub' || view === 'calendar' || view === 'stats') {
       setIsFullscreen(false);
     }
   };
 
   return (
-    <div className={`${(activeView === 'calendar' || activeView === 'todos') ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-neutral-950 text-white font-sans selection:bg-[var(--accent1)] selection:text-black`}>
+    <div className={`${(activeView === 'calendar' || activeView === 'todos' || activeView === 'hub') ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-neutral-950 text-white font-sans selection:bg-[var(--accent1)] selection:text-black`}>
       <Sidebar
         activeView={activeView}
         onViewChange={handleViewChange}
@@ -362,13 +482,15 @@ export default function App() {
         </AnimatePresence>
 
         {/* Main Content */}
-        <main className={`${(activeView === 'calendar' || activeView === 'todos') ? 'mx-auto px-2 h-screen' : 'max-w-5xl mx-auto px-6'} ${isFullscreen
+        <main className={`${(activeView === 'calendar' || activeView === 'todos') ? 'mx-auto px-2 h-screen' : activeView === 'hub' ? 'h-screen' : 'max-w-5xl mx-auto px-6'} ${isFullscreen
           ? 'min-h-screen flex flex-col justify-center py-6'
           : activeView === 'todos'
             ? 'py-0'
             : activeView === 'calendar'
               ? 'py-0'
-              : 'py-6'
+              : activeView === 'hub'
+                ? 'py-0'
+                : 'py-6'
           }`}>
             {activeView === 'trackers' ? (
               <div key="trackers-view">
@@ -432,6 +554,20 @@ export default function App() {
                   countdownMode={countdownMode}
                   onUpdateCountdownMode={setCountdownMode}
                   xpEnabled={xpEnabled}
+                />
+              </div>
+            ) : activeView === 'hub' ? (
+              <div key="hub-view" className="h-screen">
+                <TodosHubView
+                  dayTodos={dayTodos}
+                  allTags={allTags}
+                  onSaveTodo={handleHubSaveTodo}
+                  onAddTodo={handleHubAddTodo}
+                  onAddSubtask={handleAddSubtask}
+                  onDeleteTodo={handleDeleteTodoById}
+                  onArchiveTodo={handleArchiveTodo}
+                  onReorder={handleReorderHubTodos}
+                  onToggleTodo={handleToggleTodo}
                 />
               </div>
             ) : activeView === 'calendar' ? (
