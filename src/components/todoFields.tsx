@@ -14,8 +14,8 @@ import { CollectionOption } from '../utils/todoFilters';
 // Patch shape emitted by the time/percent fields (a subset of Todo).
 export interface TimePatch {
   startTime?: string;
-  endTime?: string;
-  percentageGoal?: number;
+  dueTime?: string;
+  duePercentage?: number;
 }
 
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
@@ -80,7 +80,7 @@ export const StartTimeField: React.FC<{
   />
 );
 
-// ── End time (keeps percentageGoal in sync) ──────────────────────────────────
+// ── End time (keeps duePercentage in sync) ──────────────────────────────────
 export const EndTimeField: React.FC<{
   value?: string;
   onChange: (patch: TimePatch) => void;
@@ -96,14 +96,14 @@ export const EndTimeField: React.FC<{
     onChange={(e) => {
       const val = e.target.value;
       const p = timeToPercentage(val);
-      onChange({ endTime: val || undefined, ...(p !== undefined ? { percentageGoal: p } : {}) });
+      onChange({ dueTime: val || undefined, ...(p !== undefined ? { duePercentage: p } : {}) });
     }}
     style={{ colorScheme: 'dark' }}
     className={className ?? fieldInputClass}
   />
 );
 
-// ── Percent goal (keeps endTime in sync) ─────────────────────────────────────
+// ── Percent goal (keeps dueTime in sync) ─────────────────────────────────────
 export const PercentField: React.FC<{
   value?: number;
   onChange: (patch: TimePatch) => void;
@@ -122,11 +122,11 @@ export const PercentField: React.FC<{
     onBlur={onBlur}
     onChange={(e) => {
       const val = e.target.value;
-      if (val === '') { onChange({ percentageGoal: undefined }); return; }
+      if (val === '') { onChange({ duePercentage: undefined }); return; }
       const num = parseFloat(val);
       if (!isNaN(num)) {
         const t = percentageToTime(num);
-        onChange({ percentageGoal: num, ...(t ? { endTime: t } : {}) });
+        onChange({ duePercentage: num, ...(t ? { dueTime: t } : {}) });
       }
     }}
     style={{ colorScheme: 'dark' }}

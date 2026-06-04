@@ -14,7 +14,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (!todo.endTime || !todo.trackingStartedAt) {
+    if (!todo.dueTime || !todo.trackingStartedAt) {
       setProgress(0);
       return;
     }
@@ -22,13 +22,13 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
     const updateProgress = () => {
       const now = new Date();
       const startTime = todo.trackingStartedAt!;
-      
-      // Parse the due time (e.g. "12:00") for today
-      const [hours, minutes] = todo.endTime!.split(':').map(Number);
-      const dueTime = startOfDay(now);
-      dueTime.setHours(hours, minutes, 0, 0);
 
-      const totalDuration = differenceInSeconds(dueTime, new Date(startTime));
+      // Parse the due time (e.g. "12:00") for today
+      const [hours, minutes] = todo.dueTime!.split(':').map(Number);
+      const dueDateTime = startOfDay(now);
+      dueDateTime.setHours(hours, minutes, 0, 0);
+
+      const totalDuration = differenceInSeconds(dueDateTime, new Date(startTime));
       const elapsed = differenceInSeconds(now, new Date(startTime));
 
       if (totalDuration <= 0) {
@@ -76,20 +76,20 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
           </h3>
         </div>
 
-        {(todo.endTime || todo.percentageGoal !== undefined) && (
+        {(todo.dueTime || todo.duePercentage !== undefined) && (
           <div className="flex items-center gap-2 px-3 py-1 bg-[var(--accent1)] rounded-lg shadow-lg shadow-[var(--accent1)]/10">
-            {todo.endTime && (
+            {todo.dueTime && (
               <div className="flex items-center gap-1.5 text-[13px] font-mono font-bold text-black">
                 <Clock size={14} />
-                {todo.endTime}
+                {todo.dueTime}
               </div>
             )}
-            {todo.endTime && todo.percentageGoal !== undefined && (
+            {todo.dueTime && todo.duePercentage !== undefined && (
               <div className="w-px h-3 bg-black/20" />
             )}
-            {todo.percentageGoal !== undefined && (
+            {todo.duePercentage !== undefined && (
               <div className="text-[13px] font-mono font-bold text-black">
-                {todo.percentageGoal}%
+                {todo.duePercentage}%
               </div>
             )}
           </div>
@@ -97,7 +97,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
       </div>
 
       {/* Progress Bar Container */}
-      {todo.endTime && todo.trackingStartedAt && (
+      {todo.dueTime && todo.trackingStartedAt && (
         <div className="mt-4 h-1.5 bg-white/5 rounded-full relative">
           <motion.div
             initial={{ width: 0 }}

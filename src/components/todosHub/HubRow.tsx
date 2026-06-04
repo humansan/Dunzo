@@ -98,9 +98,9 @@ export const HubRow: React.FC<HubRowProps> = ({
     return (
       <div
         ref={setNodeRef}
-        style={{ transform: CSS.Translate.toString(transform), transition }}
+        style={style}
         onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-        className={`flex items-center w-full min-h-11 border-b pt-3 border-white/8 group/row ${
+        className={`grid items-center min-h-11 border-b pt-3 border-white/8 group/row ${
           isDragging ? 'relative z-10 bg-[#262626] ring-1 ring-[var(--accent2)]/50 rounded-sm' : 'hover:bg-white/[0.015]'
         }`}
       >
@@ -108,7 +108,7 @@ export const HubRow: React.FC<HubRowProps> = ({
             Indents by nesting depth so sub-collections sit under their parent. */}
         <div
           style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
-          className="sticky left-0 flex items-center min-w-0 max-w-full"
+          className="col-span-full sticky left-0 flex items-center min-w-0 max-w-full"
         >
           {hasChildren ? (
             <button
@@ -219,22 +219,22 @@ export const HubRow: React.FC<HubRowProps> = ({
       case 'end':
         return isEditing('end') ? (
           <div className={editCellWrap}>
-            <EndTimeField value={todo.endTime} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
+            <EndTimeField value={todo.dueTime} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="end">
-            <span className="truncate text-sm text-white/90">{todo.endTime ? formatTime12h(todo.endTime) : muted}</span>
+            <span className="truncate text-sm text-white/90">{todo.dueTime ? formatTime12h(todo.dueTime) : muted}</span>
           </DisplayCell>
         );
       case 'percent':
         return isEditing('percent') ? (
           <div className={editCellWrap}>
-            <PercentField value={todo.percentageGoal} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
+            <PercentField value={todo.duePercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="percent">
             <span className="truncate text-sm text-white/90">
-              {todo.percentageGoal !== undefined ? `${todo.percentageGoal}%` : muted}
+              {todo.duePercentage !== undefined ? `${todo.duePercentage}%` : muted}
             </span>
           </DisplayCell>
         );

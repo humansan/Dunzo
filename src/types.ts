@@ -23,6 +23,7 @@ export interface Theme {
 
 export type TodoStatus = 'todo' | 'in_progress' | 'completed';
 export type TodoPriority = 'low' | 'medium' | 'high';
+export type TodoUrgency = 'low' | 'medium' | 'high';
 
 // A Workspace is an independent database of Task Planner todos + collections.
 // Todos are scoped to a workspace via Todo.workspaceId ('personal' is the
@@ -38,12 +39,20 @@ export interface Todo {
   completed: boolean;
   status?: TodoStatus;     // Workflow state (Task Planner). Rendered as a solid pill.
   priority?: TodoPriority; // Importance (Task Planner). Rendered as a solid pill.
-  percentageGoal?: number; // e.g. 50
-  startTime?: string; // HH:MM format for calendar start
-  endTime?: string;   // HH:MM format for calendar end
-  notes?: string;     // Freeform notes text
-  xp?: number;        // Points granted on completion (XP system TBD)
-  createdAt: number;
+  urgency?: TodoUrgency;   // How soon it needs to be done.
+  startDate?: string;      // YYYY-MM-DD start date
+  startTime?: string;      // HH:MM format for calendar/start time
+  startPercentage?: number; // Derived from startTime (percent of day elapsed)
+  dueDate?: string;        // YYYY-MM-DD due date
+  dueTime?: string;        // HH:MM format for due time (was endTime)
+  duePercentage?: number;  // Derived from dueTime (was percentageGoal)
+  estimatedTime?: number;  // Estimated minutes to complete
+  countCompletion?: number; // How many times this must be done to count complete (default 1)
+  repeatInterval?: number; // Days between repeats (0 = no repeat)
+  notes?: string;          // Freeform notes text
+  xp?: number;             // Points granted on completion (XP system TBD)
+  createdAt: number;       // Timestamp (ms) when todo was created
+  completedAt?: number;    // Timestamp (ms) when status was set to 'completed'
   trackingStartedAt?: number; // Timestamp when tracking started
   showInDatabase?: boolean;   // When true, the todo appears in the Task Planner
                               // (organizer). See src/utils/todoFilters.ts for

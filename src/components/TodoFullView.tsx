@@ -275,7 +275,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     />
                     <ArrowRight size={14} className="justify-self-center text-white/30" />
                     <EndTimeField
-                      value={draft.endTime}
+                      value={draft.dueTime}
                       onChange={(patch) => update(patch)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
                     />
@@ -287,17 +287,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     <div />
                     <div />
                     <PercentField
-                      value={draft.percentageGoal}
+                      value={draft.duePercentage}
                       onChange={(patch) => update(patch)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors"
                     />
                   </div>
                 </PropertyRow>
 
-                {(draft.startTime || draft.endTime || draft.percentageGoal !== undefined) && (
+                {(draft.startTime || draft.dueTime || draft.duePercentage !== undefined) && (
                   <button
                     type="button"
-                    onClick={() => update({ startTime: undefined, endTime: undefined, percentageGoal: undefined })}
+                    onClick={() => update({ startTime: undefined, dueTime: undefined, duePercentage: undefined })}
                     title="Clear"
                     className="absolute top-1/2 -translate-y-1/2 right-0 p-1 rounded-md text-white/20 hover:text-white/70 hover:bg-white/5 opacity-0 group-hover/time:opacity-100 transition-all"
                   >

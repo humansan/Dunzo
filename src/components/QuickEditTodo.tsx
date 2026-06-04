@@ -10,8 +10,8 @@ export interface QuickEditValues {
   notes: string;
   date: string;            // YYYY-MM-DD
   startTime?: string;      // HH:MM
-  endTime?: string;        // HH:MM
-  percentageGoal?: number;
+  dueTime?: string;        // HH:MM
+  duePercentage?: number;
   xp?: number;
   collectionId?: string | null; // assigned collection (positional → parentId)
 }
@@ -101,8 +101,8 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     notes,
     date,
     startTime: startTime || undefined,
-    endTime: time || undefined,
-    percentageGoal: percentStr ? parseFloat(percentStr) : undefined,
+    dueTime: time || undefined,
+    duePercentage: percentStr ? parseFloat(percentStr) : undefined,
     xp: xpStr ? Math.max(0, parseInt(xpStr) || 0) : undefined,
     collectionId
   });

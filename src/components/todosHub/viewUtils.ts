@@ -27,8 +27,8 @@ export function getFieldDisplayValue(
       catch { return date || ''; }
     }
     case 'start': return todo.startTime ? formatTime12h(todo.startTime) : '';
-    case 'end': return todo.endTime ? formatTime12h(todo.endTime) : '';
-    case 'percent': return todo.percentageGoal !== undefined ? `${todo.percentageGoal}%` : '';
+    case 'end': return todo.dueTime ? formatTime12h(todo.dueTime) : '';
+    case 'percent': return todo.duePercentage !== undefined ? `${todo.duePercentage}%` : '';
     case 'collection': {
       const coll = collectionOf(todo, todoById);
       return collectionPath(coll, todoById).map((c) => c.text || 'Untitled').join(' / ');
@@ -50,8 +50,8 @@ export function getFieldRawValue(
   switch (field) {
     case 'date': return date || '';
     case 'start': return todo.startTime || '';
-    case 'end': return todo.endTime || '';
-    case 'percent': return todo.percentageGoal !== undefined ? String(todo.percentageGoal) : '';
+    case 'end': return todo.dueTime || '';
+    case 'percent': return todo.duePercentage !== undefined ? String(todo.duePercentage) : '';
     case 'xp': return todo.xp !== undefined ? String(todo.xp) : '';
     default: return getFieldDisplayValue(entry, field, todoById);
   }

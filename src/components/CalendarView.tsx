@@ -84,7 +84,7 @@ interface CalendarViewProps {
 interface CreateFormState {
   date: string;
   startTime: string;
-  endTime: string;
+  dueTime: string;
   x: number;
   y: number;
 }
@@ -166,7 +166,7 @@ const EventCard: React.FC<{
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
-  const timeRange = `${formatTime12h(todo.startTime || '0:00')} – ${formatTime12h(todo.endTime || pxToTime(minutesToPx(endMin)))}`;
+  const timeRange = `${formatTime12h(todo.startTime || '0:00')} – ${formatTime12h(todo.dueTime || pxToTime(minutesToPx(endMin)))}`;
   const durationStr = `(${formatDuration(startMin, endMin)})`;
   const fullTimeDisplay = `${timeRange} ${durationStr}`;
 
@@ -394,11 +394,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     (dateStr: string): Todo[] => {
       const dayData = dayTodos.find((d) => d.date === dateStr);
       return (dayData?.todos || [])
-        .filter((t) => t && (t.startTime || t.endTime))
+        .filter((t) => t && (t.startTime || t.dueTime))
         .map((t) => {
-          // Auto-assign start time if missing but endTime exists
-          if (!t.startTime && t.endTime) {
-            const endMins = timeToMinutes(t.endTime);
+          // Auto-assign start time if missing but dueTime exists
+          if (!t.startTime && t.dueTime) {
+            const endMins = timeToMinutes(t.dueTime);
             const startMins = Math.max(0, endMins - 30);
             const h = Math.floor(startMins / 60);
             const m = startMins % 60;
@@ -461,12 +461,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const endM = dragSelection.endMins % 60;
 
       const startTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
-      const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      const dueTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
       setCreateForm({
         date: dragSelection.dateStr,
         startTime,
-        endTime,
+        dueTime,
         // Position the modal near the release point, clamped to viewport
         x: Math.max(10, Math.min(e.clientX, window.innerWidth - 300)),
         y: Math.max(10, Math.min(e.clientY, window.innerHeight - 250)),
@@ -575,8 +575,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const updatedTodo = {
         ...todo,
         startTime: newStartTime,
-        endTime: newEndTime,
-        percentageGoal: timeToPercentage(newEndTime),
+        dueTime: newEndTime,
+        duePercentage: timeToPercentage(newEndTime),
       };
 
       if (initialDateStr === currentDateStr) {
@@ -659,8 +659,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const updatedTodo = {
         ...todo,
         startTime: newStartTime,
-        endTime: newEndTime,
-        percentageGoal: timeToPercentage(newEndTime),
+        dueTime: newEndTime,
+        duePercentage: timeToPercentage(newEndTime),
       };
 
       const dayData = dayTodos.find(d => d.date === dateStr);
@@ -704,7 +704,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const updatedTodo = {
       ...editingEvent.todo,
       text: editingTaskText.trim(),
-      percentageGoal: timeToPercentage(editingEvent.todo.endTime || '0:00'),
+      duePercentage: timeToPercentage(editingEvent.todo.dueTime || '0:00'),
     };
     const dateStr = editingEvent.date;
     const dayData = dayTodos.find((d) => d.date === dateStr);
@@ -726,15 +726,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const submitNewTask = () => {
     if (!createForm || !newTaskText.trim()) return;
-    const { date, startTime, endTime } = createForm;
+    const { date, startTime, dueTime } = createForm;
 
     const newTodo: Todo = {
       id: Math.random().toString(36).substr(2, 9),
       text: newTaskText.trim(),
       completed: false,
       startTime,
-      endTime,
-      percentageGoal: timeToPercentage(endTime),
+      dueTime,
+      duePercentage: timeToPercentage(dueTime),
       createdAt: Date.now(),
     };
 
@@ -940,8 +940,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     const startStr = todo.startTime || '0:00';
                     const startMin = timeToMinutes(startStr);
                     let endMin: number;
-                    if (todo.endTime) {
-                      endMin = timeToMinutes(todo.endTime);
+                    if (todo.dueTime) {
+                      endMin = timeToMinutes(todo.dueTime);
                     } else {
                       endMin = startMin + 60; // default 1hr
                     }
@@ -994,7 +994,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       className="absolute left-1 right-1 rounded-lg bg-[var(--accent1)]/20 border border-[var(--accent1)]/40 pointer-events-none z-10"
                       style={{
                         top: `${minutesToPx(dragSelection ? dragSelection.startMins : timeToMinutes(createForm!.startTime))}px`,
-                        height: `${minutesToPx((dragSelection ? dragSelection.endMins : timeToMinutes(createForm!.endTime)) - (dragSelection ? dragSelection.startMins : timeToMinutes(createForm!.startTime)))}px`,
+                        height: `${minutesToPx((dragSelection ? dragSelection.endMins : timeToMinutes(createForm!.dueTime)) - (dragSelection ? dragSelection.startMins : timeToMinutes(createForm!.startTime)))}px`,
                       }}
                     >
                       <div className="p-1 px-2 text-[10px] font-bold text-[var(--accent1)]">
@@ -1004,7 +1004,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         {' – '}
                         {dragSelection
                           ? `${Math.floor(dragSelection.endMins / 60).toString().padStart(2, '0')}:${(dragSelection.endMins % 60).toString().padStart(2, '0')}`
-                          : createForm!.endTime}
+                          : createForm!.dueTime}
                       </div>
                     </div>
                   )}
@@ -1027,7 +1027,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         const y = isEditing ? editingEvent.y : createForm!.y;
         const date = isEditing ? editingEvent.date : createForm!.date;
         const startTime = isEditing ? (editingEvent.todo.startTime || '0:00') : createForm!.startTime;
-        const endTime = isEditing ? (editingEvent.todo.endTime || '0:00') : createForm!.endTime;
+        const dueTime = isEditing ? (editingEvent.todo.dueTime || '0:00') : createForm!.dueTime;
         const textValue = isEditing ? editingTaskText : newTaskText;
         const setTextValue = isEditing ? setEditingTaskText : setNewTaskText;
         const onSubmit = isEditing ? submitEditTask : submitNewTask;
@@ -1110,15 +1110,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   </label>
                   <input
                     type="time"
-                    value={endTime}
+                    value={dueTime}
                     onChange={(e) => {
                       if (isEditing) {
                         setEditingEvent(prev => prev ? {
                           ...prev,
-                          todo: { ...prev.todo, endTime: e.target.value }
+                          todo: { ...prev.todo, dueTime: e.target.value }
                         } : null);
                       } else {
-                        setCreateForm(prev => prev ? { ...prev, endTime: e.target.value } : null);
+                        setCreateForm(prev => prev ? { ...prev, dueTime: e.target.value } : null);
                       }
                     }}
                     style={{ colorScheme: 'dark' }}

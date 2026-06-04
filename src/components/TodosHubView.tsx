@@ -365,9 +365,9 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       color: entry.todo.color || DEFAULT_COLLECTION_COLOR,
       parentId: null,
       completed: false,
-      percentageGoal: undefined,
+      duePercentage: undefined,
       startTime: undefined,
-      endTime: undefined,
+      dueTime: undefined,
       xp: undefined,
       notes: undefined,
     });

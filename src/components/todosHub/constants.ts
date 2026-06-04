@@ -1,8 +1,9 @@
 // ── Layout ───────────────────────────────────────────────────────────────────
 export const MIN_COL_WIDTH = 80;
 export const INDENT = 24  ; // px per nesting level (must match getProjection)
-export const NAME_BASE_PAD = 30; // px of breathing room between the left edge and the top-level controls
+export const NAME_BASE_PAD = 6; // px of breathing room between the left edge and the top-level controls
 export const TABLE_PAD = 0; // px of horizontal whitespace framing the table (left margin + right gutter)
+export const TABLE_GUTTER = 64;
 export const BOTTOM_SPACER = 260; // px of dead space below the last row so the context menu has room to open
 
 // ── Collection colors ────────────────────────────────────────────────────────
