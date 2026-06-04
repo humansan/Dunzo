@@ -46,6 +46,8 @@ import {
   Filter,
   ArrowUpDown,
   Box,
+  Shapes,
+  Pencil,
 } from 'lucide-react';
 import { DayTodos, Todo, Workspace } from '../types';
 import {
@@ -87,8 +89,9 @@ interface TodosHubViewProps {
   onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
   onAddTodo: () => void;
   onAddSubtask: (parentId: string) => void;
-  // Create a fresh top-level collection; returns its id for select + rename.
-  onAddCollection: () => string;
+  // Create a fresh collection (top-level, or nested when a parentId is given);
+  // returns its id for select + rename.
+  onAddCollection: (parentId?: string | null) => string;
   onDeleteTodo: (id: string) => void;
   // Delete a collection: 'cascade' removes its whole subtree; 'promote' keeps
   // the tasks/sub-collections and moves them up one level.
@@ -611,6 +614,13 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     setSelectedView(id);
     setRenamingId(id);
   };
+  // Context-menu "Create nested collection": add a child under the target,
+  // ensure the parent is expanded so the new node is visible, then rename it.
+  const handleNewNestedCollection = (parentId: string) => {
+    const id = onAddCollection(parentId);
+    setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
+    setRenamingId(id);
+  };
   // The table's "New" button adds into the selected collection, else top-level.
   const handleNewInView = selectedCollectionId
     ? () => onAddSubtask(selectedCollectionId)
@@ -717,7 +727,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       {!sidebarHidden && (
         <aside
           style={{ width: sidebarWidth }}
-          className="relative shrink-0 flex flex-col min-h-0 border-r border-white/10"
+          className="group/pane relative shrink-0 flex flex-col min-h-0 border-r border-white/10"
         >
           {/* ── Workspaces section (top) — independent todo databases ───────── */}
           <div className="shrink-0 flex flex-col max-h-[38%] border-b border-white/10 p-2">
@@ -825,21 +835,25 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                     className={sidebarItemCls(c.todo.id)}
                     title={c.todo.text || 'Untitled collection'}
                   >
-                    {hasChildren ? (
-                      <span
-                        role="button"
-                        onClick={(e) => { e.stopPropagation(); toggleCollColl(c.todo.id); }}
-                        className="shrink-0 -ml-1 flex items-center justify-center rounded text-white/45 hover:text-white hover:bg-white/10 transition-colors"
-                        title={collapsedColls.has(c.todo.id) ? 'Expand' : 'Collapse'}
-                      >
-                        {collapsedColls.has(c.todo.id) ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-                      </span>
-                    ) : (
-                      <span className="shrink-0 -ml-1 w-[13px]" />
-                    )}
-                    <span className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                    <Shapes size={15} className="shrink-0" style={{ color }} />
                     <span className="flex-1 truncate">{c.todo.text || 'Untitled collection'}</span>
-                    <span className="text-xs text-white/35">{collectionCount(c.todo.id)}</span>
+                    {/* Right slot: task count by default; on pane hover, collections
+                        with nested children swap it for an expand/collapse toggle. */}
+                    {hasChildren ? (
+                      <>
+                        <span className="text-xs text-white/35 group-hover/pane:hidden">{collectionCount(c.todo.id)}</span>
+                        <span
+                          role="button"
+                          onClick={(e) => { e.stopPropagation(); toggleCollColl(c.todo.id); }}
+                          className="hidden shrink-0 items-center justify-center rounded text-white/45 hover:text-white hover:bg-white/10 transition-colors group-hover/pane:flex"
+                          title={collapsedColls.has(c.todo.id) ? 'Expand' : 'Collapse'}
+                        >
+                          {collapsedColls.has(c.todo.id) ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-white/35">{collectionCount(c.todo.id)}</span>
+                    )}
                   </button>
                 );
               })}
@@ -1080,6 +1094,12 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
             {menuEntry?.todo.isCollection ? (
               <>
                 <button
+                  onClick={() => { setRenamingId(menu.id); closeMenu(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <Pencil size={14} /> Rename
+                </button>
+                <button
                   onClick={() => {
                     onAddSubtask(menu.id);
                     setCollapsed((prev) => { const n = new Set(prev); n.delete(menu.id); return n; });
@@ -1088,6 +1108,12 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                   className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
                 >
                   <CornerDownRight size={14} /> Create subtask
+                </button>
+                <button
+                  onClick={() => { handleNewNestedCollection(menu.id); closeMenu(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <FolderPlus size={14} /> Create nested collection
                 </button>
                 <button
                   onClick={() => setColorPickerOpen((v) => !v)}
