@@ -89,8 +89,8 @@ interface TodosHubViewProps {
   onCreateCollection: (name: string) => string;
   // Save an edited todo, moving it between date buckets when its date changes.
   onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
-  onAddTodo: () => void;
-  onAddSubtask: (parentId: string) => void;
+  onAddTodo: () => string;
+  onAddSubtask: (parentId: string) => string;
   // Create a fresh collection (top-level, or nested when a parentId is given);
   // returns its id for select + rename.
   onAddCollection: (parentId?: string | null) => string;
@@ -133,7 +133,7 @@ const COLUMNS: ColDef[] = [
 ];
 
 const MIN_COL_WIDTH = 80;
-const INDENT = 22; // px per nesting level (must match getProjection)
+const INDENT = 24; // px per nesting level (must match getProjection)
 const NAME_BASE_PAD = 6; // px of breathing room between the left edge and the top-level controls
 const SPACER_WIDTH = 120; // trailing dead-space track so the last column's resize handle is reachable
 const BOTTOM_SPACER = 260; // px of dead space below the last row so the context menu has room to open
@@ -168,7 +168,7 @@ const colorName = (c: string) => COLLECTION_COLOR_NAMES[c] || 'Custom';
 
 // Pill label color: lighten the collection color toward white so the name reads
 // with high contrast against the dark tinted-bg pill.
-const pillTextColor = (color: string) => `color-mix(in srgb, ${color} 55%, white)`;
+const pillTextColor = (color: string) => `color-mix(in srgb, ${color} 60%, white)`;
 
 const WIDTHS_KEY = 'dun-hub-col-widths';
 const COLLAPSED_KEY = 'dun-hub-collapsed';
@@ -181,7 +181,7 @@ const MIN_SIDEBAR_WIDTH = 170;
 const MAX_SIDEBAR_WIDTH = 480;
 const DEFAULT_SIDEBAR_WIDTH = 224;
 
-type EditState = { id: string; col: ColKey; rect: DOMRect } | null;
+type EditState = { id: string; col: ColKey; rect: DOMRect | null } | null;
 
 // A todo placed in the tree: its structural parent + depth + display order.
 interface FlatNode {
@@ -694,10 +694,17 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     onAddCollection(parentId);
     setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
   };
-  // The table's "New" button adds into the selected collection, else top-level.
-  const handleNewInView = selectedCollectionId
-    ? () => onAddSubtask(selectedCollectionId)
-    : onAddTodo;
+  // The table's "New" button adds into the selected collection, else top-level,
+  // then drops straight into the new row's title field so you can type the name
+  // without a second click.
+  const handleNewInView = () => {
+    const id = selectedCollectionId ? onAddSubtask(selectedCollectionId) : onAddTodo();
+    if (selectedCollectionId) {
+      // Make sure the parent isn't collapsed, or the new row would be hidden.
+      setCollapsed((prev) => { const n = new Set(prev); n.delete(selectedCollectionId); return n; });
+    }
+    setEditing({ id, col: 'title', rect: null });
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1584,7 +1591,7 @@ const HubRow: React.FC<HubRowProps> = ({
         ref={setNodeRef}
         style={{ transform: CSS.Translate.toString(transform), transition }}
         onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-        className={`flex items-end w-full min-h-[58px] border-b border-white/8 group/row ${
+        className={`flex items-center w-full min-h-12 border-b pt-3 border-white/8 group/row ${
           isDragging ? 'relative z-10 bg-[#262626] ring-1 ring-[var(--accent2)]/50 rounded-sm' : 'hover:bg-white/[0.015]'
         }`}
       >
@@ -1592,13 +1599,13 @@ const HubRow: React.FC<HubRowProps> = ({
             Indents by nesting depth so sub-collections sit under their parent. */}
         <div
           style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
-          className="sticky left-0 flex items-end gap-1 pb-2 pr-4 min-w-0 max-w-full"
+          className="sticky left-0 flex items-center gap-1 min-w-0 max-w-full"
         >
           {hasChildren ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
-              className="shrink-0 mb-1 p-0.5 flex items-center justify-center rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              className="shrink-0 p-0.5 flex items-center justify-center rounded text-white/60 hover:text-white hover:bg-white/10 transition-colors"
               title={isCollapsed ? 'Expand collection' : 'Collapse collection'}
             >
               {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
@@ -1610,7 +1617,7 @@ const HubRow: React.FC<HubRowProps> = ({
           <button
             {...attributes}
             {...listeners}
-            className="shrink-0 mb-1.5 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity"
+            className="shrink-0 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity"
             title="Drag to reorder"
           >
             <GripVertical size={14} className="mr-1" />
@@ -1626,14 +1633,14 @@ const HubRow: React.FC<HubRowProps> = ({
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
               placeholder="Collection name"
               size={1}
-              style={{ backgroundColor: `${color}26`, color: pillTextColor(color) }}
-              className="w-auto min-w-[60px] max-w-full [field-sizing:content] rounded-full px-2.5 py-1 text-sm font-medium focus:outline-none placeholder:text-white/40"
+              style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
+              className="w-auto min-w-[60px] max-w-full [field-sizing:content] rounded-full px-2.5 py-0.5 text-sm font-medium focus:outline-none placeholder:text-white/40"
             />
           ) : (
             <span
               onClick={(e) => startEdit(todo.id, 'title', e)}
-              style={{ backgroundColor: `${color}26`, color: pillTextColor(color) }}
-              className="min-w-0 max-w-full truncate rounded-full px-2.5 py-1 text-sm font-medium cursor-text"
+              style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
+              className="min-w-0 max-w-full truncate rounded-full px-2.5 py-0.5 text-sm font-medium cursor-text"
             >
               {todo.text || 'Untitled collection'}
             </span>
@@ -1647,7 +1654,7 @@ const HubRow: React.FC<HubRowProps> = ({
               const r = e.currentTarget.getBoundingClientRect();
               openMenu(todo.id, r.left, r.bottom + 4);
             }}
-            className="shrink-0 mb-1.5 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+            className="shrink-0 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
           >
             <MoreHorizontal size={15} />
           </button>
