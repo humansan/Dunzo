@@ -86,6 +86,79 @@ export function getArchivedTodos(dayTodos: DayTodos[]): OrganizerEntry[] {
   );
 }
 
+// ── Collections (positional membership via parentId) ────────────────────────
+// A task's collection is its nearest `isCollection` ancestor. Subtasks therefore
+// inherit their parent task's collection automatically, and a task belongs to
+// every collection along the path (root → nearest). Collections nest under other
+// collections via the same parentId.
+
+// Index every todo by id (across all day buckets), for ancestor walks.
+export function todoIndex(dayTodos: DayTodos[]): Map<string, Todo> {
+  const m = new Map<string, Todo>();
+  for (const d of dayTodos || []) {
+    for (const t of d.todos || []) if (t) m.set(t.id, t);
+  }
+  return m;
+}
+
+// The id of the nearest collection ancestor of `todo`, or null if none.
+export function collectionOf(todo: Todo, byId: Map<string, Todo>): string | null {
+  let pid = todo.parentId ?? null;
+  const seen = new Set<string>();
+  while (pid && byId.has(pid) && !seen.has(pid)) {
+    seen.add(pid);
+    const p = byId.get(pid)!;
+    if (p.isCollection) return p.id;
+    pid = p.parentId ?? null;
+  }
+  return null;
+}
+
+// Root → leaf chain of collections ending at `collId` (for breadcrumb display).
+export function collectionPath(collId: string | null, byId: Map<string, Todo>): Todo[] {
+  const out: Todo[] = [];
+  let id: string | null = collId;
+  const seen = new Set<string>();
+  while (id && byId.has(id) && !seen.has(id)) {
+    seen.add(id);
+    const c = byId.get(id)!;
+    if (!c.isCollection) break;
+    out.unshift(c);
+    id = c.parentId ?? null;
+  }
+  return out;
+}
+
+export interface CollectionOption {
+  id: string;
+  name: string;
+  color?: string;
+  path: { id: string; name: string; color?: string }[]; // root → leaf, inclusive
+}
+
+// All collections (optionally scoped to a workspace) as searchable options with
+// their breadcrumb path resolved.
+export function collectionOptions(
+  dayTodos: DayTodos[],
+  byId: Map<string, Todo>,
+  opts: { workspaceId?: string } = {}
+): CollectionOption[] {
+  const out: CollectionOption[] = [];
+  for (const d of dayTodos || []) {
+    for (const t of d.todos || []) {
+      if (!t || !t.isCollection || t.archived === true) continue;
+      if (opts.workspaceId && (t.workspaceId ?? 'personal') !== opts.workspaceId) continue;
+      const path = collectionPath(t.id, byId).map((c) => ({
+        id: c.id,
+        name: c.text || 'Untitled',
+        color: c.color,
+      }));
+      out.push({ id: t.id, name: t.text || 'Untitled', color: t.color, path });
+    }
+  }
+  return out;
+}
+
 // Every todo that belongs on the daily checklist for a specific calendar date.
 export function getDailyChecklistTodos(dayTodos: DayTodos[], date: string): Todo[] {
   if (!hasDate(date)) return [];

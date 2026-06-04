@@ -9,7 +9,7 @@ import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
 import { TodosHubView } from './components/TodosHubView';
-import { UNDATED } from './utils/todoFilters';
+import { UNDATED, todoIndex, collectionOptions } from './utils/todoFilters';
 import { CalendarView } from './components/CalendarView';
 import { StatsView } from './components/StatsView';
 import { ActiveTodoTracker } from './components/ActiveTodoTracker';
@@ -393,22 +393,22 @@ export default function App() {
   const handleHubAddTodo = () => addHubTodo(null);
   const handleAddSubtask = (parentId: string) => addHubTodo(parentId);
 
-  // Create a fresh top-level collection (section) in the hub and return its id so
-  // the Task Planner can select + inline-rename it immediately.
-  const addHubCollection = (): string => {
+  // Create a top-level collection with the given name (workspace-scoped) and
+  // return its id. Lives in the UNDATED bucket like other database nodes.
+  const createCollection = (name: string, workspaceId: string = activeWorkspaceId): string => {
     const id = Math.random().toString(36).substr(2, 9);
     const maxOrder = dayTodos
       .flatMap(d => d.todos || [])
       .reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0);
     const newCollection: Todo = {
       id,
-      text: '',
+      text: name,
       completed: false,
       showInDatabase: true,
       isCollection: true,
       color: '#9ca3af',
       parentId: null,
-      workspaceId: activeWorkspaceId,
+      workspaceId,
       hubOrder: maxOrder + 1,
       createdAt: Date.now(),
     };
@@ -419,6 +419,26 @@ export default function App() {
         : [...prev, { date: UNDATED, todos: [newCollection] }];
     });
     return id;
+  };
+  // Sidebar "New collection": create an empty one to inline-rename.
+  const addHubCollection = (): string => createCollection('');
+
+  // Assign a task to a collection (or null = uncategorized) by reparenting it.
+  // Membership is positional, so this just sets parentId; the task lands at the
+  // end of the target's children. Works for hub and daily todos alike.
+  const setTaskCollection = (taskId: string, collectionId: string | null) => {
+    setDayTodos(prev => {
+      const all = prev.flatMap(d => d.todos || []).filter(Boolean) as Todo[];
+      const maxOrder = all
+        .filter(t => (t.parentId ?? null) === (collectionId ?? null))
+        .reduce((m, t) => Math.max(m, t.hubOrder ?? 0), 0);
+      return prev.map(d => ({
+        ...d,
+        todos: (d.todos || []).map(t =>
+          t && t.id === taskId ? { ...t, parentId: collectionId, hubOrder: maxOrder + 1 } : t
+        ),
+      }));
+    });
   };
 
   // Remove a todo entirely (cascading to its subtasks).
@@ -455,12 +475,17 @@ export default function App() {
     })));
   };
 
-  // Every tag in use, for hub/full-view autocomplete.
-  const allTags = useMemo(
-    () => Array.from(
-      new Set(dayTodos.flatMap(d => (d.todos || []).flatMap(t => (t && t.tags) || [])))
-    ).sort(),
-    [dayTodos]
+  // Collection index + options for the pickers. The hub scopes to its active
+  // workspace; the daily surfaces search every collection (they're not
+  // workspace-aware).
+  const todoById = useMemo(() => todoIndex(dayTodos), [dayTodos]);
+  const hubCollectionOptions = useMemo(
+    () => collectionOptions(dayTodos, todoById, { workspaceId: activeWorkspaceId }),
+    [dayTodos, todoById, activeWorkspaceId]
+  );
+  const allCollectionOptions = useMemo(
+    () => collectionOptions(dayTodos, todoById),
+    [dayTodos, todoById]
   );
 
   const handleViewChange = (view: 'trackers' | 'todos' | 'hub' | 'calendar' | 'stats') => {
@@ -628,13 +653,16 @@ export default function App() {
                   countdownMode={countdownMode}
                   onUpdateCountdownMode={setCountdownMode}
                   xpEnabled={xpEnabled}
+                  onCreateCollection={createCollection}
                 />
               </div>
             ) : activeView === 'hub' ? (
               <div key="hub-view" className="h-screen">
                 <TodosHubView
                   dayTodos={dayTodos}
-                  allTags={allTags}
+                  collectionOptions={hubCollectionOptions}
+                  onSetTaskCollection={setTaskCollection}
+                  onCreateCollection={createCollection}
                   onSaveTodo={handleHubSaveTodo}
                   onAddTodo={handleHubAddTodo}
                   onAddSubtask={handleAddSubtask}

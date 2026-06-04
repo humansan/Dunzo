@@ -48,6 +48,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Todo, DayTodos, Tracker } from '../types';
+import { todoIndex, collectionOf, collectionOptions as buildCollectionOptions, CollectionOption } from '../utils/todoFilters';
 import { formatTime12h, timeToPercentage } from '../utils/timeUtils';
 
 import { TrackerCard } from './TrackerCard';
@@ -73,6 +74,7 @@ interface TodoViewProps {
   countdownMode: 'off' | 'time' | 'percent';
   onUpdateCountdownMode: (val: 'off' | 'time' | 'percent') => void;
   xpEnabled: boolean;
+  onCreateCollection: (name: string) => string;
 }
 
 interface SortableItemProps {
@@ -91,7 +93,9 @@ interface SortableItemProps {
   isActive: boolean;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
-  allTags: string[];
+  collectionOptions: CollectionOption[];
+  onCreateCollection: (name: string) => string;
+  initialCollectionId: string | null;
 }
 
 interface TodoItemProps {
@@ -115,7 +119,9 @@ interface TodoItemProps {
   setNodeRef?: (node: HTMLElement | null) => void;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
-  allTags?: string[];
+  collectionOptions?: CollectionOption[];
+  onCreateCollection?: (name: string) => string;
+  initialCollectionId?: string | null;
 }
 
 const TodoItem: React.FC<TodoItemProps> = ({
@@ -139,7 +145,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
   setNodeRef,
   now,
   countdownMode,
-  allTags = []
+  collectionOptions = [],
+  onCreateCollection,
+  initialCollectionId = null
 }) => {
   const countdownDisplay = useMemo(() => {
     if (countdownMode === 'off' || !todo.endTime) return null;
@@ -177,8 +185,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialTime={todo.endTime}
           initialPercent={todo.percentageGoal}
           initialXp={todo.xp}
-          initialTags={todo.tags}
-          allTags={allTags}
+          initialCollectionId={initialCollectionId}
+          collectionOptions={collectionOptions}
+          onCreateCollection={onCreateCollection}
           onSubmit={(vals) => onSaveEdit(todo.id, vals)}
           onCancel={onCancelEdit}
           onOpenFull={() => onOpenFull(todo.id)}
@@ -371,6 +380,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
   countdownMode,
   onUpdateCountdownMode,
   xpEnabled,
+  onCreateCollection,
 }) => {
   const orderedTrackers = useMemo(() => {
     const dayTracker = trackers.find(t => t.type === 'day');
@@ -458,7 +468,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
       endTime: vals.endTime,
       percentageGoal: vals.percentageGoal,
       xp: vals.xp,
-      tags: vals.tags,
+      parentId: vals.collectionId ?? undefined,
       createdAt: Date.now()
     };
 
@@ -505,7 +515,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
       endTime: vals.endTime,
       percentageGoal: vals.percentageGoal,
       xp: vals.xp,
-      tags: vals.tags
+      parentId: vals.collectionId ?? undefined
     };
 
     if (vals.date !== selectedDate) {
@@ -532,16 +542,9 @@ export const TodoView: React.FC<TodoViewProps> = ({
     return null;
   }, [fullViewId, dayTodos]);
 
-  // Unique tags used across every todo, for the full-view autocomplete.
-  const allTags = useMemo(() => {
-    const set = new Set<string>();
-    for (const d of dayTodos) {
-      for (const t of (d.todos || [])) {
-        (t?.tags || []).forEach(tag => set.add(tag));
-      }
-    }
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [dayTodos]);
+  // Collection index + options for the quick-edit / full-view pickers.
+  const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
+  const collOptions = useMemo(() => buildCollectionOptions(dayTodos, byId), [dayTodos, byId]);
 
   const saveFullTodo = (updated: Todo, newDate: string) => {
     // Find the date the todo currently lives on
@@ -713,7 +716,9 @@ export const TodoView: React.FC<TodoViewProps> = ({
                     isActive={activeTodoId === todo.id}
                     now={now}
                     countdownMode={countdownMode}
-                    allTags={allTags}
+                    collectionOptions={collOptions}
+                    onCreateCollection={onCreateCollection}
+                    initialCollectionId={collectionOf(todo, byId)}
                   />
                 );
               })}
@@ -754,7 +759,8 @@ export const TodoView: React.FC<TodoViewProps> = ({
             <QuickEditTodo
               mode="add"
               initialDate={selectedDate}
-              allTags={allTags}
+              collectionOptions={collOptions}
+              onCreateCollection={onCreateCollection}
               onSubmit={handleAddTodo}
               onCancel={() => setIsAdding(false)}
             />
@@ -789,7 +795,9 @@ export const TodoView: React.FC<TodoViewProps> = ({
             key={fullViewData.todo.id}
             todo={fullViewData.todo}
             date={fullViewData.date}
-            allTags={allTags}
+            collectionOptions={collOptions}
+            onCreateCollection={onCreateCollection}
+            byId={byId}
             onClose={() => setFullViewId(null)}
             onSave={saveFullTodo}
             onToggle={onToggleTodo}

@@ -1,10 +1,11 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { createPortal } from 'react-dom';
-import { Circle, X, Tag as TagIcon, Check } from 'lucide-react';
+import { Circle, X, Tag as TagIcon, Check, ChevronRight, Shapes } from 'lucide-react';
 import CheckCircleCutout from '../assets/CheckCircleCutout';
 import { timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { TodoStatus, TodoPriority } from '../types';
+import { CollectionOption } from '../utils/todoFilters';
 
 // ── Shared todo field editors ────────────────────────────────────────────────
 // Small controlled inputs for each todo field, shared by the full-view panel and
@@ -299,6 +300,169 @@ export const OptionSelectField: React.FC<{
           </button>
         );
       })}
+    </div>
+  );
+};
+
+// ── Collections (single-select picker, breadcrumb chips) ─────────────────────
+// A task belongs to one collection (its nearest ancestor) and, transitively, to
+// every collection along the path. The chip shows that whole path as tinted
+// pills separated by a chevron; the search picks/creates a single collection.
+
+const COLL_FALLBACK = '#9ca3af';
+const collChipText = (color?: string) => `color-mix(in srgb, ${color || COLL_FALLBACK} 55%, white)`;
+const collChipBg = (color?: string) => `${color || COLL_FALLBACK}26`;
+
+// Renders a collection path as `[root] › [child] › [leaf]`.
+export const CollectionBreadcrumb: React.FC<{
+  path: { id: string; name: string; color?: string }[];
+  className?: string;
+}> = ({ path, className = '' }) => (
+  <span className={`inline-flex items-center gap-0.5 min-w-0 ${className}`}>
+    {path.map((c, i) => (
+      <React.Fragment key={c.id}>
+        {i > 0 && <ChevronRight size={12} className="shrink-0 text-white/30" />}
+        <span
+          style={{ backgroundColor: collChipBg(c.color), color: collChipText(c.color) }}
+          className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-semibold"
+        >
+          {c.name}
+        </span>
+      </React.Fragment>
+    ))}
+  </span>
+);
+
+// Compact collection picker: a search input + a floating dropdown of pilled
+// results (create-on-miss). Shared by the quick-edit panel, the Task Planner
+// table cell, and the full view.
+//   • 'boxed'    (default) — bordered input with the selected pill + clear above it.
+//   • 'seamless' — a borderless input that sits inline with the selected pill,
+//     blending into a row; clearing is left to the surrounding container.
+export const CollectionSearchField: React.FC<{
+  value: string | null;
+  currentPath: { id: string; name: string; color?: string }[];
+  options: CollectionOption[];
+  onChange: (id: string | null) => void;
+  onCreate: (name: string) => string;
+  autoFocus?: boolean;
+  placeholder?: string;
+  variant?: 'boxed' | 'seamless';
+}> = ({ value, currentPath, options, onChange, onCreate, autoFocus, placeholder, variant = 'boxed' }) => {
+  const [input, setInput] = useState('');
+  const [focused, setFocused] = useState(false);
+  const q = input.trim().toLowerCase();
+  const matches = options.filter(
+    (o) => !q || o.name.toLowerCase().includes(q) || o.path.some((p) => p.name.toLowerCase().includes(q))
+  );
+  const exact = options.some((o) => o.name.toLowerCase() === q);
+  // Only while the input is focused — so the list isn't permanently on screen
+  // (it would otherwise cover the rows below it).
+  const showPopup = focused && (matches.length > 0 || input.trim().length > 0);
+  // Slim by default in the seamless (full-view) layout; the boxed layout tracks
+  // the input width. Both grow to fit a long name.
+  const dropdownWidthCls =
+    variant === 'seamless' ? 'w-max min-w-[180px] max-w-[320px]' : 'min-w-full w-max max-w-[360px]';
+
+  const pick = (id: string) => { onChange(id); setInput(''); };
+  const create = () => {
+    const name = input.trim();
+    if (!name) return;
+    onChange(onCreate(name));
+    setInput('');
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (matches.length > 0) pick(matches[0].id);
+      else create();
+    }
+  };
+
+  const dropdown = showPopup && (
+    <div
+      data-tag-suggestions
+      className={`absolute z-10 top-full left-0 mt-3 ${dropdownWidthCls} max-h-44 overflow-y-auto rounded-xl border border-white/10 bg-[#222222] shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full`}
+    >
+      {matches.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => pick(o.id)}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-white/10 transition-colors"
+        >
+          <CollectionBreadcrumb path={o.path} className="flex-1" />
+          {o.id === value && <Check size={13} className="ml-auto shrink-0 text-white/50" />}
+        </button>
+      ))}
+      {input.trim() && !exact && (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={create}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <Shapes size={13} className="text-[var(--accent2)] shrink-0" />
+          <span className="truncate">Create “{input.trim()}”</span>
+        </button>
+      )}
+    </div>
+  );
+
+  if (variant === 'seamless') {
+    // Borderless: the selected pill and the input share one row, blending in.
+    return (
+      <div className="relative">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {value && currentPath.length > 0 && <CollectionBreadcrumb path={currentPath} />}
+          <input
+            autoFocus={autoFocus}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder={value ? '' : (placeholder ?? 'Add a collection…')}
+            className="flex-1 min-w-[80px] bg-transparent text-sm text-white placeholder:text-white/25 focus:outline-none h-7"
+          />
+        </div>
+        {dropdown}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {value && currentPath.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-2">
+          <CollectionBreadcrumb path={currentPath} className="flex-1" />
+          <button
+            type="button"
+            onClick={() => { onChange(null); setInput(''); }}
+            className="shrink-0 text-white/40 hover:text-white/80 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+      <div className="relative">
+        <input
+          autoFocus={autoFocus}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={placeholder ?? (value ? 'Change collection…' : 'Search or create collection…')}
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-sm focus:outline-none focus:border-[var(--accent2)]"
+        />
+        {dropdown}
+      </div>
     </div>
   );
 };

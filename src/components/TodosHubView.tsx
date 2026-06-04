@@ -48,7 +48,15 @@ import {
   Box,
 } from 'lucide-react';
 import { DayTodos, Todo, Workspace } from '../types';
-import { getOrganizerTodos, OrganizerEntry, hasDate } from '../utils/todoFilters';
+import {
+  getOrganizerTodos,
+  OrganizerEntry,
+  hasDate,
+  CollectionOption,
+  todoIndex,
+  collectionOf,
+  collectionPath,
+} from '../utils/todoFilters';
 import { formatTime12h } from '../utils/timeUtils';
 import { TodoFullView } from './TodoFullView';
 import {
@@ -59,7 +67,8 @@ import {
   PercentField,
   XpField,
   NotesField,
-  TagsField,
+  CollectionSearchField,
+  CollectionBreadcrumb,
   OptionChip,
   OptionSelectField,
   STATUS_OPTIONS,
@@ -70,7 +79,10 @@ import {
 
 interface TodosHubViewProps {
   dayTodos: DayTodos[];
-  allTags: string[];
+  // Collections available to assign (active-workspace scoped) + helpers.
+  collectionOptions: CollectionOption[];
+  onSetTaskCollection: (taskId: string, collectionId: string | null) => void;
+  onCreateCollection: (name: string) => string;
   // Save an edited todo, moving it between date buckets when its date changes.
   onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
   onAddTodo: () => void;
@@ -91,7 +103,7 @@ interface TodosHubViewProps {
 }
 
 // ── Column model ─────────────────────────────────────────────────────────────
-type ColKey = 'title' | 'status' | 'priority' | 'date' | 'start' | 'end' | 'percent' | 'tags' | 'xp' | 'notes';
+type ColKey = 'title' | 'status' | 'priority' | 'date' | 'start' | 'end' | 'percent' | 'collection' | 'xp' | 'notes';
 
 interface ColDef {
   key: ColKey;
@@ -107,7 +119,7 @@ const COLUMNS: ColDef[] = [
   { key: 'start', label: 'Start', defaultWidth: 110 },
   { key: 'end', label: 'End', defaultWidth: 110 },
   { key: 'percent', label: '%', defaultWidth: 90 },
-  { key: 'tags', label: 'Tags', defaultWidth: 220 },
+  { key: 'collection', label: 'Collection', defaultWidth: 240 },
   { key: 'xp', label: 'XP', defaultWidth: 80 },
   { key: 'notes', label: 'Notes', defaultWidth: 280 },
 ];
@@ -263,7 +275,9 @@ function orderFromFlat(
 
 export const TodosHubView: React.FC<TodosHubViewProps> = ({
   dayTodos,
-  allTags,
+  collectionOptions,
+  onSetTaskCollection,
+  onCreateCollection,
   onSaveTodo,
   onAddTodo,
   onAddSubtask,
@@ -346,7 +360,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // (vs. a full-screen overlay) lets the click also land on another cell, so a single
   // click both closes this editor and opens the next one.
   const popoverRef = useRef<HTMLDivElement>(null);
-  const POPOVER_COLS: ColKey[] = ['tags', 'notes', 'status', 'priority'];
+  const POPOVER_COLS: ColKey[] = ['collection', 'notes', 'status', 'priority'];
   const popoverOpen = !!editing && POPOVER_COLS.includes(editing.col);
   useEffect(() => {
     if (!popoverOpen) return;
@@ -439,6 +453,14 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // Ancestry helpers over the current entry set.
   const byId = useMemo(() => new Map(entries.map((e) => [e.todo.id, e])), [entries]);
+  // Full todo index (across all buckets) for resolving collection paths.
+  const todoById = useMemo(() => todoIndex(dayTodos), [dayTodos]);
+  const collPathFor = (todo: Todo) =>
+    collectionPath(collectionOf(todo, todoById), todoById).map((c) => ({
+      id: c.id,
+      name: c.text || 'Untitled',
+      color: c.color,
+    }));
   const hasCollectionAncestor = (e: OrganizerEntry): boolean => {
     let p = e.todo.parentId ?? null;
     const seen = new Set<string>();
@@ -865,6 +887,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                   openMenu={openMenu}
                   isCollapsed={collapsed.has(node.id)}
                   onToggleCollapse={toggleCollapse}
+                  collPath={collPathFor(node.entry.todo)}
                 />
               ))}
             </SortableContext>
@@ -924,17 +947,14 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                   stopEdit();
                 }}
               />
-            ) : editing.col === 'tags' ? (
-              <TagsField
-                tags={editingEntry.todo.tags || []}
-                allTags={allTags}
+            ) : editing.col === 'collection' ? (
+              <CollectionSearchField
+                value={collectionOf(editingEntry.todo, todoById)}
+                currentPath={collPathFor(editingEntry.todo)}
+                options={collectionOptions}
+                onChange={(id) => { onSetTaskCollection(editingEntry.todo.id, id); stopEdit(); }}
+                onCreate={onCreateCollection}
                 autoFocus
-                onChange={(tags) =>
-                  onSaveTodo(editingEntry.date, editingEntry.date, {
-                    ...editingEntry.todo,
-                    tags: tags.length ? tags : undefined,
-                  })
-                }
               />
             ) : (
               <NotesField
@@ -1055,7 +1075,9 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
             key={fullViewEntry.todo.id}
             todo={fullViewEntry.todo}
             date={fullViewEntry.date || ''}
-            allTags={allTags}
+            collectionOptions={collectionOptions}
+            onCreateCollection={onCreateCollection}
+            byId={todoById}
             onClose={() => setFullViewId(null)}
             onSave={saveFullTodo}
             onToggle={onToggleTodo}
@@ -1080,6 +1102,7 @@ interface HubRowProps {
   openMenu: (id: string, x: number, y: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: (id: string) => void;
+  collPath: { id: string; name: string; color?: string }[];
 }
 
 const HubRow: React.FC<HubRowProps> = ({
@@ -1094,6 +1117,7 @@ const HubRow: React.FC<HubRowProps> = ({
   openMenu,
   isCollapsed,
   onToggleCollapse,
+  collPath,
 }) => {
   const { entry, hasChildren } = node;
   const { todo, date } = entry;
@@ -1341,21 +1365,8 @@ const HubRow: React.FC<HubRowProps> = ({
       )}
 
       {/* Tags (opens popover) */}
-      <DisplayCell col="tags">
-        {(todo.tags || []).length ? (
-          <div className="flex items-center gap-1 overflow-hidden">
-            {todo.tags!.map((t) => (
-              <span
-                key={t}
-                className="shrink-0 px-1.5 py-0.5 rounded-full bg-[var(--accent2)]/15 text-[var(--accent2)] text-xs font-semibold whitespace-nowrap"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        ) : (
-          muted
-        )}
+      <DisplayCell col="collection">
+        {collPath.length ? <CollectionBreadcrumb path={collPath} /> : muted}
       </DisplayCell>
 
       {/* XP */}

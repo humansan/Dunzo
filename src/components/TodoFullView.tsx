@@ -7,13 +7,14 @@ import {
   CalendarDays,
   Clock,
   Percent,
-  Tag as TagIcon,
   Sparkles,
   ArrowRight,
   CircleDot,
   Flag,
+  Shapes,
 } from 'lucide-react';
 import { Todo } from '../types';
+import { CollectionOption, collectionOf, collectionPath } from '../utils/todoFilters';
 import {
   CompletedToggle,
   DateField,
@@ -22,7 +23,7 @@ import {
   PercentField,
   XpField,
   NotesField,
-  TagsField,
+  CollectionSearchField,
   OptionSelectField,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
@@ -31,7 +32,9 @@ import {
 interface TodoFullViewProps {
   todo: Todo;
   date: string; // YYYY-MM-DD the todo currently lives on
-  allTags: string[]; // every tag used across all todos, for autocomplete
+  collectionOptions: CollectionOption[]; // collections available to assign
+  onCreateCollection: (name: string) => string;
+  byId: Map<string, Todo>; // for resolving the current collection path
   onClose: () => void;
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
@@ -71,7 +74,9 @@ const PropertyRow: React.FC<{
 export const TodoFullView: React.FC<TodoFullViewProps> = ({
   todo,
   date,
-  allTags,
+  collectionOptions,
+  onCreateCollection,
+  byId,
   onClose,
   onSave,
   onToggle,
@@ -302,15 +307,22 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               </div>
 
               <PropertyRow
-                icon={<TagIcon size={13} />}
-                label="Tags"
-                onClear={() => update({ tags: undefined })}
-                canClear={(draft.tags?.length ?? 0) > 0}
+                icon={<Shapes size={13} />}
+                label="Collection"
+                onClear={() => update({ parentId: null })}
+                canClear={collectionOf(draft, byId) !== null}
               >
-                <TagsField
-                  tags={draft.tags || []}
-                  allTags={allTags}
-                  onChange={(tags) => update({ tags: tags.length ? tags : undefined })}
+                <CollectionSearchField
+                  variant="seamless"
+                  value={collectionOf(draft, byId)}
+                  currentPath={collectionPath(collectionOf(draft, byId), byId).map((c) => ({
+                    id: c.id,
+                    name: c.text || 'Untitled',
+                    color: c.color,
+                  }))}
+                  options={collectionOptions}
+                  onChange={(id) => update({ parentId: id })}
+                  onCreate={onCreateCollection}
                 />
               </PropertyRow>
 
