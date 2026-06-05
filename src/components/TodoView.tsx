@@ -104,7 +104,8 @@ export const TodoView: React.FC<TodoViewProps> = ({
       duePercentage: vals.duePercentage,
       xp: vals.xp,
       parentId: vals.collectionId ?? undefined,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      status: "todo",
     };
 
     const target = vals.date;

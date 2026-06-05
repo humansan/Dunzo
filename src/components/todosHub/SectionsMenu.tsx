@@ -91,7 +91,7 @@ export const SectionsMenu: React.FC<{
         <div className={sectionCls}>
           {/* Show leaf tasks */}
           <div className="space-y-1.5">
-            <span className={labelCls}>Show leaf tasks</span>
+            <span className={labelCls}>Show ungrouped tasks</span>
             <Segment
               options={[
                 { value: 'top', label: 'Top' },

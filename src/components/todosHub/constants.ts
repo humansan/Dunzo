@@ -1,6 +1,6 @@
 // ── Layout ───────────────────────────────────────────────────────────────────
 export const MIN_COL_WIDTH = 80;
-export const INDENT = 24  ; // px per nesting level (must match getProjection)
+export const INDENT = 24; // px per nesting level (indent + drop-indicator offset)
 export const NAME_BASE_PAD = 6; // px of breathing room between the left edge and the top-level controls
 export const TABLE_PAD = 0; // px of horizontal whitespace framing the table (left margin + right gutter)
 export const TABLE_GUTTER = 64;

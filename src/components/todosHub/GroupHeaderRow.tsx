@@ -8,10 +8,26 @@ type GroupHeader = Extract<GroupRow, { type: 'header' }>;
 export const GroupHeaderRow: React.FC<{
   row: GroupHeader;
   onToggleCollapse: (id: string) => void;
-}> = ({ row, onToggleCollapse }) => {
+  // Drop target: highlighted while a task is dragged over it (drops at the top of
+  // the section and reassigns the grouping attribute to this section's value).
+  isDropTarget?: boolean;
+  onHeaderDragOver?: (e: React.DragEvent) => void;
+  onHeaderDrop?: () => void;
+}> = ({ row, onToggleCollapse, isDropTarget = false, onHeaderDragOver, onHeaderDrop }) => {
   const { id, label, color, count, isCollapsed } = row;
   return (
-    <div className="flex items-center w-full min-h-11 border-b pt-3 border-white/8 hover:bg-white/[0.015]">
+    <div
+      onDragOver={onHeaderDragOver}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onHeaderDrop?.(); }}
+      className="relative flex items-center w-full min-h-11 border-b pt-3 border-white/8 hover:bg-white/[0.015]"
+    >
+      {/* Drop line under the header — task lands at the top of this section. */}
+      {isDropTarget && (
+        <div
+          className="pointer-events-none absolute left-0 right-0 bottom-[-1px] z-30 h-0.5 rounded-full bg-[var(--accent2)]"
+          style={{ marginLeft: NAME_BASE_PAD + INDENT }}
+        />
+      )}
       <div
         style={{ paddingLeft: NAME_BASE_PAD }}
         className="sticky left-0 flex items-center gap-1.5 min-w-0 max-w-full"

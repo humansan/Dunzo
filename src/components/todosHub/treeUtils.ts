@@ -1,4 +1,3 @@
-import { arrayMove } from '@dnd-kit/sortable';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { FlatNode } from './types';
 
@@ -53,66 +52,6 @@ export function flattenTree(
   };
   walk(null, 0);
   return out;
-}
-
-// Given the rendered list plus where the active item is being dropped and how far
-// it's been dragged horizontally, compute its projected depth + new parent.
-export function getProjection(
-  items: FlatNode[],
-  activeId: string,
-  overId: string,
-  dragOffset: number,
-  indentWidth: number
-): { depth: number; parentId: string | null } | null {
-  const overItemIndex = items.findIndex((i) => i.id === overId);
-  const activeItemIndex = items.findIndex((i) => i.id === activeId);
-  if (overItemIndex === -1 || activeItemIndex === -1) return null;
-
-  const activeItem = items[activeItemIndex];
-  const newItems = arrayMove(items, activeItemIndex, overItemIndex);
-  const previousItem = newItems[overItemIndex - 1];
-  const nextItem = newItems[overItemIndex + 1];
-
-  const dragDepth = Math.round(dragOffset / indentWidth);
-  const projectedDepth = activeItem.depth + dragDepth;
-  const maxDepth = previousItem ? previousItem.depth + 1 : 0;
-  const minDepth = nextItem ? nextItem.depth : 0;
-  let depth = Math.max(minDepth, Math.min(projectedDepth, maxDepth));
-
-  const getParentId = (): string | null => {
-    if (depth === 0 || !previousItem) return null;
-    if (depth === previousItem.depth) return previousItem.parentId;
-    if (depth > previousItem.depth) return previousItem.id;
-    const candidate = newItems
-      .slice(0, overItemIndex)
-      .reverse()
-      .find((i) => i.depth === depth);
-    return candidate ? candidate.parentId : null;
-  };
-
-  let parentId = getParentId();
-
-  // A collection may only sit at the top level or nested under another
-  // collection — never under a task. Snap its computed parent up to the nearest
-  // collection ancestor and re-derive its depth from there.
-  if (activeItem.entry.todo.isCollection) {
-    const nodeById = new Map(items.map((i) => [i.id, i]));
-    const nearestColl = (id: string | null): string | null => {
-      let cur = id;
-      const seen = new Set<string>();
-      while (cur && nodeById.has(cur) && !seen.has(cur)) {
-        seen.add(cur);
-        const n = nodeById.get(cur)!;
-        if (n.entry.todo.isCollection) return cur;
-        cur = n.parentId;
-      }
-      return null;
-    };
-    parentId = nearestColl(parentId);
-    depth = parentId ? nodeById.get(parentId)!.depth + 1 : 0;
-  }
-
-  return { depth, parentId };
 }
 
 // Rebuild a contiguous parent-grouped order from a (possibly detached) flat list,

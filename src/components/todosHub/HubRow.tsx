@@ -1,6 +1,4 @@
-import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import React, { useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { GripVertical, MoreHorizontal, ChevronRight, ChevronDown } from 'lucide-react';
 import { Todo } from '../../types';
@@ -19,6 +17,10 @@ import {
 } from '../todoFields';
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from './types';
 import { INDENT, NAME_BASE_PAD, DEFAULT_COLLECTION_COLOR, pillTextColor, cellEditCls } from './constants';
+
+// Where the dragged row will land relative to this row: a line before/after it
+// (reorder) or nested inside it. `depth` is the indent level to draw the line at.
+export type DropIndicator = { pos: 'before' | 'inside' | 'after'; depth: number } | null;
 
 // ── Row ──────────────────────────────────────────────────────────────────────
 interface HubRowProps {
@@ -41,6 +43,13 @@ interface HubRowProps {
   hideDragHandle?: boolean;
   // Visible (post-filter) task count shown on collection header rows.
   taskCount?: number;
+  // ── Native drag & drop (sidebar-style: indicator only, nothing shifts) ──────
+  isDragSource?: boolean;          // this row is the one being dragged (dim it)
+  dropIndicator?: DropIndicator;   // where the drop will land, drawn on this row
+  onRowDragStart?: (id: string) => void;
+  onRowDragOver?: (id: string, e: React.DragEvent) => void;
+  onRowDrop?: () => void;
+  onRowDragEnd?: () => void;
 }
 
 export const HubRow: React.FC<HubRowProps> = ({
@@ -60,19 +69,74 @@ export const HubRow: React.FC<HubRowProps> = ({
   lastColKey,
   hideDragHandle = false,
   taskCount,
+  isDragSource = false,
+  dropIndicator = null,
+  onRowDragStart,
+  onRowDragOver,
+  onRowDrop,
+  onRowDragEnd,
 }) => {
   const { entry, hasChildren } = node;
   const { todo, date } = entry;
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-    gridTemplateColumns,
-  };
+  // The name cell doubles as the drag image so the cursor carries a readable chip.
+  const dragImageRef = useRef<HTMLDivElement>(null);
+  const style: React.CSSProperties = { gridTemplateColumns };
 
   const isEditing = (col: ColKey) => editing?.id === todo.id && editing?.col === col;
   const saveField = (patch: Partial<Todo>) => onSaveTodo(date, date, { ...todo, ...patch });
   const saveDate = (v: string) => onSaveTodo(date, v || null, todo);
+
+  // Drop handlers shared by both row variants. stopPropagation so the table's
+  // container-level onDrop (a fallback for releases over the header/gaps) doesn't
+  // also fire and double-commit.
+  const dropProps = {
+    onDragOver: (e: React.DragEvent) => onRowDragOver?.(todo.id, e),
+    onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); onRowDrop?.(); },
+  };
+
+  // The grip — the only draggable element, so cell clicks/edits stay intact.
+  // NOTE: this must be a plain function call (not an inner <Component/>), or each
+  // re-render would create a new component type, remounting the <button> and
+  // aborting any in-progress native drag (dragend never fires → stuck indicator).
+  const dragHandle = (className = '') =>
+    hideDragHandle ? null : (
+      <button
+        type="button"
+        draggable
+        onDragStart={(e) => {
+          if (dragImageRef.current) e.dataTransfer.setDragImage(dragImageRef.current, 8, 8);
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', todo.id);
+          onRowDragStart?.(todo.id);
+        }}
+        onDragEnd={() => onRowDragEnd?.()}
+        className={`shrink-0 cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
+        title="Drag to reorder / nest"
+      >
+        <GripVertical size={14} />
+      </button>
+    );
+
+  // The drop indicator: a line at the target indent (before/after), or a ring on
+  // the row (inside = nest under this row).
+  const indent = NAME_BASE_PAD + (dropIndicator?.depth ?? 0) * INDENT;
+  const dropLine = (where: 'before' | 'after') =>
+    dropIndicator?.pos === where ? (
+      <div
+        className="pointer-events-none absolute left-0 right-0 z-30 h-0.5 rounded-full bg-[var(--accent2)]"
+        style={{ [where === 'before' ? 'top' : 'bottom']: -1, marginLeft: indent }}
+      />
+    ) : null;
+  // 'inside' (nest) highlight: an overlay so it sits ABOVE the sticky Name cell
+  // (z-20) and spans the whole row — a ring on the grid would be painted over by
+  // that opaque cell, leaving only the scrollable part highlighted.
+  const insideOverlay = dropIndicator?.pos === 'inside' ? (
+    <div className="pointer-events-none absolute inset-0 z-30 ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/5" />
+  ) : null;
+
+  const editCellWrap = 'flex items-stretch h-full border-l border-white/8';
+  // Empty fields render nothing — a placeholder dash just adds clutter.
+  const muted = null;
 
   // A clickable display cell that switches into edit mode.
   const DisplayCell: React.FC<{ col: ColKey; children: React.ReactNode }> = ({ col, children }) => (
@@ -86,10 +150,6 @@ export const HubRow: React.FC<HubRowProps> = ({
     </div>
   );
 
-  const editCellWrap = 'flex items-stretch h-full border-l border-white/8';
-  // Empty fields render nothing — a placeholder dash just adds clutter.
-  const muted = null;
-
   // ── Collection row ──────────────────────────────────────────────────────────
   // A section header, not a task: full-width (no column cells / dividers), taller,
   // no checkbox, with the name as a bottom-anchored colored pill.
@@ -97,16 +157,20 @@ export const HubRow: React.FC<HubRowProps> = ({
     const color = todo.color || DEFAULT_COLLECTION_COLOR;
     return (
       <div
-        ref={setNodeRef}
         style={style}
+        {...dropProps}
         onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-        className={`grid items-center min-h-11 border-b pt-3 border-white/8 group/row ${
-          isDragging ? 'relative z-10 bg-[#262626] ring-1 ring-[var(--accent2)]/50 rounded-sm' : 'hover:bg-white/[0.015]'
+        className={`relative grid items-center min-h-11 border-b pt-3 border-white/8 group/row ${
+          isDragSource ? 'opacity-40' : 'hover:bg-white/[0.015]'
         }`}
       >
+        {dropLine('before')}
+        {dropLine('after')}
+        {insideOverlay}
         {/* Header group, pinned to the left so it stays visible while scrolling.
             Indents by nesting depth so sub-collections sit under their parent. */}
         <div
+          ref={dragImageRef}
           style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
           className="col-span-full sticky left-0 flex items-center min-w-0 max-w-full"
         >
@@ -123,16 +187,7 @@ export const HubRow: React.FC<HubRowProps> = ({
             <span className="shrink-0 w-5" />
           )}
 
-          {!hideDragHandle && (
-            <button
-              {...attributes}
-              {...listeners}
-              className="shrink-0 cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity"
-              title="Drag to reorder"
-            >
-              <GripVertical size={14} className="mr-1" />
-            </button>
-          )}
+          {dragHandle('mr-1')}
 
           {isEditing('title') ? (
             <input
@@ -267,19 +322,21 @@ export const HubRow: React.FC<HubRowProps> = ({
 
   return (
     <div
-      ref={setNodeRef}
       style={style}
+      {...dropProps}
       onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-      className={`grid items-stretch min-h-[36px] border-b border-white/8 group/row ${
-        isDragging ? 'relative z-10 bg-[#262626] ring-1 ring-[var(--accent2)]/50 rounded-sm' : 'hover:bg-white/[0.015]'
+      className={`relative grid items-stretch min-h-[36px] border-b border-white/8 group/row ${
+        isDragSource ? 'opacity-40' : 'hover:bg-white/[0.015]'
       }`}
     >
+      {dropLine('before')}
+      {dropLine('after')}
+      {insideOverlay}
       {/* Name group: indent + collapse + handle + checkbox + name.
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
-        className={`sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 ${
-          isDragging ? 'bg-[#262626]' : 'bg-[#0a0a0a] group-hover/row:bg-[#0e0e0e]'
-        }`}
+        ref={dragImageRef}
+        className="sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0e0e0e]"
       >
         <div style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }} className="flex items-center h-full min-w-0 flex-1">
           {hasChildren ? (
@@ -295,16 +352,7 @@ export const HubRow: React.FC<HubRowProps> = ({
             <span className="shrink-0 w-5" />
           )}
 
-          {!hideDragHandle && (
-            <button
-              {...attributes}
-              {...listeners}
-              className="shrink-0 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity"
-              title="Drag to reorder / nest"
-            >
-              <GripVertical size={14} />
-            </button>
-          )}
+          {dragHandle()}
 
           <CompletedToggle completed={todo.completed} onToggle={() => onToggleTodo(todo.id)} size={16} className='mr-2 ml-1'/>
 
