@@ -123,6 +123,22 @@ export const SectionsMenu: React.FC<{
               })}
             </select>
           </div>
+
+          {/* Section order — only meaningful for attribute groupings. Collections
+              keep their own manual (drag) ordering, so this is hidden there. */}
+          {config.groupBy !== 'collection' && (
+            <div className="space-y-1.5 mt-3">
+              <span className={labelCls}>Section order</span>
+              <Segment
+                options={[
+                  { value: 'asc', label: 'Ascending' },
+                  { value: 'desc', label: 'Descending' },
+                ]}
+                value={config.groupSortDirection}
+                onChange={(v) => set('groupSortDirection', v as SectionsConfig['groupSortDirection'])}
+              />
+            </div>
+          )}
         </div>
       </div>
     </>

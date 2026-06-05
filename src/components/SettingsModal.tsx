@@ -70,20 +70,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             initial={{ scale: 0.95, opacity: 0, y: 10 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 10 }}
-            className="w-[380px] bg-[#1A1A1A] border border-[var(--accent2)]/30 rounded-3xl p-6 shadow-2xl relative"
+            className="w-[380px] bg-[#1A1A1A] border border-white/10 rounded-2xl p-6 shadow-2xl relative"
           >
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-1.5 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all"
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all"
             >
               <X size={16} />
             </button>
 
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-xl bg-white/5 text-[var(--accent2)]">
-                <Settings size={20} />
-              </div>
-              <h2 className="text-white font-bold text-lg">Settings</h2>
+            <div className="flex items-center gap-2 mb-6">
+              <Settings size={15} className="text-white/40" />
+              <h2 className="text-white font-bold text-base">Settings</h2>
             </div>
 
             <div className="space-y-6">
@@ -112,7 +110,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2">Deadline Countdown</label>
-                <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 p-1 rounded-2xl border border-white/5">
+                <div className="grid grid-cols-3 gap-2 bg-black/20 p-1 rounded-2xl border border-white/5">
                   {toggleBtn(countdownMode === 'off',     () => onUpdateCountdownMode('off'),     'Off')}
                   {toggleBtn(countdownMode === 'time',    () => onUpdateCountdownMode('time'),    'Time Left')}
                   {toggleBtn(countdownMode === 'percent', () => onUpdateCountdownMode('percent'), 'Percent Left')}

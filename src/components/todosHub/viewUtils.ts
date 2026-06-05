@@ -1,7 +1,8 @@
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { OrganizerEntry, collectionOf, collectionPath } from '../../utils/todoFilters';
-import { Todo } from '../../types';
+import { Todo, TodoStatus, TodoPriority } from '../../types';
 import { formatTime12h } from '../../utils/timeUtils';
+import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../todoFields';
 import { ColKey, FilterRule, FlatNode, GroupRow } from './types';
 
 // Returns a display-formatted string for a field — what the user sees in the
@@ -91,8 +92,80 @@ const FIELD_GROUP_ORDER: Partial<Record<ColKey, string[]>> = {
   priority: ['High', 'Medium', 'Low'],
 };
 
-export function getGroupColor(field: ColKey, label: string): string {
-  return FIELD_GROUP_COLORS[field]?.[label] ?? '#9ca3af';
+// Date grouping uses staggered, relative buckets (first qualifying bucket wins),
+// not one section per calendar date. The id is the group key; the label is shown
+// on the header. The last bucket is a catch-all for everything further out.
+const DATE_BUCKETS: { id: string; label: string; color: string }[] = [
+  { id: 'past',     label: 'Past',          color: '#ef4444' },
+  { id: 'today',    label: 'Today',         color: '#22c55e' },
+  { id: 'tomorrow', label: 'Tomorrow',      color: '#3b82f6' },
+  { id: 'next7',    label: 'Next 7 Days',   color: '#8b5cf6' },
+  { id: 'next30',   label: 'Next 30 Days',  color: '#0ea5e9' },
+  { id: 'next3m',   label: 'Next 3 Months', color: '#f59e0b' },
+  { id: 'nextyear', label: 'Next Year',     color: '#64748b' },
+];
+const DATE_BUCKET_BY_ID = new Map(DATE_BUCKETS.map((b) => [b.id, b]));
+
+// Map a YYYY-MM-DD date to its relative bucket id, given today's date.
+function dateBucketId(dateStr: string, todayStr: string): string {
+  let diff: number;
+  try { diff = differenceInCalendarDays(parseISO(dateStr), parseISO(todayStr)); }
+  catch { return ''; }
+  if (diff < 0) return 'past';
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'tomorrow';
+  if (diff <= 7) return 'next7';
+  if (diff <= 30) return 'next30';
+  if (diff <= 90) return 'next3m';
+  return 'nextyear';
+}
+
+// The raw, assignable group key for a task under a given grouping field. Empty
+// string means "no value" (the task floats ungrouped). For date this is a bucket
+// id; for everything else it's the cell's display value.
+export function getGroupKey(
+  entry: OrganizerEntry,
+  field: ColKey,
+  todoById: Map<string, Todo>,
+  todayStr: string
+): string {
+  if (field === 'date') return entry.date ? dateBucketId(entry.date, todayStr) : '';
+  return getFieldDisplayValue(entry, field, todoById);
+}
+
+// Human-readable header text for a group key.
+function getGroupLabel(field: ColKey, key: string): string {
+  if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.label ?? key;
+  return key;
+}
+
+// The canonical (ascending) ordering of group keys for a field.
+function groupKeyOrder(field: ColKey): string[] {
+  if (field === 'date') return DATE_BUCKETS.map((b) => b.id);
+  return FIELD_GROUP_ORDER[field] ?? [];
+}
+
+export function getGroupColor(field: ColKey, key: string): string {
+  if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.color ?? '#9ca3af';
+  return FIELD_GROUP_COLORS[field]?.[key] ?? '#9ca3af';
+}
+
+// The Todo patch that moves a task into the group `value` for `field` — used when
+// a task is dragged across sections. Returns null for fields that can't be set by
+// dropping (collection has its own tree DnD; date buckets are derived ranges).
+// An empty value clears the field.
+export function groupAssignmentPatch(field: ColKey, value: string): Partial<Todo> | null {
+  if (field === 'priority') {
+    const opt = PRIORITY_OPTIONS.find((o) => o.label === value);
+    return { priority: (opt?.value as TodoPriority) || undefined };
+  }
+  if (field === 'status') {
+    const opt = STATUS_OPTIONS.find((o) => o.label === value);
+    const status = (opt?.value as TodoStatus) || undefined;
+    // Status drives the checkbox: Completed ⇒ checked, anything else ⇒ unchecked.
+    return { status, completed: status === 'completed' };
+  }
+  return null;
 }
 
 // Build the flat list of rows for the grouped rendering mode.
@@ -107,8 +180,10 @@ export function buildGroupedItems(
   todoById: Map<string, Todo>,
   collapsed: Set<string>,
   sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number,
-  showLeafTasks: 'top' | 'bottom' | 'none' = 'bottom'
+  showLeafTasks: 'top' | 'bottom' | 'none' = 'bottom',
+  direction: 'asc' | 'desc' = 'asc'
 ): GroupRow[] {
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
   const tasks = entries.filter((e) => !e.todo.isCollection);
   const taskById = new Map<string, OrganizerEntry>(tasks.map((e) => [e.todo.id, e]));
 
@@ -137,7 +212,7 @@ export function buildGroupedItems(
       seen.add(cur);
       const entry = taskById.get(cur);
       if (!entry) break;
-      const val = getFieldDisplayValue(entry, groupField, todoById);
+      const val = getGroupKey(entry, groupField, todoById, todayStr);
       if (val) {
         for (const id of chain) owningGroupCache.set(id, val);
         owningGroupCache.set(cur, val);
@@ -170,15 +245,16 @@ export function buildGroupedItems(
   };
 
   // Recursively emit a task and its in-group children (respecting collapse).
-  const buildTaskRows = (taskId: string, depth: number): GroupRow[] => {
+  // `group` is the owning section's key, tagged onto every row for drag handling.
+  const buildTaskRows = (taskId: string, depth: number, group: string): GroupRow[] => {
     const entry = taskById.get(taskId);
     if (!entry) return [];
     const children = doSort(childrenInGroup.get(taskId) ?? []);
     const hasChildren = children.length > 0;
     const node: FlatNode = { id: taskId, parentId: null, depth, entry, hasChildren };
-    const rows: GroupRow[] = [{ type: 'task', node }];
+    const rows: GroupRow[] = [{ type: 'task', node, group }];
     if (hasChildren && !collapsed.has(taskId)) {
-      for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1));
+      for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1, group));
     }
     return rows;
   };
@@ -197,8 +273,9 @@ export function buildGroupedItems(
     groups.set(myGroup, arr);
   }
 
-  // Sort group keys: canonical order first, then alpha.
-  const order = FIELD_GROUP_ORDER[groupField] ?? [];
+  // Sort group keys: canonical order first, then alpha. `direction` flips the
+  // whole sequence (asc = canonical, desc = reversed).
+  const order = groupKeyOrder(groupField);
   const sortedKeys = [...groups.keys()].sort((a, b) => {
     const ia = order.indexOf(a), ib = order.indexOf(b);
     if (ia !== -1 && ib !== -1) return ia - ib;
@@ -206,6 +283,7 @@ export function buildGroupedItems(
     if (ib !== -1) return 1;
     return a.localeCompare(b);
   });
+  if (direction === 'desc') sortedKeys.reverse();
 
   const groupRows: GroupRow[] = [];
   for (const key of sortedKeys) {
@@ -213,15 +291,15 @@ export function buildGroupedItems(
     const totalCount = tasks.filter((t) => getOwningGroup(t.todo.id) === key).length;
     const headerId = `__grp:${groupField}:${key}`;
     const isCollapsed = collapsed.has(headerId);
-    groupRows.push({ type: 'header', id: headerId, label: key, color: getGroupColor(groupField, key), count: totalCount, isCollapsed });
+    groupRows.push({ type: 'header', id: headerId, value: key, label: getGroupLabel(groupField, key), color: getGroupColor(groupField, key), count: totalCount, isCollapsed });
     if (!isCollapsed) {
-      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 1));
+      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 1, key));
     }
   }
 
   // Ungrouped tasks also preserve hierarchy among themselves.
   const ungroupedRows: GroupRow[] = [];
-  for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0));
+  for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0, ''));
 
   return showLeafTasks === 'top'
     ? [...ungroupedRows, ...groupRows]

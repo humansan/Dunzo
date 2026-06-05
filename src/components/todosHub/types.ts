@@ -72,6 +72,10 @@ export interface SectionsConfig {
   hideEmptyCollections: boolean;
   // Which field drives the section headers. 'collection' = default tree mode.
   groupBy: ColKey;
+  // Order of the section headers when grouping by an attribute (status/priority/
+  // date). Ignored for 'collection' grouping, which keeps its manual order.
+  // 'asc' uses the field's canonical order; 'desc' reverses it.
+  groupSortDirection: 'asc' | 'desc';
 }
 
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
@@ -79,12 +83,17 @@ export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
   showLeafTasks: 'none',
   hideEmptyCollections: false,
   groupBy: 'collection',
+  groupSortDirection: 'asc',
 };
 
 // A single row in the grouped-mode table (either a virtual group header or a task).
+// `value` is the raw, assignable group key (what dropping a task here means — e.g.
+// the priority/status value, or a date-bucket id); `label` is its display text.
 export type GroupRow =
-  | { type: 'header'; id: string; label: string; color: string; count: number; isCollapsed: boolean }
-  | { type: 'task'; node: FlatNode };
+  | { type: 'header'; id: string; value: string; label: string; color: string; count: number; isCollapsed: boolean }
+  // `group` is the owning section's raw value ('' = ungrouped leaf), used to
+  // detect cross-section drags.
+  | { type: 'task'; node: FlatNode; group: string };
 
 // A todo placed in the tree: its structural parent + depth + display order.
 export interface FlatNode {

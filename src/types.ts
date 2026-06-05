@@ -53,6 +53,7 @@ export interface Todo {
   xp?: number;             // Points granted on completion (XP system TBD)
   createdAt: number;       // Timestamp (ms) when todo was created
   completedAt?: number;    // Timestamp (ms) when status was set to 'completed'
+  deletedAt?: number;      // Timestamp (ms) when the todo was deleted
   trackingStartedAt?: number; // Timestamp when tracking started
   showInDatabase?: boolean;   // When true, the todo appears in the Task Planner
                               // (organizer). See src/utils/todoFilters.ts for

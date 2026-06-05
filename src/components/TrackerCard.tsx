@@ -115,7 +115,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         )}
 
         <div className="ml-auto text-white/20 text-xs font-medium italic">
-          {getOrdinal(dayOfMonth)}
+          {/* {getOrdinal(dayOfMonth)} */}
         </div>
       </div>
 

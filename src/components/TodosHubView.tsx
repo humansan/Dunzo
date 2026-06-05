@@ -83,7 +83,7 @@ import {
   DEFAULT_SIDEBAR_WIDTH,
 } from './todosHub/constants';
 import { flattenTree, getProjection, orderFromFlat } from './todosHub/treeUtils';
-import { getFieldDisplayValue, getFieldRawValue, compareRawValues, matchesFilter, buildGroupedItems } from './todosHub/viewUtils';
+import { getFieldDisplayValue, getFieldRawValue, compareRawValues, matchesFilter, buildGroupedItems, groupAssignmentPatch } from './todosHub/viewUtils';
 import { HubRow } from './todosHub/HubRow';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
@@ -224,6 +224,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
       hideEmptyCollections: raw_sections.hideEmptyCollections ?? DEFAULT_SECTIONS_CONFIG.hideEmptyCollections,
       groupBy:              raw_sections.groupBy              ?? DEFAULT_SECTIONS_CONFIG.groupBy,
+      groupSortDirection:   raw_sections.groupSortDirection   ?? DEFAULT_SECTIONS_CONFIG.groupSortDirection,
     };
     return {
       fieldOrder,
@@ -654,8 +655,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // Grouped rows — only used when groupBy !== 'collection'.
   const groupedRows = useMemo((): GroupRow[] => {
     if (sectionsConfig.groupBy === 'collection') return [];
-    return buildGroupedItems(processedEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks);
-  }, [sectionsConfig.groupBy, processedEntries, todoById, collapsed, sortFn]);
+    return buildGroupedItems(processedEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection);
+  }, [sectionsConfig.groupBy, processedEntries, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection]);
 
   // Sidebar counts (tasks only, collections never counted).
   const allCount = entries.filter((e) => !e.todo.isCollection).length;
@@ -761,9 +762,49 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const handleDragMove = ({ delta }: DragMoveEvent) => setOffsetLeft(delta.x);
   const handleDragOver = ({ over }: DragOverEvent) => setOverId((over?.id as string) ?? null);
 
+  // Attribute-grouped drag: reorder within a section and, when dropped onto a row
+  // in another section, reassign the grouping attribute to that section's value.
+  // (Collections keep their own tree DnD below.)
+  const handleGroupedDragEnd = (activeId: string, overId: string | null) => {
+    if (!overId || activeId === overId) return;
+    const taskRows = groupedRows.filter(
+      (r): r is Extract<GroupRow, { type: 'task' }> => r.type === 'task'
+    );
+    const activeRow = taskRows.find((r) => r.node.id === activeId);
+    const overRow = taskRows.find((r) => r.node.id === overId);
+    if (!activeRow || !overRow) return;
+
+    // Cross-section move → set the grouping field to the target section's value.
+    // groupAssignmentPatch returns null for fields that can't be set by dropping
+    // (e.g. date buckets), in which case this is a reorder-only drag.
+    if (overRow.group !== activeRow.group) {
+      const patch = groupAssignmentPatch(sectionsConfig.groupBy, overRow.group);
+      if (patch) {
+        const { todo, date } = activeRow.node.entry;
+        onSaveTodo(date, date, { ...todo, ...patch });
+      }
+    }
+
+    // Reorder within the global hub order (tasks + collections), preserving every
+    // node's parentId — attribute grouping never re-nests tasks. Reusing the
+    // global order keeps collection-mode ordering stable.
+    const ordered = [...entries].sort(
+      (a, b) => (a.todo.hubOrder ?? a.todo.createdAt) - (b.todo.hubOrder ?? b.todo.createdAt)
+    );
+    const orderedIds = ordered.map((e) => e.todo.id);
+    const from = orderedIds.indexOf(activeId);
+    const to = orderedIds.indexOf(overId);
+    if (from === -1 || to === -1) return;
+    const newIds = arrayMove(orderedIds, from, to);
+    onReorder(newIds.map((id) => ({ id, parentId: byId.get(id)?.todo.parentId ?? null })));
+  };
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    // In grouped mode, drag has no persistent effect — just reset the visual.
-    if (sectionsConfig.groupBy !== 'collection') { resetDrag(); return; }
+    if (sectionsConfig.groupBy !== 'collection') {
+      handleGroupedDragEnd(active.id as string, (over?.id as string) ?? null);
+      resetDrag();
+      return;
+    }
     const proj =
       over ? getProjection(flattened, active.id as string, over.id as string, offsetLeft, INDENT) : null;
     if (over && proj) {
@@ -1201,7 +1242,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                       collPath={collPathFor(row.node.entry.todo)}
                       columns={visibleColumns}
                       lastColKey={lastColKey}
-                      hideDragHandle
                     />
                   )
                 )}

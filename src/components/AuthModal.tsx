@@ -51,7 +51,7 @@ const SignedOutPane: React.FC<{
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all shrink-0"
+          className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all shrink-0"
         >
           <X size={16} />
         </button>
@@ -60,7 +60,7 @@ const SignedOutPane: React.FC<{
       {/* Scrollable body */}
       <div className="overflow-y-auto px-8 pb-7 space-y-4">
         {/* Toggle */}
-        <div className="grid grid-cols-2 gap-2 bg-neutral-900/50 p-1 rounded-2xl border border-white/5">
+        <div className="grid grid-cols-2 gap-2 bg-black/20 p-1 rounded-2xl border border-white/5">
           {(['login', 'signup'] as const).map((m) => (
             <button
               key={m}
@@ -115,7 +115,7 @@ const SignedOutPane: React.FC<{
           </div>
           <button
             type="submit"
-            className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold py-3 rounded-2xl transition-all transform active:scale-[0.98]"
+            className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold py-2.5 rounded-xl transition-all active:scale-[0.98]"
           >
             {mode === 'login' ? 'Log In' : 'Create Account'}
           </button>
@@ -199,7 +199,7 @@ const SignedInPane: React.FC<{
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all shrink-0"
+          className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all shrink-0"
         >
           <X size={16} />
         </button>
@@ -221,7 +221,7 @@ const SignedInPane: React.FC<{
             />
             <button
               type="submit"
-              className="w-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all"
+              className="w-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all"
             >
               Update Email
             </button>
@@ -264,7 +264,7 @@ const SignedInPane: React.FC<{
             </div>
             <button
               type="submit"
-              className="w-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all mt-1"
+              className="w-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all mt-1"
             >
               Update Password
             </button>
@@ -278,7 +278,7 @@ const SignedInPane: React.FC<{
             <button
               type="button"
               onClick={handleExport}
-              className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all"
+              className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all"
             >
               <Download size={15} />
               Export
@@ -286,7 +286,7 @@ const SignedInPane: React.FC<{
             <button
               type="button"
               onClick={() => importRef.current?.click()}
-              className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all"
+              className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white font-bold py-2.5 rounded-xl text-sm transition-all"
             >
               <Upload size={15} />
               Import
@@ -346,20 +346,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex max-h-[90vh]"
+            className="relative w-full max-w-2xl bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex max-h-[90vh]"
           >
             {/* Splash pane */}
             <div
               className="hidden md:flex w-52 shrink-0 flex-col items-center justify-center p-8 text-black"
               style={{ background: 'linear-gradient(135deg, var(--accent1) 0%, var(--accent2) 100%)' }}
             >
-              <div className="w-16 h-16 rounded-3xl bg-black/10 flex items-center justify-center mb-5">
+              <div className="w-16 h-16 rounded-2xl bg-black/10 flex items-center justify-center mb-5">
                 <Clock size={44} strokeWidth={2.5} />
               </div>
               <h2 className="text-2xl font-bold tracking-tight mb-1">Dunzo</h2>
