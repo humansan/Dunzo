@@ -41,6 +41,7 @@ import {
   NotesField,
   CollectionSearchField,
   OptionSelectField,
+  CollectionBreadcrumb,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from './todoFields';
@@ -74,6 +75,15 @@ import { SortMenu } from './todosHub/SortMenu';
 import { SectionsMenu } from './todosHub/SectionsMenu';
 import { GroupHeaderRow } from './todosHub/GroupHeaderRow';
 import { CollectionEditModal } from './todosHub/CollectionEditModal';
+
+// Returns a callback with a stable identity across renders that always invokes
+// the latest version of `fn`. Lets us pass handlers to React.memo'd rows without
+// breaking memoization, and without the stale-closure risk of useCallback([]).
+function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
+  const ref = useRef(fn);
+  useLayoutEffect(() => { ref.current = fn; });
+  return useRef(((...args: any[]) => ref.current(...args)) as T).current;
+}
 
 interface TodosHubViewProps {
   dayTodos: DayTodos[];
@@ -125,8 +135,15 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   onRenameWorkspace,
 }) => {
   // Only this workspace's todos/collections (undefined id ⇒ default 'personal').
-  const entries = getOrganizerTodos(dayTodos).filter(
-    (e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId
+  // Memoized so the whole downstream pipeline (byId, viewEntries, filtered/
+  // processed entries, flattened, …) doesn't rebuild on every unrelated render
+  // (hover, editing, menu open, each dragover frame).
+  const entries = useMemo(
+    () =>
+      getOrganizerTodos(dayTodos).filter(
+        (e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId
+      ),
+    [dayTodos, activeWorkspaceId]
   );
 
   // ── Collapse state (persisted) ─────────────────────────────────────────────
@@ -140,12 +157,12 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   useEffect(() => {
     localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsed]));
   }, [collapsed]);
-  const toggleCollapse = (id: string) =>
+  const toggleCollapse = useStableCallback((id: string) =>
     setCollapsed((prev) => {
       const n = new Set(prev);
       if (n.has(id)) n.delete(id); else n.add(id);
       return n;
-    });
+    }));
 
   // ── Column widths (persisted) ──────────────────────────────────────────────
   const defaultWidths = Object.fromEntries(COLUMNS.map((c) => [c.key, c.defaultWidth]));
@@ -302,10 +319,10 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // ── Cell editing ───────────────────────────────────────────────────────────
   const [editing, setEditing] = useState<EditState>(null);
-  const startEdit = (id: string, col: ColKey, e: React.MouseEvent) => {
+  const startEdit = useStableCallback((id: string, col: ColKey, e: React.MouseEvent) => {
     setEditing({ id, col, rect: e.currentTarget.getBoundingClientRect() });
-  };
-  const stopEdit = () => setEditing(null);
+  });
+  const stopEdit = useStableCallback(() => setEditing(null));
 
   // Close the tags/notes popover when clicking outside it. A non-blocking listener
   // (vs. a full-screen overlay) lets the click also land on another cell, so a single
@@ -395,7 +412,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // Id of the collection whose Edit modal (name / color / parent) is open.
   const [editCollId, setEditCollId] = useState<string | null>(null);
   const [fullViewId, setFullViewId] = useState<string | null>(null);
-  const openMenu = (id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); };
+  const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
 
   // The todo the context menu currently targets (to branch task vs. collection items).
@@ -469,6 +486,15 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       name: c.text || 'Untitled',
       color: c.color,
     }));
+  // Precompute each entry's collection breadcrumb once per data change, so rows
+  // get a stable `collPath` reference (otherwise every render hands each row a
+  // fresh array, defeating React.memo and re-walking ancestors per row).
+  const collPathById = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof collPathFor>>();
+    for (const e of entries) m.set(e.todo.id, collPathFor(e.todo));
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, todoById]);
   const hasCollectionAncestor = (e: OrganizerEntry): boolean => {
     let p = e.todo.parentId ?? null;
     const seen = new Set<string>();
@@ -749,11 +775,11 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     }
     setEditing({ id, col: 'title', rect: null });
   };
-  const handleQuickAddTask = (parentId: string) => {
+  const handleQuickAddTask = useStableCallback((parentId: string) => {
     const id = onAddSubtask(parentId);
     setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
     setEditing({ id, col: 'title', rect: null });
-  };
+  });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -798,11 +824,11 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 
-  const resetDrag = () => { setRowDragId(null); setRowDrop(null); tableScroll.stop(); };
+  const resetDrag = useStableCallback(() => { setRowDragId(null); setRowDrop(null); tableScroll.stop(); });
 
   // Auto-archive: when a task is being completed and the setting is on, archive
   // it immediately instead of just toggling the checkbox.
-  const handleToggleTodo = (id: string) => {
+  const handleToggleTodo = useStableCallback((id: string) => {
     if (sectionsConfig.autoArchive) {
       const entry = entries.find((e) => e.todo.id === id);
       if (entry && !entry.todo.completed) {
@@ -811,7 +837,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       }
     }
     onToggleTodo(id);
-  };
+  });
 
   // Nearest collection ancestor id (or null) — collections may only nest under
   // collections, so a collection drag snaps its parent up to one.
@@ -911,7 +937,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const sameDrop = (a: RowDrop | null, b: RowDrop | null) =>
     (!a && !b) || (!!a && !!b && a.id === b.id && a.pos === b.pos && a.depth === b.depth);
 
-  const onRowDragStart = (id: string) => {
+  const onRowDragStart = useStableCallback((id: string) => {
     // Defer the state update: setting React state synchronously inside dragstart
     // re-renders the dragged row and aborts the native drag (the "first drag does
     // nothing / row stays dimmed" bug). A frame later the drag is committed.
@@ -921,10 +947,10 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       setEditing(null);
       setMenu(null);
     });
-  };
+  });
 
   // dragOver on a task/collection row — recompute and stash the resolved drop.
-  const onRowDragOver = (targetId: string, e: React.DragEvent) => {
+  const onRowDragOver = useStableCallback((targetId: string, e: React.DragEvent) => {
     if (!rowDragId) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -951,7 +977,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       }
     }
     setRowDrop((prev) => (sameDrop(prev, next) ? prev : next));
-  };
+  });
 
   // dragOver on a section header (attribute-grouped mode) — drop at the top of it.
   const onHeaderDragOver = (headerId: string, group: string, e: React.DragEvent) => {
@@ -1012,13 +1038,13 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     }
   };
 
-  const onRowDrop = () => {
+  const onRowDrop = useStableCallback(() => {
     if (rowDragId && rowDrop) {
       if (sectionsConfig.groupBy === 'collection') commitTreeDrop(rowDragId, rowDrop);
       else commitGroupedDrop(rowDragId, rowDrop);
     }
     resetDrag();
-  };
+  });
 
   // The popover (tags/notes/status/priority) edits the entry currently being edited.
   const editingEntry =
@@ -1235,7 +1261,17 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           </button>
           <h1 className="text-lg font-bold">Task Planner</h1>
           <span className="text-xs text-white/25">/</span>
-          <span className="text-xs font-medium text-white/70 truncate max-w-[260px]">{viewLabel}</span>
+          {selectedCollectionId ? (
+            <CollectionBreadcrumb
+              path={collectionPath(selectedCollectionId, todoById).map((c) => ({
+                id: c.id,
+                name: c.text || 'Untitled',
+                color: c.color,
+              }))}
+            />
+          ) : (
+            <span className="text-xs font-medium text-white/70 truncate max-w-[260px]">{viewLabel}</span>
+          )}
           <span className="text-xs text-white/40">{currentCount} item{currentCount === 1 ? '' : 's'}</span>
         </div>
 
@@ -1401,7 +1437,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                 openMenu={openMenu}
                 isCollapsed={collapsed.has(node.id)}
                 onToggleCollapse={toggleCollapse}
-                collPath={collPathFor(node.entry.todo)}
+                collPath={collPathById.get(node.id) ?? []}
                 columns={visibleColumns}
                 lastColKey={lastColKey}
                 taskCount={node.entry.todo.isCollection ? (visibleTaskCounts.get(node.id) ?? 0) : undefined}
@@ -1441,7 +1477,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                   openMenu={openMenu}
                   isCollapsed={collapsed.has(row.node.id)}
                   onToggleCollapse={toggleCollapse}
-                  collPath={collPathFor(row.node.entry.todo)}
+                  collPath={collPathById.get(row.node.id) ?? []}
                   columns={visibleColumns}
                   lastColKey={lastColKey}
                   isDragSource={rowDragId === row.node.id}

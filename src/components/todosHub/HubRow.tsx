@@ -54,7 +54,7 @@ interface HubRowProps {
   onRowDragEnd?: () => void;
 }
 
-export const HubRow: React.FC<HubRowProps> = ({
+const HubRowImpl: React.FC<HubRowProps> = ({
   node,
   displayDepth,
   gridTemplateColumns,
@@ -414,3 +414,8 @@ export const HubRow: React.FC<HubRowProps> = ({
     </div>
   );
 };
+
+// Memoized: with the parent passing stable callbacks + a stable collPath, rows
+// only re-render when their own data/state actually changes (e.g. the row being
+// dragged over), instead of all rows re-rendering on every parent render.
+export const HubRow = React.memo(HubRowImpl);

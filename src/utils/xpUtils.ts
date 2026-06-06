@@ -56,11 +56,27 @@ export function computeXpStats(
   _weekStartsOn: number
 ): XpStats {
   const parsed = parseISO(date);
-  const earned = getEarnedXp(dayTodos, date);
-  const potential = getPotentialXp(dayTodos, date);
+
+  // Build O(1) lookup maps once so no inner loop calls getEarnedXp (which was
+  // O(n) via dayTodos.find), turning the all-time loop from O(n²) to O(n).
+  const earnedByDate = new Map<string, number>();
+  const potentialByDate = new Map<string, number>();
+  for (const day of dayTodos) {
+    let e = 0, p = 0;
+    for (const t of day.todos || []) {
+      if (t?.xp) p += t.xp;
+      if (t?.completed && t?.xp) e += t.xp;
+    }
+    earnedByDate.set(day.date, e);
+    potentialByDate.set(day.date, p);
+  }
+  const earnedOf = (d: string) => earnedByDate.get(d) ?? 0;
+
+  const earned = earnedOf(date);
+  const potential = potentialByDate.get(date) ?? 0;
   const upForGrabs = Math.max(0, potential - earned);
 
-  const yesterday = getEarnedXp(dayTodos, dayKey(subDays(parsed, 1)));
+  const yesterday = earnedOf(dayKey(subDays(parsed, 1)));
   const target = yesterday;
 
   // Best single day, and average daily earned, over the 7 calendar days
@@ -68,7 +84,7 @@ export function computeXpStats(
   let bestLast7Days = 0;
   let sumLast7Days = 0;
   for (let i = 1; i <= 7; i++) {
-    const dayEarned = getEarnedXp(dayTodos, dayKey(subDays(parsed, i)));
+    const dayEarned = earnedOf(dayKey(subDays(parsed, i)));
     bestLast7Days = Math.max(bestLast7Days, dayEarned);
     sumLast7Days += dayEarned;
   }
@@ -80,7 +96,7 @@ export function computeXpStats(
   let totalAllTime = 0;
   for (const day of dayTodos) {
     if (!hasDate(day.date)) continue; // skip the undated Task Planner bucket
-    const dayEarned = getEarnedXp(dayTodos, day.date);
+    const dayEarned = earnedOf(day.date); // O(1) map lookup
     totalAllTime += dayEarned;
     if (day.date !== date) bestAllTime = Math.max(bestAllTime, dayEarned);
   }
@@ -114,13 +130,22 @@ export function computeXpStats(
  * days at a time — the same shape as the stats page "Week" chart.
  */
 export function getWeeklyXp(dayTodos: DayTodos[], weeks: number): number[] {
+  const earnedByDate = new Map<string, number>();
+  for (const day of dayTodos) {
+    let e = 0;
+    for (const t of day.todos || []) {
+      if (t?.completed && t?.xp) e += t.xp;
+    }
+    earnedByDate.set(day.date, e);
+  }
+
   const today = new Date();
   const result: number[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
     let sum = 0;
     const endDay = subDays(today, i * 7);
     for (let offset = 0; offset < 7; offset++) {
-      sum += getEarnedXp(dayTodos, dayKey(subDays(endDay, offset)));
+      sum += earnedByDate.get(dayKey(subDays(endDay, offset))) ?? 0;
     }
     result.push(sum);
   }
