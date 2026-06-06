@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
 import {
@@ -325,9 +325,71 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     return () => window.removeEventListener('mousedown', onDown);
   }, [popoverOpen]);
 
+  // ── Popover / context-menu placement ───────────────────────────────────────
+  // Both popups are portaled to <body> and positioned in JS. When their anchor
+  // sits near the bottom (or right) of the viewport, the default position would
+  // clip them. After mount we measure the popup and flip / clamp it to fit.
+  const MARGIN = 8;
+
+  // Place a box of (w, h) at a preferred origin, flipping vertically when it
+  // would clip below and clamping to the viewport edges otherwise.
+  function fitPlacement(
+    preferred: { top: number; left: number },
+    size: { width: number; height: number },
+    flipY: (h: number) => number,
+  ): { top: number; left: number } {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const belowTop = preferred.top;
+    const aboveTop = flipY(size.height);
+    let top = belowTop;
+    if (belowTop + size.height > vh - MARGIN && aboveTop >= MARGIN) {
+      top = aboveTop;
+    }
+    if (top + size.height > vh - MARGIN) top = Math.max(MARGIN, vh - size.height - MARGIN);
+    if (top < MARGIN) top = MARGIN;
+    let left = preferred.left;
+    if (left + size.width > vw - MARGIN) left = Math.max(MARGIN, vw - size.width - MARGIN);
+    if (left < MARGIN) left = MARGIN;
+    return { top, left };
+  }
+
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!editing || !editing.rect || !popoverRef.current) {
+      setPopoverPos(null);
+      return;
+    }
+    const el = popoverRef.current;
+    setPopoverPos(
+      fitPlacement(
+        { top: editing.rect.bottom + 4, left: editing.rect.left },
+        { width: el.offsetWidth, height: el.offsetHeight },
+        (h) => editing.rect!.top - h - 4,
+      ),
+    );
+  }, [editing?.id, editing?.col]);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+
   // ── Row context menu & full-view ───────────────────────────────────────────
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false); // "Change color" sub-panel
+  useLayoutEffect(() => {
+    if (!menu || !menuRef.current) {
+      setMenuPos(null);
+      return;
+    }
+    const el = menuRef.current;
+    setMenuPos(
+      fitPlacement(
+        { top: menu.y, left: menu.x },
+        { width: el.offsetWidth, height: el.offsetHeight },
+        (h) => menu.y - h,
+      ),
+    );
+  }, [menu?.x, menu?.y]);
   // Id of the collection pending a delete decision (cascade vs. promote).
   const [deleteCollId, setDeleteCollId] = useState<string | null>(null);
   // Id of the collection whose Edit modal (name / color / parent) is open.
@@ -978,7 +1040,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   };
 
   const headerCellCls =
-    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 select-none';
+    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 hover:bg-[#0f0f0f] select-none';
 
   const sidebarItemCls = (view: string, compact = false) =>
     `w-full flex items-center rounded-lg text-left transition-colors ${
@@ -1357,6 +1419,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                 <GroupHeaderRow
                   key={row.id}
                   row={row}
+                  gridTemplateColumns={gridTemplateColumns}
                   onToggleCollapse={toggleCollapse}
                   isDropTarget={rowDrop?.id === row.id}
                   onHeaderDragOver={(e) => onHeaderDragOver(row.id, row.value, e)}
@@ -1396,10 +1459,12 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           <button
             type="button"
             onClick={handleNewInView}
-            className="flex items-center gap-2 w-full h-9 px-3 text-sm text-white/60 hover:text-white hover:bg-white/3 border-b border-white/8 cursor-pointer transition-colors"
+            className="flex w-full h-9  text-white/60 hover:text-white hover:bg-white/3 border-b border-white/8 cursor-pointer transition-colors bg-[#0a0a0a]"
           >
-            <Plus size={15} />
-            <span>New</span>
+            <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
+              <Plus size={15}/>
+              <span>New</span>
+            </div>
           </button>
 
           {(sectionsConfig.groupBy === 'collection' ? flattened.length === 0 : groupedRows.length === 0) && (
@@ -1476,8 +1541,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
             ref={popoverRef}
             style={{
               position: 'fixed',
-              left: editing.rect.left,
-              top: editing.rect.bottom + 4,
+              left: popoverPos?.left ?? editing.rect.left,
+              top: popoverPos?.top ?? editing.rect.bottom + 4,
               width: editing.col === 'date'
                 ? 240
                 : Math.max(editing.rect.width, editing.col === 'status' || editing.col === 'priority' ? 180 : 260),
@@ -1548,7 +1613,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
             onContextMenu={(e) => { e.preventDefault(); closeMenu(); }}
           />
           <div
-            style={{ position: 'fixed', left: menu.x, top: menu.y }}
+            ref={menuRef}
+            style={{ position: 'fixed', left: menuPos?.left ?? menu.x, top: menuPos?.top ?? menu.y }}
             className="z-[66] min-w-[170px] rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-1 text-sm"
           >
             {menuEntry?.todo.isCollection ? (

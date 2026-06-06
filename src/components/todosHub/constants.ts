@@ -36,7 +36,7 @@ export const colorName = (c: string) => COLLECTION_COLOR_NAMES[c] || 'Custom';
 
 // Pill label color: lighten the collection color toward white so the name reads
 // with high contrast against the dark tinted-bg pill.
-export const pillTextColor = (color: string) => `color-mix(in srgb, ${color} 60%, white)`;
+export const pillTextColor = (color: string) => `color-mix(in srgb, ${color} 40%, white)`;
 
 // ── Persistence keys ─────────────────────────────────────────────────────────
 export const WIDTHS_KEY = 'dun-hub-col-widths';

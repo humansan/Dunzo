@@ -234,13 +234,13 @@ export const statusOption   = (v?: TodoStatus)   => STATUS_OPTIONS.find((o)   =>
 export const priorityOption = (v?: TodoPriority) => PRIORITY_OPTIONS.find((o) => o.value === v);
 
 // Tinted-bg pill — matches the collection header pill style for visual consistency.
-const chipBg   = (c: string) => `${c}40`;
-const chipText = (c: string) => `color-mix(in srgb, ${c} 60%, white)`;
+const chipBg   = (c: string) => `${c}70`;
+const chipText = (c: string) => `color-mix(in srgb, ${c} 20%, white)`;
 
 export const OptionChip: React.FC<{ option: ChipOption; className?: string }> = ({ option, className = '' }) => (
   <span
     style={{ backgroundColor: chipBg(option.color), color: chipText(option.color) }}
-    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${className}`}
+    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${className}`}
   >
     {option.label}
   </span>
@@ -267,7 +267,7 @@ export const OptionSelectField: React.FC<{
               type="button"
               onClick={() => onChange(selected ? undefined : opt.value)}
               style={{ backgroundColor: chipBg(opt.color), color: chipText(opt.color) }}
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
                 selected
                   ? `ring-2 ring-[${opt.color}] ring-offset`
                   : 'opacity-45 hover:opacity-100'
@@ -309,8 +309,8 @@ export const OptionSelectField: React.FC<{
 // pills separated by a chevron; the search picks/creates a single collection.
 
 const COLL_FALLBACK = '#9ca3af';
-const collChipText = (color?: string) => `color-mix(in srgb, ${color || COLL_FALLBACK} 55%, white)`;
-const collChipBg = (color?: string) => `${color || COLL_FALLBACK}26`;
+const collChipText = (color?: string) => `color-mix(in srgb, ${color || COLL_FALLBACK} 40%, white)`;
+const collChipBg = (color?: string) => `${color || COLL_FALLBACK}40`;
 
 // Renders a collection path as `[root] › [child] › [leaf]`.
 export const CollectionBreadcrumb: React.FC<{
@@ -323,7 +323,7 @@ export const CollectionBreadcrumb: React.FC<{
         {i > 0 && <ChevronRight size={12} className="shrink-0 text-white/30" />}
         <span
           style={{ backgroundColor: collChipBg(c.color), color: collChipText(c.color) }}
-          className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-semibold"
+          className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-medium"
         >
           {c.name}
         </span>

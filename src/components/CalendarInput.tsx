@@ -111,7 +111,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   }, [autoFocus]);
 
   return (
-    <div className={`bg-[#1A1A1A] border border-white/10 rounded-xl p-2.5 w-64 ${className ?? ''}`}>
+    <div className={`bg-[#1A1A1A] border border-white/10 rounded-xl p-2.5 w-60 ${className ?? ''}`}>
       <input
         ref={inputRef}
         type="text"

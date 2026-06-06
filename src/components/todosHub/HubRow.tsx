@@ -148,8 +148,8 @@ export const HubRow: React.FC<HubRowProps> = ({
   const DisplayCell: React.FC<{ col: ColKey; children: React.ReactNode; active?: boolean }> = ({ col, children, active }) => (
     <div
       onClick={(e) => startEdit(todo.id, col, e)}
-      className={`flex items-center h-full px-2.5 border-l border-white/8 overflow-hidden cursor-pointer hover:bg-white/[0.03] ${
-        active ? 'ring-1 ring-inset ring-[var(--accent2)]/60' : ''
+      className={`flex items-center h-full px-2.5 border-l border-white/8 overflow-hidden cursor-pointer hover:bg-white/3 ${
+        active ? 'ring-1 ring-inset ring-(--accent2)/60' : ''
       } ${
         col === lastColKey ? 'border-r border-white/8' : ''
       }`}
@@ -168,10 +168,10 @@ export const HubRow: React.FC<HubRowProps> = ({
         style={style}
         {...dropProps}
         onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-        className={`relative grid items-center min-h-12 border-b pt-3 border-white/8 group/row ${
-          isDragSource ? 'opacity-40' : 'hover:bg-white/[0.015]'
+        className={`relative grid items-end min-h-12 border-b pt-4 border-white/8 group/row ${
+          isDragSource && 'opacity-50'
         }`}
-      >
+      > 
         {dropLine('before')}
         {dropLine('after')}
         {insideOverlay}
@@ -180,7 +180,7 @@ export const HubRow: React.FC<HubRowProps> = ({
         <div
           ref={dragImageRef}
           style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
-          className="col-span-full sticky left-0 flex items-center min-w-0 max-w-full"
+          className="sticky grid-col-200 left-0 z-20 flex items-center h-full min-w-0 overflow-hidden bg-[#0a0a0a]"
         >
           {hasChildren ? (
             <button
@@ -341,7 +341,7 @@ export const HubRow: React.FC<HubRowProps> = ({
       {...dropProps}
       onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
       className={`relative grid items-stretch min-h-[36px] border-b border-white/8 group/row ${
-        isDragSource ? 'opacity-40' : 'hover:bg-white/[0.015]'
+        isDragSource ? 'opacity-40' : 'hover:bg-white/2'
       }`}
     >
       {dropLine('before')}
@@ -351,7 +351,7 @@ export const HubRow: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className="sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0e0e0e]"
+        className="sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
       >
         <div style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }} className="flex items-center h-full min-w-0 flex-1">
           {hasChildren ? (

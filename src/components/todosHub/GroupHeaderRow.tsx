@@ -7,19 +7,21 @@ type GroupHeader = Extract<GroupRow, { type: 'header' }>;
 
 export const GroupHeaderRow: React.FC<{
   row: GroupHeader;
+  gridTemplateColumns: string;
   onToggleCollapse: (id: string) => void;
   // Drop target: highlighted while a task is dragged over it (drops at the top of
   // the section and reassigns the grouping attribute to this section's value).
   isDropTarget?: boolean;
   onHeaderDragOver?: (e: React.DragEvent) => void;
   onHeaderDrop?: () => void;
-}> = ({ row, onToggleCollapse, isDropTarget = false, onHeaderDragOver, onHeaderDrop }) => {
+}> = ({ row, gridTemplateColumns, onToggleCollapse, isDropTarget = false, onHeaderDragOver, onHeaderDrop }) => {
   const { id, label, color, count, isCollapsed } = row;
   return (
     <div
+      style={{ gridTemplateColumns }}
       onDragOver={onHeaderDragOver}
       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onHeaderDrop?.(); }}
-      className="relative flex items-center w-full min-h-12 border-b pt-3 border-white/8 hover:bg-white/[0.015]"
+      className="relative grid items-center min-h-12 border-b pt-3 border-white/8"
     >
       {/* Drop line under the header — task lands at the top of this section. */}
       {isDropTarget && (
@@ -28,9 +30,10 @@ export const GroupHeaderRow: React.FC<{
           style={{ marginLeft: NAME_BASE_PAD + INDENT }}
         />
       )}
+      {/* First grid column — sticky so the label stays visible on horizontal scroll. */}
       <div
         style={{ paddingLeft: NAME_BASE_PAD }}
-        className="sticky left-0 flex items-center gap-1.5 min-w-0 max-w-full"
+        className="sticky left-0 z-20 flex items-center h-full gap-1.5 overflow-hidden bg-[#0a0a0a]"
       >
         <button
           type="button"
@@ -41,12 +44,12 @@ export const GroupHeaderRow: React.FC<{
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
         </button>
         <span
-          style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
+          style={{ backgroundColor: `${color}70`, color: pillTextColor(color) }}
           className="min-w-0 truncate rounded-full px-2.5 py-px text-sm font-medium"
         >
           {label}
         </span>
-        <span className="text-xs text-white/35 font-mono">{count}</span>
+        <span className="shrink-0 text-xs text-white/35 font-mono">{count}</span>
       </div>
     </div>
   );
