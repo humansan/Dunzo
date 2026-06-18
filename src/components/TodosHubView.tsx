@@ -1,59 +1,36 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
-import {
-  Plus,
-  ChevronRight,
-  ChevronDown,
-  FolderPlus,
-  Layers,
-  Inbox,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Table,
-  List,
-  GanttChart,
-  Group,
-  Columns3,
-  Filter,
-  ArrowUpDown,
-  Box,
-  Shapes,
-} from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { DayTodos, Todo, Workspace } from '../types';
 import {
-  getOrganizerTodos,
   OrganizerEntry,
   hasDate,
   CollectionOption,
-  todoIndex,
-  collectionOf,
-  collectionPath,
 } from '../utils/todoFilters';
 import { TodoFullView } from './TodoFullView';
-import { CollectionBreadcrumb } from './todoFields';
-import { ColKey, ColDef, COLUMNS, NAME_COL_KEY, EditState, FilterRule, SortRule, SectionsConfig, DEFAULT_SECTIONS_CONFIG, GroupRow } from './todosHub/types';
+import { ColKey, COLUMNS, EditState } from './todosHub/types';
 import {
-  MIN_COL_WIDTH,
   TABLE_PAD,
   BOTTOM_SPACER,
   DEFAULT_COLLECTION_COLOR,
-  WIDTHS_KEY,
-  VIEWS_KEY,
   COLLAPSED_KEY,
   VIEW_KEY,
   SIDEBAR_WIDTH_KEY,
   SIDEBAR_HIDDEN_KEY,
   SIDEBAR_COLLAPSED_KEY,
-  SIDEBAR_INDENT,
   MIN_SIDEBAR_WIDTH,
   MAX_SIDEBAR_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
 } from './todosHub/constants';
-import { flattenTree, orderFromFlat } from './todosHub/treeUtils';
-import { useDragAutoScroll } from './todosHub/useDragAutoScroll';
 import { usePersistentState, setCodec, stringCodec } from './todosHub/usePersistentState';
-import { getFieldDisplayValue, getFieldRawValue, compareRawValues, matchesFilter, buildGroupedItems, groupAssignmentPatch, groupCreateSpec } from './todosHub/viewUtils';
+import { useHubViewConfig } from './todosHub/useHubViewConfig';
+import { useHubData } from './todosHub/useHubData';
+import { useCollectionDnD } from './todosHub/useCollectionDnD';
+import { useRowDnD } from './todosHub/useRowDnD';
+import { HubSidebar } from './todosHub/HubSidebar';
+import { HubToolbar, ToolbarMenuKey } from './todosHub/HubToolbar';
+import { groupCreateSpec } from './todosHub/viewUtils';
 import { HubRow } from './todosHub/HubRow';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
@@ -64,15 +41,7 @@ import { CollectionEditModal } from './todosHub/CollectionEditModal';
 import { CellEditorPopover } from './todosHub/CellEditorPopover';
 import { RowContextMenu } from './todosHub/RowContextMenu';
 import { DeleteCollectionModal } from './todosHub/DeleteCollectionModal';
-
-// Returns a callback with a stable identity across renders that always invokes
-// the latest version of `fn`. Lets us pass handlers to React.memo'd rows without
-// breaking memoization, and without the stale-closure risk of useCallback([]).
-function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
-  const ref = useRef(fn);
-  useLayoutEffect(() => { ref.current = fn; });
-  return useRef(((...args: any[]) => ref.current(...args)) as T).current;
-}
+import { useStableCallback } from './todosHub/useStableCallback';
 
 interface TodosHubViewProps {
   dayTodos: DayTodos[];
@@ -126,19 +95,9 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   onAddWorkspace,
   onRenameWorkspace,
 }) => {
-  // Only this workspace's todos/collections (undefined id ⇒ default 'personal').
-  // Memoized so the whole downstream pipeline (byId, viewEntries, filtered/
-  // processed entries, flattened, …) doesn't rebuild on every unrelated render
-  // (hover, editing, menu open, each dragover frame).
-  const entries = useMemo(
-    () =>
-      getOrganizerTodos(dayTodos).filter(
-        (e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId
-      ),
-    [dayTodos, activeWorkspaceId]
-  );
-
   // ── Collapse state (persisted) ─────────────────────────────────────────────
+  // Table row collapse and sidebar collection-tree collapse (both feed the data
+  // layer below, so they're declared first).
   const [collapsed, setCollapsed] = usePersistentState(COLLAPSED_KEY, () => new Set<string>(), setCodec);
   const toggleCollapse = useStableCallback((id: string) =>
     setCollapsed((prev) => {
@@ -146,110 +105,74 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       if (n.has(id)) n.delete(id); else n.add(id);
       return n;
     }));
-
-  // ── Column widths (persisted) ──────────────────────────────────────────────
-  const defaultWidths = Object.fromEntries(COLUMNS.map((c) => [c.key, c.defaultWidth]));
-  const [widths, setWidths] = usePersistentState<Record<string, number>>(WIDTHS_KEY, defaultWidths, {
-    parse: (raw) => ({ ...defaultWidths, ...JSON.parse(raw) }),
-    serialize: (v) => JSON.stringify(v),
-  });
+  const [collapsedColls, setCollapsedColls] = usePersistentState(SIDEBAR_COLLAPSED_KEY, () => new Set<string>(), setCodec);
+  const toggleCollColl = (id: string) =>
+    setCollapsedColls((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
 
   // ── Sidebar selection (which collection / view the table shows) ────────────
-  // Declared early so the per-view config block below can derive its storage key.
+  // Declared early so the per-view config hook below can derive its storage key.
   const [selectedView, setSelectedView] = usePersistentState(VIEW_KEY, 'all', stringCodec);
 
-  // ── Per-view config (field order, visibility, filters, sorts) ────────────────
-  // Keyed by workspaceId:viewId so each sidebar tab in each workspace has its own
-  // independent layout and filter/sort state.
-  const [viewsConfig, setViewsConfig] = usePersistentState<Record<string, any>>(VIEWS_KEY, {});
+  // Per-view layout + column widths (field order/visibility, filters, sorts,
+  // section settings, resizable columns) — keyed by workspace + view.
+  const {
+    fieldOrder,
+    hiddenFields,
+    activeFilters,
+    activeSorts,
+    sectionsConfig,
+    updateViewState,
+    colByKey,
+    toggleField,
+    moveField,
+    visibleColumns,
+    lastColKey,
+    gridTemplateColumns,
+    startResize,
+  } = useHubViewConfig(activeWorkspaceId, selectedView);
 
-  // The config key for the currently-visible view.
-  const viewConfigKey = `${activeWorkspaceId}:${selectedView}`;
-
-  // Derive and reconcile the current view's config (field order may drift if
-  // new columns are added; unknown keys are dropped, missing ones are appended).
-  const allColKeys = COLUMNS.map((c) => c.key);
-  const currentViewState = useMemo(() => {
-    const raw = viewsConfig[viewConfigKey] ?? {};
-    let fieldOrder: ColKey[] = Array.isArray(raw.fieldOrder)
-      ? raw.fieldOrder.filter((k: string): k is ColKey => allColKeys.includes(k as ColKey))
-      : [];
-    fieldOrder = [
-      NAME_COL_KEY,
-      ...[...fieldOrder, ...allColKeys.filter((k) => !fieldOrder.includes(k))].filter(
-        (k) => k !== NAME_COL_KEY
-      ),
-    ];
-    const hiddenFields = new Set<ColKey>(
-      (Array.isArray(raw.hiddenFields) ? raw.hiddenFields : []).filter(
-        (k: string): k is ColKey => k !== NAME_COL_KEY && allColKeys.includes(k as ColKey)
-      )
-    );
-    const raw_sections = raw.sections ?? {};
-    const sections: SectionsConfig = {
-      autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
-      showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
-      hideEmptyCollections: raw_sections.hideEmptyCollections ?? DEFAULT_SECTIONS_CONFIG.hideEmptyCollections,
-      groupBy:              raw_sections.groupBy              ?? DEFAULT_SECTIONS_CONFIG.groupBy,
-      groupSortDirection:   raw_sections.groupSortDirection   ?? DEFAULT_SECTIONS_CONFIG.groupSortDirection,
-    };
-    return {
-      fieldOrder,
-      hiddenFields,
-      filters: (Array.isArray(raw.filters) ? raw.filters : []) as FilterRule[],
-      sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
-      sections,
-    };
-  }, [viewsConfig, viewConfigKey]);
-
-  const { fieldOrder, hiddenFields, filters: activeFilters, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
-
-  // Persist any view-state update (partial merge).
-  const updateViewState = (patch: {
-    fieldOrder?: ColKey[];
-    hiddenFields?: Set<ColKey>;
-    filters?: FilterRule[];
-    sorts?: SortRule[];
-    sections?: SectionsConfig;
-  }) => {
-    setViewsConfig((prev) => ({
-      ...prev,
-      [viewConfigKey]: {
-        fieldOrder:  patch.fieldOrder  ?? fieldOrder,
-        hiddenFields: [...(patch.hiddenFields ?? hiddenFields)],
-        filters:     patch.filters     ?? activeFilters,
-        sorts:       patch.sorts       ?? activeSorts,
-        sections:    patch.sections    ?? sectionsConfig,
-      },
-    }));
-  };
-
-  const colByKey = useMemo(() => new Map(COLUMNS.map((c) => [c.key, c])), []);
-
-  const toggleField = (key: ColKey) => {
-    if (key === NAME_COL_KEY) return;
-    const n = new Set(hiddenFields);
-    if (n.has(key)) n.delete(key); else n.add(key);
-    updateViewState({ hiddenFields: n });
-  };
-  const moveField = (dragKey: ColKey, targetKey: ColKey, pos: 'before' | 'after') => {
-    if (dragKey === NAME_COL_KEY || targetKey === NAME_COL_KEY) return;
-    const order = fieldOrder.filter((k) => k !== dragKey);
-    const ti = order.indexOf(targetKey);
-    if (ti === -1) return;
-    order.splice(pos === 'before' ? ti : ti + 1, 0, dragKey);
-    updateViewState({ fieldOrder: [NAME_COL_KEY, ...order.filter((k) => k !== NAME_COL_KEY)] });
-  };
-
-  // Columns the table renders: ordered, with hidden ones removed (Name always first).
-  const visibleColumns = useMemo(
-    () =>
-      fieldOrder
-        .map((k) => colByKey.get(k)!)
-        .filter((c): c is ColDef => !!c && (c.key === NAME_COL_KEY || !hiddenFields.has(c.key))),
-    [fieldOrder, hiddenFields, colByKey]
-  );
-  const lastColKey = visibleColumns[visibleColumns.length - 1]?.key ?? NAME_COL_KEY;
+  // Derived data layer: entry indexes, the collection tree, filtered/grouped row
+  // lists, and per-collection counts.
+  const {
+    entries,
+    selectedCollectionId,
+    byId,
+    todoById,
+    collPathFor,
+    collPathById,
+    hasCollectionAncestor,
+    isDescendantOf,
+    collections,
+    collChildren,
+    visibleCollections,
+    viewEntries,
+    uniqueValues,
+    processedEntries,
+    sortFn,
+    visibleTaskCounts,
+    groupedRows,
+    flattened,
+    flatById,
+    collectionCount,
+    allCount,
+    uncategorizedCount,
+    currentCount,
+    viewLabel,
+  } = useHubData({
+    dayTodos,
+    activeWorkspaceId,
+    selectedView,
+    setSelectedView,
+    collapsed,
+    collapsedColls,
+    activeFilters,
+    activeSorts,
+    sectionsConfig,
+  });
 
   // ── Toolbar menu anchor states ────────────────────────────────────────────────
   const [sectionsMenu, setSectionsMenu] = useState<{ right: number; top: number } | null>(null);
@@ -281,23 +204,20 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // Close all toolbar menus when the sidebar view changes.
   useEffect(() => { closeToolbarMenus(); }, [selectedView]);
 
-  const gridTemplateColumns = visibleColumns.map((c) => `${widths[c.key]}px`).join(' ') + ' minmax(80px, 1fr)';
-
-  const startResize = (key: ColKey, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX;
-    const startW = widths[key];
-    const onMove = (ev: MouseEvent) => {
-      const w = Math.max(MIN_COL_WIDTH, startW + (ev.clientX - startX));
-      setWidths((prev) => ({ ...prev, [key]: w }));
-    };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+  // Toolbar button → its menu's open state + setter, for HubToolbar.
+  const toolbarMenuOpen = {
+    sections: !!sectionsMenu,
+    fields: !!fieldsMenu,
+    filter: !!filterMenu,
+    sort: !!sortMenu,
+  };
+  const onToggleMenu = (which: ToolbarMenuKey, e: React.MouseEvent) => {
+    const setter =
+      which === 'sections' ? setSectionsMenu
+      : which === 'fields' ? setFieldsMenu
+      : which === 'filter' ? setFilterMenu
+      : setSortMenu;
+    toggleToolbarMenu(e, toolbarMenuOpen[which], setter);
   };
 
   // ── Cell editing ───────────────────────────────────────────────────────────
@@ -458,294 +378,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     window.addEventListener('mouseup', onUp);
   };
 
-  // A real collection is selected (vs. the 'all' / 'uncategorized' pseudo-views).
-  const selectedCollectionId =
-    selectedView !== 'all' && selectedView !== 'uncategorized' ? selectedView : null;
-
-  // Ancestry helpers over the current entry set.
-  const byId = useMemo(() => new Map(entries.map((e) => [e.todo.id, e])), [entries]);
-  // Full todo index (across all buckets) for resolving collection paths.
-  const todoById = useMemo(() => todoIndex(dayTodos), [dayTodos]);
-  const collPathFor = (todo: Todo) =>
-    collectionPath(collectionOf(todo, todoById), todoById).map((c) => ({
-      id: c.id,
-      name: c.text || 'Untitled',
-      color: c.color,
-    }));
-  // Precompute each entry's collection breadcrumb once per data change, so rows
-  // get a stable `collPath` reference (otherwise every render hands each row a
-  // fresh array, defeating React.memo and re-walking ancestors per row).
-  const collPathById = useMemo(() => {
-    const m = new Map<string, ReturnType<typeof collPathFor>>();
-    for (const e of entries) m.set(e.todo.id, collPathFor(e.todo));
-    return m;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, todoById]);
-  const hasCollectionAncestor = (e: OrganizerEntry): boolean => {
-    let p = e.todo.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && byId.has(p) && !seen.has(p)) {
-      seen.add(p);
-      const pe = byId.get(p)!;
-      if (pe.todo.isCollection) return true;
-      p = pe.todo.parentId ?? null;
-    }
-    return false;
-  };
-  const isDescendantOf = (e: OrganizerEntry, cid: string): boolean => {
-    let p = e.todo.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && byId.has(p) && !seen.has(p)) {
-      if (p === cid) return true;
-      seen.add(p);
-      p = byId.get(p)!.todo.parentId ?? null;
-    }
-    return false;
-  };
-
-  // Collections list for the sidebar (top-level sections, in hub order).
-  const collections = useMemo(
-    () =>
-      entries
-        .filter((e) => e.todo.isCollection)
-        .sort((a, b) => (a.todo.hubOrder ?? a.todo.createdAt) - (b.todo.hubOrder ?? b.todo.createdAt)),
-    [entries]
-  );
-
-  // If the selected collection was deleted/archived, fall back to All.
-  useEffect(() => {
-    if (selectedCollectionId && !collections.some((c) => c.todo.id === selectedCollectionId)) {
-      setSelectedView('all');
-    }
-  }, [selectedCollectionId, collections]);
-
-  // ── Sidebar collection tree (nested, expand/collapse) ──────────────────────
-  const [collapsedColls, setCollapsedColls] = usePersistentState(SIDEBAR_COLLAPSED_KEY, () => new Set<string>(), setCodec);
-  const toggleCollColl = (id: string) =>
-    setCollapsedColls((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-
-  // Collections grouped by their parent collection (root = null), each list in
-  // hub order. A parentId pointing outside this workspace's collections is
-  // treated as a root.
-  const collChildren = useMemo(() => {
-    const ids = new Set(collections.map((c) => c.todo.id));
-    const m = new Map<string | null, OrganizerEntry[]>();
-    for (const c of collections) {
-      const pid = c.todo.parentId && ids.has(c.todo.parentId) ? c.todo.parentId : null;
-      const arr = m.get(pid) ?? [];
-      arr.push(c);
-      m.set(pid, arr);
-    }
-    return m;
-  }, [collections]);
-
-  // Flatten the collection tree into render order (depth-first), hiding the
-  // children of collapsed collections.
-  const visibleCollections = useMemo(() => {
-    const out: { entry: OrganizerEntry; depth: number; hasChildren: boolean }[] = [];
-    const walk = (pid: string | null, depth: number) => {
-      for (const c of collChildren.get(pid) ?? []) {
-        const kids = collChildren.get(c.todo.id) ?? [];
-        out.push({ entry: c, depth, hasChildren: kids.length > 0 });
-        if (kids.length && !collapsedColls.has(c.todo.id)) walk(c.todo.id, depth + 1);
-      }
-    };
-    walk(null, 0);
-    return out;
-  }, [collChildren, collapsedColls]);
-
-  // ── Sidebar drag-and-drop (reorder + nest collections) ─────────────────────
-  // Drag a collection over another to nest it (hover the middle → highlight), or
-  // between two to reorder it (hover an edge → drop line). The drop line sits at
-  // the target's indent level, so re-parenting across nesting levels reads right.
-  const [dragCollId, setDragCollId] = useState<string | null>(null);
-  const [dropInfo, setDropInfo] = useState<{ id: string; pos: 'before' | 'inside' | 'after' } | null>(null);
-
-  // The dragged collection can't land on itself or inside its own subtree.
-  const inDraggedSubtree = (id: string) => {
-    if (!dragCollId) return false;
-    if (id === dragCollId) return true;
-    const e = byId.get(id);
-    return e ? isDescendantOf(e, dragCollId) : false;
-  };
-
-  const onCollDragOver = (e: React.DragEvent, targetId: string) => {
-    if (!dragCollId) return;
-    // preventDefault unconditionally so the cursor stays "move" — even over the
-    // dragged item or its own subtree (where there's no valid drop), which would
-    // otherwise flicker the no-drop icon.
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (inDraggedSubtree(targetId)) { if (dropInfo) setDropInfo(null); return; } // not a valid target
-    const rect = e.currentTarget.getBoundingClientRect();
-    const r = (e.clientY - rect.top) / rect.height;
-    const pos: 'before' | 'inside' | 'after' = r < 0.3 ? 'before' : r > 0.7 ? 'after' : 'inside';
-    setDropInfo((prev) => (prev?.id === targetId && prev.pos === pos ? prev : { id: targetId, pos }));
-  };
-
-  // Re-parent / reorder the dragged collection relative to the drop target, then
-  // persist a fresh full ordering. Only the dragged node moves; its subtree (and
-  // every other node) keeps its parentId, so orderFromFlat re-nests everything.
-  const moveCollection = (draggedId: string, targetId: string, pos: 'before' | 'inside' | 'after') => {
-    const collIds = new Set(collections.map((c) => c.todo.id));
-    const effParent = (id: string): string | null => {
-      const p = byId.get(id)?.todo.parentId ?? null;
-      return p && collIds.has(p) ? p : null;
-    };
-    const newParent = pos === 'inside' ? targetId : effParent(targetId);
-
-    const nodes = flattenTree(entries)
-      .map((n) => ({ id: n.id, parentId: n.parentId }))
-      .filter((n) => n.id !== draggedId);
-    const ti = nodes.findIndex((n) => n.id === targetId);
-    if (ti === -1) return;
-    nodes.splice(pos === 'before' ? ti : ti + 1, 0, { id: draggedId, parentId: newParent });
-
-    onReorder(orderFromFlat(nodes));
-    if (pos === 'inside') {
-      setCollapsedColls((prev) => { const n = new Set(prev); n.delete(targetId); return n; });
-    }
-  };
-
-  // Commit using the live dropInfo (what the highlight/line shows), not the DOM
-  // element the drop happened to land on — the "after" line sits in the gap
-  // between rows, so the release often lands off the intended row.
-  const onCollDrop = () => {
-    if (dragCollId && dropInfo && !inDraggedSubtree(dropInfo.id)) {
-      moveCollection(dragCollId, dropInfo.id, dropInfo.pos);
-    }
-    setDragCollId(null);
-    setDropInfo(null);
-    sideScroll.stop();
-  };
-
-  // The entries the table renders for the current view.
-  //   • 'all'          → everything (collections show inline as pill headers)
-  //   • 'uncategorized'→ tasks with no collection ancestor (collections excluded)
-  //   • a collection id→ that collection's descendants (the collection node itself
-  //     is excluded, so its direct children render at depth 0)
-  const viewEntries = useMemo(() => {
-    if (selectedView === 'all') return entries;
-    if (selectedView === 'uncategorized')
-      return entries.filter((e) => !e.todo.isCollection && !hasCollectionAncestor(e));
-    return entries.filter((e) => isDescendantOf(e, selectedView));
-  }, [entries, selectedView, byId]);
-
-  // Unique display values per field, computed from un-filtered view entries.
-  // Used to populate the filter value dropdown.
-  const uniqueValues = useMemo(() => {
-    const map = new Map<ColKey, string[]>();
-    for (const col of COLUMNS) {
-      const vals = new Set<string>();
-      for (const e of viewEntries) {
-        if (e.todo.isCollection) continue;
-        const v = getFieldDisplayValue(e, col.key, todoById);
-        if (v) vals.add(v);
-      }
-      map.set(col.key, [...vals].sort());
-    }
-    return map;
-  }, [viewEntries, todoById]);
-
-  // Apply active filters: collections are never filtered out (they're structural).
-  const filteredEntries = useMemo(() => {
-    if (!activeFilters.length) return viewEntries;
-    return viewEntries.filter(
-      (e) => e.todo.isCollection || activeFilters.every((f) => matchesFilter(e, f, todoById))
-    );
-  }, [viewEntries, activeFilters, todoById]);
-
-  // Hide collections that have no visible task descendants (optional section setting).
-  const processedEntries = useMemo(() => {
-    if (!sectionsConfig.hideEmptyCollections) return filteredEntries;
-    const collWithTasks = new Set<string>();
-    for (const e of filteredEntries) {
-      if (e.todo.isCollection) continue;
-      let p: string | null = e.todo.parentId ?? null;
-      while (p && byId.has(p)) {
-        collWithTasks.add(p);
-        p = byId.get(p)!.todo.parentId ?? null;
-      }
-    }
-    return filteredEntries.filter((e) => !e.todo.isCollection || collWithTasks.has(e.todo.id));
-  }, [filteredEntries, sectionsConfig.hideEmptyCollections, byId]);
-
-  // Build a sort comparator from the active sort rules.
-  const sortFn = useMemo(() => {
-    if (!activeSorts.length) return undefined;
-    return (a: OrganizerEntry, b: OrganizerEntry) => {
-      for (const s of activeSorts) {
-        const va = getFieldRawValue(a, s.field, todoById);
-        const vb = getFieldRawValue(b, s.field, todoById);
-        const cmp = compareRawValues(va, vb);
-        if (cmp !== 0) return s.direction === 'asc' ? cmp : -cmp;
-      }
-      return 0;
-    };
-  }, [activeSorts, todoById]);
-
-  // Visible (post-filter) task count per collection, used for the header chip counts.
-  const visibleTaskCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const e of processedEntries) {
-      if (e.todo.isCollection) continue;
-      let p: string | null = e.todo.parentId ?? null;
-      const seen = new Set<string>();
-      while (p && byId.has(p) && !seen.has(p)) {
-        seen.add(p);
-        counts.set(p, (counts.get(p) ?? 0) + 1);
-        p = byId.get(p)!.todo.parentId ?? null;
-      }
-    }
-    return counts;
-  }, [processedEntries, byId]);
-
-  // Grouped rows — only used when groupBy !== 'collection'.
-  const groupedRows = useMemo((): GroupRow[] => {
-    if (sectionsConfig.groupBy === 'collection') return [];
-    return buildGroupedItems(processedEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection);
-  }, [sectionsConfig.groupBy, processedEntries, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection]);
-
-  // Sidebar counts (tasks only, collections never counted).
-  const allCount = entries.filter((e) => !e.todo.isCollection).length;
-  const uncategorizedCount = entries.filter(
-    (e) => !e.todo.isCollection && !hasCollectionAncestor(e)
-  ).length;
-  // Task-descendant count per collection (every non-collection descendant,
-  // ignoring filters), precomputed in one ancestor walk instead of re-filtering
-  // all entries for each sidebar row.
-  const collectionCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const e of entries) {
-      if (e.todo.isCollection) continue;
-      let p: string | null = e.todo.parentId ?? null;
-      const seen = new Set<string>();
-      while (p && byId.has(p) && !seen.has(p)) {
-        seen.add(p);
-        const pe = byId.get(p)!;
-        if (pe.todo.isCollection) counts.set(p, (counts.get(p) ?? 0) + 1);
-        p = pe.todo.parentId ?? null;
-      }
-    }
-    return counts;
-  }, [entries, byId]);
-  const collectionCount = (cid: string) => collectionCounts.get(cid) ?? 0;
-
-  const currentCount = selectedCollectionId
-    ? collectionCount(selectedCollectionId)
-    : selectedView === 'uncategorized'
-      ? uncategorizedCount
-      : allCount;
-  const selectedCollectionEntry = selectedCollectionId ? byId.get(selectedCollectionId) || null : null;
-  const viewLabel = selectedCollectionId
-    ? selectedCollectionEntry?.todo.text || 'Untitled collection'
-    : selectedView === 'uncategorized'
-      ? 'Uncategorized'
-      : 'All Tasks';
+  // Sidebar collection drag-and-drop (reorder + nest), owns the sidebar auto-scroll.
+  const collectionDnD = useCollectionDnD({ entries, collections, byId, isDescendantOf, onReorder, setCollapsedColls });
 
   const handleNewCollection = () => {
     const id = onAddCollection();
@@ -817,39 +451,31 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // ── Drag & drop (sidebar-style: a drop indicator shows where the row will land;
-  // nothing shifts until release) ─────────────────────────────────────────────
-  // The dragged row id and the resolved drop: which row, whether it lands
-  // before/after (reorder) or inside (nest), the resolved parent + indent depth
-  // (to draw the line), and — in attribute-grouped mode — the destination section.
-  type RowDrop = {
-    id: string;
-    pos: 'before' | 'inside' | 'after';
-    depth: number;
-    parentId: string | null;
-    group?: string;
-  };
-  const [rowDragId, setRowDragId] = useState<string | null>(null);
-  const [rowDrop, setRowDrop] = useState<RowDrop | null>(null);
-  // Edge auto-scroll for the two drag surfaces (table body + sidebar list). Their
-  // onDragOver/onDragEnter also keep the whole surface a valid drop zone.
-  const tableScroll = useDragAutoScroll<HTMLDivElement>();
-  const sideScroll = useDragAutoScroll<HTMLDivElement>();
-
-  // Rendered rows for collection-grouped (default) mode. processedEntries respects
-  // filters + hideEmptyCollections. leafPosition segregates tasks vs sub-collections.
-  // The dragged row stays visible (dimmed), so nothing is excluded during a drag.
-  const flattened = useMemo(
-    () => flattenTree(processedEntries, {
-      collapsed,
-      sortFn,
-      leafPosition: sectionsConfig.showLeafTasks !== 'none' ? sectionsConfig.showLeafTasks : undefined,
-    }),
-    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks]
-  );
-  const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
-
-  const resetDrag = useStableCallback(() => { setRowDragId(null); setRowDrop(null); tableScroll.stop(); });
+  // Table row drag-and-drop (reorder + nest in tree mode; reorder + cross-section
+  // reassignment in attribute-grouped mode). Owns the table auto-scroll.
+  const {
+    tableScroll,
+    rowDragId,
+    rowDrop,
+    onRowDragStart,
+    onRowDragOver,
+    onHeaderDragOver,
+    onRowDrop,
+    resetDrag,
+  } = useRowDnD({
+    entries,
+    processedEntries,
+    flattened,
+    flatById,
+    groupedRows,
+    byId,
+    isDescendantOf,
+    selectedCollectionId,
+    sectionsConfig,
+    onReorder,
+    onSaveTodo,
+    clearInteraction: () => { setEditing(null); setMenu(null); },
+  });
 
   // Auto-archive: when a task is being completed and the setting is on, archive
   // it immediately instead of just toggling the checkbox.
@@ -862,213 +488,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       }
     }
     onToggleTodo(id);
-  });
-
-  // Nearest collection ancestor id (or null) — collections may only nest under
-  // collections, so a collection drag snaps its parent up to one.
-  const nearestCollectionId = (startId: string | null): string | null => {
-    let cur = startId;
-    const seen = new Set<string>();
-    while (cur && byId.has(cur) && !seen.has(cur)) {
-      seen.add(cur);
-      const e = byId.get(cur)!;
-      if (e.todo.isCollection) return cur;
-      cur = e.todo.parentId ?? null;
-    }
-    return null;
-  };
-
-  // Resolve the drop for collection-tree mode from the hovered row + cursor Y:
-  // top/bottom thirds reorder (before/after, as a sibling); the middle nests
-  // inside. Collections snap to a valid (collection/root) parent.
-  const computeTreeDrop = (targetId: string, e: React.DragEvent): RowDrop | null => {
-    if (!rowDragId || targetId === rowDragId) return null;
-    const target = flatById.get(targetId);
-    if (!target) return null;
-    // Can't drop into the dragged node's own subtree.
-    if (isDescendantOf(target.entry, rowDragId)) return null;
-
-    const draggedIsColl = !!byId.get(rowDragId)?.todo.isCollection;
-    const targetIsColl = !!target.entry.todo.isCollection;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const r = (e.clientY - rect.top) / rect.height;
-
-    // ── Section (collection) header target, dragging a TASK ──────────────────
-    // A section's drop points must never yield a "no section" result. The top
-    // zone appends the task to the section ABOVE (where the previous row lives);
-    // the rest nests it inside this section. Sibling before/after on a section is
-    // kept only for collection drags (below), so sections stay reorderable.
-    if (targetIsColl && !draggedIsColl) {
-      if (r < 0.3) {
-        const idx = flattened.findIndex((n) => n.id === targetId);
-        const prev = idx > 0 ? flattened[idx - 1] : null;
-        if (prev && prev.id !== rowDragId && !isDescendantOf(prev.entry, rowDragId)) {
-          // Land where the previous row lives: inside it if it's a (collapsed/
-          // empty) section, else as its sibling — i.e. the section above.
-          return prev.entry.todo.isCollection
-            ? { id: targetId, pos: 'before', depth: prev.depth + 1, parentId: prev.id }
-            : { id: targetId, pos: 'before', depth: prev.depth, parentId: prev.parentId };
-        }
-        // This section is the very first row — keep a top-of-list drop so a task
-        // can become the first, top-level (section-less) item above it.
-        if (idx === 0) return { id: targetId, pos: 'before', depth: 0, parentId: null };
-        // Otherwise (the row above is the dragged one) nest into this section.
-        return { id: targetId, pos: 'inside', depth: target.depth + 1, parentId: targetId };
-      }
-      return { id: targetId, pos: 'inside', depth: target.depth + 1, parentId: targetId };
-    } // end this section
-
-    // 'inside' (nest) only when the target can legally parent the dragged node.
-    const canNest = draggedIsColl ? targetIsColl : true;
-    const pos: RowDrop['pos'] = canNest
-      ? (r < 0.3 ? 'before' : r > 0.7 ? 'after' : 'inside')
-      : (r < 0.5 ? 'before' : 'after');
-
-    let parentId: string | null;
-    let depth: number;
-    if (pos === 'inside') {
-      parentId = targetId;
-      depth = target.depth + 1;
-    } else {
-      parentId = target.parentId;
-      depth = target.depth;
-      // A collection sibling must still sit under a collection (or root); snap up.
-      if (draggedIsColl && parentId && !byId.get(parentId)?.todo.isCollection) {
-        parentId = nearestCollectionId(parentId);
-        depth = parentId ? (flatById.get(parentId)?.depth ?? 0) + 1 : 0;
-      }
-    }
-
-    // Merge the two redundant boundary drop points: "after A" equals "before B"
-    // when both resolve to the same spot, so the shared gap shows one stable
-    // indicator instead of flipping between two. (Differing levels keep both.)
-    // Cases that coincide: B is a sibling at the same level; or B is the next
-    // section header, whose top zone appends to this same section above it.
-    if (pos === 'after') {
-      const idx = flattened.findIndex((n) => n.id === targetId);
-      const next = idx >= 0 ? flattened[idx + 1] : null;
-      if (next && next.id !== rowDragId) {
-        const sameLevelSibling = next.parentId === parentId && next.depth === depth;
-        const nextSectionHeader = !draggedIsColl && !!next.entry.todo.isCollection;
-        if (sameLevelSibling || nextSectionHeader) {
-          return { id: next.id, pos: 'before', depth, parentId };
-        }
-      }
-    }
-    return { id: targetId, pos, depth, parentId };
-  };
-
-  const sameDrop = (a: RowDrop | null, b: RowDrop | null) =>
-    (!a && !b) || (!!a && !!b && a.id === b.id && a.pos === b.pos && a.depth === b.depth);
-
-  const onRowDragStart = useStableCallback((id: string) => {
-    // Defer the state update: setting React state synchronously inside dragstart
-    // re-renders the dragged row and aborts the native drag (the "first drag does
-    // nothing / row stays dimmed" bug). A frame later the drag is committed.
-    requestAnimationFrame(() => {
-      setRowDragId(id);
-      setRowDrop(null);
-      setEditing(null);
-      setMenu(null);
-    });
-  });
-
-  // dragOver on a task/collection row — recompute and stash the resolved drop.
-  const onRowDragOver = useStableCallback((targetId: string, e: React.DragEvent) => {
-    if (!rowDragId) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    let next: RowDrop | null = null;
-    if (sectionsConfig.groupBy === 'collection') {
-      next = computeTreeDrop(targetId, e);
-    } else if (targetId !== rowDragId) {
-      // Attribute-grouped: reorder before/after; no nesting (depth stays fixed).
-      const idx = groupedRows.findIndex((r) => r.type === 'task' && r.node.id === targetId);
-      const row = idx >= 0 ? groupedRows[idx] : null;
-      if (row && row.type === 'task') {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const ratio = (e.clientY - rect.top) / rect.height;
-        if (ratio < 0.5) {
-          next = { id: targetId, pos: 'before', depth: row.node.depth, parentId: null, group: row.group };
-        } else {
-          // 'after' — merge with the next task when it's in the same group, so the
-          // single gap between two same-group siblings shows one stable indicator.
-          const nxt = groupedRows[idx + 1];
-          next = nxt && nxt.type === 'task' && nxt.group === row.group && nxt.node.id !== rowDragId
-            ? { id: nxt.node.id, pos: 'before', depth: nxt.node.depth, parentId: null, group: nxt.group }
-            : { id: targetId, pos: 'after', depth: row.node.depth, parentId: null, group: row.group };
-        }
-      }
-    }
-    setRowDrop((prev) => (sameDrop(prev, next) ? prev : next));
-  });
-
-  // dragOver on a section header (attribute-grouped mode) — drop at the top of it.
-  const onHeaderDragOver = (headerId: string, group: string, e: React.DragEvent) => {
-    if (!rowDragId || sectionsConfig.groupBy === 'collection') return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const next: RowDrop = { id: headerId, pos: 'inside', depth: 1, parentId: null, group };
-    setRowDrop((prev) => (sameDrop(prev, next) ? prev : next));
-  };
-
-  // Commit a collection-tree drop: set the moved node's parent, splice it next to
-  // the target in the full order, then persist via orderFromFlat (children follow).
-  const commitTreeDrop = (dragId: string, drop: RowDrop) => {
-    const full = flattenTree(processedEntries).map((n) => ({ id: n.id, parentId: n.parentId }));
-    const fromIdx = full.findIndex((n) => n.id === dragId);
-    if (fromIdx === -1) return;
-    const moved = { id: dragId, parentId: drop.parentId };
-    const without = full.filter((_, i) => i !== fromIdx);
-    let at = without.findIndex((n) => n.id === drop.id);
-    if (at === -1) return;
-    if (drop.pos === 'after' || drop.pos === 'inside') at += 1;
-    without.splice(at, 0, moved);
-    let order = orderFromFlat(without);
-    // In a collection view the collection node is hidden, so its direct children
-    // read as depth-0 (parentId null). Re-anchor them to the collection on save.
-    if (selectedCollectionId) order = order.map((n) => ({ id: n.id, parentId: n.parentId ?? selectedCollectionId }));
-    onReorder(order);
-  };
-
-  // Commit an attribute-grouped drop: optionally reassign the grouping attribute
-  // (cross-section), then reorder within the global hub order (parentId preserved).
-  const commitGroupedDrop = (dragId: string, drop: RowDrop) => {
-    const activeEntry = byId.get(dragId);
-    if (!activeEntry) return;
-    const taskRows = groupedRows.filter((r): r is Extract<GroupRow, { type: 'task' }> => r.type === 'task');
-    const activeGroup = taskRows.find((r) => r.node.id === dragId)?.group ?? '';
-    const targetGroup = drop.group ?? '';
-
-    if (targetGroup !== activeGroup) {
-      const patch = groupAssignmentPatch(sectionsConfig.groupBy, targetGroup);
-      if (patch) onSaveTodo(activeEntry.date, activeEntry.date, { ...activeEntry.todo, ...patch });
-    }
-
-    const ordered = [...entries]
-      .sort((a, b) => (a.todo.hubOrder ?? a.todo.createdAt) - (b.todo.hubOrder ?? b.todo.createdAt))
-      .map((e) => e.todo.id);
-    const without = ordered.filter((id) => id !== dragId);
-    // Header drop ('inside') anchors before the first task already in that section.
-    let targetId = drop.id;
-    if (drop.pos === 'inside') {
-      targetId = taskRows.find((r) => r.group === targetGroup && r.node.id !== dragId)?.node.id ?? '';
-    }
-    let at = without.indexOf(targetId);
-    if (at !== -1) {
-      if (drop.pos === 'after') at += 1;
-      without.splice(at, 0, dragId);
-      onReorder(without.map((id) => ({ id, parentId: byId.get(id)?.todo.parentId ?? null })));
-    }
-  };
-
-  const onRowDrop = useStableCallback(() => {
-    if (rowDragId && rowDrop) {
-      if (sectionsConfig.groupBy === 'collection') commitTreeDrop(rowDragId, rowDrop);
-      else commitGroupedDrop(rowDragId, rowDrop);
-    }
-    resetDrag();
   });
 
   // The popover (tags/notes/status/priority) edits the entry currently being edited.
@@ -1093,292 +512,48 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const headerCellCls =
     'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 hover:bg-[#0f0f0f] select-none';
 
-  const sidebarItemCls = (view: string, compact = false) =>
-    `w-full flex items-center rounded-lg text-left transition-colors ${
-      compact ? 'gap-1.5 px-2 py-1.5 text-[13px]' : 'gap-2 pl-2.5 pr-1.5 py-1.5 text-sm'
-    } ${
-      selectedView === view
-        ? 'bg-white/10 text-white font-medium'
-        : 'text-white/65 hover:bg-white/[0.05] hover:text-white'
-    }`;
-
   return (
     <div className="h-full flex">
       {/* Left pane — full-height collection picker (resizable) */}
       {!sidebarHidden && (
-        <aside
-          style={{ width: sidebarWidth }}
-          className="group/pane relative shrink-0 flex flex-col min-h-0 border-r border-white/10"
-        >
-          {/* ── Workspaces section (top) — independent todo databases ───────── */}
-          <div className="shrink-0 flex flex-col max-h-[38%] border-b border-white/10 p-2">
-            <div className="shrink-0 px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
-              Workspaces
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
-              {workspaces.map((ws) => {
-                const active = ws.id === activeWorkspaceId;
-                if (renamingWorkspaceId === ws.id) {
-                  return (
-                    <input
-                      key={ws.id}
-                      type="text"
-                      autoFocus
-                      defaultValue={ws.name}
-                      onChange={(e) => onRenameWorkspace(ws.id, e.target.value)}
-                      onBlur={() => setRenamingWorkspaceId(null)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
-                      }}
-                      placeholder="Workspace name"
-                      className="w-full rounded-lg px-2.5 py-1.5 text-sm font-medium bg-white/10 text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60 placeholder:text-white/40"
-                    />
-                  );
-                }
-                return (
-                  <button
-                    key={ws.id}
-                    type="button"
-                    onClick={() => onSelectWorkspace(ws.id)}
-                    onDoubleClick={() => setRenamingWorkspaceId(ws.id)}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-left transition-colors ${
-                      active ? 'bg-white/10 text-white font-medium' : 'text-white/65 hover:bg-white/[0.05] hover:text-white'
-                    }`}
-                    title={ws.name || 'Untitled workspace'}
-                  >
-                    <Box size={15} className="shrink-0 text-white/45" />
-                    <span className="flex-1 truncate">{ws.name || 'Untitled workspace'}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={handleNewWorkspace}
-              title="New workspace"
-              className="shrink-0 mt-0.5 w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-white/55 hover:text-white hover:bg-white/[0.06] transition-colors"
-            >
-              <Plus size={15} />
-              <span>New workspace</span>
-            </button>
-          </div>
-
-          {/* ── Collections section (bottom) ────────────────────────────────── */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            {/* Fixed header: title + the two pseudo-views as separate rows */}
-            <div className="shrink-0 p-2 pb-1 space-y-0.5">
-              <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
-                Collections
-              </div>
-              <button type="button" onClick={() => setSelectedView('all')} className={sidebarItemCls('all')} title="All Tasks">
-                <Layers size={15} className="shrink-0 text-white/45" />
-                <span className="flex-1 truncate">All Tasks</span>
-                <span className="text-xs text-white/35 font-mono mr-1.5">{allCount}</span>
-              </button>
-              <button type="button" onClick={() => setSelectedView('uncategorized')} className={sidebarItemCls('uncategorized')} title="Uncategorized">
-                <Inbox size={15} className="shrink-0 text-white/45" />
-                <span className="flex-1 truncate">Uncategorized</span>
-                <span className="text-xs text-white/35 font-mono mr-1.5">{uncategorizedCount}</span>
-              </button>
-            </div>
-
-            
-
-            {/* Scrollable list of collections — nested tree, indented by depth.
-                The drop is handled here (not per-row) so releases that land in
-                the gap between rows still commit the current drop target. */}
-            <div
-              ref={sideScroll.ref}
-              className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full"
-              onDragOver={dragCollId ? sideScroll.onDragOver : undefined}
-              onDragEnter={dragCollId ? sideScroll.onDragEnter : undefined}
-              onDrop={(e) => { e.preventDefault(); onCollDrop(); }}
-            >
-              {visibleCollections.map(({ entry: c, depth, hasChildren }) => {
-                const color = c.todo.color || DEFAULT_COLLECTION_COLOR;
-                const indent = depth * SIDEBAR_INDENT;
-                const drop = dropInfo?.id === c.todo.id ? dropInfo.pos : null;
-                return (
-                  <div
-                    key={c.todo.id}
-                    className="relative"
-                    draggable
-                    onDragStart={(e) => {
-                      setDragCollId(c.todo.id);
-                      e.dataTransfer.effectAllowed = 'move';
-                      e.dataTransfer.setData('text/plain', c.todo.id);
-                    }}
-                    onDragEnd={() => { setDragCollId(null); setDropInfo(null); sideScroll.stop(); }}
-                    onDragOver={(e) => onCollDragOver(e, c.todo.id)}
-                  >
-                    {/* Reorder line — drawn at the target's indent level */}
-                    {drop === 'before' && (
-                      <div className="pointer-events-none absolute -top-px left-0 right-1.5 z-10 h-0.5 rounded-full bg-[var(--accent2)]" style={{ marginLeft: 6 + indent }} />
-                    )}
-                    {drop === 'after' && (
-                      <div className="pointer-events-none absolute -bottom-px left-0 right-1.5 z-10 h-0.5 rounded-full bg-[var(--accent2)]" style={{ marginLeft: 6 + indent }} />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedView(c.todo.id)}
-                      onContextMenu={(e) => { e.preventDefault(); openMenu(c.todo.id, e.clientX, e.clientY); }}
-                      style={{ paddingLeft: 6 + indent }}
-                      className={`${sidebarItemCls(c.todo.id)} ${dragCollId === c.todo.id ? 'opacity-40' : ''} ${
-                        drop === 'inside' ? 'ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/10' : ''
-                      }`}
-                      title={c.todo.text || 'Untitled collection'}
-                    >
-                      <Shapes size={15} className="shrink-0" style={{ color }} />
-                      <span className="flex-1 truncate">{c.todo.text || 'Untitled collection'}</span>
-                      {/* Right slot: task count by default; on pane hover, collections
-                          with nested children swap it for an expand/collapse toggle. */}
-                      {hasChildren ? (
-                        <>
-                          <span className="text-xs text-white/35 group-hover/pane:hidden mr-1.5 font-mono">{collectionCount(c.todo.id)}</span>
-                          <span
-                            role="button"
-                            onClick={(e) => { e.stopPropagation(); toggleCollColl(c.todo.id); }}
-                            className="hidden shrink-0 -my-0.5 items-center justify-center rounded p-0.5 text-white/45 hover:text-white hover:bg-white/10 transition-colors group-hover/pane:flex"
-                            title={collapsedColls.has(c.todo.id) ? 'Expand' : 'Collapse'}
-                          >
-                            {collapsedColls.has(c.todo.id) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-xs text-white/35 font-mono mr-1.5">{collectionCount(c.todo.id)}</span>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* New collection */}
-          <button
-            type="button"
-            onClick={handleNewCollection}
-            className="shrink-0 m-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-white/55 hover:text-white hover:bg-white/[0.06] transition-colors"
-          >
-            <FolderPlus size={15} />
-            <span>New collection</span>
-          </button>
-
-          {/* Drag handle to resize the pane */}
-          <div
-            onMouseDown={startSidebarResize}
-            className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-[var(--accent2)]/40 transition-colors"
-          />
-        </aside>
+        <HubSidebar
+          sidebarWidth={sidebarWidth}
+          startSidebarResize={startSidebarResize}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          renamingWorkspaceId={renamingWorkspaceId}
+          setRenamingWorkspaceId={setRenamingWorkspaceId}
+          onSelectWorkspace={onSelectWorkspace}
+          onRenameWorkspace={onRenameWorkspace}
+          onNewWorkspace={handleNewWorkspace}
+          selectedView={selectedView}
+          setSelectedView={setSelectedView}
+          allCount={allCount}
+          uncategorizedCount={uncategorizedCount}
+          visibleCollections={visibleCollections}
+          collectionCount={collectionCount}
+          collapsedColls={collapsedColls}
+          toggleCollColl={toggleCollColl}
+          openMenu={openMenu}
+          onNewCollection={handleNewCollection}
+          dnd={collectionDnD}
+        />
       )}
 
       {/* Right pane — header + task table */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Page header — tight, Notion-like */}
-        <div className="shrink-0 flex items-center gap-2.5 px-4 pt-4 pb-2">
-          <button
-            type="button"
-            onClick={() => setSidebarHidden((v) => !v)}
-            title={sidebarHidden ? 'Show collections' : 'Hide collections'}
-            className="shrink-0 p-1 -ml-0.5 rounded text-white/45 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            {sidebarHidden ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
-          </button>
-          <h1 className="text-lg font-bold">Task Planner</h1>
-          <span className="text-xs text-white/25">/</span>
-          {selectedCollectionId ? (
-            <CollectionBreadcrumb
-              path={collectionPath(selectedCollectionId, todoById).map((c) => ({
-                id: c.id,
-                name: c.text || 'Untitled',
-                color: c.color,
-              }))}
-            />
-          ) : (
-            <span className="text-xs font-medium text-white/70 truncate max-w-[260px]">{viewLabel}</span>
-          )}
-          <span className="text-xs text-white/40">{currentCount} item{currentCount === 1 ? '' : 's'}</span>
-        </div>
-
-        {/* View toolbar — UI scaffold only; none of these are wired up yet. */}
-        <div className="shrink-0 flex items-center justify-between gap-3 px-4 pb-4">
-          {/* View tabs */}
-          <div className="flex items-center gap-1">
-            {([
-              { label: 'Table', icon: Table, active: true },
-              { label: 'List', icon: List, active: false },
-              { label: 'Timeline', icon: GanttChart, active: false },
-            ] as const).map(({ label, icon: Icon, active }) => (
-              <button
-                key={label}
-                type="button"
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium transition-colors ${
-                  active ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Icon size={14} />
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Right-side actions */}
-          <div className="flex items-center gap-1">
-            {/* Sections */}
-            <button
-              type="button"
-              onClick={(e) => toggleToolbarMenu(e, !!sectionsMenu, setSectionsMenu)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] transition-colors ${
-                sectionsMenu ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Group size={14} /> Sections
-            </button>
-
-            {/* Fields */}
-            <button
-              type="button"
-              onClick={(e) => toggleToolbarMenu(e, !!fieldsMenu, setFieldsMenu)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] transition-colors ${
-                fieldsMenu ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Columns3 size={14} /> Fields
-            </button>
-
-            {/* Filter */}
-            <button
-              type="button"
-              onClick={(e) => toggleToolbarMenu(e, !!filterMenu, setFilterMenu)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] transition-colors ${
-                filterMenu ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Filter size={14} /> Filter
-              {activeFilters.length > 0 && (
-                <span className="ml-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-[var(--accent2)] text-[10px] font-bold text-white px-1">
-                  {activeFilters.length}
-                </span>
-              )}
-            </button>
-
-            {/* Sort */}
-            <button
-              type="button"
-              onClick={(e) => toggleToolbarMenu(e, !!sortMenu, setSortMenu)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] transition-colors ${
-                sortMenu ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <ArrowUpDown size={14} /> Sort
-              {activeSorts.length > 0 && (
-                <span className="ml-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-[var(--accent2)] text-[10px] font-bold text-white px-1">
-                  {activeSorts.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
+        <HubToolbar
+          sidebarHidden={sidebarHidden}
+          onToggleSidebar={() => setSidebarHidden((v) => !v)}
+          selectedCollectionId={selectedCollectionId}
+          todoById={todoById}
+          viewLabel={viewLabel}
+          currentCount={currentCount}
+          filterCount={activeFilters.length}
+          sortCount={activeSorts.length}
+          menuOpen={toolbarMenuOpen}
+          onToggleMenu={onToggleMenu}
+        />
 
         {/* Task table — single scroll container, both axes. */}
         <div
