@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { GripVertical, Eye, EyeOff, Lock } from 'lucide-react';
 import { ColDef, ColKey, NAME_COL_KEY } from './types';
+import { PopoverMenu } from './PopoverMenu';
 
 // ── Fields menu ──────────────────────────────────────────────────────────────
 // Dropdown listing every column. Name is pinned first and locked; the rest can
@@ -33,16 +34,7 @@ export const FieldsMenu: React.FC<{
   };
 
   return (
-    <>
-      {/* Backdrop — click outside closes the menu */}
-      <div className="fixed inset-0 z-[65]" onMouseDown={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} />
-      <div
-        style={{ position: 'fixed', right: anchor.right, top: anchor.top }}
-        className="z-[66] w-60 rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-1"
-      >
-        <div className="px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-white/30">
-          Fields
-        </div>
+    <PopoverMenu anchor={anchor} title="Fields" onClose={onClose} className="w-60 p-1">
         <div
           className="space-y-0.5"
           onDragOver={(e) => { if (dragKey) e.preventDefault(); }}
@@ -102,7 +94,6 @@ export const FieldsMenu: React.FC<{
             );
           })}
         </div>
-      </div>
-    </>
+    </PopoverMenu>
   );
 };

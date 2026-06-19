@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { NAME_BASE_PAD, INDENT, pillTextColor } from './constants';
 import { GroupRow } from './types';
 
@@ -9,19 +9,23 @@ export const GroupHeaderRow: React.FC<{
   row: GroupHeader;
   gridTemplateColumns: string;
   onToggleCollapse: (id: string) => void;
+  // Quick-add a task into this section, seeded with the section's attribute.
+  // Receives the section's raw group value (e.g. a priority/status value, or a
+  // date-bucket id).
+  onAddTask?: (value: string) => void;
   // Drop target: highlighted while a task is dragged over it (drops at the top of
   // the section and reassigns the grouping attribute to this section's value).
   isDropTarget?: boolean;
   onHeaderDragOver?: (e: React.DragEvent) => void;
   onHeaderDrop?: () => void;
-}> = ({ row, gridTemplateColumns, onToggleCollapse, isDropTarget = false, onHeaderDragOver, onHeaderDrop }) => {
-  const { id, label, color, count, isCollapsed } = row;
+}> = ({ row, gridTemplateColumns, onToggleCollapse, onAddTask, isDropTarget = false, onHeaderDragOver, onHeaderDrop }) => {
+  const { id, value, label, color, count, isCollapsed } = row;
   return (
     <div
       style={{ gridTemplateColumns }}
       onDragOver={onHeaderDragOver}
       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onHeaderDrop?.(); }}
-      className="relative grid items-center min-h-12 border-b pt-3 border-white/8"
+      className="relative grid items-center min-h-12 border-b pt-3 border-white/8 group/row"
     >
       {/* Drop line under the header — task lands at the top of this section. */}
       {isDropTarget && (
@@ -50,6 +54,16 @@ export const GroupHeaderRow: React.FC<{
           {label}
         </span>
         <span className="shrink-0 text-xs text-white/35 font-mono">{count}</span>
+        {onAddTask && (
+          <button
+            type="button"
+            title="Add task"
+            onClick={() => onAddTask(value)}
+            className="shrink-0 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+          >
+            <Plus size={18} />
+          </button>
+        )}
       </div>
     </div>
   );

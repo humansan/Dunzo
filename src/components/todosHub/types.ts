@@ -5,6 +5,7 @@ export type ColKey =
   | 'title'
   | 'status'
   | 'priority'
+  | 'startDate'
   | 'date'
   | 'start'
   | 'end'
@@ -23,9 +24,10 @@ export const COLUMNS: ColDef[] = [
   { key: 'title', label: 'Name', defaultWidth: 320 },
   { key: 'status', label: 'Status', defaultWidth: 140 },
   { key: 'priority', label: 'Priority', defaultWidth: 120 },
-  { key: 'date', label: 'Date', defaultWidth: 150 },
-  { key: 'start', label: 'Start', defaultWidth: 110 },
-  { key: 'end', label: 'End', defaultWidth: 110 },
+  { key: 'startDate', label: 'Start Date', defaultWidth: 150 },
+  { key: 'date', label: 'Due Date', defaultWidth: 150 },
+  { key: 'start', label: 'Start Time', defaultWidth: 110 },
+  { key: 'end', label: 'End Time', defaultWidth: 110 },
   { key: 'percent', label: '%', defaultWidth: 90 },
   { key: 'collection', label: 'Collection', defaultWidth: 240 },
   { key: 'xp', label: 'XP', defaultWidth: 80 },

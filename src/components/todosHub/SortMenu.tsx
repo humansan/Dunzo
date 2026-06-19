@@ -1,6 +1,8 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
 import { ColDef, ColKey, SortRule } from './types';
+import { PopoverMenu } from './PopoverMenu';
+import { selectCls } from './constants';
 
 export const SortMenu: React.FC<{
   anchor: { right: number; top: number };
@@ -22,24 +24,8 @@ export const SortMenu: React.FC<{
 
   const remove = (id: string) => onChange(sorts.filter((s) => s.id !== id));
 
-  const selectCls =
-    'bg-[#2a2a2a] border border-white/10 rounded px-1.5 h-7 text-[13px] text-white/80 focus:outline-none focus:border-[var(--accent2)] cursor-pointer';
-
   return (
-    <>
-      <div
-        className="fixed inset-0 z-[65]"
-        onMouseDown={onClose}
-        onContextMenu={(e) => { e.preventDefault(); onClose(); }}
-      />
-      <div
-        style={{ position: 'fixed', right: anchor.right, top: anchor.top }}
-        className="z-[66] w-[300px] rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-2"
-      >
-        <div className="px-2 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-white/30">
-          Sort
-        </div>
-
+    <PopoverMenu anchor={anchor} title="Sort" onClose={onClose} className="w-[300px] p-2">
         {sorts.length === 0 ? (
           <p className="px-2 py-2.5 text-[13px] text-white/30 text-center">No sort applied</p>
         ) : (
@@ -89,7 +75,6 @@ export const SortMenu: React.FC<{
           <Plus size={13} />
           Add sort
         </button>
-      </div>
-    </>
+    </PopoverMenu>
   );
 };

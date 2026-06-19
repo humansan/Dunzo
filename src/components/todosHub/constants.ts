@@ -56,3 +56,7 @@ export const DEFAULT_SIDEBAR_WIDTH = 224;
 // Borderless input styling so the shared editors fill a spreadsheet cell.
 export const cellEditCls =
   'w-full h-full bg-[#1e1e1e] px-2.5 text-sm font-mono text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60';
+
+// Shared <select> styling for the toolbar dropdown menus (Filter / Sort / Sections).
+export const selectCls =
+  'bg-[#2a2a2a] border border-white/10 rounded px-1.5 h-7 text-[13px] text-white/80 focus:outline-none focus:border-[var(--accent2)] cursor-pointer';

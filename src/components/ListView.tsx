@@ -11,7 +11,7 @@ import {
   CalendarPlus,
   Sparkles,
 } from 'lucide-react';
-import CheckCircleCutout from '../../assets/CheckCircleCutout';
+import CheckCircleCutout from '../assets/CheckCircleCutout';
 import {
   DndContext,
   closestCorners,
@@ -31,10 +31,10 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Todo } from '../../types';
-import { CollectionOption } from '../../utils/todoFilters';
-import { formatTime12h } from '../../utils/timeUtils';
-import { QuickEditTodo, QuickEditValues } from '../QuickEditTodo';
+import { Todo } from '../types';
+import { CollectionOption } from '../utils/todoFilters';
+import { formatTime12h } from '../utils/timeUtils';
+import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

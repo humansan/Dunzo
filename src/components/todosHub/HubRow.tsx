@@ -274,6 +274,14 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             </span>
           </DisplayCell>
         );
+      case 'startDate':
+        return (
+          <DisplayCell col="startDate" active={isEditing('startDate')}>
+            <span className="truncate text-sm text-white/90">
+              {todo.startDate ? format(parseISO(todo.startDate), 'MMM d, yyyy') : muted}
+            </span>
+          </DisplayCell>
+        );
       case 'start':
         return (
           <DisplayCell col="start" active={isEditing('start')}>

@@ -1,8 +1,8 @@
-import { format, parseISO, differenceInCalendarDays } from 'date-fns';
+import { format, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
 import { OrganizerEntry, collectionOf, collectionPath } from '../../utils/todoFilters';
 import { Todo, TodoStatus, TodoPriority } from '../../types';
 import { formatTime12h } from '../../utils/timeUtils';
-import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../todoFields';
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '../todoFields';
 import { ColKey, FilterRule, FlatNode, GroupRow } from './types';
 
 // Returns a display-formatted string for a field — what the user sees in the
@@ -15,17 +15,15 @@ export function getFieldDisplayValue(
   const { todo, date } = entry;
   switch (field) {
     case 'title': return todo.text || '';
-    case 'status': {
-      const STATUS_LABELS: Record<string, string> = { todo: 'Todo', in_progress: 'In Progress', completed: 'Completed' };
-      return todo.status ? (STATUS_LABELS[todo.status] ?? todo.status) : '';
-    }
-    case 'priority': {
-      const PRIORITY_LABELS: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High' };
-      return todo.priority ? (PRIORITY_LABELS[todo.priority] ?? todo.priority) : '';
-    }
+    case 'status': return todo.status ? (statusOption(todo.status)?.label ?? todo.status) : '';
+    case 'priority': return todo.priority ? (priorityOption(todo.priority)?.label ?? todo.priority) : '';
     case 'date': {
       try { return date ? format(parseISO(date), 'MMM d, yyyy') : ''; }
       catch { return date || ''; }
+    }
+    case 'startDate': {
+      try { return todo.startDate ? format(parseISO(todo.startDate), 'MMM d, yyyy') : ''; }
+      catch { return todo.startDate || ''; }
     }
     case 'start': return todo.startTime ? formatTime12h(todo.startTime) : '';
     case 'end': return todo.dueTime ? formatTime12h(todo.dueTime) : '';
@@ -50,6 +48,7 @@ export function getFieldRawValue(
   const { todo, date } = entry;
   switch (field) {
     case 'date': return date || '';
+    case 'startDate': return todo.startDate || '';
     case 'start': return todo.startTime || '';
     case 'end': return todo.dueTime || '';
     case 'percent': return todo.duePercentage !== undefined ? String(todo.duePercentage) : '';
@@ -71,19 +70,12 @@ export function compareRawValues(a: string, b: string): number {
 
 // ── Group-by helpers ──────────────────────────────────────────────────────────
 
-// Colors for group headers when grouping by status or priority.
-// Kept in sync with STATUS_OPTIONS / PRIORITY_OPTIONS in todoFields.tsx.
-const FIELD_GROUP_COLORS: Partial<Record<ColKey, Record<string, string>>> = {
-  status: {
-    'Todo':        '#6b7280',
-    'In Progress': '#3b82f6',
-    'Completed':   '#22c55e',
-  },
-  priority: {
-    'Low':    '#64748b',
-    'Medium': '#f59e0b',
-    'High':   '#ef4444',
-  },
+// The enum option sets that back the attribute groupings — the single source of
+// truth for each value's label and color (defined in todoFields.tsx). Group keys
+// are display labels, so header colors are resolved by matching the label.
+const FIELD_OPTIONS: Partial<Record<ColKey, typeof STATUS_OPTIONS>> = {
+  status: STATUS_OPTIONS,
+  priority: PRIORITY_OPTIONS,
 };
 
 // Preferred sort order for well-known group values (others fall back to alpha).
@@ -95,14 +87,18 @@ const FIELD_GROUP_ORDER: Partial<Record<ColKey, string[]>> = {
 // Date grouping uses staggered, relative buckets (first qualifying bucket wins),
 // not one section per calendar date. The id is the group key; the label is shown
 // on the header. The last bucket is a catch-all for everything further out.
-const DATE_BUCKETS: { id: string; label: string; color: string }[] = [
-  { id: 'past',     label: 'Past',          color: '#ef4444' },
-  { id: 'today',    label: 'Today',         color: '#22c55e' },
-  { id: 'tomorrow', label: 'Tomorrow',      color: '#3b82f6' },
-  { id: 'next7',    label: 'Next 7 Days',   color: '#8b5cf6' },
-  { id: 'next30',   label: 'Next 30 Days',  color: '#0ea5e9' },
-  { id: 'next3m',   label: 'Next 3 Months', color: '#f59e0b' },
-  { id: 'nextyear', label: 'Next Year',     color: '#64748b' },
+// `startOffset` is the earliest day (as a +/- offset from today, in days) that
+// lands in this bucket without spilling into an earlier, more specific one —
+// used when quick-adding a task into a date section. Past has no true earliest,
+// so it uses yesterday (the most recent past day).
+const DATE_BUCKETS: { id: string; label: string; color: string; startOffset: number }[] = [
+  { id: 'past',     label: 'Past',          color: '#ef4444', startOffset: -1 },
+  { id: 'today',    label: 'Today',         color: '#22c55e', startOffset: 0 },
+  { id: 'tomorrow', label: 'Tomorrow',      color: '#3b82f6', startOffset: 1 },
+  { id: 'next7',    label: 'Next 7 Days',   color: '#8b5cf6', startOffset: 2 },
+  { id: 'next30',   label: 'Next 30 Days',  color: '#0ea5e9', startOffset: 8 },
+  { id: 'next3m',   label: 'Next 3 Months', color: '#f59e0b', startOffset: 31 },
+  { id: 'nextyear', label: 'Next Year',     color: '#64748b', startOffset: 91 },
 ];
 const DATE_BUCKET_BY_ID = new Map(DATE_BUCKETS.map((b) => [b.id, b]));
 
@@ -147,7 +143,7 @@ function groupKeyOrder(field: ColKey): string[] {
 
 export function getGroupColor(field: ColKey, key: string): string {
   if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.color ?? '#9ca3af';
-  return FIELD_GROUP_COLORS[field]?.[key] ?? '#9ca3af';
+  return FIELD_OPTIONS[field]?.find((o) => o.label === key)?.color ?? '#9ca3af';
 }
 
 // The Todo patch that moves a task into the group `value` for `field` — used when
@@ -166,6 +162,25 @@ export function groupAssignmentPatch(field: ColKey, value: string): Partial<Todo
     return { status, completed: status === 'completed' };
   }
   return null;
+}
+
+// What a freshly created task needs to land in the section `value` under `field`
+// when the user clicks the "+" on a group header. Returns a calendar date (for
+// date buckets) and/or a field patch (priority/status). Date buckets resolve to
+// the earliest day that falls in the bucket without spilling into an earlier,
+// more specific one — e.g. "Next 7 Days" ⇒ 2 days out, since today and tomorrow
+// are their own buckets. 'collection' grouping has its own per-header add path.
+export function groupCreateSpec(
+  field: ColKey,
+  value: string
+): { date: string | null; patch: Partial<Todo> } {
+  if (field === 'date') {
+    const bucket = DATE_BUCKET_BY_ID.get(value);
+    if (!bucket) return { date: null, patch: {} };
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    return { date: format(addDays(parseISO(todayStr), bucket.startOffset), 'yyyy-MM-dd'), patch: {} };
+  }
+  return { date: null, patch: groupAssignmentPatch(field, value) ?? {} };
 }
 
 // Build the flat list of rows for the grouped rendering mode.

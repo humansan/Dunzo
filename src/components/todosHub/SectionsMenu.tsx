@@ -1,6 +1,8 @@
 import React from 'react';
 import { COLUMNS } from './types';
 import { SectionsConfig } from './types';
+import { PopoverMenu } from './PopoverMenu';
+import { selectCls } from './constants';
 
 // Minimal inline toggle switch (no external dep).
 const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
@@ -56,24 +58,14 @@ export const SectionsMenu: React.FC<{
   const set = <K extends keyof SectionsConfig>(key: K, val: SectionsConfig[K]) =>
     onChange({ ...config, [key]: val });
 
-  const selectCls =
-    'bg-[#2a2a2a] border border-white/10 rounded px-1.5 h-7 text-[13px] text-white/80 focus:outline-none focus:border-[var(--accent2)] cursor-pointer';
-
   return (
-    <>
-      <div
-        className="fixed inset-0 z-[65]"
-        onMouseDown={onClose}
-        onContextMenu={(e) => { e.preventDefault(); onClose(); }}
-      />
-      <div
-        style={{ position: 'fixed', right: anchor.right, top: anchor.top }}
-        className="z-[66] w-[280px] rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-3 space-y-3"
-      >
-        <div className="px-0.5 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
-          Sections
-        </div>
-
+    <PopoverMenu
+      anchor={anchor}
+      title="Sections"
+      onClose={onClose}
+      className="w-[280px] p-3 space-y-3"
+      headerClassName="px-0.5 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-white/30"
+    >
         <div className={sectionCls}>
           {/* Auto-archive */}
           <div className={rowCls}>
@@ -140,7 +132,6 @@ export const SectionsMenu: React.FC<{
             </div>
           )}
         </div>
-      </div>
-    </>
+    </PopoverMenu>
   );
 };

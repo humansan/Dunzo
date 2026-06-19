@@ -293,7 +293,15 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 />
               </RightProp>
 
-              <RightProp icon={<CalendarDays size={11} />} label="Date">
+              <RightProp icon={<CalendarDays size={11} />} label="Start Date">
+                <DateField
+                  value={draft.startDate || ''}
+                  onChange={(val) => update({ startDate: val || undefined })}
+                  className={fieldCls}
+                />
+              </RightProp>
+
+              <RightProp icon={<CalendarDays size={11} />} label="Due Date">
                 <DateField
                   value={dateStr}
                   onChange={handleDateChange}

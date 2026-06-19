@@ -25,7 +25,7 @@ import { QuickEditValues } from './QuickEditTodo';
 import { XpProgressBar } from './XpProgressBar';
 import { StarStreak } from './StarStreak';
 import { computeXpStats, getWeeklyXp } from '../utils/xpUtils';
-import { ListView } from './todosHub/ListView';
+import { ListView } from './ListView';
 
 interface TodoViewProps {
   dayTodos: DayTodos[];

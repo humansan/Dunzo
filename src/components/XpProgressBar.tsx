@@ -12,7 +12,7 @@ const GOLD = '#ffc24b';
 const VIOLET = '#a78bfa';
 
 // Exponential ease-out: snappy start, soft landing.
-const EXPO_OUT: [number, number, number, number] = [0.1, 0, 0, 1];
+const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp }) => {
   const {
@@ -55,7 +55,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const count = useMotionValue(earned);
   const display = useTransform(count, v => Math.round(v));
   useEffect(() => {
-    const controls = animate(count, earned, { duration: 0.9, ease: EXPO_OUT });
+    const controls = animate(count, earned, { duration: 1.0, ease: EXPO_OUT });
     return () => controls.stop();
   }, [count, earned]);
 
