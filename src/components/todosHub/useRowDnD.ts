@@ -95,8 +95,8 @@ export function useRowDnD(params: {
 
   // Resolve the drop for collection-tree mode from the hovered row + cursor Y:
   // the top zone reorders before (as a sibling); the rest nests inside. An 'after'
-  // (sibling below) point only appears on the last sibling — between two siblings,
-  // use the lower one's 'before' instead. Collections snap to a valid parent.
+  // (sibling below) point only appears on a last sibling that isn't expanded —
+  // otherwise drop after it via the row below. Collections snap to a valid parent.
   const computeTreeDrop = (targetId: string, e: React.DragEvent): RowDrop | null => {
     if (!rowDragId || targetId === rowDragId) return null;
     const target = flatById.get(targetId);
@@ -110,13 +110,20 @@ export function useRowDnD(params: {
     const rect = e.currentTarget.getBoundingClientRect();
     const r = (e.clientY - rect.top) / rect.height;
 
-    // 'inside' (nest) only when the target can legally parent the dragged node;
-    // 'after' (sibling below) only when the target is the last of its siblings.
+    // An expanded node shows its children directly below it, so the next row in
+    // the flattened (collapse-aware) order is one of them (deeper than target).
+    const tIdx = flattened.findIndex((n) => n.id === targetId);
+    const expanded = tIdx >= 0 && tIdx + 1 < flattened.length && flattened[tIdx + 1].depth > target.depth;
+
+    // 'inside' (nest) only when the target can legally parent the dragged node.
+    // 'after' (sibling below) only on the last sibling — and never on an expanded
+    // node, whose 'after' line would sit between it and its visible children
+    // (ambiguous with nesting); drop after such a node via the row below instead.
     const canNest = draggedIsColl ? targetIsColl : true;
-    const lastSibling = isLastSibling(target);
+    const afterAllowed = isLastSibling(target) && !expanded;
     const pos: RowDrop['pos'] = canNest
-      ? (r < 0.3 ? 'before' : lastSibling && r > 0.7 ? 'after' : 'inside')
-      : lastSibling
+      ? (r < 0.3 ? 'before' : afterAllowed && r > 0.7 ? 'after' : 'inside')
+      : afterAllowed
         ? (r < 0.5 ? 'before' : 'after')
         : 'before';
 
