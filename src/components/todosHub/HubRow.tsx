@@ -37,7 +37,7 @@ interface HubRowProps {
   // Ordered, visible columns (Name first) — drives which cells render and in what order.
   columns: ColDef[];
   lastColKey: ColKey; // the rightmost visible column, which gets a right divider
-  // When true the drag handle is hidden (e.g. in grouped mode where DnD has no effect).
+  // When true the drag handle is hidden (drag-and-drop disabled for this row).
   hideDragHandle?: boolean;
   // Visible (post-filter) task count shown on collection header rows.
   taskCount?: number;

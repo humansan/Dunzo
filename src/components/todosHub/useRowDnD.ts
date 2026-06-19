@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { FlatNode, GroupRow, SectionsConfig } from './types';
 import { flattenTree, orderFromFlat } from './treeUtils';
-import { groupAssignmentPatch } from './viewUtils';
+import { groupAssignmentPatch, groupCreateSpec } from './viewUtils';
 import { useDragAutoScroll } from './useDragAutoScroll';
 import { useStableCallback } from './useStableCallback';
 
@@ -19,9 +19,10 @@ export type RowDrop = {
 };
 
 // Native HTML5 drag-and-drop for the table body, sidebar-style: a drop indicator
-// shows where the row will land and nothing shifts until release. Handles both
-// collection-tree mode (reorder + nest, with section snapping) and attribute-
-// grouped mode (reorder + cross-section reassignment). Owns the table auto-scroll.
+// shows where the row will land and nothing shifts until release. Both modes share
+// the same reorder + nest model; collection mode adds collection→collection section
+// snapping, while attribute-grouped mode reassigns the grouping attribute when a
+// task is moved between sections. Owns the table auto-scroll.
 export function useRowDnD(params: {
   entries: OrganizerEntry[];
   processedEntries: OrganizerEntry[];
@@ -74,23 +75,45 @@ export function useRowDnD(params: {
     return null;
   };
 
-  // Is `target` the last child of its parent? Inserting between two same-level
+  // Grouped-mode task rows as a flat tree (real parentId/depth, render order), plus
+  // each row's section key — the attribute-grouped analogue of `flattened`.
+  const groupNodes = useMemo(
+    () => groupedRows.filter((r): r is Extract<GroupRow, { type: 'task' }> => r.type === 'task').map((r) => r.node),
+    [groupedRows]
+  );
+  const groupOf = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of groupedRows) if (r.type === 'task') m.set(r.node.id, r.group);
+    return m;
+  }, [groupedRows]);
+
+  // Is `target` the last among its siblings within `nodes`? Inserting between two
   // siblings is always expressed as the next sibling's 'before' point, so an
-  // 'after' point is only meaningful on the last sibling (where there is no next
-  // sibling whose 'before' could stand in). The dragged node — which is leaving
-  // its current spot — is skipped, so the row above it can still read as last.
-  const isLastSibling = (target: FlatNode): boolean => {
-    const idx = flattened.findIndex((n) => n.id === target.id);
+  // 'after' point is only meaningful on the last sibling (no next sibling whose
+  // 'before' could stand in). The dragged node — which is leaving its current spot
+  // — is skipped, so the row above it can still read as last. Siblings share a
+  // parent; for root-level nodes (parentId null) `sectionOf` additionally requires
+  // the same section, so section roots in different sections aren't siblings.
+  const isLastSiblingIn = (nodes: FlatNode[], target: FlatNode, sectionOf?: Map<string, string>): boolean => {
+    const idx = nodes.findIndex((n) => n.id === target.id);
     if (idx === -1) return true;
-    for (let i = idx + 1; i < flattened.length; i++) {
-      const n = flattened[i];
+    for (let i = idx + 1; i < nodes.length; i++) {
+      const n = nodes[i];
       if (n.id === rowDragId || isDescendantOf(n.entry, rowDragId)) continue; // leaving
       if (n.depth > target.depth) continue; // target's own subtree
-      // First node at or above the target's level: a same-parent sibling means
-      // the target is not last; anything shallower means it is.
-      return !(n.depth === target.depth && n.parentId === target.parentId);
+      const sameParent =
+        n.parentId === target.parentId &&
+        (target.parentId !== null || !sectionOf || sectionOf.get(n.id) === sectionOf.get(target.id));
+      return !sameParent;
     }
     return true; // nothing follows → last
+  };
+
+  // An expanded node shows its children directly below it, so the next row in the
+  // (collapse-aware) order is one of them (deeper than target).
+  const isExpandedIn = (nodes: FlatNode[], target: FlatNode): boolean => {
+    const idx = nodes.findIndex((n) => n.id === target.id);
+    return idx >= 0 && idx + 1 < nodes.length && nodes[idx + 1].depth > target.depth;
   };
 
   // Resolve the drop for collection-tree mode from the hovered row + cursor Y:
@@ -110,17 +133,12 @@ export function useRowDnD(params: {
     const rect = e.currentTarget.getBoundingClientRect();
     const r = (e.clientY - rect.top) / rect.height;
 
-    // An expanded node shows its children directly below it, so the next row in
-    // the flattened (collapse-aware) order is one of them (deeper than target).
-    const tIdx = flattened.findIndex((n) => n.id === targetId);
-    const expanded = tIdx >= 0 && tIdx + 1 < flattened.length && flattened[tIdx + 1].depth > target.depth;
-
     // 'inside' (nest) only when the target can legally parent the dragged node.
     // 'after' (sibling below) only on the last sibling — and never on an expanded
     // node, whose 'after' line would sit between it and its visible children
     // (ambiguous with nesting); drop after such a node via the row below instead.
     const canNest = draggedIsColl ? targetIsColl : true;
-    const afterAllowed = isLastSibling(target) && !expanded;
+    const afterAllowed = isLastSiblingIn(flattened, target) && !isExpandedIn(flattened, target);
     const pos: RowDrop['pos'] = canNest
       ? (r < 0.3 ? 'before' : afterAllowed && r > 0.7 ? 'after' : 'inside')
       : afterAllowed
@@ -145,6 +163,30 @@ export function useRowDnD(params: {
     return { id: targetId, pos, depth, parentId };
   };
 
+  // Resolve the drop for attribute-grouped mode. Structurally identical to
+  // collection mode (before / inside / after, last-sibling + expanded suppression),
+  // but every row is a task so nesting is always allowed and there's no snap-up.
+  // The carried `group` is the target's section, which the commit uses to reassign
+  // the grouping attribute when the drop lands at a section root.
+  const computeGroupedDrop = (targetId: string, e: React.DragEvent): RowDrop | null => {
+    if (!rowDragId || targetId === rowDragId) return null;
+    const target = groupNodes.find((n) => n.id === targetId);
+    if (!target) return null;
+    if (isDescendantOf(target.entry, rowDragId)) return null; // can't drop into own subtree
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const r = (e.clientY - rect.top) / rect.height;
+
+    const afterAllowed = isLastSiblingIn(groupNodes, target, groupOf) && !isExpandedIn(groupNodes, target);
+    const pos: RowDrop['pos'] = r < 0.3 ? 'before' : afterAllowed && r > 0.7 ? 'after' : 'inside';
+
+    const parentId = pos === 'inside' ? targetId : target.parentId;
+    const depth = pos === 'inside' ? target.depth + 1 : target.depth;
+    // A node and its parent always share a section, so the target's own section is
+    // the section the drop lands in.
+    return { id: targetId, pos, depth, parentId, group: groupOf.get(targetId) ?? '' };
+  };
+
   const sameDrop = (a: RowDrop | null, b: RowDrop | null) =>
     (!a && !b) || (!!a && !!b && a.id === b.id && a.pos === b.pos && a.depth === b.depth);
 
@@ -164,28 +206,9 @@ export function useRowDnD(params: {
     if (!rowDragId) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    let next: RowDrop | null = null;
-    if (sectionsConfig.groupBy === 'collection') {
-      next = computeTreeDrop(targetId, e);
-    } else if (targetId !== rowDragId) {
-      // Attribute-grouped: reorder before/after; no nesting (depth stays fixed).
-      const idx = groupedRows.findIndex((r) => r.type === 'task' && r.node.id === targetId);
-      const row = idx >= 0 ? groupedRows[idx] : null;
-      if (row && row.type === 'task') {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const ratio = (e.clientY - rect.top) / rect.height;
-        if (ratio < 0.5) {
-          next = { id: targetId, pos: 'before', depth: row.node.depth, parentId: null, group: row.group };
-        } else {
-          // 'after' — merge with the next task when it's in the same group, so the
-          // single gap between two same-group siblings shows one stable indicator.
-          const nxt = groupedRows[idx + 1];
-          next = nxt && nxt.type === 'task' && nxt.group === row.group && nxt.node.id !== rowDragId
-            ? { id: nxt.node.id, pos: 'before', depth: nxt.node.depth, parentId: null, group: nxt.group }
-            : { id: targetId, pos: 'after', depth: row.node.depth, parentId: null, group: row.group };
-        }
-      }
-    }
+    const next = sectionsConfig.groupBy === 'collection'
+      ? computeTreeDrop(targetId, e)
+      : computeGroupedDrop(targetId, e);
     setRowDrop((prev) => (sameDrop(prev, next) ? prev : next));
   });
 
@@ -217,35 +240,63 @@ export function useRowDnD(params: {
     onReorder(order);
   };
 
-  // Commit an attribute-grouped drop: optionally reassign the grouping attribute
-  // (cross-section), then reorder within the global hub order (parentId preserved).
+  // Commit an attribute-grouped drop. Reparents + reorders exactly like collection
+  // mode (children follow via orderFromFlat). Then, ONLY when the task lands at a
+  // section root (no task parent) — a genuine move between sections — it reassigns
+  // the grouping attribute to the destination section: a status/priority patch, or
+  // the bucket's earliest day for date (same as the header "+"), or a clear for the
+  // ungrouped section. Nesting under a task just reparents; the subtree follows its
+  // new parent's section, so the attribute is left untouched.
   const commitGroupedDrop = (dragId: string, drop: RowDrop) => {
     const activeEntry = byId.get(dragId);
     if (!activeEntry) return;
-    const taskRows = groupedRows.filter((r): r is Extract<GroupRow, { type: 'task' }> => r.type === 'task');
-    const activeGroup = taskRows.find((r) => r.node.id === dragId)?.group ?? '';
+    const groupField = sectionsConfig.groupBy;
     const targetGroup = drop.group ?? '';
+    const isHeaderTarget = groupedRows.some((r) => r.type === 'header' && r.id === drop.id);
 
-    if (targetGroup !== activeGroup) {
-      const patch = groupAssignmentPatch(sectionsConfig.groupBy, targetGroup);
-      if (patch) onSaveTodo({ ...activeEntry.todo, ...patch });
-    }
-
-    const ordered = [...entries]
+    // 1. Reorder + reparent over the global hub order, keeping subtrees contiguous.
+    const base = [...entries]
       .sort((a, b) => (a.todo.hubOrder ?? a.todo.createdAt) - (b.todo.hubOrder ?? b.todo.createdAt))
-      .map((e) => e.todo.id);
-    const without = ordered.filter((id) => id !== dragId);
-    // Header drop ('inside') anchors before the first task already in that section.
-    let targetId = drop.id;
-    if (drop.pos === 'inside') {
-      targetId = taskRows.find((r) => r.group === targetGroup && r.node.id !== dragId)?.node.id ?? '';
+      .map((e) => ({ id: e.todo.id, parentId: e.todo.parentId ?? null }));
+    const fromIdx = base.findIndex((n) => n.id === dragId);
+    if (fromIdx === -1) return;
+    const moved = { id: dragId, parentId: drop.parentId };
+    const without = base.filter((_, i) => i !== fromIdx);
+
+    // Resolve the anchor row + side. A header drop lands at the top of its section
+    // (before its first root task); 'inside' sits right after the parent (first
+    // child); before/after splice next to the target.
+    let anchorId = drop.id;
+    let after = drop.pos === 'after';
+    if (isHeaderTarget) {
+      const firstRoot = groupedRows.find(
+        (r) => r.type === 'task' && r.group === targetGroup && r.node.parentId === null && r.node.id !== dragId
+      );
+      anchorId = firstRoot && firstRoot.type === 'task' ? firstRoot.node.id : '';
+      after = false;
+    } else if (drop.pos === 'inside') {
+      after = true;
     }
-    let at = without.indexOf(targetId);
-    if (at !== -1) {
-      if (drop.pos === 'after') at += 1;
-      without.splice(at, 0, dragId);
-      onReorder(without.map((id) => ({ id, parentId: byId.get(id)?.todo.parentId ?? null })));
+    const at = without.findIndex((n) => n.id === anchorId);
+    if (at === -1) without.push(moved); // empty section / no anchor → end of order
+    else without.splice(after ? at + 1 : at, 0, moved);
+    const order = orderFromFlat(without);
+
+    // 2. Reassign the grouping attribute only on a section-root landing.
+    if (drop.parentId === null) {
+      const activeGroup = groupOf.get(dragId) ?? '';
+      if (targetGroup !== activeGroup) {
+        if (groupField === 'date') {
+          const { date } = groupCreateSpec('date', targetGroup); // earliest day in bucket, or null to clear
+          onSaveTodo({ ...activeEntry.todo, parentId: null, dueDate: date ?? undefined });
+        } else {
+          const patch = groupAssignmentPatch(groupField, targetGroup); // '' clears the field
+          if (patch) onSaveTodo({ ...activeEntry.todo, parentId: null, ...patch });
+        }
+      }
     }
+
+    onReorder(order);
   };
 
   const onRowDrop = useStableCallback(() => {

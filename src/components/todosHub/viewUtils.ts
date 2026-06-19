@@ -199,11 +199,10 @@ export function groupCreateSpec(
 }
 
 // Build the flat list of rows for the grouped rendering mode.
-// Parent/child task relationships are preserved within each group section:
-// a child appears nested under its parent if the child's group value matches
-// the parent's (or if the child has no value and inherits the parent's group).
-// A child with a distinct non-empty value breaks out into its own section.
-// Tasks with no value and no task ancestor with a value float ungrouped.
+// Parent/child task relationships are preserved within each group section: a task
+// subtree always stays together, nested under its root task, which is placed by
+// its own field value (see getOwningGroup). A subtask's own field value never
+// pulls it into a different section. Root tasks with no value float ungrouped.
 export function buildGroupedItems(
   entries: OrganizerEntry[],
   groupField: ColKey,
@@ -223,45 +222,33 @@ export function buildGroupedItems(
     return pid && taskById.has(pid) ? pid : null;
   };
 
-  // Returns the group section a task belongs to:
-  // - own non-empty field value, or
-  // - nearest task ancestor's field value (inherited), or
-  // - '' for ungrouped.
+  // Returns the group section a task belongs to. A subtask ALWAYS belongs to its
+  // parent task's section (so a whole task subtree stays together under its root,
+  // regardless of any field value the subtask carries). Only a root task — one
+  // with no task parent — is placed by its own field value; '' means ungrouped.
   const owningGroupCache = new Map<string, string>();
   const getOwningGroup = (taskId: string): string => {
-    if (owningGroupCache.has(taskId)) return owningGroupCache.get(taskId)!;
-    const seen = new Set<string>();
-    let cur: string | null = taskId;
-    const chain: string[] = [];
-    while (cur && !seen.has(cur)) {
-      if (owningGroupCache.has(cur)) {
-        const result = owningGroupCache.get(cur)!;
-        for (const id of chain) owningGroupCache.set(id, result);
-        return result;
-      }
-      seen.add(cur);
-      const entry = taskById.get(cur);
-      if (!entry) break;
-      const val = getGroupKey(entry, groupField, todoById, todayStr);
-      if (val) {
-        for (const id of chain) owningGroupCache.set(id, val);
-        owningGroupCache.set(cur, val);
-        return val;
-      }
-      chain.push(cur);
-      cur = getParentTaskId(entry);
-    }
-    for (const id of chain) owningGroupCache.set(id, '');
-    return '';
+    const cached = owningGroupCache.get(taskId);
+    if (cached !== undefined) return cached;
+    const entry = taskById.get(taskId);
+    if (!entry) return '';
+    const parentId = getParentTaskId(entry);
+    // Seed before recursing so a corrupt parent cycle resolves to '' instead of
+    // looping. Tasks form a tree (single parent), so there are no false sharings.
+    owningGroupCache.set(taskId, '');
+    const result = parentId
+      ? getOwningGroup(parentId)
+      : getGroupKey(entry, groupField, todoById, todayStr);
+    owningGroupCache.set(taskId, result);
+    return result;
   };
 
-  // Precompute in-group children: a child stays under its task parent only when
-  // both share the same owning group.
+  // Precompute children per task parent. A subtask always follows its parent's
+  // section (getOwningGroup), so every task with a task parent nests under it.
   const childrenInGroup = new Map<string, OrganizerEntry[]>();
   for (const task of tasks) {
     const parentId = getParentTaskId(task);
     if (!parentId) continue;
-    if (getOwningGroup(task.todo.id) !== getOwningGroup(parentId)) continue;
     const arr = childrenInGroup.get(parentId) ?? [];
     arr.push(task);
     childrenInGroup.set(parentId, arr);
@@ -276,15 +263,17 @@ export function buildGroupedItems(
 
   // Recursively emit a task and its in-group children (respecting collapse).
   // `group` is the owning section's key, tagged onto every row for drag handling.
-  const buildTaskRows = (taskId: string, depth: number, group: string): GroupRow[] => {
+  // `parentId` is the in-section task parent (null for a section root), carried on
+  // the node so the table's tree drag-and-drop can reorder/nest like collection mode.
+  const buildTaskRows = (taskId: string, depth: number, group: string, parentId: string | null): GroupRow[] => {
     const entry = taskById.get(taskId);
     if (!entry) return [];
     const children = doSort(childrenInGroup.get(taskId) ?? []);
     const hasChildren = children.length > 0;
-    const node: FlatNode = { id: taskId, parentId: null, depth, entry, hasChildren };
+    const node: FlatNode = { id: taskId, parentId, depth, entry, hasChildren };
     const rows: GroupRow[] = [{ type: 'task', node, group }];
     if (hasChildren && !collapsed.has(taskId)) {
-      for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1, group));
+      for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1, group, taskId));
     }
     return rows;
   };
@@ -323,13 +312,13 @@ export function buildGroupedItems(
     const isCollapsed = collapsed.has(headerId);
     groupRows.push({ type: 'header', id: headerId, value: key, label: getGroupLabel(groupField, key), color: getGroupColor(groupField, key), count: totalCount, isCollapsed });
     if (!isCollapsed) {
-      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 1, key));
+      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 1, key, null));
     }
   }
 
   // Ungrouped tasks also preserve hierarchy among themselves.
   const ungroupedRows: GroupRow[] = [];
-  for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0, ''));
+  for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0, '', null));
 
   return showLeafTasks === 'top'
     ? [...ungroupedRows, ...groupRows]
