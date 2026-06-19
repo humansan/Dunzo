@@ -33,7 +33,7 @@ export function useRowDnD(params: {
   selectedCollectionId: string | null;
   sectionsConfig: SectionsConfig;
   onReorder: (items: { id: string; parentId: string | null }[]) => void;
-  onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
+  onSaveTodo: (updatedTodo: Todo) => void;
   // Clear any open inline editor / context menu when a drag begins.
   clearInteraction: () => void;
 }) {
@@ -238,7 +238,7 @@ export function useRowDnD(params: {
 
     if (targetGroup !== activeGroup) {
       const patch = groupAssignmentPatch(sectionsConfig.groupBy, targetGroup);
-      if (patch) onSaveTodo(activeEntry.date, activeEntry.date, { ...activeEntry.todo, ...patch });
+      if (patch) onSaveTodo({ ...activeEntry.todo, ...patch });
     }
 
     const ordered = [...entries]

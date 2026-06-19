@@ -27,7 +27,7 @@ interface HubRowProps {
   editing: EditState;
   startEdit: (id: string, col: ColKey, e: React.MouseEvent) => void;
   stopEdit: () => void;
-  onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
+  onSaveTodo: (updatedTodo: Todo) => void;
   onAddSubtask: (parentId: string) => string;
   onToggleTodo: (id: string) => void;
   openMenu: (id: string, x: number, y: number) => void;
@@ -79,13 +79,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   onRowDragEnd,
 }) => {
   const { entry, hasChildren } = node;
-  const { todo, date } = entry;
+  const { todo } = entry;
   // The name cell doubles as the drag image so the cursor carries a readable chip.
   const dragImageRef = useRef<HTMLDivElement>(null);
   const style: React.CSSProperties = { gridTemplateColumns };
 
   const isEditing = (col: ColKey) => editing?.id === todo.id && editing?.col === col;
-  const saveField = (patch: Partial<Todo>) => onSaveTodo(date, date, { ...todo, ...patch });
+  const saveField = (patch: Partial<Todo>) => onSaveTodo({ ...todo, ...patch });
 
   // Drop handlers shared by both row variants. stopPropagation so the table's
   // container-level onDrop (a fallback for releases over the header/gaps) doesn't
@@ -270,7 +270,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         return (
           <DisplayCell col="date" active={isEditing('date')}>
             <span className="truncate text-sm text-white/90">
-              {date ? format(parseISO(date), 'MMM d, yyyy') : muted}
+              {todo.dueDate ? format(parseISO(todo.dueDate), 'MMM d, yyyy') : muted}
             </span>
           </DisplayCell>
         );

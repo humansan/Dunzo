@@ -343,10 +343,11 @@ export default function App() {
   // ── Task Planner handlers ─────────────────────────────────────────────────────
   // Operate on the flat todos array; a task's scheduled day is its `dueDate`.
 
-  // Save an edited hub todo. The date now lives on the task, so a date change is
-  // just `dueDate` — `newDate` is written onto the task (null ⇒ undated).
-  const handleHubSaveTodo = (_oldDate: string | null, newDate: string | null, updatedTodo: Todo) => {
-    const dueDate = newDate && newDate !== UNDATED ? newDate : undefined;
+  // Save an edited hub todo. The date lives on the task itself (`dueDate`), so the
+  // todo is the whole payload. Normalize the date here (empty/UNDATED ⇒ undated)
+  // so callers can just set `dueDate` without worrying about the sentinel.
+  const handleHubSaveTodo = (updatedTodo: Todo) => {
+    const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
     setTodos(prev => prev.map(t => (t && t.id === updatedTodo.id ? { ...updatedTodo, dueDate } : t)));
   };
 

@@ -5,7 +5,6 @@ import { Plus } from 'lucide-react';
 import { DayTodos, Todo, Workspace } from '../types';
 import {
   OrganizerEntry,
-  hasDate,
   CollectionOption,
 } from '../utils/todoFilters';
 import { TodoFullView } from './TodoFullView';
@@ -49,8 +48,9 @@ interface TodosHubViewProps {
   collectionOptions: CollectionOption[];
   onSetTaskCollection: (taskId: string, collectionId: string | null) => void;
   onCreateCollection: (name: string) => string;
-  // Save an edited todo, moving it between date buckets when its date changes.
-  onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
+  // Save an edited todo. The task owns its scheduled day via `dueDate`, so the
+  // updated todo is the entire payload.
+  onSaveTodo: (updatedTodo: Todo) => void;
   // Create a top-level hub task. `opts` lets a grouped-view "+" seed the task
   // with a calendar date and/or field patch (status/priority) so it lands in the
   // section it was added from.
@@ -325,12 +325,13 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // color, strip the task-only fields, and clear its due date (undated) so it
   // can never leak onto the daily checklist.
   const makeCollection = (entry: OrganizerEntry) => {
-    onSaveTodo(entry.date, null, {
+    onSaveTodo({
       ...entry.todo,
       isCollection: true,
       color: entry.todo.color || DEFAULT_COLLECTION_COLOR,
       parentId: null,
       completed: false,
+      dueDate: undefined,
       duePercentage: undefined,
       startTime: undefined,
       dueTime: undefined,
@@ -339,7 +340,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     });
   };
   const setCollectionColor = (entry: OrganizerEntry, color: string) =>
-    onSaveTodo(entry.date, entry.date, { ...entry.todo, color });
+    onSaveTodo({ ...entry.todo, color });
 
   const [renamingWorkspaceId, setRenamingWorkspaceId] = useState<string | null>(null);
   const handleNewWorkspace = () => {
@@ -498,16 +499,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   const fullViewEntry = fullViewId ? entries.find((e) => e.todo.id === fullViewId) || null : null;
 
-  const saveFullTodo = (updated: Todo, newDate: string) => {
-    let oldDate: string | null = null;
-    for (const d of dayTodos) {
-      if ((d.todos || []).some((t) => t && t.id === updated.id)) {
-        oldDate = hasDate(d.date) ? d.date : null;
-        break;
-      }
-    }
-    onSaveTodo(oldDate, newDate || null, updated);
-  };
+  const saveFullTodo = (updated: Todo, newDate: string) =>
+    onSaveTodo({ ...updated, dueDate: newDate || undefined });
 
   const headerCellCls =
     'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 hover:bg-[#0f0f0f] select-none';
@@ -804,7 +797,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
             onCreateCollection={onCreateCollection}
             onClose={() => setEditCollId(null)}
             onSave={({ text, color, parentId }) => {
-              onSaveTodo(entry.date, entry.date, { ...entry.todo, text, color, parentId });
+              onSaveTodo({ ...entry.todo, text, color, parentId });
               setEditCollId(null);
             }}
           />,
@@ -835,7 +828,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           <TodoFullView
             key={fullViewEntry.todo.id}
             todo={fullViewEntry.todo}
-            date={fullViewEntry.date || ''}
+            date={fullViewEntry.todo.dueDate || ''}
             collectionOptions={collectionOptions}
             onCreateCollection={onCreateCollection}
             byId={todoById}

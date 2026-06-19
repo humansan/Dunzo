@@ -12,14 +12,14 @@ export function getFieldDisplayValue(
   field: ColKey,
   todoById: Map<string, Todo>
 ): string {
-  const { todo, date } = entry;
+  const { todo } = entry;
   switch (field) {
     case 'title': return todo.text || '';
     case 'status': return todo.status ? (statusOption(todo.status)?.label ?? todo.status) : '';
     case 'priority': return todo.priority ? (priorityOption(todo.priority)?.label ?? todo.priority) : '';
     case 'date': {
-      try { return date ? format(parseISO(date), 'MMM d, yyyy') : ''; }
-      catch { return date || ''; }
+      try { return todo.dueDate ? format(parseISO(todo.dueDate), 'MMM d, yyyy') : ''; }
+      catch { return todo.dueDate || ''; }
     }
     case 'startDate': {
       try { return todo.startDate ? format(parseISO(todo.startDate), 'MMM d, yyyy') : ''; }
@@ -56,9 +56,9 @@ export function getFieldRawValue(
   field: ColKey,
   todoById: Map<string, Todo>
 ): string {
-  const { todo, date } = entry;
+  const { todo } = entry;
   switch (field) {
-    case 'date': return date || '';
+    case 'date': return todo.dueDate || '';
     case 'startDate': return todo.startDate || '';
     case 'start': return todo.startTime || '';
     case 'end': return todo.dueTime || '';
@@ -140,7 +140,7 @@ export function getGroupKey(
   todoById: Map<string, Todo>,
   todayStr: string
 ): string {
-  if (field === 'date') return entry.date ? dateBucketId(entry.date, todayStr) : '';
+  if (field === 'date') return entry.todo.dueDate ? dateBucketId(entry.todo.dueDate, todayStr) : '';
   return getFieldDisplayValue(entry, field, todoById);
 }
 
