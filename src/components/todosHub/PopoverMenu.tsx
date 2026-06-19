@@ -5,7 +5,7 @@ import React from 'react';
 // title. Each menu keeps its own width/padding via `className` (Tailwind padding
 // utilities conflict if duplicated, so the panel sets none of its own).
 const DEFAULT_HEADER =
-  'px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-widest text-white/30';
+  'px-2.5 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-white/30';
 
 export const PopoverMenu: React.FC<{
   anchor: { right: number; top: number };

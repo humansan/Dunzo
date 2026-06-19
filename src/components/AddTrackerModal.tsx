@@ -81,7 +81,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
             {/* Scrollable body */}
             <form onSubmit={handleSubmit} className="overflow-y-auto px-6 pb-6 space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Name (Optional)</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Name (Optional)</label>
                 <input
                   type="text"
                   value={name}
@@ -92,7 +92,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Interval</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Interval</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(['day', 'week', 'month', 'year', 'custom'] as TrackerType[]).map((t) => (
                     <button
@@ -114,7 +114,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               {type === 'custom' && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Start Date</label>
+                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Start Date</label>
                     <input
                       type="date"
                       required
@@ -124,7 +124,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">End Date</label>
+                    <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">End Date</label>
                     <input
                       type="date"
                       required
@@ -137,7 +137,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               )}
 
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Color</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Color</label>
                 <div className="flex gap-2">
                   <input
                     type="color"
@@ -155,7 +155,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Precision</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Precision</label>
                 <select
                   value={precision}
                   onChange={(e) => setPrecision(parseInt(e.target.value))}
@@ -168,7 +168,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Primary Value</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Primary Value</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {([
                     { key: 'percent_elapsed' as TrackerDisplayMode, label: '% Elapsed' },
@@ -193,7 +193,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5">Secondary Value</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Secondary Value</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {([
                     { key: 'percent_elapsed' as TrackerSecondaryDisplayMode, label: '% Elapsed' },

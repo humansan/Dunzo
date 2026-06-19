@@ -38,7 +38,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   }, [isOpen, onClose]);
 
   const sectionLabel = (text: string) => (
-    <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">{text}</p>
+    <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-3">{text}</p>
   );
 
   const toggleBtn = (active: boolean, onClick: () => void, label: string) => (
@@ -89,7 +89,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {sectionLabel('Tasks')}
 
               <div>
-                <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2">First Day of Week</label>
+                <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2">First Day of Week</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -109,7 +109,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2">Deadline Countdown</label>
+                <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Deadline Countdown</label>
                 <div className="grid grid-cols-3 gap-2 bg-black/20 p-1 rounded-2xl border border-white/5">
                   {toggleBtn(countdownMode === 'off',     () => onUpdateCountdownMode('off'),     'Off')}
                   {toggleBtn(countdownMode === 'time',    () => onUpdateCountdownMode('time'),    'Time Left')}
@@ -119,7 +119,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase tracking-widest">XP & Streaks</label>
+                  <label className="block text-xs font-bold text-white/40 uppercase tracking-wider">XP & Streaks</label>
                   <p className="text-[11px] text-white/30 mt-0.5">Show XP, progress bar and streak stars</p>
                 </div>
                 <button
@@ -145,7 +145,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2">Accent Color 1</label>
+                    <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Accent Color 1</label>
                     <div className="flex gap-2">
                       <input
                         type="color"
@@ -163,7 +163,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-2">Accent Color 2</label>
+                    <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Accent Color 2</label>
                     <div className="flex gap-2">
                       <input
                         type="color"

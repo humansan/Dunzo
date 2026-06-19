@@ -49,7 +49,7 @@ export const ThemeSettingsModal: React.FC<ThemeSettingsModalProps> = ({ isOpen, 
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Accent Color 1 (Primary UI)</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Accent Color 1 (Primary UI)</label>
                 <div className="flex gap-2">
                   <input
                     type="color"
@@ -67,7 +67,7 @@ export const ThemeSettingsModal: React.FC<ThemeSettingsModalProps> = ({ isOpen, 
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Accent Color 2 (Secondary UI)</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2">Accent Color 2 (Secondary UI)</label>
                 <div className="flex gap-2">
                   <input
                     type="color"

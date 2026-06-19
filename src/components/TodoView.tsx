@@ -294,7 +294,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                   onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
                   className="flex flex-col items-center gap-1.5 group"
                 >
-                  <span className={`text-[11px] font-bold uppercase tracking-widest transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-white/30 group-hover:text-white/60'
+                  <span className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-white/30 group-hover:text-white/60'
                     }`}>
                     {format(day, 'EEE')}
                   </span>

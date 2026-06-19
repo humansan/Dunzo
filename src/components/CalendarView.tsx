@@ -774,7 +774,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 className="flex-1 text-center pb-3 border-l border-white/5"
               >
                 <div className="flex items-center justify-center gap-2">
-                  <span className={`text-sm font-bold uppercase tracking-widest ${today ? 'text-[var(--accent2)]' : 'text-white/30'}`}>
+                  <span className={`text-sm font-bold uppercase tracking-wider ${today ? 'text-[var(--accent2)]' : 'text-white/30'}`}>
                     {format(day, 'EEE')}
                   </span>
                   <span className={`text-sm font-bold px-1.5 py-1 rounded-md transition-all ${today
@@ -989,7 +989,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               }}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-white/40 uppercase tracking-widest">
+                <span className="text-xs font-bold text-white/40 uppercase tracking-wider">
                   {title}
                 </span>
                 <button
@@ -1015,7 +1015,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
               <div className="flex gap-2 mb-3">
                 <div className="flex-1">
-                  <label className="block text-[9px] font-bold text-white/30 uppercase tracking-widest mb-1">
+                  <label className="block text-[9px] font-bold text-white/30 uppercase tracking-wider mb-1">
                     Start
                   </label>
                   <input
@@ -1036,7 +1036,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-[9px] font-bold text-white/30 uppercase tracking-widest mb-1">
+                  <label className="block text-[9px] font-bold text-white/30 uppercase tracking-wider mb-1">
                     End
                   </label>
                   <input

@@ -121,6 +121,14 @@ export function timeToPercentage(time: string): number | undefined {
   return parseFloat(((hours * 60 + minutes) / (24 * 60) * 100).toFixed(2));
 }
 
+export function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 export function percentageToTime(percentage: number): string | undefined {
   if (percentage < 0 || percentage > 100) return undefined;
   let totalMinutes = Math.round((percentage / 100) * 24 * 60);

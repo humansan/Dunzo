@@ -26,7 +26,7 @@ export const CellEditorPopover: React.FC<{
   collectionOptions: CollectionOption[];
   todoById: Map<string, Todo>;
   collPathFor: (todo: Todo) => { id: string; name: string; color?: string }[];
-  onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
+  onSaveTodo: (updatedTodo: Todo) => void;
   onSetTaskCollection: (taskId: string, collectionId: string | null) => void;
   onCreateCollection: (name: string) => string;
   onClose: () => void;
@@ -46,7 +46,7 @@ export const CellEditorPopover: React.FC<{
   if (!editing.rect) return null;
   const { col } = editing;
   const isDateOrTime = col === 'date' || col === 'startDate' || col === 'start' || col === 'end';
-  const save = (patch: Partial<Todo>) => onSaveTodo(entry.date, entry.date, { ...entry.todo, ...patch });
+  const save = (patch: Partial<Todo>) => onSaveTodo({ ...entry.todo, ...patch });
 
   return createPortal(
     <div
@@ -89,15 +89,13 @@ export const CellEditorPopover: React.FC<{
         />
       ) : col === 'date' ? (
         <CalendarInput
-          value={entry.date || ''}
+          value={entry.todo.dueDate || ''}
           autoFocus
           showInDailyList={entry.todo.showInDailyList ?? false}
           onShowInDailyListChange={(val) => save({ showInDailyList: val })}
           onChange={(val) => {
-            const updatedTodo = !val
-              ? { ...entry.todo, showInDailyList: false }
-              : entry.todo;
-            onSaveTodo(entry.date, val || null, updatedTodo);
+            // Clearing the date also drops it off the daily checklist.
+            save({ dueDate: val || undefined, ...(!val ? { showInDailyList: false } : {}) });
           }}
         />
       ) : col === 'startDate' ? (

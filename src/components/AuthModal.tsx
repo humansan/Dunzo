@@ -15,7 +15,7 @@ type AuthMode = 'login' | 'signup';
 const inputClass =
   'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[var(--accent1)] transition-colors';
 const labelClass =
-  'block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5';
+  'block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5';
 
 // ─── Signed-out view ─────────────────────────────────────────────────────────
 
@@ -186,7 +186,7 @@ const SignedInPane: React.FC<{
   };
 
   const sectionLabel = (text: string) => (
-    <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-3">{text}</p>
+    <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-3">{text}</p>
   );
 
   return (

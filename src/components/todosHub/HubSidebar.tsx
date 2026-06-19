@@ -72,7 +72,7 @@ export const HubSidebar: React.FC<{
     >
       {/* ── Workspaces section (top) — independent todo databases ───────── */}
       <div className="shrink-0 flex flex-col max-h-[38%] border-b border-white/10 p-2">
-        <div className="shrink-0 px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
+        <div className="shrink-0 px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/30">
           Workspaces
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
@@ -127,7 +127,7 @@ export const HubSidebar: React.FC<{
       <div className="flex-1 min-h-0 flex flex-col">
         {/* Fixed header: title + the two pseudo-views as separate rows */}
         <div className="shrink-0 p-2 pb-1 space-y-0.5">
-          <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
+          <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/30">
             Collections
           </div>
           <button type="button" onClick={() => setSelectedView('all')} className={sidebarItemCls('all')} title="All Tasks">

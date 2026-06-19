@@ -53,7 +53,7 @@ const RightProp: React.FC<{
 }> = ({ icon, label, children, noDivider, onClear, canClear }) => (
   <div className={`group/prop py-3 ${noDivider ? '' : 'border-b border-white/5'}`}>
     <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-widest">
+      <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider">
         {icon}
         {label}
       </div>
@@ -312,7 +312,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               {/* Time: start → due, and % under due. Shared clear button on hover. */}
               <div className="group/time relative py-3 border-b border-white/5">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-widest">
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider">
                     <Clock size={11} />
                     Time
                   </div>
@@ -380,7 +380,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               </RightProp>
 
               <div className="py-3 border-b border-white/5">
-                <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-widest mb-1.5">
+                <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider mb-1.5">
                   <Clock size={11} />
                   Created
                 </div>
@@ -391,7 +391,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
               {draft.completedAt && (
                 <div className="py-3 border-b border-white/5">
-                  <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-widest mb-1.5">
+                  <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider mb-1.5">
                     <CircleDot size={11} />
                     Completed
                   </div>

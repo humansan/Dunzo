@@ -12,7 +12,12 @@ export type ColKey =
   | 'percent'
   | 'collection'
   | 'xp'
-  | 'notes';
+  | 'notes'
+  | 'completed'
+  | 'startPercent'
+  | 'estimatedTime'
+  | 'createdAt'
+  | 'completedAt';
 
 export interface ColDef {
   key: ColKey;
@@ -28,10 +33,15 @@ export const COLUMNS: ColDef[] = [
   { key: 'date', label: 'Due Date', defaultWidth: 150 },
   { key: 'start', label: 'Start Time', defaultWidth: 110 },
   { key: 'end', label: 'End Time', defaultWidth: 110 },
-  { key: 'percent', label: '%', defaultWidth: 90 },
+  { key: 'percent', label: 'End %', defaultWidth: 90 },
   { key: 'collection', label: 'Collection', defaultWidth: 240 },
   { key: 'xp', label: 'XP', defaultWidth: 80 },
   { key: 'notes', label: 'Notes', defaultWidth: 280 },
+  { key: 'completed', label: 'Done', defaultWidth: 80 },
+  { key: 'startPercent', label: 'Start %', defaultWidth: 90 },
+  { key: 'estimatedTime', label: 'Est. Time', defaultWidth: 110 },
+  { key: 'createdAt', label: 'Created At', defaultWidth: 150 },
+  { key: 'completedAt', label: 'Completed At', defaultWidth: 150 },
 ];
 
 // The Name column is pinned first and can never be hidden — every other field

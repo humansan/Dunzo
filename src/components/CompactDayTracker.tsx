@@ -27,7 +27,7 @@ export const CompactDayTracker: React.FC = () => {
   return (
     <div className="bg-[#1A1A1A] p-5 rounded-3xl border border-white/5 shadow-xl mb-8">
       <div className="text-center mb-2">
-        <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">
+        <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider">
           {format(now, 'EEEE, MMMM do yyyy')}
         </p>
       </div>

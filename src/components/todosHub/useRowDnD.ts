@@ -33,7 +33,7 @@ export function useRowDnD(params: {
   selectedCollectionId: string | null;
   sectionsConfig: SectionsConfig;
   onReorder: (items: { id: string; parentId: string | null }[]) => void;
-  onSaveTodo: (oldDate: string | null, newDate: string | null, updatedTodo: Todo) => void;
+  onSaveTodo: (updatedTodo: Todo) => void;
   // Clear any open inline editor / context menu when a drag begins.
   clearInteraction: () => void;
 }) {
@@ -74,9 +74,29 @@ export function useRowDnD(params: {
     return null;
   };
 
+  // Is `target` the last child of its parent? Inserting between two same-level
+  // siblings is always expressed as the next sibling's 'before' point, so an
+  // 'after' point is only meaningful on the last sibling (where there is no next
+  // sibling whose 'before' could stand in). The dragged node — which is leaving
+  // its current spot — is skipped, so the row above it can still read as last.
+  const isLastSibling = (target: FlatNode): boolean => {
+    const idx = flattened.findIndex((n) => n.id === target.id);
+    if (idx === -1) return true;
+    for (let i = idx + 1; i < flattened.length; i++) {
+      const n = flattened[i];
+      if (n.id === rowDragId || isDescendantOf(n.entry, rowDragId)) continue; // leaving
+      if (n.depth > target.depth) continue; // target's own subtree
+      // First node at or above the target's level: a same-parent sibling means
+      // the target is not last; anything shallower means it is.
+      return !(n.depth === target.depth && n.parentId === target.parentId);
+    }
+    return true; // nothing follows → last
+  };
+
   // Resolve the drop for collection-tree mode from the hovered row + cursor Y:
-  // top/bottom thirds reorder (before/after, as a sibling); the middle nests
-  // inside. Collections snap to a valid (collection/root) parent.
+  // the top zone reorders before (as a sibling); the rest nests inside. An 'after'
+  // (sibling below) point only appears on a last sibling that isn't expanded —
+  // otherwise drop after it via the row below. Collections snap to a valid parent.
   const computeTreeDrop = (targetId: string, e: React.DragEvent): RowDrop | null => {
     if (!rowDragId || targetId === rowDragId) return null;
     const target = flatById.get(targetId);
@@ -90,36 +110,22 @@ export function useRowDnD(params: {
     const rect = e.currentTarget.getBoundingClientRect();
     const r = (e.clientY - rect.top) / rect.height;
 
-    // ── Section (collection) header target, dragging a TASK ──────────────────
-    // A section's drop points must never yield a "no section" result. The top
-    // zone appends the task to the section ABOVE (where the previous row lives);
-    // the rest nests it inside this section. Sibling before/after on a section is
-    // kept only for collection drags (below), so sections stay reorderable.
-    if (targetIsColl && !draggedIsColl) {
-      if (r < 0.3) {
-        const idx = flattened.findIndex((n) => n.id === targetId);
-        const prev = idx > 0 ? flattened[idx - 1] : null;
-        if (prev && prev.id !== rowDragId && !isDescendantOf(prev.entry, rowDragId)) {
-          // Land where the previous row lives: inside it if it's a (collapsed/
-          // empty) section, else as its sibling — i.e. the section above.
-          return prev.entry.todo.isCollection
-            ? { id: targetId, pos: 'before', depth: prev.depth + 1, parentId: prev.id }
-            : { id: targetId, pos: 'before', depth: prev.depth, parentId: prev.parentId };
-        }
-        // This section is the very first row — keep a top-of-list drop so a task
-        // can become the first, top-level (section-less) item above it.
-        if (idx === 0) return { id: targetId, pos: 'before', depth: 0, parentId: null };
-        // Otherwise (the row above is the dragged one) nest into this section.
-        return { id: targetId, pos: 'inside', depth: target.depth + 1, parentId: targetId };
-      }
-      return { id: targetId, pos: 'inside', depth: target.depth + 1, parentId: targetId };
-    } // end this section
+    // An expanded node shows its children directly below it, so the next row in
+    // the flattened (collapse-aware) order is one of them (deeper than target).
+    const tIdx = flattened.findIndex((n) => n.id === targetId);
+    const expanded = tIdx >= 0 && tIdx + 1 < flattened.length && flattened[tIdx + 1].depth > target.depth;
 
     // 'inside' (nest) only when the target can legally parent the dragged node.
+    // 'after' (sibling below) only on the last sibling — and never on an expanded
+    // node, whose 'after' line would sit between it and its visible children
+    // (ambiguous with nesting); drop after such a node via the row below instead.
     const canNest = draggedIsColl ? targetIsColl : true;
+    const afterAllowed = isLastSibling(target) && !expanded;
     const pos: RowDrop['pos'] = canNest
-      ? (r < 0.3 ? 'before' : r > 0.7 ? 'after' : 'inside')
-      : (r < 0.5 ? 'before' : 'after');
+      ? (r < 0.3 ? 'before' : afterAllowed && r > 0.7 ? 'after' : 'inside')
+      : afterAllowed
+        ? (r < 0.5 ? 'before' : 'after')
+        : 'before';
 
     let parentId: string | null;
     let depth: number;
@@ -136,22 +142,6 @@ export function useRowDnD(params: {
       }
     }
 
-    // Merge the two redundant boundary drop points: "after A" equals "before B"
-    // when both resolve to the same spot, so the shared gap shows one stable
-    // indicator instead of flipping between two. (Differing levels keep both.)
-    // Cases that coincide: B is a sibling at the same level; or B is the next
-    // section header, whose top zone appends to this same section above it.
-    if (pos === 'after') {
-      const idx = flattened.findIndex((n) => n.id === targetId);
-      const next = idx >= 0 ? flattened[idx + 1] : null;
-      if (next && next.id !== rowDragId) {
-        const sameLevelSibling = next.parentId === parentId && next.depth === depth;
-        const nextSectionHeader = !draggedIsColl && !!next.entry.todo.isCollection;
-        if (sameLevelSibling || nextSectionHeader) {
-          return { id: next.id, pos: 'before', depth, parentId };
-        }
-      }
-    }
     return { id: targetId, pos, depth, parentId };
   };
 
@@ -238,7 +228,7 @@ export function useRowDnD(params: {
 
     if (targetGroup !== activeGroup) {
       const patch = groupAssignmentPatch(sectionsConfig.groupBy, targetGroup);
-      if (patch) onSaveTodo(activeEntry.date, activeEntry.date, { ...activeEntry.todo, ...patch });
+      if (patch) onSaveTodo({ ...activeEntry.todo, ...patch });
     }
 
     const ordered = [...entries]

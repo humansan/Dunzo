@@ -64,7 +64,7 @@ export const SectionsMenu: React.FC<{
       title="Sections"
       onClose={onClose}
       className="w-[280px] p-3 space-y-3"
-      headerClassName="px-0.5 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-white/30"
+      headerClassName="px-0.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-white/30"
     >
         <div className={sectionCls}>
           {/* Auto-archive */}

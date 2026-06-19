@@ -58,7 +58,8 @@ export function showsInOrganizer(todo: Todo): boolean {
 
 export interface OrganizerEntry {
   todo: Todo;
-  date: string | null; // the real calendar date, or null when none is assigned
+  // The task's scheduled day lives on `todo.dueDate` (the source of truth); this
+  // wrapper just carries the todo so the read pipeline can attach derived data.
 }
 
 // Collect organizer entries from every day, optionally restricted to archived
@@ -72,7 +73,7 @@ function collectOrganizer(
   for (const day of dayTodos || []) {
     for (const todo of day.todos || []) {
       if (todo && predicate(todo)) {
-        out.push({ todo, date: hasDate(day.date) ? day.date : null });
+        out.push({ todo });
       }
     }
   }

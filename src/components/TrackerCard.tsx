@@ -68,7 +68,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
     >
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-[var(--accent1)] text-[11px] font-bold tracking-widest uppercase mb-0.5">
+          <h3 className="text-[var(--accent1)] text-[11px] font-bold tracking-wider uppercase mb-0.5">
             {data.label}
           </h3>
           <p className="text-white/40 text-[11px] font-medium">
