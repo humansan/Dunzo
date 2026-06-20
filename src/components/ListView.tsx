@@ -368,6 +368,10 @@ export const ListView: React.FC<ListViewProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
+  // Buffer to keep the reordered IDs locally so that the list never flashes
+  // the old order during the render tick before React Query catches up
+  // (setTimeout(0) scheduling in notifyManager, see notifyManager.ts:63).
+  const [reorderBuffer, setReorderBuffer] = useState<string[] | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
@@ -398,10 +402,31 @@ export const ListView: React.FC<ListViewProps> = ({
       const oldIndex = todos.findIndex((t) => t && t.id === active.id);
       const newIndex = todos.findIndex((t) => t && t.id === over.id);
       if (oldIndex !== -1 && newIndex !== -1) {
-        onReorder(arrayMove(todos, oldIndex, newIndex));
+        const reordered = arrayMove(todos, oldIndex, newIndex);
+        setReorderBuffer(reordered.map((t) => t.id));
+        onReorder(reordered);
       }
     }
   };
+
+  // Derive the display order: use the local buffer (immediate reorder) until the
+  // prop catches up (which may be a render cycle behind due to React Query's
+  // setTimeout(0) scheduling), then fall through to the prop order.
+  const visibleTodos = useMemo(() => {
+    if (!reorderBuffer) return todos;
+    const byId = new Map(todos.map((t) => [t.id, t]));
+    return reorderBuffer.map((id) => byId.get(id)).filter(Boolean) as Todo[];
+  }, [todos, reorderBuffer]);
+
+  // When the prop order matches the buffer, the cache has caught up:
+  // discard the local buffer so we render from the canonical source.
+  useEffect(() => {
+    if (!reorderBuffer) return;
+    if (todos.length !== reorderBuffer.length) return;
+    if (reorderBuffer.every((id, i) => todos[i]?.id === id)) {
+      setReorderBuffer(null);
+    }
+  }, [todos]);
 
   const activeTodo = useMemo(
     () => todos.find((t) => t && t.id === activeId),
@@ -417,10 +442,10 @@ export const ListView: React.FC<ListViewProps> = ({
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={(todos || []).map((t) => t?.id).filter(Boolean) as string[]}
+          items={(visibleTodos || []).map((t) => t?.id).filter(Boolean) as string[]}
           strategy={verticalListSortingStrategy}
         >
-          {(todos || []).map((todo) => {
+          {(visibleTodos || []).map((todo) => {
             if (!todo || !todo.id) return null;
             return (
               <SortableTodoItem
