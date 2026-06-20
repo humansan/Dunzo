@@ -9,62 +9,24 @@ import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
 import { TodosHubView } from './components/TodosHubView';
-import { UNDATED, todoIndex, collectionOptions } from './utils/todoFilters';
-import { normalizeCompletion, toggledStatus } from './utils/todoStatus';
+import { UNDATED, todoIndex, collectionOptions, collectWithDescendants } from './utils/todoFilters';
+import { toggledStatus } from './utils/todoStatus';
 import { CalendarView } from './components/CalendarView';
 import { StatsView } from './components/StatsView';
 import { ActiveTodoTracker } from './components/ActiveTodoTracker';
 import { StopwatchWidget, TimerState } from './components/StopwatchWidget';
 import { StopwatchFullscreen } from './components/StopwatchFullscreen';
 import { authClient } from "./auth"
-import { apiFetch } from "./data/apiClient"
-
-const DEFAULT_TRACKERS: Tracker[] = [
-  {
-    id: 'day-default',
-    name: 'Day',
-    type: 'day',
-    color: '#e9ec6a',
-    precision: 2,
-    createdAt: Date.now(),
-  },
-  {
-    id: 'year-default',
-    name: 'Year',
-    type: 'year',
-    color: '#a2beb7',
-    precision: 3,
-    createdAt: Date.now() + 1,
-  }
-];
-
-// A todo id together with every descendant id (subtasks, recursively), for
-// cascading hub operations like delete/archive.
-function collectWithDescendants(todos: Todo[], rootId: string): Set<string> {
-  const childrenByParent = new Map<string, string[]>();
-  for (const t of todos) {
-    if (t && t.parentId) {
-      const arr = childrenByParent.get(t.parentId) ?? [];
-      arr.push(t.id);
-      childrenByParent.set(t.parentId, arr);
-    }
-  }
-  const result = new Set<string>([rootId]);
-  const stack = [rootId];
-  while (stack.length) {
-    const cur = stack.pop()!;
-    for (const child of childrenByParent.get(cur) ?? []) {
-      if (!result.has(child)) { result.add(child); stack.push(child); }
-    }
-  }
-  return result;
-}
+import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from './data/todos';
+import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from './data/trackers';
+import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './data/workspaces';
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
-// Within-day order follows the flat array. This is a derived read model only: the
-// persisted source of truth is the flat Todo[] (each task owns its scheduled day
-// via `dueDate`); this grouping feeds the day-grouped read surfaces (daily list,
-// calendar, stats) that still consume DayTodos[].
+// Within-day order follows `dailyOrder` (the daily list's own persisted order;
+// SQL rows come back unordered, so array order can't be relied on). This is a
+// derived read model only: the persisted source of truth is the flat Todo[] (each
+// task owns its scheduled day via `dueDate`); this grouping feeds the day-grouped
+// read surfaces (daily list, calendar, stats) that still consume DayTodos[].
 function groupByDueDate(todos: Todo[]): DayTodos[] {
   const m = new Map<string, Todo[]>();
   for (const t of todos || []) {
@@ -78,10 +40,6 @@ function groupByDueDate(todos: Todo[]): DayTodos[] {
 }
 
 export default function App() {
-  const [trackers, setTrackers] = useState<Tracker[]>(() => {
-    const saved = localStorage.getItem('dun-trackers');
-    return saved ? JSON.parse(saved) : DEFAULT_TRACKERS;
-  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTracker, setEditingTracker] = useState<Tracker | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -101,20 +59,30 @@ export default function App() {
   });
 
 
-  // Real Neon Auth session. The app is NOT gated on this — it stays usable off
-  // localStorage; auth only powers the account modal until the Phase 4 data layer.
+  // Real Neon Auth session. The app is gated on this (see render below): server
+  // data loads only once authenticated.
   const authSession = authClient.useSession();
+  const sessionPending = authSession.isPending;
   const isAuthenticated = !!authSession.data;
 
-  // Phase 2 proof-of-loop: once signed in, ping the backend's /api/me with the
-  // bearer token and log the verified userId. (Temporary — remove once Phase 3
-  // CRUD calls exercise the API for real.)
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    apiFetch<{ userId: string }>('/me')
-      .then((r) => console.log('[api/me] authenticated userId:', r.userId))
-      .catch((e) => console.error('[api/me] failed:', e));
-  }, [isAuthenticated]);
+  // ── Server data (TanStack Query); fetched once authenticated ───────────────
+  const todosQuery = useTodos(isAuthenticated);
+  const trackersQuery = useTrackers(isAuthenticated);
+  const workspacesQuery = useWorkspaces(isAuthenticated);
+  const todos = todosQuery.data ?? [];
+  const trackers = trackersQuery.data ?? [];
+  const workspaces = workspacesQuery.data ?? [];
+
+  const createTodo = useCreateTodo();
+  const updateTodo = useUpdateTodo();
+  const deleteTodoMut = useDeleteTodo();
+  const batchTodos = useBatchTodos();
+  const createTracker = useCreateTracker();
+  const updateTracker = useUpdateTracker();
+  const deleteTrackerMut = useDeleteTracker();
+  const createWorkspace = useCreateWorkspace();
+  const renameWorkspaceMut = useRenameWorkspace();
+
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('dun-theme');
     return saved ? JSON.parse(saved) : { accent1: '#e9ec6a', accent2: '#a2beb7' };
@@ -130,44 +98,41 @@ export default function App() {
   }, [activeView]);
 
   // ── Task Planner workspaces (independent todo databases) ───────────────────
-  const DEFAULT_WORKSPACE: Workspace = { id: 'personal', name: 'Personal' };
-  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('dun-workspaces') || 'null');
-      return Array.isArray(saved) && saved.length ? saved : [DEFAULT_WORKSPACE];
-    } catch {
-      return [DEFAULT_WORKSPACE];
-    }
-  });
-  useEffect(() => { localStorage.setItem('dun-workspaces', JSON.stringify(workspaces)); }, [workspaces]);
-
+  // The workspace list is server data; activeWorkspaceId is a per-device UI pref
+  // (stays local). There is no fixed 'personal' id anymore — a new user is seeded
+  // a "Personal" workspace below (workspace id is a global PK, so it must be unique).
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string>(
-    () => localStorage.getItem('dun-active-workspace') || 'personal'
+    () => localStorage.getItem('dun-active-workspace') || ''
   );
   useEffect(() => { localStorage.setItem('dun-active-workspace', activeWorkspaceId); }, [activeWorkspaceId]);
-  // Guard against a dangling active id (e.g. a deleted workspace).
+
+  // First-run seeding + keep activeWorkspaceId valid once workspaces have loaded.
+  const seededRef = useRef(false);
   useEffect(() => {
-    if (!workspaces.some(w => w.id === activeWorkspaceId)) setActiveWorkspaceId('personal');
-  }, [workspaces, activeWorkspaceId]);
+    if (!isAuthenticated) { seededRef.current = false; return; }
+    if (workspacesQuery.isLoading) return;
+    if (workspaces.length === 0) {
+      if (seededRef.current) return;
+      seededRef.current = true;
+      const id = Math.random().toString(36).substr(2, 9);
+      createWorkspace.mutate({ id, name: 'Personal' });
+      setActiveWorkspaceId(id);
+      return;
+    }
+    if (!workspaces.some(w => w.id === activeWorkspaceId)) {
+      setActiveWorkspaceId(workspaces[0].id);
+    }
+  }, [isAuthenticated, workspacesQuery.isLoading, workspaces, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
     const id = Math.random().toString(36).substr(2, 9);
-    setWorkspaces(prev => [...prev, { id, name: '' }]);
+    createWorkspace.mutate({ id, name: '' });
     setActiveWorkspaceId(id);
     return id;
   };
   const renameWorkspace = (id: string, name: string) =>
-    setWorkspaces(prev => prev.map(w => (w.id === id ? { ...w, name } : w)));
-  // Flat source of truth: every todo/collection across all dates. Each task owns
-  // its scheduled day via `dueDate`.
-  const [todos, setTodos] = useState<Todo[]>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('dun-todos') || '[]');
-      return Array.isArray(saved) ? saved : [];
-    } catch {
-      return [];
-    }
-  });
+    renameWorkspaceMut.mutate({ id, name });
+
   const [activeTodoId, setActiveTodoId] = useState<string | null>(() => {
     return localStorage.getItem('dun-active-todo');
   });
@@ -245,10 +210,6 @@ export default function App() {
   }, [isFullscreen]);
 
   useEffect(() => {
-    localStorage.setItem('dun-trackers', JSON.stringify(trackers));
-  }, [trackers]);
-
-  useEffect(() => {
     localStorage.setItem('dun-week-starts-on', weekStartsOn.toString());
   }, [weekStartsOn]);
 
@@ -261,10 +222,6 @@ export default function App() {
   }, [xpEnabled]);
 
   useEffect(() => {
-    localStorage.setItem('dun-todos', JSON.stringify(todos));
-  }, [todos]);
-
-  useEffect(() => {
     if (activeTodoId) {
       localStorage.setItem('dun-active-todo', activeTodoId);
     } else {
@@ -273,16 +230,13 @@ export default function App() {
   }, [activeTodoId]);
 
   const handleAddTracker = (newTracker: Tracker) => {
-    if (editingTracker) {
-      setTrackers(trackers.map(t => t.id === newTracker.id ? newTracker : t));
-    } else {
-      setTrackers([...trackers, newTracker]);
-    }
+    if (editingTracker) updateTracker.mutate(newTracker);
+    else createTracker.mutate(newTracker);
     setEditingTracker(null);
   };
 
   const handleDeleteTracker = (id: string) => {
-    setTrackers(trackers.filter(t => t.id !== id));
+    deleteTrackerMut.mutate(id);
   };
 
   const handleEditTracker = (tracker: Tracker) => {
@@ -296,31 +250,30 @@ export default function App() {
   // Replace the whole set of todos scheduled on `date` with `todosForDate` (the
   // daily/calendar views hand back the full day in its new order). Other days are
   // left untouched; the provided todos are pinned to `date` via dueDate.
+  // Replace the set of todos scheduled on `date`. Existing todos for that day
+  // that are no longer present are deleted; the rest are upserted with the new
+  // dueDate/order. Server stamps completedAt from status.
   const handleUpdateTodos = (date: string, todosForDate: Todo[]) => {
     const dueDate = date && date !== UNDATED ? date : undefined;
-    setTodos(prev => {
-      const others = prev.filter(t => t && bucketKeyOf(t) !== date);
-      const normalized = todosForDate.map(t => normalizeCompletion({ ...t, dueDate }));
-      const updated = [...others, ...normalized];
-      if (activeTodoId && !updated.some(t => t && t.id === activeTodoId)) setActiveTodoId(null);
-      return updated;
-    });
+    const newIds = new Set(todosForDate.map(t => t.id));
+    const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
+    const upserts = todosForDate.map(t => ({ ...t, dueDate }));
+    batchTodos.mutate({ upserts, deletes });
+    if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
   };
 
   // Move a todo to a new scheduled day (its dueDate). fromDate is no longer
   // needed — the date lives on the task now.
   const handleMoveTodo = (_fromDate: string, toDate: string, updatedTodo: Todo) => {
     const dueDate = toDate && toDate !== UNDATED ? toDate : undefined;
-    setTodos(prev => prev.map(t => (t && t.id === updatedTodo.id ? normalizeCompletion({ ...updatedTodo, dueDate }) : t)));
+    updateTodo.mutate({ id: updatedTodo.id, patch: { ...updatedTodo, dueDate } });
   };
 
   const handleToggleTodo = (todoId: string) => {
-    setTodos(prev => prev.map(todo => {
-      if (!todo || todo.id !== todoId) return todo;
-      // Status is the source of truth: the checkbox flips it between completed and
-      // todo; normalizeCompletion keeps completedAt in step.
-      return normalizeCompletion({ ...todo, status: toggledStatus(todo) });
-    }));
+    const todo = todos.find(t => t && t.id === todoId);
+    if (!todo) return;
+    // Status is the source of truth; the server stamps completedAt.
+    updateTodo.mutate({ id: todoId, patch: { status: toggledStatus(todo) } });
 
     // If we're toggling the active todo, close the tracker
     if (activeTodoId === todoId) {
@@ -338,9 +291,7 @@ export default function App() {
       setActiveTodoId(null);
       return;
     }
-    setTodos(prev => prev.map(todo =>
-      todo && todo.id === todoId ? { ...todo, trackingStartedAt: Date.now() } : todo
-    ));
+    updateTodo.mutate({ id: todoId, patch: { trackingStartedAt: Date.now() } });
     setActiveTodoId(todoId);
   };
 
@@ -354,8 +305,7 @@ export default function App() {
   // so callers can just set `dueDate` without worrying about the sentinel.
   const handleHubSaveTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
-    const normalized = normalizeCompletion({ ...updatedTodo, dueDate });
-    setTodos(prev => prev.map(t => (t && t.id === normalized.id ? normalized : t)));
+    updateTodo.mutate({ id: updatedTodo.id, patch: { ...updatedTodo, dueDate } });
   };
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
@@ -382,7 +332,7 @@ export default function App() {
       ...(opts?.patch ?? {}),
       dueDate,
     };
-    setTodos(prev => [...prev, newTodo]);
+    createTodo.mutate(newTodo);
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo> }): string =>
@@ -410,7 +360,7 @@ export default function App() {
       hubOrder: maxOrder + 1,
       createdAt: Date.now(),
     };
-    setTodos(prev => [...prev, newCollection]);
+    createTodo.mutate(newCollection);
     return id;
   };
   // Sidebar "New collection": create an empty one to inline-rename. An optional
@@ -422,31 +372,22 @@ export default function App() {
   // Membership is positional, so this just sets parentId; the task lands at the
   // end of the target's children. Works for hub and daily todos alike.
   const setTaskCollection = (taskId: string, collectionId: string | null) => {
-    setTodos(prev => {
-      const maxOrder = prev
-        .filter(t => t && (t.parentId ?? null) === (collectionId ?? null))
-        .reduce((m, t) => Math.max(m, t.hubOrder ?? 0), 0);
-      return prev.map(t =>
-        t && t.id === taskId ? { ...t, parentId: collectionId, hubOrder: maxOrder + 1 } : t
-      );
-    });
+    const maxOrder = todos
+      .filter(t => t && (t.parentId ?? null) === (collectionId ?? null))
+      .reduce((m, t) => Math.max(m, t.hubOrder ?? 0), 0);
+    updateTodo.mutate({ id: taskId, patch: { parentId: collectionId, hubOrder: maxOrder + 1 } });
   };
 
-  // Remove a todo entirely (cascading to its subtasks).
+  // Remove a todo entirely (server FK-cascades subtasks; cache drops them too).
   const handleDeleteTodoById = (id: string) => {
-    setTodos(prev => {
-      const toRemove = collectWithDescendants(prev.filter(Boolean) as Todo[], id);
-      return prev.filter(t => t && !toRemove.has(t.id));
-    });
+    deleteTodoMut.mutate(id);
     if (activeTodoId === id) setActiveTodoId(null);
   };
 
   // Archive a todo (and its subtasks): hides them from the hub.
   const handleArchiveTodo = (id: string) => {
-    setTodos(prev => {
-      const toArchive = collectWithDescendants(prev.filter(Boolean) as Todo[], id);
-      return prev.map(t => t && toArchive.has(t.id) ? { ...t, archived: true } : t);
-    });
+    const ids = [...collectWithDescendants(todos.filter(Boolean) as Todo[], id)];
+    batchTodos.mutate({ patches: ids.map(tid => ({ id: tid, archived: true })) });
   };
 
   // Delete a collection. 'cascade' removes the collection and its whole subtree.
@@ -455,25 +396,22 @@ export default function App() {
   // if it was top-level).
   const handleDeleteCollection = (id: string, mode: 'cascade' | 'promote') => {
     if (mode === 'cascade') { handleDeleteTodoById(id); return; }
-    setTodos(prev => {
-      const coll = prev.find(t => t && t.id === id);
-      const grandparentId = coll?.parentId ?? null;
-      return prev.flatMap(t => {
-        if (!t) return [];
-        if (t.id === id) return [];                                  // drop the collection node
-        if ((t.parentId ?? null) === id) return [{ ...t, parentId: grandparentId }]; // reparent children
-        return [t];
-      });
+    const coll = todos.find(t => t && t.id === id);
+    const grandparentId = coll?.parentId ?? null;
+    const children = todos.filter(t => t && (t.parentId ?? null) === id);
+    // Reparent children (patches) before deleting the node (deletes) — the
+    // server applies patches first, so the FK cascade won't take the children.
+    batchTodos.mutate({
+      patches: children.map(c => ({ id: c.id, parentId: grandparentId })),
+      deletes: [id],
     });
   };
 
   // Persist hub order + nesting: assign hubOrder by position and set parentId.
   const handleReorderHubTodos = (items: { id: string; parentId: string | null }[]) => {
-    const map = new Map(items.map((it, i) => [it.id, { order: i, parentId: it.parentId }]));
-    setTodos(prev => prev.map(t => {
-      const u = t && map.get(t.id);
-      return u ? { ...t, hubOrder: u.order, parentId: u.parentId } : t;
-    }));
+    batchTodos.mutate({
+      patches: items.map((it, i) => ({ id: it.id, hubOrder: i, parentId: it.parentId })),
+    });
   };
 
   // Collection index + options for the pickers. The hub scopes to its active
@@ -495,6 +433,53 @@ export default function App() {
       setIsFullscreen(false);
     }
   };
+
+  // ── Auth / data gates ──────────────────────────────────────────────────────
+  if (sessionPending) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-neutral-950 text-white/40 text-sm">
+        Loading…
+      </div>
+    );
+  }
+  if (!isAuthenticated) {
+    // Forced sign-in gate (the modal renders its own full-screen backdrop).
+    return (
+      <div className="h-screen bg-neutral-950">
+        <AuthModal
+          isOpen
+          onClose={() => {}}
+          isAuthenticated={false}
+          onAuthenticated={() => {}}
+          onLogout={() => {}}
+        />
+      </div>
+    );
+  }
+  if (todosQuery.isError || trackersQuery.isError || workspacesQuery.isError) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center gap-4 bg-neutral-950 text-white/60 text-sm">
+        <p>Couldn’t load your data.</p>
+        <button
+          onClick={() => {
+            todosQuery.refetch();
+            trackersQuery.refetch();
+            workspacesQuery.refetch();
+          }}
+          className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+  if (todosQuery.isLoading || workspacesQuery.isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-neutral-950 text-white/40 text-sm">
+        Loading your workspace…
+      </div>
+    );
+  }
 
   return (
     <div className={`${(activeView === 'calendar' || activeView === 'todos' || activeView === 'hub') ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-neutral-950 text-white font-sans selection:bg-[var(--accent1)] selection:text-black`}>
