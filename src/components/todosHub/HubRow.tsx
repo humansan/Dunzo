@@ -38,6 +38,7 @@ interface HubRowProps {
   // Ordered, visible columns (Name first) — drives which cells render and in what order.
   columns: ColDef[];
   lastColKey: ColKey; // the rightmost visible column, which gets a right divider
+  wrappedFields: Set<ColKey>;
   // When true the drag handle is hidden (drag-and-drop disabled for this row).
   hideDragHandle?: boolean;
   // Visible (post-filter) task count shown on collection header rows.
@@ -69,6 +70,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   collPath,
   columns,
   lastColKey,
+  wrappedFields,
   hideDragHandle = false,
   taskCount,
   onQuickAddTask,
@@ -144,18 +146,30 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // accent ring that inline-edited cells get from `cellEditCls`; cells whose
   // editor lives in a popover (currently the date column) opt into it so the
   // cell visibly reflects that it's being edited.
-  const DisplayCell: React.FC<{ col: ColKey; children: React.ReactNode; active?: boolean }> = ({ col, children, active = isEditing(col) }) => (
-    <div
-      onClick={(e) => startEdit(todo.id, col, e)}
-      className={`flex items-center h-full px-2.5 border-l border-white/8 overflow-hidden cursor-pointer hover:bg-white/3 ${
-        active ? 'ring-1 ring-inset ring-(--accent2)/60' : ''
-      } ${
-        col === lastColKey ? 'border-r border-white/8' : ''
-      }`}
-    >
-      {children}
-    </div>
-  );
+  // A clickable cell. Every cell stretches to the row height (the grid is
+  // `items-stretch`) and vertically centers its content, so a single line always
+  // sits at the same baseline whether or not wrapping is enabled. When wrapping
+  // is on, the inner text switches from `truncate` to multi-line and the cell
+  // gains a small vertical pad so multi-line content keeps even breathing room
+  // (matched to the single-line baseline so toggling wrap never shifts a one-line
+  // row's height — only genuinely multi-line content makes the row grow).
+  const DisplayCell: React.FC<{ col: ColKey; children: React.ReactNode; active?: boolean }> = ({ col, children, active = isEditing(col) }) => {
+    const wrap = wrappedFields.has(col);
+    return (
+      <div
+        onClick={(e) => startEdit(todo.id, col, e)}
+        className={`flex items-center px-2.5 border-l border-white/8 cursor-pointer hover:bg-white/3 overflow-hidden ${
+          wrap ? 'py-[7px] [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : ''
+        } ${
+          active ? 'ring-1 ring-inset ring-(--accent2)/60' : ''
+        } ${
+          col === lastColKey ? 'border-r border-white/8' : ''
+        }`}
+      >
+        {children}
+      </div>
+    );
+  };
 
   // ── Collection row ──────────────────────────────────────────────────────────
   // A section header, not a task: full-width (no column cells / dividers), taller,
@@ -465,21 +479,36 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           <CompletedToggle completed={isDone(todo)} onToggle={() => onToggleTodo(todo.id)} size={18} className='mr-1 ml-1'/>
 
           {isEditing('title') ? (
-            <input
-              type="text"
-              autoFocus
-              defaultValue={todo.text}
-              onChange={(e) => saveField({ text: e.target.value })}
-              onBlur={stopEdit}
-              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-              placeholder="Untitled"
-              className="flex-1 min-w-0 h-full bg-[#1e1e1e] px-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
-            />
+            wrappedFields.has('title') ? (
+              // Wrapped column → multi-line editor that grows with content, so the
+              // text keeps the same wrapping/styling it had as a display cell.
+              <textarea
+                autoFocus
+                rows={1}
+                defaultValue={todo.text}
+                onChange={(e) => saveField({ text: e.target.value })}
+                onBlur={stopEdit}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
+                placeholder="Untitled"
+                className="flex-1 min-w-0 resize-none field-sizing-content break-words bg-[#1e1e1e] py-[7px] px-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
+              />
+            ) : (
+              <input
+                type="text"
+                autoFocus
+                defaultValue={todo.text}
+                onChange={(e) => saveField({ text: e.target.value })}
+                onBlur={stopEdit}
+                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                placeholder="Untitled"
+                className="flex-1 min-w-0 h-full bg-[#1e1e1e] px-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
+              />
+            )
           ) : (
             <>
               <span
                 onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 h-full content-center truncate pl-1 text-sm cursor-text ${isDone(todo) ? 'text-white/45 line-through' : 'text-white'}`}
+                className={`flex-1 min-w-0 pl-1 text-sm cursor-text ${wrappedFields.has('title') ? 'py-[7px] break-words' : 'h-full content-center truncate'} ${isDone(todo) ? 'text-white/45 line-through' : 'text-white'}`}
               >
                 {todo.text || <span className="text-white/40">Untitled</span>}
               </span>

@@ -50,6 +50,11 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
         (k: string): k is ColKey => k !== NAME_COL_KEY && allColKeys.includes(k as ColKey)
       )
     );
+    const wrappedFields = new Set<ColKey>(
+      (Array.isArray(raw.wrappedFields) ? raw.wrappedFields : []).filter(
+        (k: string): k is ColKey => allColKeys.includes(k as ColKey)
+      )
+    );
     const raw_sections = raw.sections ?? {};
     const sections: SectionsConfig = {
       autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
@@ -61,18 +66,20 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     return {
       fieldOrder,
       hiddenFields,
+      wrappedFields,
       filters: (Array.isArray(raw.filters) ? raw.filters : []) as FilterRule[],
       sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
       sections,
     };
   }, [viewsConfig, viewConfigKey]);
 
-  const { fieldOrder, hiddenFields, filters: activeFilters, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
+  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
 
   // Persist any view-state update (partial merge).
   const updateViewState = (patch: {
     fieldOrder?: ColKey[];
     hiddenFields?: Set<ColKey>;
+    wrappedFields?: Set<ColKey>;
     filters?: FilterRule[];
     sorts?: SortRule[];
     sections?: SectionsConfig;
@@ -80,11 +87,12 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     setViewsConfig((prev) => ({
       ...prev,
       [viewConfigKey]: {
-        fieldOrder:  patch.fieldOrder  ?? fieldOrder,
-        hiddenFields: [...(patch.hiddenFields ?? hiddenFields)],
-        filters:     patch.filters     ?? activeFilters,
-        sorts:       patch.sorts       ?? activeSorts,
-        sections:    patch.sections    ?? sectionsConfig,
+        fieldOrder:    patch.fieldOrder    ?? fieldOrder,
+        hiddenFields:  [...(patch.hiddenFields  ?? hiddenFields)],
+        wrappedFields: [...(patch.wrappedFields ?? wrappedFields)],
+        filters:       patch.filters       ?? activeFilters,
+        sorts:         patch.sorts         ?? activeSorts,
+        sections:      patch.sections      ?? sectionsConfig,
       },
     }));
   };
@@ -96,6 +104,11 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     const n = new Set(hiddenFields);
     if (n.has(key)) n.delete(key); else n.add(key);
     updateViewState({ hiddenFields: n });
+  };
+  const toggleWrap = (key: ColKey) => {
+    const n = new Set(wrappedFields);
+    if (n.has(key)) n.delete(key); else n.add(key);
+    updateViewState({ wrappedFields: n });
   };
   const moveField = (dragKey: ColKey, targetKey: ColKey, pos: 'before' | 'after') => {
     if (dragKey === NAME_COL_KEY || targetKey === NAME_COL_KEY) return;
@@ -139,12 +152,14 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     viewConfigKey,
     fieldOrder,
     hiddenFields,
+    wrappedFields,
     activeFilters,
     activeSorts,
     sectionsConfig,
     updateViewState,
     colByKey,
     toggleField,
+    toggleWrap,
     moveField,
     visibleColumns,
     lastColKey,

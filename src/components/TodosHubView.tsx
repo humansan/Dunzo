@@ -123,12 +123,14 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const {
     fieldOrder,
     hiddenFields,
+    wrappedFields,
     activeFilters,
     activeSorts,
     sectionsConfig,
     updateViewState,
     colByKey,
     toggleField,
+    toggleWrap,
     moveField,
     visibleColumns,
     lastColKey,
@@ -617,6 +619,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                 collPath={collPathById.get(node.id) ?? []}
                 columns={visibleColumns}
                 lastColKey={lastColKey}
+                wrappedFields={wrappedFields}
                 taskCount={node.entry.todo.isCollection ? (visibleTaskCounts.get(node.id) ?? 0) : undefined}
                 isDragSource={rowDragId === node.id}
                 dropIndicator={rowDrop && rowDrop.id === node.id ? { pos: rowDrop.pos, depth: rowDrop.depth } : null}
@@ -658,6 +661,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
                   collPath={collPathById.get(row.node.id) ?? []}
                   columns={visibleColumns}
                   lastColKey={lastColKey}
+                  wrappedFields={wrappedFields}
                   isDragSource={rowDragId === row.node.id}
                   dropIndicator={rowDrop && rowDrop.id === row.node.id ? { pos: rowDrop.pos, depth: rowDrop.depth } : null}
                   onRowDragStart={onRowDragStart}
@@ -716,8 +720,10 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           order={fieldOrder}
           colByKey={colByKey}
           hidden={hiddenFields}
+          wrapped={wrappedFields}
           onMove={moveField}
           onToggle={toggleField}
+          onToggleWrap={toggleWrap}
           onClose={() => setFieldsMenu(null)}
         />,
         document.body

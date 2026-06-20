@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { GripVertical, Eye, EyeOff, Lock } from 'lucide-react';
+import { GripVertical, Eye, EyeOff, Lock, WrapText } from 'lucide-react';
 import { ColDef, ColKey, NAME_COL_KEY } from './types';
 import { PopoverMenu } from './PopoverMenu';
 
 // ── Fields menu ──────────────────────────────────────────────────────────────
 // Dropdown listing every column. Name is pinned first and locked; the rest can
 // be dragged to reorder (a drop line marks the target) and toggled hidden/shown.
+// Each column also has a word-wrap toggle (including Name).
 // Mirrors the sidebar's HTML5 drag-reorder, minus nesting (order only).
 export const FieldsMenu: React.FC<{
   anchor: { right: number; top: number };
   order: ColKey[];
   colByKey: Map<ColKey, ColDef>;
   hidden: Set<ColKey>;
+  wrapped: Set<ColKey>;
   onMove: (dragKey: ColKey, targetKey: ColKey, pos: 'before' | 'after') => void;
   onToggle: (key: ColKey) => void;
+  onToggleWrap: (key: ColKey) => void;
   onClose: () => void;
-}> = ({ anchor, order, colByKey, hidden, onMove, onToggle, onClose }) => {
+}> = ({ anchor, order, colByKey, hidden, wrapped, onMove, onToggle, onToggleWrap, onClose }) => {
   const [dragKey, setDragKey] = useState<ColKey | null>(null);
   const [dropInfo, setDropInfo] = useState<{ key: ColKey; pos: 'before' | 'after' } | null>(null);
 
@@ -45,6 +48,7 @@ export const FieldsMenu: React.FC<{
             if (!col) return null;
             const isName = key === NAME_COL_KEY;
             const isHidden = hidden.has(key);
+            const isWrapped = wrapped.has(key);
             const drop = dropInfo?.key === key ? dropInfo.pos : null;
             return (
               <div
@@ -89,6 +93,16 @@ export const FieldsMenu: React.FC<{
                       {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => onToggleWrap(key)}
+                    title={isWrapped ? 'Disable wrap' : 'Enable wrap'}
+                    className={`shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors ${
+                      isWrapped ? 'text-[var(--accent2)]' : 'text-white/40 hover:text-white'
+                    }`}
+                  >
+                    <WrapText size={14} />
+                  </button>
                 </div>
               </div>
             );
