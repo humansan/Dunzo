@@ -153,7 +153,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         onClick={(e) => startEdit(todo.id, col, e)}
         className={`flex px-2.5 border-l border-white/8 cursor-pointer hover:bg-white/3 ${
           wrap
-            ? 'items-start py-2 [&_.truncate]:whitespace-normal [&_.truncate]:overflow-visible'
+            ? 'items-center min-h-[36px] [&_.truncate]:whitespace-normal [&_.truncate]:overflow-visible'
             : 'items-center h-full overflow-hidden'
         } ${
           active ? 'ring-1 ring-inset ring-(--accent2)/60' : ''
@@ -454,10 +454,10 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       <div
         ref={dragImageRef}
         className={`sticky left-0 z-20 flex border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616] ${
-          wrappedFields.has('title') ? 'items-start' : 'items-center h-full overflow-hidden'
+          wrappedFields.has('title') ? 'items-center' : 'items-center h-full overflow-hidden'
         }`}
       >
-        <div style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }} className={`flex min-w-0 flex-1 ${wrappedFields.has('title') ? 'items-start py-2' : 'items-center h-full'}`}>
+        <div style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }} className="flex items-center h-full min-w-0 flex-1">
           {hasChildren ? (
             <button
               type="button"
