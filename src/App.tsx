@@ -36,7 +36,10 @@ function groupByDueDate(todos: Todo[]): DayTodos[] {
     if (!arr) { arr = []; m.set(key, arr); }
     arr.push(t);
   }
-  return [...m.entries()].map(([date, todos]) => ({ date, todos }));
+  return [...m.entries()].map(([date, todos]) => ({
+    date,
+    todos: todos.sort((a, b) => (a.dailyOrder ?? a.createdAt) - (b.dailyOrder ?? b.createdAt)),
+  }));
 }
 
 export default function App() {
@@ -257,16 +260,22 @@ export default function App() {
     const dueDate = date && date !== UNDATED ? date : undefined;
     const newIds = new Set(todosForDate.map(t => t.id));
     const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
-    const upserts = todosForDate.map(t => ({ ...t, dueDate }));
+    // Persist within-day position: the array order the daily/calendar view hands
+    // back becomes each task's dailyOrder.
+    const upserts = todosForDate.map((t, i) => ({ ...t, dueDate, dailyOrder: i }));
     batchTodos.mutate({ upserts, deletes });
     if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
   };
 
   // Move a todo to a new scheduled day (its dueDate). fromDate is no longer
-  // needed — the date lives on the task now.
+  // needed — the date lives on the task now. Land it at the bottom of the target
+  // day by giving it the next dailyOrder.
   const handleMoveTodo = (_fromDate: string, toDate: string, updatedTodo: Todo) => {
     const dueDate = toDate && toDate !== UNDATED ? toDate : undefined;
-    updateTodo.mutate({ id: updatedTodo.id, patch: { ...updatedTodo, dueDate } });
+    const maxDailyOrder = todos
+      .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
+      .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
+    updateTodo.mutate({ id: updatedTodo.id, patch: { ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 } });
   };
 
   const handleToggleTodo = (todoId: string) => {

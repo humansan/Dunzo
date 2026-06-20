@@ -32,9 +32,10 @@ export function useDeleteWorkspace() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiFetch(`/workspaces/${id}`, { method: 'DELETE' }),
-    onMutate: async (id: string) => {
-      await qc.cancelQueries({ queryKey: queryKeys.workspaces });
-      await qc.cancelQueries({ queryKey: queryKeys.todos });
+    onMutate: (id: string) => {
+      // Synchronous optimistic update (see optimistic.ts for why we don't await).
+      qc.cancelQueries({ queryKey: queryKeys.workspaces });
+      qc.cancelQueries({ queryKey: queryKeys.todos });
       const prevWs = qc.getQueryData<Workspace[]>(queryKeys.workspaces);
       const prevTodos = qc.getQueryData<Todo[]>(queryKeys.todos);
       qc.setQueryData<Workspace[]>(queryKeys.workspaces, (o = []) => o.filter((w) => w.id !== id));
@@ -47,8 +48,8 @@ export function useDeleteWorkspace() {
       if (c?.prevTodos) qc.setQueryData(queryKeys.todos, c.prevTodos);
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: queryKeys.workspaces });
-      qc.invalidateQueries({ queryKey: queryKeys.todos });
+      qc.invalidateQueries({ queryKey: queryKeys.workspaces, refetchType: 'none' });
+      qc.invalidateQueries({ queryKey: queryKeys.todos, refetchType: 'none' });
     },
   });
 }

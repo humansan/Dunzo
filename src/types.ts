@@ -68,6 +68,9 @@ export interface Todo {
   hubOrder?: number;          // Manual ordering within the Task Planner. The hub
                               // spans many dates, so it needs its own order
                               // independent of per-day position.
+  dailyOrder?: number;        // Manual ordering within a single day's daily-list.
+                              // Independent of hubOrder (a task has a position in
+                              // the Planner and a position within its day).
   parentId?: string | null;   // Task Planner nesting: id of the parent todo, or
                               // null/undefined for a top-level todo. Subtasks can
                               // nest to any depth.
