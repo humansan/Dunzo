@@ -1,7 +1,8 @@
 import React from 'react';
-import { Clock, CheckSquare, Calendar, Settings, Timer, BarChart2, Blocks } from 'lucide-react';
+import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks } from 'lucide-react';
 import { motion } from 'motion/react';
-import accountIcon from '../assets/icon.png';
+import backgroundUrl from '../assets/background.jpg';
+import logoSvg from '../assets/icon-balanced.svg';
 
 interface SidebarProps {
   activeView: 'trackers' | 'todos' | 'hub' | 'calendar' | 'stats';
@@ -9,12 +10,11 @@ interface SidebarProps {
   isVisible: boolean;
   isAuthenticated: boolean;
   onAccountClick: () => void;
-  onSettingsClick: () => void;
   onStopwatchClick: () => void;
   isStopwatchActive: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVisible, isAuthenticated, onAccountClick, onSettingsClick, onStopwatchClick, isStopwatchActive }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVisible, isAuthenticated, onAccountClick, onStopwatchClick, isStopwatchActive }) => {
   if (!isVisible) return null;
 
   const items = [
@@ -71,22 +71,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
           />
         </button>
         <button
-          onClick={onSettingsClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 text-white/40 hover:bg-white/10 hover:text-white"
-          title="Settings"
-        >
-          <Settings size={18} strokeWidth={2.5} />
-        </button>
-        <button
           onClick={onAccountClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+          className="group relative w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-all"
           title={isAuthenticated ? 'Account' : 'Sign In'}
         >
+          {/* Vibrant sign-in background with the black logo on top (matches the
+              sign-in screen and account subwindow). */}
           <img
-            src={accountIcon}
+            src={backgroundUrl}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <img
+            src={logoSvg}
             alt="Account"
-            className={`w-[18px] h-[18px] object-cover transition-opacity ${
-              isAuthenticated ? 'opacity-100' : 'opacity-50 group-hover:opacity-100'
+            className={`relative w-5 h-5 text-black transition-opacity ${
+              isAuthenticated ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'
             }`}
           />
         </button>
