@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Palette } from 'lucide-react';
 import { Theme } from '../types';
+import { modalPop } from './modalMotion';
 
 interface ThemeSettingsModalProps {
   isOpen: boolean;
@@ -32,9 +33,7 @@ export const ThemeSettingsModal: React.FC<ThemeSettingsModalProps> = ({ isOpen, 
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            {...modalPop}
             className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl"
           >
             <div className="flex justify-between items-center mb-8">

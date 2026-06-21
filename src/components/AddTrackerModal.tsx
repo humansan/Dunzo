@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '../types';
 import { ListSelect } from './todosHub/ListSelect';
 import { textInputCls } from './todosHub/TextInput';
+import { modalPop } from './modalMotion';
 
 interface AddTrackerModalProps {
   isOpen: boolean;
@@ -65,10 +66,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 10 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            {...modalPop}
             className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
           >
             {/* Sticky header */}

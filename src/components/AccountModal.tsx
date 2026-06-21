@@ -9,6 +9,7 @@ import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon.svg';
 import { ListSelect } from './todosHub/ListSelect';
 import { textInputCls } from './todosHub/TextInput';
+import { modalPop } from './modalMotion';
 
 type CountdownMode = 'off' | 'time' | 'percent';
 type Section = 'profile' | 'settings' | 'data';
@@ -491,10 +492,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 10 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            {...modalPop}
             className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#1A1A1A] shadow-2xl"
           >
             {/* Nav rail — vibrant sign-in background image with dark text on top. */}

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { X, ChevronDown, Check } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry, CollectionOption, collectionPath } from '../../utils/todoFilters';
 import { CollectionSearchField } from '../todoFields';
+import { modalPop } from '../modalMotion';
 import { textInputCls } from './TextInput';
 import { COLLECTION_COLORS, DEFAULT_COLLECTION_COLOR, colorName } from './constants';
 
@@ -40,7 +42,8 @@ export const CollectionEditModal: React.FC<{
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
       onMouseDown={onClose}
     >
-      <div
+      <motion.div
+        {...modalPop}
         onMouseDown={(e) => e.stopPropagation()}
         className="w-full max-w-md rounded-2xl border border-white/10 bg-[#1c1c1c] shadow-2xl"
       >
@@ -139,7 +142,7 @@ export const CollectionEditModal: React.FC<{
             Save
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
