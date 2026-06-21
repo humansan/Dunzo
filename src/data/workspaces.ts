@@ -3,11 +3,12 @@ import type { Todo, Workspace } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { useOptimisticListMutation } from './optimistic';
+import { stripNullsList } from './normalize';
 
 export function useWorkspaces(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.workspaces,
-    queryFn: () => apiFetch<Workspace[]>('/workspaces'),
+    queryFn: async () => stripNullsList(await apiFetch<Workspace[]>('/workspaces')),
     enabled,
   });
 }

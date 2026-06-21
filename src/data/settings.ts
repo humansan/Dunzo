@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Theme } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
+import { stripNulls } from './normalize';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Per-user settings, synced to the DB (Phase 6). The `user_settings` row holds
@@ -47,7 +48,7 @@ export function resolveAction<T>(action: SetStateAction<T>, prev: T): T {
 export function useSettings(enabled: boolean = false) {
   return useQuery({
     queryKey: queryKeys.settings,
-    queryFn: () => apiFetch<UserSettings>('/settings'),
+    queryFn: async () => stripNulls(await apiFetch<UserSettings>('/settings')),
     enabled,
   });
 }

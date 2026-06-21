@@ -3,6 +3,7 @@ import type { Todo } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { useOptimisticListMutation } from './optimistic';
+import { stripNullsList } from './normalize';
 import { collectWithDescendants } from '../utils/todoFilters';
 
 export type TodoBatch = {
@@ -34,7 +35,7 @@ export function applyTodoBatch(list: Todo[], b: TodoBatch): Todo[] {
 export function useTodos(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.todos,
-    queryFn: () => apiFetch<Todo[]>('/todos'),
+    queryFn: async () => stripNullsList(await apiFetch<Todo[]>('/todos')),
     enabled,
   });
 }

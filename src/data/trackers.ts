@@ -3,11 +3,12 @@ import type { Tracker } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { useOptimisticListMutation } from './optimistic';
+import { stripNullsList } from './normalize';
 
 export function useTrackers(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.trackers,
-    queryFn: () => apiFetch<Tracker[]>('/trackers'),
+    queryFn: async () => stripNullsList(await apiFetch<Tracker[]>('/trackers')),
     enabled,
   });
 }
