@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
 import { Plus } from 'lucide-react';
@@ -13,16 +13,11 @@ import {
   TABLE_PAD,
   BOTTOM_SPACER,
   DEFAULT_COLLECTION_COLOR,
-  COLLAPSED_KEY,
-  VIEW_KEY,
-  SIDEBAR_WIDTH_KEY,
-  SIDEBAR_HIDDEN_KEY,
-  SIDEBAR_COLLAPSED_KEY,
   MIN_SIDEBAR_WIDTH,
   MAX_SIDEBAR_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
 } from './todosHub/constants';
-import { usePersistentState, setCodec, stringCodec } from './todosHub/usePersistentState';
+import { useSyncedSet, useSyncedLayout, resolveAction } from '../data/settings';
 import { useHubViewConfig } from './todosHub/useHubViewConfig';
 import { useHubData } from './todosHub/useHubData';
 import { useCollectionDnD } from './todosHub/useCollectionDnD';
@@ -96,17 +91,24 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   onAddWorkspace,
   onRenameWorkspace,
 }) => {
-  // ── Collapse state (persisted) ─────────────────────────────────────────────
+  // ── Collapse state (DB-synced) ─────────────────────────────────────────────
   // Table row collapse and sidebar collection-tree collapse (both feed the data
-  // layer below, so they're declared first).
-  const [collapsed, setCollapsed] = usePersistentState(COLLAPSED_KEY, () => new Set<string>(), setCodec);
+  // layer below, so they're declared first). Sidebar collapse + the selected view
+  // + sidebar sizing share the single `hubLayout` settings blob.
+  const [collapsed, setCollapsed] = useSyncedSet('hubCollapsed');
   const toggleCollapse = useStableCallback((id: string) =>
     setCollapsed((prev) => {
       const n = new Set(prev);
       if (n.has(id)) n.delete(id); else n.add(id);
       return n;
     }));
-  const [collapsedColls, setCollapsedColls] = usePersistentState(SIDEBAR_COLLAPSED_KEY, () => new Set<string>(), setCodec);
+
+  const [layout, patchLayout] = useSyncedLayout();
+  const collapsedColls = useMemo(() => new Set(layout.sidebarCollapsed ?? []), [layout.sidebarCollapsed]);
+  const setCollapsedColls: React.Dispatch<React.SetStateAction<Set<string>>> = (action) =>
+    patchLayout((prev) => ({
+      sidebarCollapsed: [...resolveAction(action, new Set(prev.sidebarCollapsed ?? []))],
+    }));
   const toggleCollColl = (id: string) =>
     setCollapsedColls((prev) => {
       const n = new Set(prev);
@@ -116,7 +118,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // ── Sidebar selection (which collection / view the table shows) ────────────
   // Declared early so the per-view config hook below can derive its storage key.
-  const [selectedView, setSelectedView] = usePersistentState(VIEW_KEY, 'all', stringCodec);
+  const selectedView = layout.selectedView ?? 'all';
+  const setSelectedView = (v: string) => patchLayout(() => ({ selectedView: v }));
 
   // Per-view layout + column widths (field order/visibility, filters, sorts,
   // section settings, resizable columns) — keyed by workspace + view.
@@ -352,19 +355,16 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     setRenamingWorkspaceId(id);
   };
 
-  // ── Left-pane sizing (persisted) ───────────────────────────────────────────
-  const [sidebarWidth, setSidebarWidth] = usePersistentState(SIDEBAR_WIDTH_KEY, DEFAULT_SIDEBAR_WIDTH, {
-    parse: (raw) => {
-      const n = Number(raw);
-      if (n >= MIN_SIDEBAR_WIDTH && n <= MAX_SIDEBAR_WIDTH) return n;
-      throw new Error('out of range');
-    },
-    serialize: (v) => String(v),
-  });
-  const [sidebarHidden, setSidebarHidden] = usePersistentState(SIDEBAR_HIDDEN_KEY, false, {
-    parse: (raw) => raw === '1',
-    serialize: (v) => (v ? '1' : '0'),
-  });
+  // ── Left-pane sizing (DB-synced via the hubLayout blob) ────────────────────
+  const rawSidebarWidth = layout.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH;
+  const sidebarWidth =
+    rawSidebarWidth >= MIN_SIDEBAR_WIDTH && rawSidebarWidth <= MAX_SIDEBAR_WIDTH
+      ? rawSidebarWidth
+      : DEFAULT_SIDEBAR_WIDTH;
+  const setSidebarWidth = (w: number) => patchLayout(() => ({ sidebarWidth: w }));
+  const sidebarHidden = layout.sidebarHidden ?? false;
+  const setSidebarHidden: React.Dispatch<React.SetStateAction<boolean>> = (action) =>
+    patchLayout((prev) => ({ sidebarHidden: resolveAction(action, prev.sidebarHidden ?? false) }));
 
   const startSidebarResize = (e: React.MouseEvent) => {
     e.preventDefault();

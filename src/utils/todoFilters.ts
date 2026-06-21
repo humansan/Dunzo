@@ -1,5 +1,27 @@
 import { Todo, DayTodos } from '../types';
 
+// A todo id together with every descendant id (subtasks, recursively), for
+// cascading hub operations like delete/archive.
+export function collectWithDescendants(todos: Todo[], rootId: string): Set<string> {
+  const childrenByParent = new Map<string, string[]>();
+  for (const t of todos) {
+    if (t && t.parentId) {
+      const arr = childrenByParent.get(t.parentId) ?? [];
+      arr.push(t.id);
+      childrenByParent.set(t.parentId, arr);
+    }
+  }
+  const result = new Set<string>([rootId]);
+  const stack = [rootId];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    for (const child of childrenByParent.get(cur) ?? []) {
+      if (!result.has(child)) { result.add(child); stack.push(child); }
+    }
+  }
+  return result;
+}
+
 // ── Task Planner (organizer) vs. Daily checklist routing ────────────────────────
 //
 // There are two surfaces a todo can show up on:

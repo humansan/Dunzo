@@ -1,6 +1,7 @@
 import React from 'react';
-import { Clock, CheckSquare, Calendar, User, Settings, Timer, BarChart2, Blocks } from 'lucide-react';
+import { Clock, CheckSquare, Calendar, Settings, Timer, BarChart2, Blocks } from 'lucide-react';
 import { motion } from 'motion/react';
+import accountIcon from '../assets/icon.png';
 
 interface SidebarProps {
   activeView: 'trackers' | 'todos' | 'hub' | 'calendar' | 'stats';
@@ -81,10 +82,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
           className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
           title={isAuthenticated ? 'Account' : 'Sign In'}
         >
-          <User
-            size={18}
-            strokeWidth={2.5}
-            className={`transition-colors ${isAuthenticated ? 'text-[var(--accent1)]' : 'text-white/40 group-hover:text-white'}`}
+          <img
+            src={accountIcon}
+            alt="Account"
+            className={`w-[18px] h-[18px] object-cover transition-opacity ${
+              isAuthenticated ? 'opacity-100' : 'opacity-50 group-hover:opacity-100'
+            }`}
           />
         </button>
       </div>

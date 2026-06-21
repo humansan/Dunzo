@@ -9,8 +9,8 @@ import {
   SectionsConfig,
   DEFAULT_SECTIONS_CONFIG,
 } from './types';
-import { MIN_COL_WIDTH, WIDTHS_KEY, VIEWS_KEY } from './constants';
-import { usePersistentState } from './usePersistentState';
+import { MIN_COL_WIDTH } from './constants';
+import { useSyncedSetting } from '../../data/settings';
 
 // Owns the table's per-view layout: column widths (persisted globally) and the
 // per-view config (field order/visibility, filters, sorts, section settings)
@@ -18,15 +18,14 @@ import { usePersistentState } from './usePersistentState';
 // layout. Returns the reconciled current view state plus the mutators the table,
 // fields menu, and toolbar menus need.
 export function useHubViewConfig(activeWorkspaceId: string, selectedView: string) {
-  // ── Column widths (persisted) ──────────────────────────────────────────────
+  // ── Column widths (DB-synced) ──────────────────────────────────────────────
+  // Only overrides are stored; missing columns fall back to their default width.
   const defaultWidths = Object.fromEntries(COLUMNS.map((c) => [c.key, c.defaultWidth]));
-  const [widths, setWidths] = usePersistentState<Record<string, number>>(WIDTHS_KEY, defaultWidths, {
-    parse: (raw) => ({ ...defaultWidths, ...JSON.parse(raw) }),
-    serialize: (v) => JSON.stringify(v),
-  });
+  const [storedWidths, setWidths] = useSyncedSetting('hubColWidths', {} as Record<string, number>);
+  const widths = { ...defaultWidths, ...storedWidths };
 
-  // ── Per-view config (field order, visibility, filters, sorts) ────────────────
-  const [viewsConfig, setViewsConfig] = usePersistentState<Record<string, any>>(VIEWS_KEY, {});
+  // ── Per-view config (field order, visibility, filters, sorts) — DB-synced ────
+  const [viewsConfig, setViewsConfig] = useSyncedSetting('hubViews', {} as Record<string, any>);
 
   // The config key for the currently-visible view.
   const viewConfigKey = `${activeWorkspaceId}:${selectedView}`;

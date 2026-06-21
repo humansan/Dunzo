@@ -38,14 +38,9 @@ export const colorName = (c: string) => COLLECTION_COLOR_NAMES[c] || 'Custom';
 // with high contrast against the dark tinted-bg pill.
 export const pillTextColor = (color: string) => `color-mix(in srgb, ${color} 40%, white)`;
 
-// ── Persistence keys ─────────────────────────────────────────────────────────
-export const WIDTHS_KEY = 'dun-hub-col-widths';
-export const VIEWS_KEY = 'dun-hub-views'; // per-view config: fieldOrder, hiddenFields, filters, sorts
-export const COLLAPSED_KEY = 'dun-hub-collapsed';
-export const VIEW_KEY = 'dun-hub-view'; // which sidebar entry is selected ('all' | 'uncategorized' | collection id)
-export const SIDEBAR_WIDTH_KEY = 'dun-hub-sidebar-width';
-export const SIDEBAR_HIDDEN_KEY = 'dun-hub-sidebar-hidden';
-export const SIDEBAR_COLLAPSED_KEY = 'dun-hub-sidebar-collapsed'; // expand/collapse state of the collection tree
+// Hub view-config (column widths, per-view config, collapse state, selected view,
+// sidebar sizing) is now DB-synced through `user_settings` (see src/data/settings.ts
+// and the one-time import in src/data/import.ts), not localStorage.
 
 // ── Sidebar sizing ───────────────────────────────────────────────────────────
 export const SIDEBAR_INDENT = 14; // px per nesting level in the sidebar tree
