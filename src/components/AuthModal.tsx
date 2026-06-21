@@ -66,7 +66,7 @@ const LoginScreen: React.FC<{
         src={backgroundUrl}
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover blur-lg scale-120"
       />
 
       <div className="relative h-full w-full flex flex-col md:flex-row">
