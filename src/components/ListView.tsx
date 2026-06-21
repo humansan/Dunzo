@@ -188,7 +188,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group flex items-start gap-2 py-1 border-b border-white/5 ${isDragging ? 'opacity-0' : ''}`}
+      className={`relative group flex items-start gap-2 py-1.5 border-b border-white/5 ${isDragging ? 'opacity-0' : ''}`}
     >
       <button
         {...attributes}
@@ -213,7 +213,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
-          <p className={`text-md leading-7 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
+          <p className={`text-md leading-6 pt-0.5 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
             ? 'text-white/25 line-through translate-x-[3px]'
             : 'text-white group-hover/text:text-(--accent2)'
           }`}>
@@ -305,7 +305,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
       <button
         onClick={() => onDelete(todo.id)}
-        className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center justify-center text-white/40 hover:text-red-400 hover:bg-[#d93d42]/10 rounded-lg transition-all"
+        className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-white/40 hover:text-red-400 hover:bg-[#d93d42]/10 rounded-lg transition-all"
       >
         <Trash2 size={16} />
       </button>
