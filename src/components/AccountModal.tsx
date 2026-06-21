@@ -38,7 +38,7 @@ const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ 
     aria-checked={value}
     onClick={() => onChange(!value)}
     className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-      value ? 'bg-[var(--accent2)]' : 'bg-white/15'
+      value ? 'bg-(--accent2)' : 'bg-white/15'
     }`}
   >
     <span
@@ -84,7 +84,7 @@ const labelCls = 'text-[13px] text-white/65';
 const rowCls = 'flex items-center justify-between gap-4';
 
 const fieldInput =
-  'w-full rounded-lg border border-white/10 bg-white/5 px-3 h-9 text-sm text-white placeholder-white/30 focus:border-[var(--accent2)] focus:outline-none transition-colors';
+  'w-full rounded-lg border border-white/10 bg-white/5 px-3 h-9 text-sm text-white placeholder-white/30 focus:border-[var(--accent1)] focus:outline-none transition-colors';
 const fieldLabel = 'block text-[11px] font-medium text-white/45 mb-1';
 const formButton =
   'w-full rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40';
@@ -288,7 +288,7 @@ const SettingsPane: React.FC<{
           type="text"
           value={theme[key]}
           onChange={(e) => onUpdateTheme({ ...theme, [key]: e.target.value })}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-mono text-white focus:border-[var(--accent2)] focus:outline-none transition-colors"
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-mono text-white focus:border-[var(--accent1)] focus:outline-none transition-colors"
         />
       </div>
     </div>
