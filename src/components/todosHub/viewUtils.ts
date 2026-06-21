@@ -4,7 +4,6 @@ import { Todo, TodoStatus, TodoPriority } from '../../types';
 import { formatTime12h, formatMinutes } from '../../utils/timeUtils';
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '../todoFields';
 import { ColKey, FilterRule, FlatNode, GroupRow } from './types';
-import { isDone } from '../../utils/todoStatus';
 
 // Returns a display-formatted string for a field — what the user sees in the
 // table cell. This is used for the filter value dropdown and for filter matching.
@@ -35,7 +34,6 @@ export function getFieldDisplayValue(
     }
     case 'xp': return todo.xp !== undefined ? String(todo.xp) : '';
     case 'notes': return todo.notes || '';
-    case 'completed': return isDone(todo) ? 'Done' : 'Not done';
     case 'startPercent': return todo.startPercentage !== undefined ? `${todo.startPercentage}%` : '';
     case 'estimatedTime': return todo.estimatedTime !== undefined ? formatMinutes(todo.estimatedTime) : '';
     case 'createdAt': {

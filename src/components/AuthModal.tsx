@@ -90,85 +90,87 @@ const LoginScreen: React.FC<{
             // initial={{ opacity: 0, y: 16 }}
             // animate={{ opacity: 1, y: 0 }}
             // transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="w-full max-w-[400px] bg-[#000000]/85 backdrop-blur-xl border border-white/10 rounded-[28px] shadow-2xl shadow-black/40 p-7 md:p-8"
+            className="w-full max-w-[400px] bg-[#000000]/85 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/40 p-7 md:p-8"
           >
-            <h2 className="text-2xl md:text-[28px] font-bold text-white mb-6">
-              {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
-            </h2>
+            <div className=''>
+              <h2 className="text-2xl md:text-[28px] font-bold text-white mb-6">
+                {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
+              </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-3.5">
-              <div>
-                <label className={`${fieldLabel} mb-1.5`}>Email</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={fieldClass}
-                  placeholder="you@example.com"
-                />
-              </div>
+              <form onSubmit={handleSubmit} className="space-y-3.5">
+                <div>
+                  <label className={`${fieldLabel} mb-1.5`}>Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={fieldClass}
+                    placeholder="you@example.com"
+                  />
+                </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className={`${fieldLabel}`}>Password</label>
-                  {mode === 'login' && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className={`${fieldLabel}`}>Password</label>
+                    {mode === 'login' && (
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors"
+                        onClick={() => console.log('[auth stub] forgot password')}
+                      >
+                        Forgot?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={`${fieldClass} pr-11`}
+                      placeholder="••••••••"
+                    />
                     <button
                       type="button"
-                      className="text-sm font-medium text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors"
-                      onClick={() => console.log('[auth stub] forgot password')}
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      Forgot?
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
-                  )}
+                  </div>
                 </div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`${fieldClass} pr-11`}
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
 
-              {error && (
-                <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>
-              )}
+                {error && (
+                  <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>
+                )}
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting
-                  ? 'Please wait…'
-                  : mode === 'login'
-                  ? 'Log In'
-                  : 'Create Account'}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting
+                    ? 'Please wait…'
+                    : mode === 'login'
+                    ? 'Log In'
+                    : 'Create Account'}
+                </button>
+              </form>
 
-            <p className="text-sm text-white/80 mt-5">
-              {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
-              <button
-                type="button"
-                onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-                className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors"
-              >
-                {mode === 'login' ? 'Create an account' : 'Log in'}
-              </button>
-            </p>
+              <p className="text-sm text-white/80 mt-5">
+                {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
+                <button
+                  type="button"
+                  onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
+                  className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors"
+                >
+                  {mode === 'login' ? 'Create an account' : 'Log in'}
+                </button>
+              </p>
+            </div>
           </motion.div>
         </div>
       </div>

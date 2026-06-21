@@ -114,7 +114,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           onRowDragStart?.(todo.id);
         }}
         onDragEnd={() => onRowDragEnd?.()}
-        className={`shrink-0 cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
+        className={`shrink-0 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
         title="Drag to reorder / nest"
       >
         <GripVertical size={14} />
@@ -147,19 +147,19 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // editor lives in a popover (currently the date column) opt into it so the
   // cell visibly reflects that it's being edited.
   // A clickable cell. Every cell stretches to the row height (the grid is
-  // `items-stretch`) and vertically centers its content, so a single line always
-  // sits at the same baseline whether or not wrapping is enabled. When wrapping
-  // is on, the inner text switches from `truncate` to multi-line and the cell
-  // gains a small vertical pad so multi-line content keeps even breathing room
-  // (matched to the single-line baseline so toggling wrap never shifts a one-line
-  // row's height — only genuinely multi-line content makes the row grow).
+  // `items-stretch`) and TOP-aligns its content with a fixed vertical pad
+  // (`py-2`). A single line of text and a chip are both ~20px tall, so in a
+  // one-line (36px) row that pad visually centers them; when another column
+  // wraps and grows the row, every cell's first line stays pinned to the top and
+  // lines up with the wrapping cell's first line (which, filling the row, reads
+  // as centered). Toggling wrap never shifts a one-line row's height.
   const DisplayCell: React.FC<{ col: ColKey; children: React.ReactNode; active?: boolean }> = ({ col, children, active = isEditing(col) }) => {
     const wrap = wrappedFields.has(col);
     return (
       <div
         onClick={(e) => startEdit(todo.id, col, e)}
-        className={`flex items-center px-2.5 border-l border-white/8 cursor-pointer hover:bg-white/3 overflow-hidden ${
-          wrap ? 'py-[7px] [&_.truncate]:whitespace-normal [&_.truncate]:break-words' : ''
+        className={`flex items-start py-2 px-2.5 border-l border-white/8 cursor-pointer hover:bg-white/3 overflow-hidden ${
+          wrap ? '[&_.truncate]:whitespace-normal [&_.truncate]:break-words' : ''
         } ${
           active ? 'ring-1 ring-inset ring-(--accent2)/60' : ''
         } ${
@@ -343,16 +343,6 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             {todo.notes ? <span className="truncate text-sm text-white/90">{todo.notes}</span> : muted}
           </DisplayCell>
         );
-      case 'completed':
-        return (
-          <div
-            className={`flex items-center justify-center h-full border-l border-white/8 ${
-              col === lastColKey ? 'border-r border-white/8' : ''
-            }`}
-          >
-            <CompletedToggle completed={isDone(todo)} onToggle={() => onToggleTodo(todo.id)} size={16} />
-          </div>
-        );
       case 'startPercent':
         return isEditing('startPercent') ? (
           <div className={editCellWrap}>
@@ -416,7 +406,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'createdAt':
         return (
           <div
-            className={`flex items-center h-full px-2.5 border-l border-white/8 overflow-hidden ${
+            className={`flex items-start h-full py-2 px-2.5 border-l border-white/8 overflow-hidden ${
               col === lastColKey ? 'border-r border-white/8' : ''
             }`}
           >
@@ -428,7 +418,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'completedAt':
         return (
           <div
-            className={`flex items-center h-full px-2.5 border-l border-white/8 overflow-hidden ${
+            className={`flex items-start h-full py-2 px-2.5 border-l border-white/8 overflow-hidden ${
               col === lastColKey ? 'border-r border-white/8' : ''
             }`}
           >
@@ -458,14 +448,32 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className="sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
+        className="sticky left-0 z-20 flex items-start h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
       >
-        <div style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }} className="flex items-center h-full min-w-0 flex-1">
+        {/* Name band. Each leading control is a line-height box (`h-5`) that centers
+            its icon, so they line up on the title's first text line.
+            • Wrapped title: `items-start` so the controls (and the title's first line)
+              top-align while the text wraps below.
+            • Unwrapped title: `items-center`; the band sizes to its content (one line)
+              and the parent top-anchors it (`items-start`), so in a row grown tall by
+              another column the band sits at the top, aligned with the other cells'
+              first line, instead of floating to the middle.
+            While inline-editing a non-wrapped title the band takes the fixed
+            single-line height (`h-9` = the 36px row min-height) rather than the full
+            cell, so it stays pinned to the top in a tall row (no jump to
+            vertical-center) while in a single-line row that height equals the cell and
+            the editor's ring lines up with the cell borders. */}
+        <div
+          style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
+          className={`flex min-w-0 flex-1 ${wrappedFields.has('title') ? 'items-start' : 'items-center'} ${
+            isEditing('title') && !wrappedFields.has('title') ? 'h-9' : 'py-[7px]'
+          }`}
+        >
           {hasChildren ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
-              className="shrink-0 p-0.5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+              className="shrink-0 h-5 p-0.5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
               title={isCollapsed ? 'Expand subtasks' : 'Collapse subtasks'}
             >
               {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
@@ -476,7 +484,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
 
           {dragHandle()}
 
-          <CompletedToggle completed={isDone(todo)} onToggle={() => onToggleTodo(todo.id)} size={18} className='mr-1 ml-1'/>
+          <CompletedToggle completed={isDone(todo)} onToggle={() => onToggleTodo(todo.id)} size={18} className='mr-1 ml-1 h-5 flex items-center justify-center'/>
 
           {isEditing('title') ? (
             wrappedFields.has('title') ? (
@@ -490,7 +498,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 resize-none field-sizing-content break-words bg-[#1e1e1e] py-[7px] px-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
+                className="flex-1 min-w-0 resize-none field-sizing-content break-words bg-[#1e1e1e] py-0 pl-1 pr-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
               />
             ) : (
               <input
@@ -501,14 +509,14 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 h-full bg-[#1e1e1e] px-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
+                className="flex-1 min-w-0 h-full bg-[#1e1e1e] pl-1 pr-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
               />
             )
           ) : (
             <>
               <span
                 onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 min-w-0 pl-1 text-sm cursor-text ${wrappedFields.has('title') ? 'py-[7px] break-words' : 'h-full content-center truncate'} ${isDone(todo) ? 'text-white/45 line-through' : 'text-white'}`}
+                className={`flex-1 min-w-0 pl-1 text-sm cursor-text ${wrappedFields.has('title') ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-white/45 line-through' : 'text-white'}`}
               >
                 {todo.text || <span className="text-white/40">Untitled</span>}
               </span>

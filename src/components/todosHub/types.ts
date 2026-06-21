@@ -13,7 +13,6 @@ export type ColKey =
   | 'collection'
   | 'xp'
   | 'notes'
-  | 'completed'
   | 'startPercent'
   | 'estimatedTime'
   | 'createdAt'
@@ -37,7 +36,6 @@ export const COLUMNS: ColDef[] = [
   { key: 'collection', label: 'Collection', defaultWidth: 240 },
   { key: 'xp', label: 'XP', defaultWidth: 80 },
   { key: 'notes', label: 'Notes', defaultWidth: 280 },
-  { key: 'completed', label: 'Done', defaultWidth: 80 },
   { key: 'startPercent', label: 'Start %', defaultWidth: 90 },
   { key: 'estimatedTime', label: 'Est. Time', defaultWidth: 110 },
   { key: 'createdAt', label: 'Created At', defaultWidth: 150 },
