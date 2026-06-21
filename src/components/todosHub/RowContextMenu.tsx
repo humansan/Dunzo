@@ -92,7 +92,7 @@ export const RowContextMenu: React.FC<{
         ) : (
           <>
             <button onClick={() => onExpand(menu.id)} className={itemCls}>
-              <Maximize2 size={14} /> Expand
+              <Maximize2 size={14} /> Show full view
             </button>
             <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
               <CornerDownRight size={14} /> Create task inside

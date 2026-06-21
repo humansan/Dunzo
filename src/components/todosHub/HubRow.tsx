@@ -448,7 +448,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className="sticky left-0 z-20 flex items-start h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
+        className="sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
       >
         {/* Name band. Each leading control is a line-height box (`h-5`) that centers
             its icon, so they line up on the title's first text line.
@@ -469,7 +469,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         <div
           style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
           className={`flex min-w-0 flex-1 ${wrappedFields.has('title') ? 'items-start' : 'items-center'} ${
-            isEditing('title') && !wrappedFields.has('title') ? 'h-9' : 'py-[7px]'
+            isEditing('title') && !wrappedFields.has('title') ? 'h-9' : 'py-[8px]'
           } ${isEditing('title') && "ring-1 ring-inset ring-[var(--accent2)]/60"}
           `}
         > 
@@ -483,7 +483,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
             </button>
           ) : (
-            <span className="shrink-0 w-5" />
+            <span className="shrink-0 w-5.5" />
           )}
 
           {dragHandle()}
