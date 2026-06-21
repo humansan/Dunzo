@@ -611,7 +611,15 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           </div>
 
         <div className="w-max min-w-full text-white" style={{ paddingLeft: TABLE_PAD, paddingRight: TABLE_PAD }}>
-          
+          {/* Width anchor: a zero-height grid mirroring the column tracks. The body
+              sizes to its widest grid child — a real row normally provides that, but
+              when the view is empty there are no rows, so the body would collapse to
+              min-w-full and the add-row/empty-state would stop short of the full table
+              width. This keeps the intrinsic width pinned regardless of row count. */}
+          <div aria-hidden className="grid h-0 overflow-hidden" style={{ gridTemplateColumns }}>
+            {visibleColumns.map((c) => <div key={c.key} />)}
+            <div />
+          </div>
 
           {/* Rows — collection-tree mode (default) or flat grouped mode. Native
               HTML5 DnD: a drop indicator shows where the row will land; nothing
@@ -703,12 +711,12 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           </button>
 
           {(sectionsConfig.groupBy === 'collection' ? flattened.length === 0 : groupedRows.length === 0) && (
-            <div className="px-3 py-6 text-xs text-white/50">
+            <div className="px-3 py-6 text-xs text-white/60">
               {selectedCollectionId
                 ? 'No tasks in this collection yet. Click “New” to add one.'
                 : selectedView === 'uncategorized'
-                  ? 'No uncategorized tasks. Everything is filed in a collection.'
-                  : <>No database todos yet. Click “New”, or set <code>showInDatabase: true</code> on a todo.</>}
+                  ? 'No uncategorized tasks.'
+                  : <>No todos in this collection. Click “+ New”.</>}
             </div>
           )}
 
