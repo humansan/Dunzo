@@ -108,12 +108,12 @@ export const HubToolbar: React.FC<{
               type="button"
               onClick={(e) => onToggleMenu(key, e)}
               className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] transition-colors ${
-                menuOpen[key] ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white hover:bg-white/5'
+                menuOpen[key] ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'
               }`}
             >
               <Icon size={14} /> {label}
               {count !== undefined && count > 0 && (
-                <span className="ml-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-[var(--accent2)] text-[10px] font-bold text-white px-1">
+                <span className="ml-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-neutral-400 text-[10px] font-bold text-black px-1">
                   {count}
                 </span>
               )}

@@ -188,19 +188,19 @@ const TodoItem: React.FC<TodoItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group flex items-center gap-2 py-1 border-b border-white/5 ${isDragging ? 'opacity-0' : ''}`}
+      className={`relative group flex items-start gap-2 py-1.5 border-b border-white/5 ${isDragging ? 'opacity-0' : ''}`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-white/40 hover:text-white/70 transition-all"
+        className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-white/40 hover:text-white/70 transition-all flex items-center h-7"
       >
         <GripVertical size={18} />
       </button>
 
       <button
         onClick={() => onToggle(todo.id)}
-        className="relative cursor-pointer py-1"
+        className="relative cursor-pointer h-7 flex items-center"
       >
         <motion.div
           animate={isDone(todo) ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
@@ -211,9 +211,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
         </motion.div>
       </button>
 
-      <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-start gap-1.5 min-w-0">
         <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
-          <p className={`text-md transition duration-200 ease-out font-medium truncate ${isDone(todo)
+          <p className={`text-md leading-6 pt-0.5 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
             ? 'text-white/25 line-through translate-x-[3px]'
             : 'text-white group-hover/text:text-(--accent2)'
           }`}>
@@ -224,7 +224,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         <button
           onClick={(e) => { e.stopPropagation(); onOpenFull(todo.id); }}
           title="Open full view"
-          className="opacity-0 group-hover:opacity-100 p-1 text-white/50 hover:text-white/80 hover:bg-white/5 rounded-md transition-all shrink-0"
+          className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-white/50 hover:text-white/80 hover:bg-white/5 rounded-md transition-all shrink-0"
         >
           <Maximize2 size={14} />
         </button>
@@ -233,7 +233,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           <button
             onClick={(e) => { e.stopPropagation(); onAddToCalendar(todo.id); }}
             title="Add to calendar"
-            className="opacity-0 group-hover:opacity-100 p-1 text-white/50 hover:text-white/80 hover:bg-white/5 rounded-md transition-all shrink-0"
+            className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-white/50 hover:text-white/80 hover:bg-white/5 rounded-md transition-all shrink-0"
           >
             <CalendarPlus size={14} />
           </button>
@@ -242,7 +242,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
       <div className="flex-1" />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-start gap-2 shrink-0 whitespace-nowrap">
         {todo.xp !== undefined && (
           <div className={`flex items-center justify-center gap-1.5 px-2.75 py-[5.5px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
             ? 'bg-white/5 text-white/20'
@@ -305,7 +305,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
       <button
         onClick={() => onDelete(todo.id)}
-        className="opacity-0 group-hover:opacity-100 p-2 text-white/40 hover:text-red-400 hover:bg-[#d93d42]/10 rounded-lg transition-all"
+        className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-white/40 hover:text-red-400 hover:bg-[#d93d42]/10 rounded-lg transition-all"
       >
         <Trash2 size={16} />
       </button>

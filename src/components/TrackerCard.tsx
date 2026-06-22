@@ -10,6 +10,8 @@ interface TrackerCardProps {
   onEdit: (tracker: Tracker) => void;
 }
 
+const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
+
 export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onEdit }) => {
   const [now, setNow] = useState(new Date());
 
@@ -123,7 +125,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${data.percentage}%` }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          transition={{ duration: 0.5, ease: EXPO_OUT }}
           className="h-full rounded-full relative z-10"
           style={{
             backgroundColor: tracker.color,
