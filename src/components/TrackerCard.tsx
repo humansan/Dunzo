@@ -64,7 +64,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="relative group bg-[#1A1A1A] p-4 rounded-2xl border border-white/5 shadow-xl overflow-hidden flex flex-col"
+      className="relative group bg-neutral-900 p-4 rounded-2xl shadow-xl overflow-hidden flex flex-col"
     >
       <div className="flex justify-between items-start mb-3">
         <div>
@@ -84,13 +84,13 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(tracker)}
-            className="p-1.5 hover:bg-white/5 rounded-full text-white/40 hover:text-white transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors"
           >
             <Settings2 size={12} />
           </button>
           <button
             onClick={() => onDelete(tracker.id)}
-            className="p-1.5 hover:bg-red-500/10 rounded-full text-white/40 hover:text-red-400 transition-colors"
+            className="p-1.5 hover:bg-red-500/10 rounded-lg text-white/40 hover:text-red-400 transition-colors"
           >
             <Trash2 size={12} />
           </button>

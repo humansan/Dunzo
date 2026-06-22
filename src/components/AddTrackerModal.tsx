@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '../types';
+import { ListSelect } from './todosHub/ListSelect';
+import { textInputCls } from './todosHub/TextInput';
+import { modalPop } from './modalMotion';
 
 interface AddTrackerModalProps {
   isOpen: boolean;
@@ -60,34 +63,32 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-3xl shadow-2xl flex flex-col max-h-[90vh]"
+            {...modalPop}
+            className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
           >
             {/* Sticky header */}
             <div className="flex justify-between items-center px-6 pt-5 pb-3 shrink-0">
               <h2 className="text-lg font-bold text-white">
                 {editingTracker ? 'Edit Tracker' : 'New Tracker'}
               </h2>
-              <button onClick={onClose} className="p-1.5 hover:bg-white/5 rounded-lg text-white/40">
-                <X size={18} />
+              <button onClick={onClose} className="rounded-lg p-1.5 text-white/40 transition-all hover:bg-white/10 hover:text-white">
+                <X size={16} />
               </button>
             </div>
 
             {/* Scrollable body */}
             <form onSubmit={handleSubmit} className="overflow-y-auto px-6 pb-6 space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Name (Optional)</label>
+                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. My Project"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)] transition-colors"
+                  className={`${textInputCls} w-full`}
                 />
               </div>
 
@@ -120,7 +121,8 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       required
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)]"
+                      style={{ colorScheme: 'dark' }}
+                      className={`${textInputCls} w-full`}
                     />
                   </div>
                   <div>
@@ -130,7 +132,8 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       required
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)]"
+                      style={{ colorScheme: 'dark' }}
+                      className={`${textInputCls} w-full`}
                     />
                   </div>
                 </div>
@@ -143,28 +146,26 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                     type="color"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="w-10 h-10 bg-transparent border-none cursor-pointer shrink-0"
+                    className="w-10 h-8 bg-transparent border border-white/10 rounded-lg cursor-pointer shrink-0"
                   />
                   <input
                     type="text"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent1)]"
+                    className={`${textInputCls} flex-1 font-mono`}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Precision</label>
-                <select
-                  value={precision}
-                  onChange={(e) => setPrecision(parseInt(e.target.value))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[var(--accent1)]"
-                >
-                  {[0, 1, 2, 3, 4].map(p => (
-                    <option key={p} value={p} className="bg-[#1A1A1A]">{p} digits</option>
-                  ))}
-                </select>
+                <ListSelect
+                  ariaLabel="Precision"
+                  className="w-full"
+                  value={String(precision)}
+                  onChange={(v) => setPrecision(parseInt(v))}
+                  options={[0, 1, 2, 3, 4].map((p) => ({ value: String(p), label: `${p} digits` }))}
+                />
               </div>
 
               <div>
@@ -220,7 +221,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
 
               <button
                 type="submit"
-                className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold py-3 rounded-2xl transition-all transform active:scale-[0.98]"
+                className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold py-3 rounded-2xl transition-all transform active:scale-[0.98] text-sm"
               >
                 {editingTracker ? 'Save Changes' : 'Create Tracker'}
               </button>

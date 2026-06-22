@@ -2,7 +2,7 @@ import React from 'react';
 import { COLUMNS } from './types';
 import { SectionsConfig } from './types';
 import { PopoverMenu } from './PopoverMenu';
-import { selectCls } from './constants';
+import { ListSelect } from './ListSelect';
 
 // Minimal inline toggle switch (no external dep).
 const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
@@ -100,20 +100,19 @@ export const SectionsMenu: React.FC<{
           {/* Group by */}
           <div className="space-y-1.5">
             <span className={labelCls}>Group by</span>
-            <select
+            <ListSelect
+              ariaLabel="Group by"
+              className="w-full"
               value={config.groupBy}
-              onChange={(e) => set('groupBy', e.target.value as SectionsConfig['groupBy'])}
-              className={`${selectCls} w-full`}
-            >
-              {(['collection', 'status', 'priority', 'date'] as const).map((key) => {
+              onChange={(v) => set('groupBy', v as SectionsConfig['groupBy'])}
+              options={(['collection', 'status', 'priority', 'date'] as const).map((key) => {
                 const col = COLUMNS.find((c) => c.key === key)!;
-                return (
-                  <option key={key} value={key}>
-                    {key === 'collection' ? 'Collection (default)' : col.label}
-                  </option>
-                );
+                return {
+                  value: key,
+                  label: key === 'collection' ? 'Collection (default)' : col.label,
+                };
               })}
-            </select>
+            />
           </div>
 
           {/* Section order — only meaningful for attribute groupings. Collections

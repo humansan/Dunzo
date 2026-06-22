@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Star } from 'lucide-react';
+import { Astroid } from 'lucide-react';
 import { DayTodos } from '../types';
 import { computeStarStreak } from '../utils/xpUtils';
 import { ParticleBurst } from './ParticleBurst';
@@ -27,7 +27,7 @@ const StarIcon = React.memo(({ active, burst }: { active: boolean; burst: boolea
         filter: active ? `drop-shadow(0 0 5px ${GOLD}cc)` : 'none'
       }}
     >
-      <Star size={24} strokeWidth={2.25} fill={active ? GOLD : 'transparent'} />
+      <Astroid size={28} strokeWidth={2.5} fill={active ? GOLD : 'transparent'} />
     </motion.div>
     <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
   </div>

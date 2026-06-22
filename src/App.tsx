@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Clock, LayoutGrid, List, Maximize2, Minimize2 } from 'lucide-react';
+import { Plus, Clock, LayoutGrid, List, Maximize2, Minimize2, LoaderCircle } from 'lucide-react';
 import { Tracker, Theme, DayTodos, Todo, Workspace } from './types';
+import appLogo from './assets/icon-invert2.png';
 import { TrackerCard } from './components/TrackerCard';
 import { AddTrackerModal } from './components/AddTrackerModal';
 import { AccountModal } from './components/AccountModal';
@@ -23,6 +24,16 @@ import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './data/wo
 import { useSettings, useUpdateSettings } from './data/settings';
 
 const DEFAULT_THEME: Theme = { accent1: '#e9ec6a', accent2: '#a2beb7' };
+
+// Full-screen loading state: app logo, a continuously spinning loader, and a
+// short status message. Shared by the auth/data gates below.
+const LoadingScreen: React.FC<{ message: string }> = ({ message }) => (
+  <div className="h-screen flex flex-col items-center justify-center gap-5 bg-neutral-950 text-white/40 text-sm">
+    <img src={appLogo} alt="" className="w-16 h-16" />
+    <LoaderCircle className="w-6 h-6 animate-spin text-white/60" />
+    <p>{message}</p>
+  </div>
+);
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
 // Within-day order follows `dailyOrder` (the daily list's own persisted order;
@@ -431,11 +442,7 @@ export default function App() {
 
   // ── Auth / data gates ──────────────────────────────────────────────────────
   if (sessionPending) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-neutral-950 text-white/40 text-sm">
-        Loading…
-      </div>
-    );
+    return <LoadingScreen message="Loading…" />;
   }
   if (!isAuthenticated) {
     // Forced sign-in gate (the screen renders its own full-screen background).
@@ -463,11 +470,7 @@ export default function App() {
     );
   }
   if (todosQuery.isLoading || workspacesQuery.isLoading || settingsQuery.isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-neutral-950 text-white/40 text-sm">
-        Loading your workspace…
-      </div>
-    );
+    return <LoadingScreen message="Loading your workspace…" />;
   }
 
   return (

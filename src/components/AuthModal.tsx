@@ -66,13 +66,13 @@ const LoginScreen: React.FC<{
         src={backgroundUrl}
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover blur-lg scale-120"
+        className="absolute inset-0 h-full w-full object-cover blur-lg scale-120 saturate-110 brightness-110"
       />
 
       <div className="relative h-full w-full flex flex-col md:flex-row">
         {/* ── Brand panel ── */}
         <div className="flex-1 flex flex-col justify-center items-center px-8 pt-14 pb-6 md:py-0">
-          <div className="w-full max-w-sm">
+          <div className="max-w-sm">
             <img
               src={logoUrl}
               alt="Dunzo"
@@ -85,14 +85,16 @@ const LoginScreen: React.FC<{
         </div>
 
         {/* ── Form panel ── */}
-        <div className="flex-1 flex items-start md:items-center justify-center px-6 pb-10 md:py-0">
+        <div className="w-full md:w-[45%] flex items-center px-16">
+          {/* Visual block: full-height, hugs the right edge with a 4px gap */}
           <motion.div
             // initial={{ opacity: 0, y: 16 }}
             // animate={{ opacity: 1, y: 0 }}
             // transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="w-full max-w-[400px] bg-[#000000]/85 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/40 p-7 md:p-8"
+            className="w-full bg-[#1a1a1a] rounded-3xl flex items-center justify-center p-7 md:w-130 md:h-140"
           >
-            <div className=''>
+            {/* Content block: constrained + centered inside the visual block */}
+            <div className="w-full md:w-90 md:px-8 md:py-10">
               <h2 className="text-2xl md:text-[28px] font-bold text-white mb-6">
                 {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
               </h2>
@@ -116,7 +118,7 @@ const LoginScreen: React.FC<{
                     {mode === 'login' && (
                       <button
                         type="button"
-                        className="text-sm font-medium text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors"
+                        className="text-sm font-medium text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
                         onClick={() => console.log('[auth stub] forgot password')}
                       >
                         Forgot?
@@ -150,7 +152,7 @@ const LoginScreen: React.FC<{
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {submitting
                     ? 'Please wait…'
@@ -165,7 +167,7 @@ const LoginScreen: React.FC<{
                 <button
                   type="button"
                   onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-                  className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors"
+                  className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
                 >
                   {mode === 'login' ? 'Create an account' : 'Log in'}
                 </button>

@@ -30,6 +30,8 @@ import {
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from './todoFields';
+import { textInputCls } from './todosHub/TextInput';
+import { modalPop } from './modalMotion';
 
 interface TodoFullViewProps {
   todo: Todo;
@@ -165,8 +167,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     if (nowArchived) onClose();
   };
 
-  const fieldCls =
-    'w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
+  const fieldCls = `${textInputCls} w-full font-mono`;
 
   return (
     <motion.div
@@ -178,10 +179,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
       <motion.div
-        initial={{ scale: 0.97, opacity: 0, y: 12 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.97, opacity: 0, y: 12 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+        {...modalPop}
         className="w-[900px] max-w-[95vw] h-[78vh] min-h-[500px] max-h-[900px] bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
       >
         {/* ── Top bar ─────────────────────────────── */}

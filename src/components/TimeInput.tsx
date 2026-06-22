@@ -287,7 +287,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
         onBlur={() => commit(text)}
         placeholder="e.g. 9a or 3:24 PM or 54%"
         style={{ colorScheme: 'dark' }}
-        className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1 text-sm text-white placeholder-white/30 focus:outline-none focus:border-(--accent2)/60 transition-colors"
+        className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-2.5 py-1 text-sm text-white placeholder:text-white/35 focus:outline-none hover:border-white/20 focus:border-[var(--accent2)] transition-colors"
       />
 
       <div className="grid grid-cols-2 gap-1 mt-1.5">

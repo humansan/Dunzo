@@ -7,6 +7,9 @@ import { authClient } from '../auth';
 import { buildBackup, parseBackup, mergeImportToDb } from '../data/import';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon.svg';
+import { ListSelect } from './todosHub/ListSelect';
+import { textInputCls } from './todosHub/TextInput';
+import { modalPop } from './modalMotion';
 
 type CountdownMode = 'off' | 'time' | 'percent';
 type Section = 'profile' | 'settings' | 'data';
@@ -83,8 +86,7 @@ const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 const labelCls = 'text-[13px] text-white/65';
 const rowCls = 'flex items-center justify-between gap-4';
 
-const fieldInput =
-  'w-full rounded-lg border border-white/10 bg-white/5 px-3 h-9 text-sm text-white placeholder-white/30 focus:border-[var(--accent1)] focus:outline-none transition-colors';
+const fieldInput = `${textInputCls} w-full`;
 const fieldLabel = 'block text-[11px] font-medium text-white/45 mb-1';
 const formButton =
   'w-full rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40';
@@ -282,13 +284,13 @@ const SettingsPane: React.FC<{
           type="color"
           value={theme[key]}
           onChange={(e) => onUpdateTheme({ ...theme, [key]: e.target.value })}
-          className="h-9 w-10 shrink-0 cursor-pointer rounded-md border border-white/10 bg-transparent"
+          className="h-8 w-10 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent"
         />
         <input
           type="text"
           value={theme[key]}
           onChange={(e) => onUpdateTheme({ ...theme, [key]: e.target.value })}
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-mono text-white focus:border-[var(--accent1)] focus:outline-none transition-colors"
+          className={`${textInputCls} flex-1 font-mono`}
         />
       </div>
     </div>
@@ -314,14 +316,16 @@ const SettingsPane: React.FC<{
 
         <div className="space-y-1.5">
           <span className={labelCls}>Deadline countdown</span>
-          <Segment
-            options={[
-              { value: 'off' as CountdownMode, label: 'Off' },
-              { value: 'time' as CountdownMode, label: 'Time Left' },
-              { value: 'percent' as CountdownMode, label: 'Percent Left' },
-            ]}
+          <ListSelect
+            ariaLabel="Deadline countdown"
+            className="w-full"
             value={countdownMode}
-            onChange={onUpdateCountdownMode}
+            onChange={(v) => onUpdateCountdownMode(v as CountdownMode)}
+            options={[
+              { value: 'off', label: 'Off' },
+              { value: 'time', label: 'Time Left' },
+              { value: 'percent', label: 'Percent Left' },
+            ]}
           />
         </div>
 
@@ -488,10 +492,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 10 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
+            {...modalPop}
             className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#1A1A1A] shadow-2xl"
           >
             {/* Nav rail — vibrant sign-in background image with dark text on top. */}
@@ -500,7 +501,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 src={backgroundUrl}
                 alt=""
                 aria-hidden
-                className="absolute inset-0 h-full w-full object-cover blur-[3px] scale-110"
+                className="absolute inset-0 h-full w-full object-cover blur-sm scale-115 brightness-110"
               />
 
               {/* Nav */}

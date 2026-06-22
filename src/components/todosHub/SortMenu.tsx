@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus, X } from 'lucide-react';
 import { ColDef, ColKey, SortRule } from './types';
 import { PopoverMenu } from './PopoverMenu';
-import { selectCls } from './constants';
+import { ListSelect } from './ListSelect';
 
 export const SortMenu: React.FC<{
   anchor: { right: number; top: number };
@@ -33,25 +33,25 @@ export const SortMenu: React.FC<{
             {sorts.map((s) => (
               <div key={s.id} className="flex items-center gap-1.5">
                 {/* Field */}
-                <select
+                <ListSelect
+                  ariaLabel="Sort field"
+                  className="flex-1 min-w-0"
                   value={s.field}
-                  onChange={(e) => update(s.id, { field: e.target.value as ColKey })}
-                  className={`${selectCls} flex-1 min-w-0`}
-                >
-                  {allColumns.map((c) => (
-                    <option key={c.key} value={c.key}>{c.label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => update(s.id, { field: v as ColKey })}
+                  options={allColumns.map((c) => ({ value: c.key, label: c.label }))}
+                />
 
                 {/* Direction */}
-                <select
+                <ListSelect
+                  ariaLabel="Sort direction"
+                  className="w-[110px] shrink-0"
                   value={s.direction}
-                  onChange={(e) => update(s.id, { direction: e.target.value as 'asc' | 'desc' })}
-                  className={`${selectCls} w-[110px] shrink-0`}
-                >
-                  <option value="asc">Ascending</option>
-                  <option value="desc">Descending</option>
-                </select>
+                  onChange={(v) => update(s.id, { direction: v as 'asc' | 'desc' })}
+                  options={[
+                    { value: 'asc', label: 'Ascending' },
+                    { value: 'desc', label: 'Descending' },
+                  ]}
+                />
 
                 {/* Remove */}
                 <button

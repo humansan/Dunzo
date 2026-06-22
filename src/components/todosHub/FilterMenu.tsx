@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus, X } from 'lucide-react';
 import { ColDef, ColKey, FilterRule, FilterCondition, FILTER_CONDITIONS } from './types';
 import { PopoverMenu } from './PopoverMenu';
-import { selectCls } from './constants';
+import { ListSelect } from './ListSelect';
 
 export const FilterMenu: React.FC<{
   anchor: { right: number; top: number };
@@ -45,38 +45,31 @@ export const FilterMenu: React.FC<{
               return (
                 <div key={f.id} className="flex items-center gap-1.5">
                   {/* Field */}
-                  <select
+                  <ListSelect
+                    ariaLabel="Filter field"
+                    className="w-[110px] shrink-0"
                     value={f.field}
-                    onChange={(e) => update(f.id, { field: e.target.value as ColKey })}
-                    className={`${selectCls} w-[110px] shrink-0`}
-                  >
-                    {allColumns.map((c) => (
-                      <option key={c.key} value={c.key}>{c.label}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => update(f.id, { field: v as ColKey })}
+                    options={allColumns.map((c) => ({ value: c.key, label: c.label }))}
+                  />
 
                   {/* Condition */}
-                  <select
+                  <ListSelect
+                    ariaLabel="Filter condition"
+                    className="w-[118px] shrink-0"
                     value={f.condition}
-                    onChange={(e) => update(f.id, { condition: e.target.value as FilterCondition })}
-                    className={`${selectCls} w-[118px] shrink-0`}
-                  >
-                    {FILTER_CONDITIONS.map((c) => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => update(f.id, { condition: v as FilterCondition })}
+                    options={FILTER_CONDITIONS.map((c) => ({ value: c.value, label: c.label }))}
+                  />
 
                   {/* Value — dropdown of unique existing values for the field */}
-                  <select
+                  <ListSelect
+                    ariaLabel="Filter value"
+                    className="flex-1 min-w-0"
                     value={f.value}
-                    onChange={(e) => update(f.id, { value: e.target.value })}
-                    className={`${selectCls} flex-1 min-w-0`}
-                  >
-                    <option value="">—</option>
-                    {vals.map((v) => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => update(f.id, { value: v })}
+                    options={[{ value: '', label: '—' }, ...vals.map((v) => ({ value: v, label: v }))]}
+                  />
 
                   {/* Remove */}
                   <button

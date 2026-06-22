@@ -117,7 +117,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         className={`shrink-0 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
         title="Drag to reorder / nest"
       >
-        <GripVertical size={14} />
+        <GripVertical size={16} />
       </button>
     );
 
@@ -462,18 +462,22 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             single-line height (`h-9` = the 36px row min-height) rather than the full
             cell, so it stays pinned to the top in a tall row (no jump to
             vertical-center) while in a single-line row that height equals the cell and
-            the editor's ring lines up with the cell borders. */}
+            the editor's ring lines up with the cell borders.
+            
+            ring-1 ring-inset ring-[var(--accent2)]/60
+            */}
         <div
           style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
           className={`flex min-w-0 flex-1 ${wrappedFields.has('title') ? 'items-start' : 'items-center'} ${
-            isEditing('title') && !wrappedFields.has('title') ? 'h-9' : 'py-[7px]'
-          }`}
-        >
+            isEditing('title') && !wrappedFields.has('title') ? 'h-9' : 'py-[8px]'
+          } ${isEditing('title') && "ring-1 ring-inset ring-[var(--accent2)]/60"}
+          `}
+        > 
           {hasChildren ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
-              className="shrink-0 h-5 p-0.5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+              className="shrink-0 h-5 w-5 mr-0.5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
               title={isCollapsed ? 'Expand subtasks' : 'Collapse subtasks'}
             >
               {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
@@ -498,7 +502,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 resize-none field-sizing-content break-words bg-[#1e1e1e] py-0 pl-1 pr-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
+                className="flex-1 min-w-0 resize-none field-sizing-content break-words py-0 pl-1 pr-1.5 text-sm text-white focus:outline-none"
               />
             ) : (
               <input
@@ -509,7 +513,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 h-full bg-[#1e1e1e] pl-1 pr-1.5 text-sm text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60"
+                className="flex-1 min-w-0 h-full pl-1 pr-1.5 text-sm text-white focus:outline-none"
               />
             )
           ) : (
@@ -530,7 +534,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 }}
                 className="shrink-0 mr-1.5 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
               >
-                <MoreHorizontal size={18} />
+                <MoreHorizontal size={16} />
               </button>
             </>
           )}
