@@ -66,6 +66,7 @@ You can also see charts of your XP over time, broken down by collection, so you 
 <img src="src/assets/screenshots/planner2.png" alt="Task Planner - Notion-style table view" width="100%" />
 
 You can change grouping mode, set filters/sorts, and control field visibility and order:
+
 <img src="src/assets/screenshots/groupbystatus-fields.png" alt="Task Planner with group by status and fields menu" width="100%" />
 
 NOTE: List View and Timeline View are currently work in progress
