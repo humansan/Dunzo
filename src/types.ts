@@ -17,8 +17,8 @@ export interface Tracker {
 }
 
 export interface Theme {
-  accent1: string; // Primary accent (e.g. #e9ec6a)
-  accent2: string; // Secondary accent (e.g. #a2beb7)
+  accent1: string; // Primary accent (e.g. #c6dabe)
+  accent2: string; // Secondary accent (e.g. #c6dabe)
 }
 
 export type TodoStatus = 'todo' | 'in_progress' | 'completed';

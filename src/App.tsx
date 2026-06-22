@@ -23,7 +23,7 @@ import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } fro
 import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './data/workspaces';
 import { useSettings, useUpdateSettings } from './data/settings';
 
-const DEFAULT_THEME: Theme = { accent1: '#e9ec6a', accent2: '#a2beb7' };
+const DEFAULT_THEME: Theme = { accent1: '#c6dabe', accent2: '#c6dabe' };
 
 // Full-screen loading state: app logo, a continuously spinning loader, and a
 // short status message. Shared by the auth/data gates below.

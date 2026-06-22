@@ -27,7 +27,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
   const [type, setType] = useState<TrackerType>(editingTracker?.type || 'day');
   const [startDate, setStartDate] = useState(editingTracker?.startDate ? format(new Date(editingTracker.startDate), 'yyyy-MM-dd') : '');
   const [endDate, setEndDate] = useState(editingTracker?.endDate ? format(new Date(editingTracker.endDate), 'yyyy-MM-dd') : '');
-  const [color, setColor] = useState(editingTracker?.color || '#e9ec6a');
+  const [color, setColor] = useState(editingTracker?.color || '#c6dabe');
   const [precision, setPrecision] = useState(editingTracker?.precision || 2);
   const [displayMode, setDisplayMode] = useState<TrackerDisplayMode>(editingTracker?.displayMode || 'percent_elapsed');
   const [secondaryDisplayMode, setSecondaryDisplayMode] = useState<TrackerSecondaryDisplayMode>(editingTracker?.secondaryDisplayMode ?? 'time_remaining');
@@ -38,7 +38,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
       setType(editingTracker?.type || 'day');
       setStartDate(editingTracker?.startDate ? format(new Date(editingTracker.startDate), 'yyyy-MM-dd') : '');
       setEndDate(editingTracker?.endDate ? format(new Date(editingTracker.endDate), 'yyyy-MM-dd') : '');
-      setColor(editingTracker?.color || '#e9ec6a');
+      setColor(editingTracker?.color || '#c6dabe');
       setPrecision(editingTracker?.precision || 2);
       setDisplayMode(editingTracker?.displayMode || 'percent_elapsed');
       setSecondaryDisplayMode(editingTracker?.secondaryDisplayMode ?? 'time_remaining');
