@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X } from 'lucide-react';
-import { format } from 'date-fns';
+import { X, CalendarDays } from 'lucide-react';
+import { format, parseISO, isValid } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '../types';
 import { ListSelect } from './todosHub/ListSelect';
 import { textInputCls } from './todosHub/TextInput';
+import { DatePickerPopover } from './DatePickerPopover';
 import { modalPop } from './modalMotion';
+
+// `yyyy-MM-dd` -> a friendly display, falling back to a placeholder when empty.
+function formatDateField(val: string): string {
+  if (!val) return '';
+  const parsed = parseISO(val);
+  return isValid(parsed) ? format(parsed, 'MM/dd/yyyy') : '';
+}
 
 interface AddTrackerModalProps {
   isOpen: boolean;
@@ -39,6 +47,8 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Custom trackers need both ends; bail before constructing invalid dates.
+    if (type === 'custom' && (!startDate || !endDate)) return;
     onAdd({
       id: editingTracker?.id || Math.random().toString(36).substr(2, 9),
       name: name || type.toUpperCase(),
@@ -116,25 +126,37 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Start Date</label>
-                    <input
-                      type="date"
-                      required
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                      className={`${textInputCls} w-full`}
-                    />
+                    <DatePickerPopover value={startDate} onChange={setStartDate} className="w-full">
+                      {({ open, isOpen }) => (
+                        <button
+                          type="button"
+                          onClick={open}
+                          className={`${textInputCls} w-full flex items-center justify-between gap-2 text-left ${isOpen ? 'border-[var(--accent2)]' : ''}`}
+                        >
+                          <span className={startDate ? 'text-white' : 'text-white/35'}>
+                            {formatDateField(startDate) || 'MM/DD/YYYY'}
+                          </span>
+                          <CalendarDays size={14} className="text-white/40 shrink-0" />
+                        </button>
+                      )}
+                    </DatePickerPopover>
                   </div>
                   <div>
                     <label className="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">End Date</label>
-                    <input
-                      type="date"
-                      required
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                      className={`${textInputCls} w-full`}
-                    />
+                    <DatePickerPopover value={endDate} onChange={setEndDate} className="w-full">
+                      {({ open, isOpen }) => (
+                        <button
+                          type="button"
+                          onClick={open}
+                          className={`${textInputCls} w-full flex items-center justify-between gap-2 text-left ${isOpen ? 'border-[var(--accent2)]' : ''}`}
+                        >
+                          <span className={endDate ? 'text-white' : 'text-white/35'}>
+                            {formatDateField(endDate) || 'MM/DD/YYYY'}
+                          </span>
+                          <CalendarDays size={14} className="text-white/40 shrink-0" />
+                        </button>
+                      )}
+                    </DatePickerPopover>
                   </div>
                 </div>
               )}

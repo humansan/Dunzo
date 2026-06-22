@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AnimatePresence } from 'motion/react';
 import {
   format,
@@ -26,6 +26,7 @@ import { XpProgressBar } from './XpProgressBar';
 import { StarStreak } from './StarStreak';
 import { computeXpStats, getWeeklyXp } from '../utils/xpUtils';
 import { ListView } from './ListView';
+import { DatePickerPopover } from './DatePickerPopover';
 
 interface TodoViewProps {
   dayTodos: DayTodos[];
@@ -197,21 +198,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
     setSelectedDate(format(next, 'yyyy-MM-dd'));
   };
 
-  const datePickerRef = useRef<HTMLInputElement>(null);
-
-  const openDatePicker = () => {
-    const input = datePickerRef.current;
-    if (!input) return;
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-    } else {
-      input.focus();
-      input.click();
-    }
-  };
-
-
-
   return (
     <div className="mx-auto px-1 pt-2 flex gap-4 h-screen overflow-hidden">
       {/* Left side: Trackers List */}
@@ -241,27 +227,20 @@ export const TodoView: React.FC<TodoViewProps> = ({
               </h2>
             </div>
             <div className="flex gap-2 items-center">
-              <div className="relative">
-                <button
-                  onClick={openDatePicker}
-                  title="Jump to date"
-                  className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
-                >
-                  <CalendarDays size={16} />
-                </button>
-                <input
-                  ref={datePickerRef}
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => {
-                    if (e.target.value) setSelectedDate(e.target.value);
-                  }}
-                  style={{ colorScheme: 'dark' }}
-                  className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                />
-              </div>
+              <DatePickerPopover
+                value={selectedDate}
+                onChange={(val) => { if (val) setSelectedDate(val); }}
+              >
+                {({ open }) => (
+                  <button
+                    onClick={open}
+                    title="Jump to date"
+                    className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
+                  >
+                    <CalendarDays size={16} />
+                  </button>
+                )}
+              </DatePickerPopover>
               <button
                 onClick={() => setSelectedDate(format(new Date(), 'yyyy-MM-dd'))}
                 className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all text-xs font-semibold"
