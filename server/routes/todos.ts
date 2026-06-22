@@ -4,8 +4,10 @@ import { db } from '../db';
 import { todos, type NewTodoRow } from '../../src/db/schema';
 import {
   asyncHandler,
+  enforceVisibility,
   pick,
   stampCompletion,
+  touchesVisibility,
   TODO_FIELDS,
   TODO_UPDATE_FIELDS,
 } from '../http';
@@ -48,9 +50,17 @@ todosRouter.post(
           createdAt: insertData.createdAt ?? Date.now(),
         } as NewTodoRow;
         stampCompletion(insertRow as { status?: string | null; completedAt?: number | null });
+        // Upserts carry the client's full intended state, so the insert row is the
+        // merged truth — enforce the invariant on it and mirror any fix to setData.
+        enforceVisibility(insertRow as Record<string, unknown>);
 
         const setData = pick<Partial<NewTodoRow>>(u, TODO_UPDATE_FIELDS);
         stampCompletion(setData as { status?: string | null; completedAt?: number | null });
+        // enforceVisibility only ever promotes to the Planner; mirror that fix so a
+        // conflicting (existing) row gets rescued too, without clobbering setData.
+        if (insertRow.showInDatabase === true && setData.showInDatabase !== true) {
+          setData.showInDatabase = true;
+        }
 
         // `where` on the conflict update prevents hijacking a row owned by
         // another user (PK `id` is global; only own rows get updated).
@@ -68,15 +78,24 @@ todosRouter.post(
         const id = (p as { id?: unknown })?.id;
         if (typeof id !== 'string') continue;
         const patch = pick<Partial<NewTodoRow>>(p, TODO_UPDATE_FIELDS);
-        if ('status' in patch) {
+        // Status stamping and the visibility backstop both need the existing row.
+        if ('status' in patch || touchesVisibility(patch)) {
           const [existing] = await tx
-            .select({ completedAt: todos.completedAt })
+            .select()
             .from(todos)
             .where(and(eq(todos.userId, userId), eq(todos.id, id)));
-          stampCompletion(
-            patch as { status?: string | null; completedAt?: number | null },
-            existing?.completedAt
-          );
+          if ('status' in patch) {
+            stampCompletion(
+              patch as { status?: string | null; completedAt?: number | null },
+              existing?.completedAt
+            );
+          }
+          if (existing && touchesVisibility(patch)) {
+            const merged = enforceVisibility({ ...existing, ...patch });
+            if (merged.showInDatabase === true && patch.showInDatabase !== true) {
+              patch.showInDatabase = true;
+            }
+          }
         }
         if (Object.keys(patch).length === 0) continue;
         await tx.update(todos).set(patch).where(and(eq(todos.userId, userId), eq(todos.id, id)));
@@ -106,6 +125,7 @@ todosRouter.post(
       createdAt: data.createdAt ?? Date.now(),
     } as NewTodoRow;
     stampCompletion(row as { status?: string | null; completedAt?: number | null });
+    enforceVisibility(row as Record<string, unknown>);
     const [inserted] = await db.insert(todos).values(row).returning();
     res.status(201).json(inserted);
   })
@@ -118,15 +138,24 @@ todosRouter.patch(
     const { id } = req.params;
     const userId = req.userId!;
     const patch = pick<Partial<NewTodoRow>>(req.body, TODO_UPDATE_FIELDS);
-    if ('status' in patch) {
+    // Status stamping and the visibility backstop both need the existing row.
+    if ('status' in patch || touchesVisibility(patch)) {
       const [existing] = await db
-        .select({ completedAt: todos.completedAt })
+        .select()
         .from(todos)
         .where(and(eq(todos.userId, userId), eq(todos.id, id)));
-      stampCompletion(
-        patch as { status?: string | null; completedAt?: number | null },
-        existing?.completedAt
-      );
+      if ('status' in patch) {
+        stampCompletion(
+          patch as { status?: string | null; completedAt?: number | null },
+          existing?.completedAt
+        );
+      }
+      if (existing && touchesVisibility(patch)) {
+        const merged = enforceVisibility({ ...existing, ...patch });
+        if (merged.showInDatabase === true && patch.showInDatabase !== true) {
+          patch.showInDatabase = true;
+        }
+      }
     }
     if (Object.keys(patch).length === 0) {
       res.status(400).json({ error: 'no updatable fields' });

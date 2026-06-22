@@ -1,4 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
+import type { Todo } from '../src/types';
+import { normalizeVisibility } from '../src/utils/todoFilters';
 
 // Wrap an async route handler so thrown/rejected errors reach the error
 // middleware instead of crashing the process or hanging the request.
@@ -108,6 +110,33 @@ export const SETTINGS_FIELDS = [
   'hubCollapsed',
   'hubLayout',
 ] as const;
+
+// Fields whose value can change which surface a todo renders on (or remove it
+// from all of them). A patch touching none of these can't break the invariant.
+const VISIBILITY_KEYS = [
+  'showInDatabase',
+  'showInDailyList',
+  'dueDate',
+  'isCollection',
+  'archived',
+] as const;
+
+export function touchesVisibility(patch: object): boolean {
+  return VISIBILITY_KEYS.some((k) => k in patch);
+}
+
+// Server-side backstop mirroring the client's normalizeVisibility: given a todo's
+// fully-merged intended state, force showInDatabase on when it would otherwise be
+// reachable on no surface, so a malformed payload can never persist an orphan.
+// Mutates `row` (only sets showInDatabase when a correction is needed) and returns it.
+export function enforceVisibility<T extends Record<string, unknown>>(row: T): T {
+  const current = (row as { showInDatabase?: boolean | null }).showInDatabase;
+  const fixed = normalizeVisibility(row as unknown as Todo);
+  if (fixed.showInDatabase !== current) {
+    (row as { showInDatabase?: boolean }).showInDatabase = fixed.showInDatabase;
+  }
+  return row;
+}
 
 // The server owns completion stamping so it can't drift: completed_at is set
 // when status becomes 'completed' and cleared otherwise. `completed` itself is a

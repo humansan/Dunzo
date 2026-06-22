@@ -16,7 +16,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { Todo, DayTodos, Tracker } from '../types';
-import { todoIndex, collectionOf, collectionOptions as buildCollectionOptions } from '../utils/todoFilters';
+import { todoIndex, collectionOf, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '../utils/todoFilters';
 import { timeToPercentage } from '../utils/timeUtils';
 
 import { TrackerCard } from './TrackerCard';
@@ -77,6 +77,13 @@ export const TodoView: React.FC<TodoViewProps> = ({
   const currentDayData = useMemo(() => {
     return dayTodos.find(d => d.date === selectedDate) || { date: selectedDate, todos: [] };
   }, [dayTodos, selectedDate]);
+
+  // Only todos explicitly sent to the daily list show here; a dated planner task
+  // (showInDailyList off) still lives in this day's bucket but stays hidden.
+  const dailyTodos = useMemo(
+    () => (currentDayData.todos || []).filter(t => t && showsOnDailyChecklist(t, selectedDate)),
+    [currentDayData, selectedDate]
+  );
 
   const xpStats = useMemo(
     () => computeXpStats(dayTodos, selectedDate, weekStartsOn),
@@ -299,7 +306,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
 
         {/* Todo List */}
         <ListView
-          todos={currentDayData.todos || []}
+          todos={dailyTodos}
           date={selectedDate}
           onToggle={onToggleTodo}
           onDelete={deleteTodo}
@@ -314,7 +321,12 @@ export const TodoView: React.FC<TodoViewProps> = ({
           collectionOptions={collOptions}
           onCreateCollection={onCreateCollection}
           initialCollectionIdOf={(todo) => collectionOf(todo, byId)}
-          onReorder={(newTodos) => onUpdateTodos(selectedDate, newTodos)}
+          onReorder={(newTodos) => {
+            // ListView only sees the daily-visible subset; keep the day's hidden
+            // (dated planner) todos so handleUpdateTodos doesn't delete them.
+            const hidden = (currentDayData.todos || []).filter(t => t && !showsOnDailyChecklist(t, selectedDate));
+            onUpdateTodos(selectedDate, [...newTodos, ...hidden]);
+          }}
         />
       </div>
 

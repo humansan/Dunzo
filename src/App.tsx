@@ -10,7 +10,7 @@ import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
 import { TodosHubView } from './components/TodosHubView';
-import { UNDATED, todoIndex, collectionOptions, collectWithDescendants } from './utils/todoFilters';
+import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility } from './utils/todoFilters';
 import { toggledStatus } from './utils/todoStatus';
 import { CalendarView } from './components/CalendarView';
 import { StatsView } from './components/StatsView';
@@ -120,7 +120,14 @@ export default function App() {
   const seededRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated) { seededRef.current = false; return; }
-    if (workspacesQuery.isLoading || settingsQuery.isLoading) return;
+    // Only act on a CONFIRMED successful fetch of both queries. `workspaces` is
+    // `data ?? []`, which also reads empty when a fetch ERRORS (data === undefined)
+    // — e.g. a transient GET failure while the dev server restarts, or a 401
+    // during token bootstrap. Gating on isLoading alone let those blips seed a
+    // duplicate empty "Personal" workspace every time. isSuccess is only true once
+    // the server actually returned a list (and stays true with retained data
+    // across background refetches), so we never seed off an unconfirmed empty.
+    if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess) return;
     if (workspaces.length === 0) {
       if (seededRef.current) return;
       seededRef.current = true;
@@ -132,7 +139,7 @@ export default function App() {
     if (!workspaces.some(w => w.id === activeWorkspaceId)) {
       setActiveWorkspaceId(workspaces[0].id);
     }
-  }, [isAuthenticated, workspacesQuery.isLoading, settingsQuery.isLoading, workspaces, activeWorkspaceId]);
+  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, workspaces, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -257,7 +264,7 @@ export default function App() {
     const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
     // Persist within-day position: the array order the daily/calendar view hands
     // back becomes each task's dailyOrder.
-    const upserts = todosForDate.map((t, i) => ({ ...t, dueDate, dailyOrder: i }));
+    const upserts = todosForDate.map((t, i) => normalizeVisibility({ ...t, dueDate, dailyOrder: i }));
     batchTodos.mutate({ upserts, deletes });
     if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
   };
@@ -270,7 +277,7 @@ export default function App() {
     const maxDailyOrder = todos
       .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
       .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    updateTodo.mutate({ id: updatedTodo.id, patch: { ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 } });
+    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 }) });
   };
 
   const handleToggleTodo = (todoId: string) => {
@@ -309,7 +316,7 @@ export default function App() {
   // so callers can just set `dueDate` without worrying about the sentinel.
   const handleHubSaveTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
-    updateTodo.mutate({ id: updatedTodo.id, patch: { ...updatedTodo, dueDate } });
+    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeVisibility({ ...updatedTodo, dueDate }) });
   };
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
@@ -338,7 +345,7 @@ export default function App() {
       ...(opts?.patch ?? {}),
       ...(dueDate !== undefined ? { dueDate } : {}),
     };
-    createTodo.mutate(newTodo);
+    createTodo.mutate(normalizeVisibility(newTodo));
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>
@@ -366,7 +373,7 @@ export default function App() {
       hubOrder: maxOrder + 1,
       createdAt: Date.now(),
     };
-    createTodo.mutate(newCollection);
+    createTodo.mutate(normalizeVisibility(newCollection));
     return id;
   };
   // Sidebar "New collection": create an empty one to inline-rename. An optional
