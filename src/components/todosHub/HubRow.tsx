@@ -448,7 +448,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className="sticky left-0 z-20 flex items-center h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
+        className="sticky left-0 z-20 flex items-start h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
       >
         {/* Name band. Each leading control is a line-height box (`h-5`) that centers
             its icon, so they line up on the title's first text line.
