@@ -120,7 +120,14 @@ export default function App() {
   const seededRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated) { seededRef.current = false; return; }
-    if (workspacesQuery.isLoading || settingsQuery.isLoading) return;
+    // Only act on a CONFIRMED successful fetch of both queries. `workspaces` is
+    // `data ?? []`, which also reads empty when a fetch ERRORS (data === undefined)
+    // — e.g. a transient GET failure while the dev server restarts, or a 401
+    // during token bootstrap. Gating on isLoading alone let those blips seed a
+    // duplicate empty "Personal" workspace every time. isSuccess is only true once
+    // the server actually returned a list (and stays true with retained data
+    // across background refetches), so we never seed off an unconfirmed empty.
+    if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess) return;
     if (workspaces.length === 0) {
       if (seededRef.current) return;
       seededRef.current = true;
@@ -132,7 +139,7 @@ export default function App() {
     if (!workspaces.some(w => w.id === activeWorkspaceId)) {
       setActiveWorkspaceId(workspaces[0].id);
     }
-  }, [isAuthenticated, workspacesQuery.isLoading, settingsQuery.isLoading, workspaces, activeWorkspaceId]);
+  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, workspaces, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
     const id = Math.random().toString(36).substr(2, 9);
