@@ -15,7 +15,7 @@ A full-stack productivity app that combines a **Notion-style task planner**, a f
 [![Postgres](https://img.shields.io/badge/Neon_Postgres-008000?logo=postgresql&logoColor=white&style=for-the-badge)](https://neon.tech)
 [![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?logo=tailwindcss&logoColor=white&style=for-the-badge)](https://tailwindcss.com)
 
-**[✨ Go to App](#)** · **[Features](#-features)** · **[Screenshots](#-screenshots)** · **[Technical](#-technical)**
+**[✨ Go to App]()** · **[Features](#-features)** · **[Screenshots](#-screenshots)** · **[Technical](#-technical)**
 
 </div>
 
@@ -57,27 +57,33 @@ You can also see charts of your XP over time, broken down by collection, so you 
 
 ## 📸 Screenshots
 
-<div align="center">
+<div align="left">
 
 ### Daily Checklist Dashboard
 <img src="src/assets/screenshots/daily.png" alt="Daily checklist" width="100%" />
 
 ### Task Planner
 <img src="src/assets/screenshots/planner2.png" alt="Task Planner - Notion-style table view" width="100%" />
+
+You can change grouping mode, set filters/sorts, and control field visibility and order:
 <img src="src/assets/screenshots/groupbystatus-fields.png" alt="Task Planner with group by status and fields menu" width="100%" />
 
-- Note: List View and Timeline View are currently work in progress
+NOTE: List View and Timeline View are currently work in progress
 
-### Trackers & Calendar
-<img src="src/assets/screenshots/calendar.png" alt="Calendar view" width="49%" />
+
+### Calendar and Stopwatch
+<img src="src/assets/screenshots/calendar.png" alt="Calendar page" width="49%" />
+<img src="src/assets/screenshots/stopwatch.png" alt="Stopwatch" width="49%" />
+
+### Time Progress Widgets
 <img src="src/assets/screenshots/trackers.png" alt="Time-progress trackers" width="49%" />
+<img src="src/assets/screenshots/widget-creator.png" alt="Widget creator" width="49%" />
 
 
 ### Stats & More
-<img src="src/assets/screenshots/stats.png" alt="Stats and XP dashboard" height="32%" />
-
-<img src="src/assets/screenshots/collection-breakdown.png" alt="Collection breakdown" width="32%" />
+<img src="src/assets/screenshots/stats.png" alt="Stats and XP dashboard" width="49%" />
 <img src="src/assets/screenshots/data-options.png" alt="Stats and XP dashboard" width="49%" />
+<img src="src/assets/screenshots/collection-breakdown.png" alt="Collection breakdown" width="49%" />
 
 </div>
 
