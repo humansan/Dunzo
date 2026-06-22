@@ -10,18 +10,23 @@ Dunzo started life as a single-user localStorage prototype and was migrated, in 
 
 ## Table of contents
 
-- [Features](#features)
-- [Screens / views](#screens--views)
-- [Architecture](#architecture)
-- [Data model](#data-model)
-- [Tech stack](#tech-stack)
-- [Getting started](#getting-started)
-- [Environment variables](#environment-variables)
-- [Scripts](#scripts)
-- [API reference](#api-reference)
-- [Project structure](#project-structure)
-- [Design decisions & deep dives](#design-decisions--deep-dives)
-- [Deployment](#deployment)
+- [Dunzo](#dunzo)
+  - [Table of contents](#table-of-contents)
+  - [Features](#features)
+  - [Screens / views](#screens--views)
+  - [Architecture](#architecture)
+  - [Data model](#data-model)
+  - [Tech stack](#tech-stack)
+  - [Getting started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Install](#install)
+    - [Configure](#configure)
+    - [Set up the database](#set-up-the-database)
+    - [Run](#run)
+  - [Environment variables](#environment-variables)
+  - [Scripts](#scripts)
+  - [API reference](#api-reference)
+  - [Project structure](#project-structure)
 
 ---
 
@@ -148,7 +153,6 @@ Create `.env` in the project root.
 | Variable | Description |
 | --- | --- |
 | `VITE_NEON_AUTH_URL` | Neon Auth base URL (used by the auth client). |
-| `VITE_NEON_DATA_API_URL` | Neon Data API URL (used for auth only). |
 
 **Server (never sent to the browser):**
 
@@ -156,12 +160,6 @@ Create `.env` in the project root.
 | --- | --- |
 | `DATABASE_URL` | Neon Postgres connection string (used by Drizzle + the runtime pool). |
 | `NEON_AUTH_URL` | Same value as `VITE_NEON_AUTH_URL`; used server-side for JWKS verification. |
-| `NEON_AUTH_ISSUER` | _(optional)_ Override the expected JWT issuer. Defaults to the origin of `NEON_AUTH_URL`. |
-| `NEON_AUTH_AUDIENCE` | _(optional)_ Override the expected JWT audience. Defaults to the issuer. |
-| `PORT` | _(optional)_ API port. Defaults to `8787`. |
-| `APP_URL` | _(optional)_ Allowed CORS origin. Defaults to `*`. |
-
-See [`docs/DATABASE_SETUP_GUIDE.md`](docs/DATABASE_SETUP_GUIDE.md) for the full operator walkthrough.
 
 ## Scripts
 
@@ -215,19 +213,4 @@ server/
   db.ts                 # Drizzle runtime (Neon serverless pool)
   http.ts               # Shared helpers (asyncHandler, pick, stampCompletion, …)
   routes/               # todos, workspaces, trackers, settings
-docs/                   # Architecture notes, migration plan, field reference
 ```
-
-## Design decisions & deep dives
-
-The `docs/` directory documents the bigger decisions and the localStorage→Postgres migration:
-
-- [`docs/DATABASE_MIGRATION_NOTES.md`](docs/DATABASE_MIGRATION_NOTES.md) — the canonical migration plan: localStorage inventory, schema rationale, architecture, and the phased sequence.
-- [`docs/DATABASE_SETUP_GUIDE.md`](docs/DATABASE_SETUP_GUIDE.md) — operator playbook (env conventions, phase workflow).
-- [`docs/TASK_FIELDS.md`](docs/TASK_FIELDS.md) — field-by-field reference for the `Todo` model.
-- [`docs/collections.md`](docs/collections.md) — the collections feature.
-- [`docs/ROUTING.md`](docs/ROUTING.md) — design guide for adding client-side routing (not yet implemented; the app currently holds the active view in state).
-
-## Deployment
-
-`server/app.ts` is a `listen`-less Express app, so the same code runs as a long-lived server in dev and as a serverless function in production. Deploy the Vite build as static assets and the Express app as an `/api` function on the same origin (the client uses a relative `/api` path, so no CORS in production). If you add client-side routing, configure an SPA fallback that comes _after_ the `/api` rule — see [`docs/ROUTING.md`](docs/ROUTING.md).
