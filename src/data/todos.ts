@@ -3,7 +3,7 @@ import type { Todo } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { useOptimisticListMutation } from './optimistic';
-import { stripNullsList } from './normalize';
+import { stripNullsList, nullifyUndefined } from './normalize';
 import { collectWithDescendants } from '../utils/todoFilters';
 
 export type TodoBatch = {
@@ -50,7 +50,10 @@ export const useCreateTodo = () =>
 export const useUpdateTodo = () =>
   useOptimisticListMutation<Todo, { id: string; patch: Partial<Todo> }>(
     queryKeys.todos,
-    ({ id, patch }) => apiFetch(`/todos/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+    // nullifyUndefined on the body only: cleared fields go as `null` (explicit
+    // SET col = NULL) while the optimistic merge below keeps `undefined` so the
+    // cell renders empty, not "null". See nullifyUndefined for the full rationale.
+    ({ id, patch }) => apiFetch(`/todos/${id}`, { method: 'PATCH', body: JSON.stringify(nullifyUndefined(patch)) }),
     (list, { id, patch }) => list.map((t) => (t.id === id ? { ...t, ...patch } : t))
   );
 
@@ -67,6 +70,17 @@ export const useDeleteTodo = () =>
 export const useBatchTodos = () =>
   useOptimisticListMutation<Todo, TodoBatch>(
     queryKeys.todos,
-    (batch) => apiFetch('/todos/batch', { method: 'POST', body: JSON.stringify(batch) }),
+    // Same null/undefined split as useUpdateTodo: send cleared fields as `null`
+    // (upserts carry the client's full intended state, so nulling their empty
+    // fields is correct) while applyTodoBatch keeps `undefined` for the cache.
+    (batch) =>
+      apiFetch('/todos/batch', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...batch,
+          ...(batch.upserts ? { upserts: batch.upserts.map(nullifyUndefined) } : {}),
+          ...(batch.patches ? { patches: batch.patches.map(nullifyUndefined) } : {}),
+        }),
+      }),
     (list, batch) => applyTodoBatch(list, batch)
   );

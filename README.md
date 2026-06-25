@@ -15,7 +15,7 @@ A full-stack productivity app that combines a **Notion-style task planner**, a f
 [![Postgres](https://img.shields.io/badge/Neon_Postgres-008000?logo=postgresql&logoColor=white&style=for-the-badge)](https://neon.tech)
 [![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?logo=tailwindcss&logoColor=white&style=for-the-badge)](https://tailwindcss.com)
 
-**[✨ Go to App](https://dunzo-todo.vercel.app/)** · **[Features](#-features)** · **[Screenshots](#-screenshots)** · **[Technical](#technical)**
+**[🔗 Go to App](https://dunzo-todo.vercel.app/)** · **[Features](#-features)** · **[Screenshots](#-screenshots)** · **[Technical](#technical)**
 
 </div>
 
@@ -178,7 +178,6 @@ Have a `.env` in the project root.
 | Variable | Description |
 | --- | --- |
 | `VITE_NEON_AUTH_URL` | Neon Auth base URL (used by the auth client). |
-| `VITE_NEON_DATA_API_URL` | Neon Data API URL (used for auth only). |
 
 **Server** (never sent to the browser):
 

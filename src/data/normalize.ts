@@ -23,3 +23,21 @@ export function stripNulls<T>(obj: T): T {
 export function stripNullsList<T>(rows: T[]): T[] {
   return Array.isArray(rows) ? rows.map(stripNulls) : rows;
 }
+
+// Outbound mirror of `stripNulls`: rewrite `undefined` → `null` so a PATCH/upsert
+// body emits an explicit `SET col = NULL` for a cleared field. Without this,
+// `JSON.stringify` silently drops `undefined`-valued keys, the server reads the
+// absent key as "leave unchanged", and the cleared value resurfaces on refetch.
+//
+// Apply ONLY to the serialized request body — never to the optimistic cache
+// merge, which must keep `undefined` so cleared cells render empty rather than
+// the literal "null" (the very thing `stripNulls` exists to prevent). Shallow,
+// matching `stripNulls`: every Todo field is a flat scalar.
+export function nullifyUndefined<T>(obj: T): T {
+  if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    out[k] = v === undefined ? null : v;
+  }
+  return out as T;
+}
