@@ -82,10 +82,11 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       onContextMenu={onContextMenu}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      // List view widens the gap between sections (pt-10) and drops the underline
-      // for an airier, Todoist-like rhythm; table view stays tight (pt-4).
-      className={`relative grid items-end border-white/8 group/row ${
-        listView ? 'min-h-14 pt-10 border-b-0' : 'min-h-12 pt-4 border-b'
+      // List view gives sections an airier, Todoist-like rhythm: more space above
+      // (pt-6) and a little room (pb-2) between the label and its underline; table
+      // view stays tight (pt-4). Both keep the bottom border.
+      className={`relative grid items-end border-white/8 border-b group/row ${
+        listView ? 'min-h-12 pt-6 pb-2' : 'min-h-12 pt-4'
       } ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}

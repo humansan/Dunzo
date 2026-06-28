@@ -247,13 +247,13 @@ export const HubBody: React.FC<HubBodyProps> = ({
       }`}
     >
       {listView ? (
-        <div className="max-w-3xl mx-auto w-full text-white">
+        <div className="max-w-2xl mx-auto w-full text-white">
           {/* Project-style title — the selected collection's name, else the view label. */}
-          <div className="pt-8 pb-4">
-            <h1 className="text-3xl font-bold text-white truncate">
+          <div className="pt-5 pb-1">
+            <h1 className="text-2xl font-bold text-white truncate">
               {selectedCollectionId ? (todoById.get(selectedCollectionId)?.text || 'Untitled') : viewLabel}
             </h1>
-            <p className="mt-1 text-sm text-white/40">{currentCount} item{currentCount === 1 ? '' : 's'}</p>
+            <p className="mt-0.5 text-xs text-white/35">{currentCount} item{currentCount === 1 ? '' : 's'}</p>
           </div>
           {bodyInner}
         </div>
