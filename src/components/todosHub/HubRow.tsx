@@ -39,6 +39,9 @@ interface HubRowProps {
   columns: ColDef[];
   lastColKey: ColKey; // the rightmost visible column, which gets a right divider
   wrappedFields: Set<ColKey>;
+  // List view: a single Name column, no cell dividers/bg, and roomier section
+  // headers — the Todoist-style variant of the same row.
+  listView?: boolean;
   // When true the drag handle is hidden (drag-and-drop disabled for this row).
   hideDragHandle?: boolean;
   // Visible (post-filter) task count shown on collection header rows.
@@ -71,6 +74,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   columns,
   lastColKey,
   wrappedFields,
+  listView = false,
   hideDragHandle = false,
   taskCount,
   onQuickAddTask,
@@ -181,10 +185,10 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         style={style}
         {...dropProps}
         onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-        className={`relative grid items-end min-h-12 border-b pt-4 border-white/8 group/row ${
-          isDragSource && 'opacity-50'
-        }`}
-      > 
+        className={`relative grid items-end border-white/8 group/row ${
+          listView ? 'min-h-14 pt-10 border-b-0' : 'min-h-12 pt-4 border-b'
+        } ${isDragSource && 'opacity-50'}`}
+      >
         {dropLine('before')}
         {dropLine('after')}
         {insideOverlay}
@@ -227,7 +231,9 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             <span
               onClick={(e) => startEdit(todo.id, 'title', e)}
               style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
-              className="min-w-0 max-w-full truncate rounded-full px-2.5 py-px text-sm font-medium cursor-text"
+              className={`min-w-0 max-w-full truncate rounded-full px-2.5 py-px font-medium cursor-text ${
+                listView ? 'text-base' : 'text-sm'
+              }`}
             >
               {todo.text || 'Untitled collection'}
             </span>
@@ -448,7 +454,9 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className="sticky left-0 z-20 flex items-start h-full overflow-hidden border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]"
+        className={`sticky left-0 z-20 flex items-start h-full overflow-hidden ${
+          listView ? '' : 'border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]'
+        }`}
       >
         {/* Name band. Each leading control is a line-height box (`h-5`) that centers
             its icon, so they line up on the title's first text line.
@@ -545,8 +553,9 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       {columns
         .filter((c) => c.key !== NAME_COL_KEY)
         .map((c) => <React.Fragment key={c.key}>{renderCell(c.key)}</React.Fragment>)}
-      {/* Spacer track — fills remaining width, mirrors the header spacer. */}
-      <div />
+      {/* Spacer track — fills remaining width, mirrors the header spacer. The
+          single-column list has no such track, so it's table-only. */}
+      {!listView && <div />}
     </div>
   );
 };
