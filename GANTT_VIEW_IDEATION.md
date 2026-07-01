@@ -242,12 +242,12 @@ committed to — it's a menu to pick from when we scope the actual build.
 ## Iterative development steps
 
 The four phases above are the shape of the work; this is the actual build order,
-broken into steps small enough to land as one PR/session each. Every step should
-leave the view in a working (if incomplete) state — nothing here is "half-wire
-something and come back later." Steps within a phase are ordered; later phases
-assume everything in the earlier phases is done.
+broken into 15 smaller phases sized so one agent can complete an entire phase in a
+single turn. Each phase ends with the view in a working (if incomplete) state —
+nothing here is "half-wire something and come back later." Phases are ordered;
+later phases assume everything in the earlier phases is done.
 
-### Phase 1 — MVP (static rendering, no editing yet)
+### Phase 1 — Scaffold the view + row list
 
 1. Add a `gantt` view mode alongside `table`/`list` (mirrors how List was added:
    new entry in `src/data/settings.ts`, a tab in the view switcher, an empty
@@ -255,9 +255,12 @@ assume everything in the earlier phases is done.
    selectable/persisted like the other two.
 2. Render the row list only: reuse `HubRow`'s Name-column cell as a single sticky
    left pane (no date grid yet), driven by the exact same `flattened`/`FlatNode`
-   data and `collapsed`/`toggleCollapse` state Table/List already use. This step's
-   only job is to confirm row order, nesting/indentation, and collapse-expand
-   behave identically to List before any bar logic is added.
+   data and `collapsed`/`toggleCollapse` state Table/List already use. This
+   confirms row order, nesting/indentation, and collapse-expand behave identically
+   to List before any bar logic is added.
+
+### Phase 2 — Static date grid + pixel math
+
 3. Add a static date-axis header for a hard-coded range (e.g. the current month at
    day granularity) rendered to the right of the Name pane — column headers only,
    still no bars. Confirms the two panes scroll/align correctly before anything is
@@ -266,28 +269,43 @@ assume everything in the earlier phases is done.
    `spanToWidth`, given a day-width constant) with unit tests — this is the one
    genuinely new piece of logic the whole view depends on, so get it right and
    tested in isolation before wiring it into JSX.
+
+### Phase 3 — Static bars
+
 5. Render real, read-only task bars on top of the grid using `startDate`/`dueDate`
-   and the helpers from step 4, colored by collection `color`. No drag, no resize,
-   no creation yet.
+   and the helpers from Phase 2, colored by collection `color`. No drag, no
+   resize, no creation yet.
 6. Render milestone diamonds for tasks that have a `dueDate` but no `startDate`.
+
+### Phase 4 — Grid chrome
+
 7. Add the "today" marker line and a jump-to-today button.
 8. Add weekend / non-working-day column shading.
-9. Replace the hard-coded month range from step 3 with real zoom levels
+
+### Phase 5 — Zoom + scroll
+
+9. Replace the hard-coded month range from Phase 2 with real zoom levels
    (day/week/month/quarter/year), recomputing the pixel-math scale and bar/label
    density per level.
 10. Replace the fixed date range with virtualized/infinite horizontal scroll.
+
+### Phase 6 — Swimlane grouping
+
 11. Wire up collection swimlane grouping using the existing `GroupHeaderRow` +
     `SectionsConfig`, confirming bars stay aligned to the right row through
     collapse/expand and regrouping.
 12. Add the collection envelope bar (min(start)→max(due) roll-up of children),
     rendered in the collection's own row.
-13. Wire the existing `FilterRule`/`SortRule` engines (`FilterMenu`/`SortMenu`) into
-    the Gantt row list — filtering removes rows, sorting reorders them, same as
-    Table.
+
+### Phase 7 — Filter, sort & persistence
+
+13. Wire the existing `FilterRule`/`SortRule` engines (`FilterMenu`/`SortMenu`)
+    into the Gantt row list — filtering removes rows, sorting reorders them, same
+    as Table.
 14. Persist Gantt-specific view state (zoom level, grouping, filters) through
     `useHubViewConfig`, same pattern as Table/List.
 
-### Phase 2 — Interaction (editing directly on the grid)
+### Phase 8 — Bar editing: move, resize, create
 
 15. Drag a bar horizontally to reschedule it (start + due shift together), with
     snapping to the active zoom level's gridlines.
@@ -295,34 +313,46 @@ assume everything in the earlier phases is done.
     only due).
 17. Click-drag on empty grid space to create a new task with start/due pre-filled
     from the drag range.
+
+### Phase 9 — Row editing: reorder, reparent, context menu, rename
+
 18. Wire vertical row drag-to-reorder/reparent using `useRowDnD`/`useCollectionDnD`
     directly (unmodified from Table), confirming a dragged row's bar follows it.
 19. Right-click context menu on a bar, reusing `RowContextMenu`'s existing actions.
 20. Inline rename on double-click, wired to stay in sync whether triggered from the
     Name column cell or the bar label.
+
+### Phase 10 — Selection, undo, keyboard
+
 21. Multi-select bars (shift/cmd-click, marquee) for bulk drag/date-edit.
 22. Undo/redo for drag operations, with snap-back + toast on an invalid drop.
 23. Keyboard nudge: arrow keys shift the selected bar's dates by one snap
     increment, shift+arrow resizes from the near edge.
 
-### Phase 3 — Depth
+### Phase 11 — Recurrence, unscheduled tray, minimap
 
 24. Recurrence ghost bars: render future `repeatInterval` occurrences as
     lighter/ghosted bars on the same row.
 25. Unscheduled tray for dateless tasks, draggable onto the grid to schedule them.
 26. Minimap/overview scrubber strip with a draggable viewport window.
+
+### Phase 12 — Dependencies foundation
+
 27. Schema + migration for a `dependsOn`/`blockedBy` relation (the one item in this
     doc that needs new data, not just new UI).
 28. Render finish-to-start dependency arrows between bars, plus auto-shift of
     dependents when a predecessor's dates move (behind an "ask before cascading"
     confirmation).
+
+### Phase 13 — Dependencies depth
+
 29. Critical-path highlighting along the dependency chain.
 30. Dependency-violation warnings (badge/outline on a bar that now starts before
     its predecessor finishes) with a one-click fix.
 31. Additional dependency types (start-to-start, finish-to-finish,
     start-to-finish) plus optional lag/lead days.
 
-### Phase 4 — Polish
+### Phase 14 — Visual polish
 
 32. Color-by toggle (collection / priority / status).
 33. Progress-fill inside bars, reusing `startPercentage`/`duePercentage`/
@@ -333,6 +363,9 @@ assume everything in the earlier phases is done.
     chip, priority flag).
 36. Configurable date-axis label format (relative "in 3 days" vs. absolute
     "Jul 4").
+
+### Phase 15 — Export, sharing & collaboration
+
 37. Export current view as image/PDF; print-friendly flattened layout.
 38. Shareable read-only link to a filtered Gantt view.
 39. Collaboration presence (avatars on bars, comment indicators, live cursors) —
