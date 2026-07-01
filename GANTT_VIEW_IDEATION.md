@@ -1,30 +1,66 @@
-# Timeline View — Feature Ideation
+# Gantt View — Feature Ideation
 
 Third view for the Task Planner, alongside Table (done) and List (in progress). This
 document is a brainstorm of features, abilities, and customization options to make
-Timeline view feature-rich and competitive with Notion, Asana, and ClickUp timelines.
-Nothing here is committed to — it's a menu to pick from when we scope the actual build.
+Gantt view feature-rich and competitive with Notion, Asana, and ClickUp timelines.
+This is the classic Gantt layout — **one row per task or collection**, permanently —
+as distinct from the lane-packing design in `TIMELINE_VIEW_IDEATION.md`, where
+multiple tasks can share a row when their dates don't overlap. Nothing here is
+committed to — it's a menu to pick from when we scope the actual build.
 
 ## Grounding in what we already have
 
 - Every row (task *or* collection) is one `todos` record with `parentId` self-nesting
-  and an `isCollection` flag — a timeline needs to render both task bars and
-  collection/section groupings from the same tree.
+  and an `isCollection` flag — a Gantt needs to render both task bars and
+  collection/section groupings from the same tree, and can reuse the exact
+  flattened row list (`FlatNode`, `flattened`) that Table and List already build in
+  `useHubData`/`HubBody`, in the same order, with the same collapse/expand state.
+- Because each row is permanently one task, **the row model needs no new data
+  structure at all** — Gantt is the view that reuses Table/List's row plumbing most
+  directly. The one genuinely new piece of engineering is the bars themselves: date
+  → pixel-position math, drag/resize hit-testing on bar edges, and (if built)
+  dependency-arrow routing between two fixed rows.
 - Tasks already carry `startDate`/`dueDate` + `startTime`/`dueTime`, so date-only bars
   and intraday (hour-level) bars are both possible without schema changes.
-- `repeatInterval` is a simple "every N days" field — recurring bars on a timeline is
-  a natural showcase for this, but true RRULE-style recurrence would need schema work.
+- `repeatInterval` is a simple "every N days" field — recurring bars on a Gantt is a
+  natural showcase for this, but true RRULE-style recurrence would need schema work.
 - Filter/Sort/Group menus, column-style field config, and drag-to-reorder/reparent
   already exist for Table view (`FilterMenu`, `SortMenu`, `SectionsMenu`,
-  `useRowDnD`/`useCollectionDnD`) — Timeline should reuse these mechanisms/state rather
-  than reinvent them, so filtering/grouping stays consistent across all three views.
+  `useRowDnD`/`useCollectionDnD`) — Gantt should reuse these mechanisms/state
+  directly and unmodified, since row order and row identity work exactly like they
+  do in Table/List. This is a stronger reuse story than the timeline view gets,
+  where sort only influences packing tie-breaks rather than row position.
+- `GroupHeaderRow` (the existing swimlane/section divider used by Table/List for
+  collection grouping) is directly reusable as-is for Gantt's collection swimlanes —
+  it already renders as its own divider row between groups of task rows, which is
+  exactly the shape a Gantt swimlane header needs.
 - No gantt/calendar library is installed. `date-fns`, `recharts`, `motion`, and
-  `@dnd-kit/*` are available; the timeline grid, bars, and drag interactions would be
+  `@dnd-kit/*` are available; the grid, bars, and drag interactions would be
   hand-built on top of these.
 
 ## 1. Core timeline rendering
 
-- Horizontal axis of dates with rows per task/collection (classic Gantt layout).
+- Horizontal axis of dates with rows per task/collection (classic Gantt layout) —
+  one row is always exactly one `todos` record, so row order is just the existing
+  flattened tree order, not something computed from dates.
+- **Left column decision: reuse the Name column, don't switch to swimlane-only
+  labels.** Because a Gantt row already belongs to exactly one task, showing that
+  task's name in a sticky left column (mirroring Table's sticky first column, the
+  way List view already does) is free — it's information the row model already
+  gives you, with indentation for nesting depth, a checkbox to toggle complete, a
+  collapse/expand arrow for collections, and a drag handle for
+  `useRowDnD`/`useCollectionDnD`, all reused verbatim from `HubRow`/`NAME_COL_KEY`.
+  The alternative — left column shows only the swimlane/group name, task info moves
+  into the bars — is what the *timeline* view is forced into, because a timeline
+  lane can hold several tasks and there's no single row to label. Importing that
+  constraint into Gantt would throw away already-solved UX (inline rename,
+  nesting, drag-to-reparent) for no benefit, and would reintroduce the "bar too
+  narrow for its label" overflow problem the timeline doc has to solve for a reason
+  that simply doesn't apply here. Collection/swimlane names still surface via the
+  existing `GroupHeaderRow` divider rows between groups — they don't need to
+  replace the per-task label to be visible.
+- Column width for the Name column is resizable (same `startResize`/`ColDef` width
+  mechanism Table already has), so long task names aren't permanently cramped.
 - Zoom levels: day / week / month / quarter / year — with the row grid density and
   bar label detail adapting per zoom.
 - "Today" marker line, with a jump-to-today button.
@@ -36,18 +72,32 @@ Nothing here is committed to — it's a menu to pick from when we scope the actu
 - Infinite/virtualized horizontal scroll instead of paginating by date range.
 - Sticky left-hand list of task names (mirrors Table's sticky first column) so the
   name stays visible while scrolling the time axis horizontally.
+- Row height is uniform and fixed per task (compact/comfortable, see §6) — unlike
+  the timeline view, where a lane's height depends on how many sub-rows its packed
+  tasks currently need, Gantt's total content height is just `rowHeight ×
+  visibleRowCount`, which keeps vertical virtualization math simple.
 
 ## 2. Grouping & structure
 
 - Group rows by Collection (respecting the existing nested tree), by Status, Priority,
   or by a custom attribute — reusing `SectionsConfig` from Table/List.
 - Collapsible collection swimlanes, collapsible sub-collections (arbitrary depth,
-  matching `parentId` nesting).
+  matching `parentId` nesting), using the same `collapsed`/`toggleCollapse` state
+  `HubBody` already maintains for Table/List.
 - Collection bar = min(start) → max(due) of its children, auto-rolled-up, shown as a
-  lighter "envelope" bar behind/above its children's bars.
+  lighter "envelope" bar behind/above its children's bars, rendered directly in the
+  collection's own row (this works cleanly because the collection *is* a row like
+  any task — there's no ambiguity about which bar belongs to which row, unlike the
+  timeline view's lanes, which have no single row to draw one envelope bar on).
 - Option to show only leaf tasks vs. show collections as bars themselves.
 - Swimlane per Priority or per Assignee-equivalent (if collaboration/assignees ever
   ship) as an alternate grouping axis.
+- Within a group, row order is exactly the task's `hubOrder`/`dailyOrder` (or
+  whatever sort is active) — the same value already used to order Table/List rows.
+  There is no packing step to recompute; changing sort just reorders rows the same
+  way it does in Table today.
+- Sub-collections nest as indented rows within their parent collection's block of
+  rows, matching Table/List's existing indentation, not as separate nested lanes.
 
 ## 3. Editing & interaction directly on the timeline
 
@@ -57,32 +107,59 @@ Nothing here is committed to — it's a menu to pick from when we scope the actu
 - Click-drag on empty grid space to create a new task with start/due pre-filled from
   where you dragged.
 - Drag a task vertically between collections to reparent it (same interaction model
-  as `useCollectionDnD` in Table).
-- Inline rename on double-click of a bar label.
+  as `useCollectionDnD` in Table) — because every row is a specific task, dragging a
+  row up/down the list is unambiguous and maps 1:1 onto reordering/reparenting,
+  reusing `useRowDnD`/`useCollectionDnD` directly. (Contrast with the timeline view,
+  where vertical drag *within* a lane has no meaningful target since sub-row
+  position there is packing-assigned, not task-owned.)
+- Inline rename on double-click of either the Name column cell or the bar label,
+  kept in sync (same underlying field either way).
 - Right-click context menu on a bar (same actions as `RowContextMenu`: duplicate,
   delete, change collection, set priority/status, etc.).
 - Multi-select bars (shift/cmd-click or marquee-select) to bulk-drag/bulk-edit dates.
 - Undo/redo for drag operations (snap-back on invalid drop, toast with "Undo").
 - Snapping: bars snap to day/hour gridlines while dragging (configurable snap
   increment based on zoom level).
+- Keyboard nudge: with a bar selected, arrow keys shift its dates by one snap
+  increment, shift+arrow resizes from the near edge — useful since every row/bar
+  pairing is stable and doesn't move around under the user's hands the way a
+  packed timeline's sub-rows can.
 
 ## 4. Dependencies & relationships
 
 - Task-to-task dependency lines (finish-to-start at minimum: "Task B starts after
-  Task A finishes"), drawn as connector arrows between bars.
+  Task A finishes"), drawn as connector arrows between bars. Because every task has
+  a fixed row, an arrow's endpoints only ever move horizontally when dates change —
+  they never jump to a different row the way they would in the timeline view when a
+  repack shifts a task to a different sub-row. This makes Gantt the natural home for
+  dependency arrows and critical-path visualization; it's a materially easier and
+  more stable feature to build here than in the timeline view.
+- Dependency types beyond finish-to-start: start-to-start, finish-to-finish, and
+  start-to-finish, plus optional lag/lead days on any of them — common in full PM
+  tools and worth having once the base relation exists.
 - Auto-shift dependent tasks when a predecessor's dates move (with an optional
-  "ask before cascading" confirmation).
+  "ask before cascading" confirmation), rippling forward through the dependency
+  chain.
 - Critical-path highlighting (visually distinguish the chain of dependent tasks that
-  determines the overall end date).
+  determines the overall end date) — easy to scan top-to-bottom here since the
+  chain's rows don't move, unlike a packed timeline where a critical chain could
+  zig-zag across lanes.
+- Dependency-violation warnings: flag a bar with a badge/red outline if it starts
+  before its predecessor finishes (e.g., after a manual drag breaks the constraint),
+  with a one-click "fix" that snaps it back to the valid date.
 - Would require a new `dependsOn`/`blockedBy` relation — not in the current schema,
-  flagged as a bigger lift.
+  flagged as a bigger lift, but given how much more stable dependency rendering is
+  in this row model, it's a stronger candidate for Gantt than for the timeline view.
 
 ## 5. Recurrence on the timeline
 
 - Render each recurrence of a `repeatInterval` task as its own ghosted/lighter bar
-  extending forward on the timeline (visual preview of upcoming occurrences).
+  extending forward on the same row (a recurring task's series still owns exactly
+  one row; its future occurrences are extra bars drawn on that row, not new rows).
 - Quick-create a recurring series directly from the timeline via drag ("repeat this
   bar every N days for the next M occurrences").
+- Toggle to collapse a recurring series down to just its next occurrence, hiding the
+  ghosted future bars when the row gets visually busy.
 
 ## 6. Visual customization
 
@@ -91,24 +168,36 @@ Nothing here is committed to — it's a menu to pick from when we scope the actu
 - Progress-fill inside each bar (reusing `startPercentage`/`duePercentage` /
   `calculateProgress` from `timeUtils.ts`) so a bar shows partial completion, not just
   scheduled span.
-- Bar density/height toggle (compact vs. comfortable row height).
+- Bar/row density toggle (compact vs. comfortable row height) — applies uniformly to
+  every row, since row height isn't computed from packing the way a timeline lane's
+  height is.
 - Show/hide XP, notes icon (hover-to-preview notes), estimated-time chip, priority
-  flag directly on the bar.
+  flag directly on the bar. Since the task name already lives in the Name column,
+  the bar itself is freed up to carry these secondary badges without competing for
+  space with the label — a small but real advantage of the column decision in §1.
 - Configurable date-axis format (relative "in 3 days" vs. absolute "Jul 4").
 - Optional "milestone" bar style (diamond) vs. duration bar style, auto-selected when
   start === due but user-overridable.
+- Row striping / alternating background per collection swimlane, to make it easier
+  to visually track a row across a wide horizontal scroll.
 
 ## 7. Filtering, sorting & views
 
 - Reuse existing `FilterRule`/`SortRule` engines: filter timeline by status, priority,
-  collection, date range, overdue-only, etc.
+  collection, date range, overdue-only, etc. Filtering a task out simply removes its
+  row entirely — there's no repacking side effect the way filtering can shrink a
+  timeline lane's sub-row count.
 - Sort rows within a swimlane by start date, priority, or manual order
   (`hubOrder`/`dailyOrder`-style custom ordering, drag to reorder rows vertically).
+  Sort maps directly and unambiguously onto row order here — unlike the timeline
+  view, where sort only breaks ties inside the packing algorithm rather than fixing
+  a task's position.
 - Saved timeline "layouts" per collection/workspace (remembered zoom level, grouping,
   filters — same persistence pattern as `useHubViewConfig`).
 - Toggle to include/exclude tasks with no dates (list them in an "unscheduled" tray
   alongside the timeline, draggable onto the grid to schedule them).
-- Search/highlight: typing a query dims non-matching bars and highlights matches.
+- Search/highlight: typing a query dims non-matching bars and highlights matches (and
+  also dims/greys the corresponding Name-column row, not just the bar).
 
 ## 8. Overview & navigation aids
 
@@ -118,6 +207,9 @@ Nothing here is committed to — it's a menu to pick from when we scope the actu
 - Keyboard shortcuts: arrow keys to pan, +/- to zoom, `T` to jump to today.
 - Breadcrumb of current collection scope when drilled into a nested collection's
   own timeline.
+- "Jump to task" search that scrolls the row list vertically to a task and flashes
+  its bar — cheap to build here since a task's row position is stable and known in
+  advance, rather than dependent on where packing happened to place it.
 
 ## 9. Collaboration & feedback (future-facing, matches existing "collaboration" backlog item)
 
@@ -134,10 +226,15 @@ Nothing here is committed to — it's a menu to pick from when we scope the actu
 
 ## Suggested phasing (not a commitment, just a sane build order)
 
-1. **MVP**: static horizontal date grid, task bars from start/due dates, day/week/month
-   zoom, grouped by collection (reusing existing tree + SectionsConfig), today marker.
+1. **MVP**: static horizontal date grid, sticky Name column reused from List view
+   (`HubRow`/`NAME_COL_KEY`), task bars from start/due dates, day/week/month zoom,
+   grouped by collection via the existing `GroupHeaderRow` + `SectionsConfig`, today
+   marker.
 2. **Interaction**: drag to move/resize bars, click-drag to create, reparent via
-   vertical drag, right-click menu, undo.
-3. **Depth**: dependencies + critical path, recurrence preview, unscheduled tray,
-   saved layouts, minimap.
-4. **Polish**: color-by toggles, progress fill, export/print, collaboration presence.
+   vertical row drag (`useRowDnD`/`useCollectionDnD`), right-click menu, undo,
+   keyboard nudge.
+3. **Depth**: dependencies + critical path (a stronger fit here than in the timeline
+   view, given stable row positions), recurrence preview, unscheduled tray, saved
+   layouts, minimap.
+4. **Polish**: color-by toggles, progress fill, row striping, export/print,
+   collaboration presence.
