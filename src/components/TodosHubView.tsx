@@ -24,6 +24,7 @@ import { HubToolbar, ToolbarMenuKey } from './todosHub/HubToolbar';
 import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
 import { isDone } from '../utils/todoStatus';
 import { HubBody } from './todosHub/HubBody';
+import { HubGantt } from './todosHub/HubGantt';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
 import { SortMenu } from './todosHub/SortMenu';
@@ -120,8 +121,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // Which view renders the data: the spreadsheet-style table (default) or the
   // Todoist-style single-column list. A global UI preference (like selectedView).
-  const viewMode: 'table' | 'list' = layout.viewMode ?? 'table';
-  const setViewMode = (m: 'table' | 'list') => patchLayout(() => ({ viewMode: m }));
+  const viewMode: 'table' | 'list' | 'gantt' = layout.viewMode ?? 'table';
+  const setViewMode = (m: 'table' | 'list' | 'gantt') => patchLayout(() => ({ viewMode: m }));
 
   // Per-view layout + column widths (field order/visibility, filters, sorts,
   // section settings, resizable columns) — keyed by workspace + view.
@@ -568,7 +569,28 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onToggleMenu={onToggleMenu}
         />
 
-        {/* Task table / list body — shared component, switched by viewMode. */}
+        {/* Task body — Gantt has its own component; Table/List share HubBody. */}
+        {viewMode === 'gantt' ? (
+          <HubGantt
+            flattened={flattened}
+            collPathById={collPathById}
+            visibleTaskCounts={visibleTaskCounts}
+            todoById={todoById}
+            selectedCollectionId={selectedCollectionId}
+            selectedView={selectedView}
+            editing={editing}
+            startEdit={startEdit}
+            stopEdit={stopEdit}
+            onSaveTodo={onSaveTodo}
+            handleToggleTodo={handleToggleTodo}
+            onAddSubtask={onAddSubtask}
+            handleQuickAddTask={handleQuickAddTask}
+            openMenu={openMenu}
+            collapsed={collapsed}
+            toggleCollapse={toggleCollapse}
+            handleNewInView={handleNewInView}
+          />
+        ) : (
         <HubBody
           listView={viewMode === 'list'}
           tableScroll={tableScroll}
@@ -607,6 +629,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           toggleCollapse={toggleCollapse}
           handleNewInView={handleNewInView}
         />
+        )}
       </div>
 
       {/* Sections menu — view-level settings */}

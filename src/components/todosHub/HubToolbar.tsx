@@ -5,6 +5,7 @@ import {
   Table,
   List,
   GanttChart,
+  GanttChartSquare,
   Group,
   Columns3,
   Filter,
@@ -23,8 +24,8 @@ export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
 export const HubToolbar: React.FC<{
   sidebarHidden: boolean;
   onToggleSidebar: () => void;
-  viewMode: 'table' | 'list';
-  onSetViewMode: (m: 'table' | 'list') => void;
+  viewMode: 'table' | 'list' | 'gantt';
+  onSetViewMode: (m: 'table' | 'list' | 'gantt') => void;
   selectedCollectionId: string | null;
   todoById: Map<string, Todo>;
   viewLabel: string;
@@ -84,11 +85,13 @@ export const HubToolbar: React.FC<{
 
       {/* View toolbar */}
       <div className="shrink-0 flex items-center justify-between gap-3 px-4 pb-4">
-        {/* View tabs — Table/List switch the view; Timeline is not built yet. */}
+        {/* View tabs — Table/List/Gantt switch the view; Timeline (lane-packing)
+            is a separate view that isn't built yet. */}
         <div className="flex items-center gap-1">
           {([
             { key: 'table', label: 'Table', icon: Table, disabled: false },
             { key: 'list', label: 'List', icon: List, disabled: false },
+            { key: 'gantt', label: 'Gantt', icon: GanttChartSquare, disabled: false },
             { key: 'timeline', label: 'Timeline', icon: GanttChart, disabled: true },
           ] as const).map(({ key, label, icon: Icon, disabled }) => {
             const active = !disabled && viewMode === key;
@@ -97,7 +100,7 @@ export const HubToolbar: React.FC<{
                 key={key}
                 type="button"
                 disabled={disabled}
-                onClick={disabled ? undefined : () => onSetViewMode(key as 'table' | 'list')}
+                onClick={disabled ? undefined : () => onSetViewMode(key as 'table' | 'list' | 'gantt')}
                 title={disabled ? 'Timeline view coming soon' : undefined}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium transition-colors ${
                   active
