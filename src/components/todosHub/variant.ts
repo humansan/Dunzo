@@ -35,7 +35,7 @@ export const VARIANTS: Record<'table' | 'list' | 'column' | 'search', TableVaria
   search: { mode: 'column', showNesting: false, columns: 'name', chrome: 'none',   dnd: false },
 };
 
-// Provided at each table surface (HubBody today; a per-instance <TaskTable> later),
-// so nested rows/headers read the active variant instead of prop-drilling it.
+// Provided at each table surface by <TaskTable>, so nested rows/headers read the
+// active variant from context instead of having it prop-drilled to each one.
 export const TableVariantContext = React.createContext<TableVariant>(VARIANTS.table);
 export const useTableVariant = (): TableVariant => React.useContext(TableVariantContext);
