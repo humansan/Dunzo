@@ -1,16 +1,16 @@
 import React from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { NAME_BASE_PAD, INDENT, pillTextColor } from './constants';
+import { useTableVariant } from './variant';
 
 // The single source of truth for how a section header looks in the Task Planner —
 // the collapse chevron, the colored name pill, the count badge, and (critically)
-// the section spacing, which differs between the Table and List (`listView`)
-// variants. BOTH grouping paths render through this: collection sections (via
-// HubRow's collection branch) and attribute sections — Date/Status/Priority —
-// (via GroupHeaderRow). Keeping the chrome here means a styling change applies to
-// every grouping at once, instead of having to be mirrored across two components.
+// the section spacing, which differs by view variant (read from context). BOTH
+// grouping paths render through this: collection sections (via HubRow's collection
+// branch) and attribute sections — Date/Status/Priority — (via GroupHeaderRow).
+// Keeping the chrome here means a styling change applies to every grouping at once,
+// instead of having to be mirrored across two components.
 export interface SectionHeaderProps {
-  listView: boolean;
   gridTemplateColumns: string;
   // Pill — the shell renders a standard pill from `label` + `color`; pass
   // `pillOverride` to swap in a custom node (e.g. the collection's inline-edit
@@ -43,7 +43,6 @@ export interface SectionHeaderProps {
 }
 
 export const SectionHeader: React.FC<SectionHeaderProps> = ({
-  listView,
   gridTemplateColumns,
   color,
   label,
@@ -64,13 +63,14 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   onDragOver,
   onDrop,
 }) => {
+  const { mode } = useTableVariant();
   const pill = pillOverride ?? (
     <span
       onClick={onPillClick}
       style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
       className={`min-w-0 max-w-full truncate rounded-full px-2.5 py-px font-medium ${
         onPillClick ? 'cursor-text' : ''
-      } ${listView ? 'text-base' : 'text-sm'}`}
+      } ${mode === 'list' ? 'text-base' : 'text-sm'}`}
     >
       {label}
     </span>
@@ -86,7 +86,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       // (pt-6) and a little room (pb-2) between the label and its underline; table
       // view stays tight (pt-4). Both keep the bottom border.
       className={`relative grid items-end border-white/8 border-b group/row ${
-        listView ? 'min-h-12 pt-6 pb-2' : 'min-h-12 pt-4'
+        mode === 'list' ? 'min-h-12 pt-6 pb-2' : 'min-h-12 pt-4'
       } ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}

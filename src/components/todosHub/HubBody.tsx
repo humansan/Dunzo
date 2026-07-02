@@ -6,17 +6,19 @@ import { GroupHeaderRow } from './GroupHeaderRow';
 import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig } from './types';
 import { TABLE_PAD, BOTTOM_SPACER } from './constants';
 import { useRowDnD } from './useRowDnD';
+import { TableVariant, TableVariantContext } from './variant';
 
 type RowDnD = ReturnType<typeof useRowDnD>;
 
-// The scrollable view body shared by the Table and List variants of the Task
-// Planner. Table mode renders the full spreadsheet (sticky header row, all
-// visible columns, horizontal scroll). List mode (`listView`) renders a single
-// Name column — no header row, centered at reading width with a big project-style
-// title — reusing the same rows (nesting, drag-and-drop, inline editing) via a
-// single-column grid. The data hooks are unchanged; this is purely presentation.
+// The scrollable view body shared by every variant of the Task Planner, selected
+// by the `variant` descriptor (provided to the rows via context). `header` chrome
+// renders the full spreadsheet (sticky header row, all visible columns, horizontal
+// scroll); `title` chrome renders a single Name column — no header row, centered at
+// reading width with a big project-style title — reusing the same rows (nesting,
+// drag-and-drop, inline editing) via a single-column grid. The data hooks are
+// unchanged; this is purely presentation.
 interface HubBodyProps {
-  listView: boolean;
+  variant: TableVariant;
   // Drag-and-drop + scroll surface (from useRowDnD).
   tableScroll: RowDnD['tableScroll'];
   rowDragId: RowDnD['rowDragId'];
@@ -59,7 +61,7 @@ interface HubBodyProps {
 }
 
 export const HubBody: React.FC<HubBodyProps> = ({
-  listView,
+  variant,
   tableScroll,
   rowDragId,
   rowDrop,
@@ -99,12 +101,13 @@ export const HubBody: React.FC<HubBodyProps> = ({
   const headerCellCls =
     'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 hover:bg-[#0f0f0f] select-none';
 
-  // List mode collapses to the single Name column; both the rows and the (table-
-  // only) width anchor use these so they never disagree. minmax(0,1fr) lets the
-  // Name column shrink within the narrow centered container.
+  // A name-only variant collapses to the single Name column; both the rows and the
+  // (full-grid-only) width anchor use these so they never disagree. minmax(0,1fr)
+  // lets the Name column shrink within the narrow centered container.
+  const nameOnly = variant.columns === 'name';
   const titleCol = visibleColumns.find((c) => c.key === NAME_COL_KEY)!;
-  const effectiveColumns = listView ? [titleCol] : visibleColumns;
-  const effectiveGrid = listView ? 'minmax(0, 1fr)' : gridTemplateColumns;
+  const effectiveColumns = nameOnly ? [titleCol] : visibleColumns;
+  const effectiveGrid = nameOnly ? 'minmax(0, 1fr)' : gridTemplateColumns;
 
   const isEmpty = sectionsConfig.groupBy === 'collection' ? flattened.length === 0 : groupedRows.length === 0;
 
@@ -118,7 +121,6 @@ export const HubBody: React.FC<HubBodyProps> = ({
           node={node}
           displayDepth={node.depth}
           gridTemplateColumns={effectiveGrid}
-          listView={listView}
           editing={editing}
           startEdit={startEdit}
           stopEdit={stopEdit}
@@ -149,7 +151,6 @@ export const HubBody: React.FC<HubBodyProps> = ({
             key={row.id}
             row={row}
             gridTemplateColumns={effectiveGrid}
-            listView={listView}
             onToggleCollapse={toggleCollapse}
             onAddTask={handleQuickAddInGroup}
             isDropTarget={rowDrop?.id === row.id}
@@ -162,7 +163,6 @@ export const HubBody: React.FC<HubBodyProps> = ({
             node={row.node}
             displayDepth={row.node.depth}
             gridTemplateColumns={effectiveGrid}
-            listView={listView}
             editing={editing}
             startEdit={startEdit}
             stopEdit={stopEdit}
@@ -189,10 +189,10 @@ export const HubBody: React.FC<HubBodyProps> = ({
     );
 
   // Shared body: rows + add-row + empty state + bottom spacer. The width anchor is
-  // table-only (a single 1fr column needs no intrinsic-width pin).
+  // full-grid-only (a single 1fr column needs no intrinsic-width pin).
   const bodyInner = (
     <>
-      {!listView && (
+      {!nameOnly && (
         // Width anchor: a zero-height grid mirroring the column tracks so the body
         // keeps the table's intrinsic width even when there are no rows.
         <div aria-hidden className="grid h-0 overflow-hidden" style={{ gridTemplateColumns: effectiveGrid }}>
@@ -208,7 +208,7 @@ export const HubBody: React.FC<HubBodyProps> = ({
         type="button"
         onClick={handleNewInView}
         className={`flex w-full h-9 text-white/60 hover:text-white hover:bg-white/3 cursor-pointer transition-colors ${
-          listView ? 'border-b border-white/5' : 'border-b border-white/8 bg-[#0a0a0a]'
+          variant.mode === 'list' ? 'border-b border-white/5' : 'border-b border-white/8 bg-[#0a0a0a]'
         }`}
       >
         <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
@@ -233,7 +233,10 @@ export const HubBody: React.FC<HubBodyProps> = ({
     </>
   );
 
+  const titleChrome = variant.chrome === 'title';
+
   return (
+    <TableVariantContext.Provider value={variant}>
     <div
       ref={tableScroll.ref}
       onDragOver={tableScroll.onDragOver}
@@ -243,10 +246,10 @@ export const HubBody: React.FC<HubBodyProps> = ({
       // this never double-fires.
       onDrop={(e) => { e.preventDefault(); onRowDrop(); }}
       className={`flex-1 min-w-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full ${
-        listView ? 'overflow-y-auto overflow-x-hidden px-6' : 'overflow-auto [&::-webkit-scrollbar]:h-2 ml-4 pr-4'
+        titleChrome ? 'overflow-y-auto overflow-x-hidden px-6' : 'overflow-auto [&::-webkit-scrollbar]:h-2 ml-4 pr-4'
       }`}
     >
-      {listView ? (
+      {titleChrome ? (
         <div className="max-w-2xl mx-auto w-full text-white">
           {/* Project-style title — the selected collection's name, else the view label. */}
           <div className="pt-5 pb-1">
@@ -295,5 +298,6 @@ export const HubBody: React.FC<HubBodyProps> = ({
         </>
       )}
     </div>
+    </TableVariantContext.Provider>
   );
 };

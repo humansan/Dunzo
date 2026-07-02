@@ -24,6 +24,7 @@ import { HubToolbar, ToolbarMenuKey } from './todosHub/HubToolbar';
 import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
 import { isDone } from '../utils/todoStatus';
 import { HubBody } from './todosHub/HubBody';
+import { VARIANTS } from './todosHub/variant';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
 import { SortMenu } from './todosHub/SortMenu';
@@ -122,6 +123,9 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // Todoist-style single-column list. A global UI preference (like selectedView).
   const viewMode: 'table' | 'list' = layout.viewMode ?? 'table';
   const setViewMode = (m: 'table' | 'list') => patchLayout(() => ({ viewMode: m }));
+  // The persisted table/list toggle selects a view-variant descriptor; HubBody and
+  // its rows read presentation off this instead of a `listView` boolean.
+  const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
 
   // Per-view layout + column widths (field order/visibility, filters, sorts,
   // section settings, resizable columns) — keyed by workspace + view.
@@ -568,9 +572,9 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onToggleMenu={onToggleMenu}
         />
 
-        {/* Task table / list body — shared component, switched by viewMode. */}
+        {/* Task table / list body — shared component, switched by the view variant. */}
         <HubBody
-          listView={viewMode === 'list'}
+          variant={variant}
           tableScroll={tableScroll}
           rowDragId={rowDragId}
           rowDrop={rowDrop}

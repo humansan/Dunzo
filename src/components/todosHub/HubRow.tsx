@@ -15,6 +15,7 @@ import {
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from './types';
 import { INDENT, NAME_BASE_PAD, DEFAULT_COLLECTION_COLOR, pillTextColor, cellEditCls } from './constants';
 import { SectionHeader } from './SectionHeader';
+import { useTableVariant } from './variant';
 import { isDone } from '../../utils/todoStatus';
 
 // Where the dragged row will land relative to this row: a line before/after it
@@ -40,9 +41,6 @@ interface HubRowProps {
   columns: ColDef[];
   lastColKey: ColKey; // the rightmost visible column, which gets a right divider
   wrappedFields: Set<ColKey>;
-  // List view: a single Name column, no cell dividers/bg, and roomier section
-  // headers — the Todoist-style variant of the same row.
-  listView?: boolean;
   // When true the drag handle is hidden (drag-and-drop disabled for this row).
   hideDragHandle?: boolean;
   // Visible (post-filter) task count shown on collection header rows.
@@ -75,7 +73,6 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   columns,
   lastColKey,
   wrappedFields,
-  listView = false,
   hideDragHandle = false,
   taskCount,
   onQuickAddTask,
@@ -88,12 +85,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
 }) => {
   const { entry, hasChildren } = node;
   const { todo } = entry;
+  const variant = useTableVariant();
   // The name cell doubles as the drag image so the cursor carries a readable chip.
   const dragImageRef = useRef<HTMLDivElement>(null);
   const style: React.CSSProperties = { gridTemplateColumns };
-  // List view always wraps the title (there's only the one column to read), so
-  // the per-column wrap setting only governs the title in table view.
-  const titleWrapped = listView || wrappedFields.has('title');
+  // A name-only variant always wraps the title (there's only the one column to
+  // read), so the per-column wrap setting only governs the title in a full table.
+  const titleWrapped = variant.columns === 'name' || wrappedFields.has('title');
 
   const isEditing = (col: ColKey) => editing?.id === todo.id && editing?.col === col;
   const saveField = (patch: Partial<Todo>) => onSaveTodo({ ...todo, ...patch });
@@ -187,7 +185,6 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     const color = todo.color || DEFAULT_COLLECTION_COLOR;
     return (
       <SectionHeader
-        listView={listView}
         gridTemplateColumns={gridTemplateColumns}
         color={color}
         label={todo.text || 'Untitled collection'}
@@ -431,7 +428,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       <div
         ref={dragImageRef}
         className={`sticky left-0 z-20 flex items-start h-full overflow-hidden ${
-          listView ? '' : 'border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]'
+          variant.columns === 'all' ? 'border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]' : ''
         }`}
       >
         {/* Name band. Each leading control is a line-height box (`h-5`) that centers
@@ -529,9 +526,9 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       {columns
         .filter((c) => c.key !== NAME_COL_KEY)
         .map((c) => <React.Fragment key={c.key}>{renderCell(c.key)}</React.Fragment>)}
-      {/* Spacer track — fills remaining width, mirrors the header spacer. The
-          single-column list has no such track, so it's table-only. */}
-      {!listView && <div />}
+      {/* Spacer track — fills remaining width, mirrors the header spacer. A
+          single Name column has no such track, so it's for the full-column grid. */}
+      {variant.columns === 'all' && <div />}
     </div>
   );
 };
