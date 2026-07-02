@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
-import { Plus } from 'lucide-react';
 import { DayTodos, Todo, Workspace } from '../types';
 import {
   OrganizerEntry,
@@ -10,8 +9,6 @@ import {
 import { TodoFullView } from './TodoFullView';
 import { ColKey, COLUMNS, EditState } from './todosHub/types';
 import {
-  TABLE_PAD,
-  BOTTOM_SPACER,
   DEFAULT_COLLECTION_COLOR,
   MIN_SIDEBAR_WIDTH,
   MAX_SIDEBAR_WIDTH,
@@ -26,12 +23,11 @@ import { HubSidebar } from './todosHub/HubSidebar';
 import { HubToolbar, ToolbarMenuKey } from './todosHub/HubToolbar';
 import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
 import { isDone } from '../utils/todoStatus';
-import { HubRow } from './todosHub/HubRow';
+import { HubBody } from './todosHub/HubBody';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
 import { SortMenu } from './todosHub/SortMenu';
 import { SectionsMenu } from './todosHub/SectionsMenu';
-import { GroupHeaderRow } from './todosHub/GroupHeaderRow';
 import { CollectionEditModal } from './todosHub/CollectionEditModal';
 import { CellEditorPopover } from './todosHub/CellEditorPopover';
 import { RowContextMenu } from './todosHub/RowContextMenu';
@@ -121,6 +117,11 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // Declared early so the per-view config hook below can derive its storage key.
   const selectedView = layout.selectedView ?? 'all';
   const setSelectedView = (v: string) => patchLayout(() => ({ selectedView: v }));
+
+  // Which view renders the data: the spreadsheet-style table (default) or the
+  // Todoist-style single-column list. A global UI preference (like selectedView).
+  const viewMode: 'table' | 'list' = layout.viewMode ?? 'table';
+  const setViewMode = (m: 'table' | 'list') => patchLayout(() => ({ viewMode: m }));
 
   // Per-view layout + column widths (field order/visibility, filters, sorts,
   // section settings, resizable columns) — keyed by workspace + view.
@@ -522,9 +523,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const saveFullTodo = (updated: Todo, newDate: string) =>
     onSaveTodo({ ...updated, dueDate: newDate || undefined });
 
-  const headerCellCls =
-    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 hover:bg-[#0f0f0f] select-none';
-
   return (
     <div className="h-full flex">
       {/* Left pane — full-height collection picker (resizable) */}
@@ -558,6 +556,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
         <HubToolbar
           sidebarHidden={sidebarHidden}
           onToggleSidebar={() => setSidebarHidden((v) => !v)}
+          viewMode={viewMode}
+          onSetViewMode={setViewMode}
           selectedCollectionId={selectedCollectionId}
           todoById={todoById}
           viewLabel={viewLabel}
@@ -568,163 +568,45 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onToggleMenu={onToggleMenu}
         />
 
-        {/* Task table — single scroll container, both axes. */}
-        <div
-          ref={tableScroll.ref}
-          onDragOver={tableScroll.onDragOver}
-          onDragEnter={tableScroll.onDragEnter}
-          // Fallback drop: releasing over the header bar / gaps (not a row) still
-          // commits the current indicator. Row/header onDrop call stopPropagation
-          // so this never double-fires.
-          onDrop={(e) => { e.preventDefault(); onRowDrop(); }}
-          className="flex-1 min-w-0 overflow-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full ml-4 pr-4"
-        >
-        
-        {/* Header row — full-bleed bar: its background + bottom border span the
-            whole width (no left/right gaps), but it carries the same TABLE_PAD
-            padding and w-max width as the rows below, so the padding sits outside
-            the grid tracks and the column borders line up with the body. */}
-          <div
-            className="grid sticky top-0 z-30 w-max min-w-full bg-[#0a0a0a] border-y border-white/10 h-9"
-            style={{ gridTemplateColumns, paddingLeft: TABLE_PAD, paddingRight: TABLE_PAD }}
-          >
-            {visibleColumns.map((c, idx) => (
-              <div
-                key={c.key}
-                // The Name header gets the row's left padding so its label lines up with the row content.
-                style={idx === 0 ? { paddingLeft: 30} : undefined}
-                className={`${headerCellCls} ${idx > 0 ? 'border-l border-white/8' : ''} ${
-                  idx === 0 ? 'sticky left-0 z-10 bg-[#0a0a0a] border-r border-white/8' : ''
-                } ${idx === visibleColumns.length - 1 ? 'border-r border-white/8' : ''}`}
-              >
-                <span className="truncate">{c.label}</span>
-                {/* Resize handle on the right edge */}
-                <div
-                  onMouseDown={(e) => startResize(c.key, e)}
-                  className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-[var(--accent2)]/40"
-                />
-              </div>
-            ))}
-            {/* Spacer: absorbs leftover width when the table doesn't scroll; gives
-                the last column's resize handle room to expand into when it does. */}
-            <div />
-          </div>
-
-        <div className="w-max min-w-full text-white" style={{ paddingLeft: TABLE_PAD, paddingRight: TABLE_PAD }}>
-          {/* Width anchor: a zero-height grid mirroring the column tracks. The body
-              sizes to its widest grid child — a real row normally provides that, but
-              when the view is empty there are no rows, so the body would collapse to
-              min-w-full and the add-row/empty-state would stop short of the full table
-              width. This keeps the intrinsic width pinned regardless of row count. */}
-          <div aria-hidden className="grid h-0 overflow-hidden" style={{ gridTemplateColumns }}>
-            {visibleColumns.map((c) => <div key={c.key} />)}
-            <div />
-          </div>
-
-          {/* Rows — collection-tree mode (default) or flat grouped mode. Native
-              HTML5 DnD: a drop indicator shows where the row will land; nothing
-              shifts until release (matches the sidebar). */}
-          {sectionsConfig.groupBy === 'collection' ? (
-            flattened.map((node) => (
-              <HubRow
-                key={node.id}
-                node={node}
-                displayDepth={node.depth}
-                gridTemplateColumns={gridTemplateColumns}
-                editing={editing}
-                startEdit={startEdit}
-                stopEdit={stopEdit}
-                onSaveTodo={onSaveTodo}
-                onToggleTodo={handleToggleTodo}
-                onAddSubtask={onAddSubtask}
-                onQuickAddTask={handleQuickAddTask}
-                openMenu={openMenu}
-                isCollapsed={collapsed.has(node.id)}
-                onToggleCollapse={toggleCollapse}
-                collPath={collPathById.get(node.id) ?? []}
-                columns={visibleColumns}
-                lastColKey={lastColKey}
-                wrappedFields={wrappedFields}
-                taskCount={node.entry.todo.isCollection ? (visibleTaskCounts.get(node.id) ?? 0) : undefined}
-                isDragSource={rowDragId === node.id}
-                dropIndicator={rowDrop && rowDrop.id === node.id ? { pos: rowDrop.pos, depth: rowDrop.depth } : null}
-                onRowDragStart={onRowDragStart}
-                onRowDragOver={onRowDragOver}
-                onRowDrop={onRowDrop}
-                onRowDragEnd={resetDrag}
-              />
-            ))
-          ) : (
-            groupedRows.map((row) =>
-              row.type === 'header' ? (
-                <GroupHeaderRow
-                  key={row.id}
-                  row={row}
-                  gridTemplateColumns={gridTemplateColumns}
-                  onToggleCollapse={toggleCollapse}
-                  onAddTask={handleQuickAddInGroup}
-                  isDropTarget={rowDrop?.id === row.id}
-                  onHeaderDragOver={(e) => onHeaderDragOver(row.id, row.value, e)}
-                  onHeaderDrop={onRowDrop}
-                />
-              ) : (
-                <HubRow
-                  key={row.node.id}
-                  node={row.node}
-                  displayDepth={row.node.depth}
-                  gridTemplateColumns={gridTemplateColumns}
-                  editing={editing}
-                  startEdit={startEdit}
-                  stopEdit={stopEdit}
-                  onSaveTodo={onSaveTodo}
-                  onToggleTodo={handleToggleTodo}
-                  onAddSubtask={onAddSubtask}
-                  onQuickAddTask={handleQuickAddTask}
-                  openMenu={openMenu}
-                  isCollapsed={collapsed.has(row.node.id)}
-                  onToggleCollapse={toggleCollapse}
-                  collPath={collPathById.get(row.node.id) ?? []}
-                  columns={visibleColumns}
-                  lastColKey={lastColKey}
-                  wrappedFields={wrappedFields}
-                  isDragSource={rowDragId === row.node.id}
-                  dropIndicator={rowDrop && rowDrop.id === row.node.id ? { pos: rowDrop.pos, depth: rowDrop.depth } : null}
-                  onRowDragStart={onRowDragStart}
-                  onRowDragOver={onRowDragOver}
-                  onRowDrop={onRowDrop}
-                  onRowDragEnd={resetDrag}
-                />
-              )
-            )
-          )}
-
-          {/* Add row */}
-          <button
-            type="button"
-            onClick={handleNewInView}
-            className="flex w-full h-9  text-white/60 hover:text-white hover:bg-white/3 border-b border-white/8 cursor-pointer transition-colors bg-[#0a0a0a]"
-          >
-            <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
-              <Plus size={15}/>
-              <span>New</span>
-            </div>
-          </button>
-
-          {(sectionsConfig.groupBy === 'collection' ? flattened.length === 0 : groupedRows.length === 0) && (
-            <div className="px-3 py-6 text-xs text-white/60">
-              {selectedCollectionId
-                ? 'No tasks in this collection yet. Click “New” to add one.'
-                : selectedView === 'uncategorized'
-                  ? 'No uncategorized tasks.'
-                  : <>No todos in this collection. Click “+ New”.</>}
-            </div>
-          )}
-
-          {/* Bottom dead space so the last row isn't flush to the edge and the
-              right-click context menu has room to open fully below it. */}
-          <div aria-hidden style={{ height: BOTTOM_SPACER }} />
-        </div>
-        </div>
+        {/* Task table / list body — shared component, switched by viewMode. */}
+        <HubBody
+          listView={viewMode === 'list'}
+          tableScroll={tableScroll}
+          rowDragId={rowDragId}
+          rowDrop={rowDrop}
+          onRowDragStart={onRowDragStart}
+          onRowDragOver={onRowDragOver}
+          onHeaderDragOver={onHeaderDragOver}
+          onRowDrop={onRowDrop}
+          resetDrag={resetDrag}
+          visibleColumns={visibleColumns}
+          gridTemplateColumns={gridTemplateColumns}
+          startResize={startResize}
+          lastColKey={lastColKey}
+          wrappedFields={wrappedFields}
+          sectionsConfig={sectionsConfig}
+          flattened={flattened}
+          groupedRows={groupedRows}
+          collPathById={collPathById}
+          visibleTaskCounts={visibleTaskCounts}
+          selectedCollectionId={selectedCollectionId}
+          selectedView={selectedView}
+          viewLabel={viewLabel}
+          currentCount={currentCount}
+          todoById={todoById}
+          editing={editing}
+          startEdit={startEdit}
+          stopEdit={stopEdit}
+          onSaveTodo={onSaveTodo}
+          handleToggleTodo={handleToggleTodo}
+          onAddSubtask={onAddSubtask}
+          handleQuickAddTask={handleQuickAddTask}
+          handleQuickAddInGroup={handleQuickAddInGroup}
+          openMenu={openMenu}
+          collapsed={collapsed}
+          toggleCollapse={toggleCollapse}
+          handleNewInView={handleNewInView}
+        />
       </div>
 
       {/* Sections menu — view-level settings */}

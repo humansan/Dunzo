@@ -23,6 +23,8 @@ export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
 export const HubToolbar: React.FC<{
   sidebarHidden: boolean;
   onToggleSidebar: () => void;
+  viewMode: 'table' | 'list';
+  onSetViewMode: (m: 'table' | 'list') => void;
   selectedCollectionId: string | null;
   todoById: Map<string, Todo>;
   viewLabel: string;
@@ -34,6 +36,8 @@ export const HubToolbar: React.FC<{
 }> = ({
   sidebarHidden,
   onToggleSidebar,
+  viewMode,
+  onSetViewMode,
   selectedCollectionId,
   todoById,
   viewLabel,
@@ -80,24 +84,34 @@ export const HubToolbar: React.FC<{
 
       {/* View toolbar */}
       <div className="shrink-0 flex items-center justify-between gap-3 px-4 pb-4">
-        {/* View tabs — UI scaffold only; not wired up yet. */}
+        {/* View tabs — Table/List switch the view; Timeline is not built yet. */}
         <div className="flex items-center gap-1">
           {([
-            { label: 'Table', icon: Table, active: true },
-            { label: 'List', icon: List, active: false },
-            { label: 'Timeline', icon: GanttChart, active: false },
-          ] as const).map(({ label, icon: Icon, active }) => (
-            <button
-              key={label}
-              type="button"
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium transition-colors ${
-                active ? 'bg-white/10 text-white' : 'text-white/45 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
+            { key: 'table', label: 'Table', icon: Table, disabled: false },
+            { key: 'list', label: 'List', icon: List, disabled: false },
+            { key: 'timeline', label: 'Timeline', icon: GanttChart, disabled: true },
+          ] as const).map(({ key, label, icon: Icon, disabled }) => {
+            const active = !disabled && viewMode === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                disabled={disabled}
+                onClick={disabled ? undefined : () => onSetViewMode(key as 'table' | 'list')}
+                title={disabled ? 'Timeline view coming soon' : undefined}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium transition-colors ${
+                  active
+                    ? 'bg-white/10 text-white'
+                    : disabled
+                      ? 'text-white/20 cursor-not-allowed'
+                      : 'text-white/45 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Right-side actions — Sections / Fields / Filter / Sort */}

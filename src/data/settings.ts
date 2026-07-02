@@ -18,6 +18,7 @@ import { stripNulls } from './normalize';
 // as arrays (jsonb has no Set); the synced hooks adapt Set↔array.
 export interface HubLayout {
   selectedView?: string;
+  viewMode?: 'table' | 'list'; // table (default) vs. Todoist-style single-column list
   sidebarWidth?: number;
   sidebarHidden?: boolean;
   sidebarCollapsed?: string[]; // sidebar collection-tree collapse state
