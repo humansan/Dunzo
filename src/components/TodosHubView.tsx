@@ -184,6 +184,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     activeFilters,
     activeSorts,
     sectionsConfig,
+    showNesting: variant.showNesting,
   });
 
   // ── Toolbar menu anchor states ────────────────────────────────────────────────

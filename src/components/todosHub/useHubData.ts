@@ -32,6 +32,10 @@ export function useHubData(params: {
   activeFilters: FilterRule[];
   activeSorts: SortRule[];
   sectionsConfig: SectionsConfig;
+  // Whether the current view variant shows the collection/subtask hierarchy. When
+  // false the tree is flattened to a single depth-0 list (search-style), ignoring
+  // collapse state. Both live variants (table/list) pass true.
+  showNesting: boolean;
 }) {
   const {
     dayTodos,
@@ -43,6 +47,7 @@ export function useHubData(params: {
     activeFilters,
     activeSorts,
     sectionsConfig,
+    showNesting,
   } = params;
 
   // Only this workspace's todos/collections (undefined id ⇒ default 'personal').
@@ -240,11 +245,13 @@ export function useHubData(params: {
   // The dragged row stays visible (dimmed), so nothing is excluded during a drag.
   const flattened = useMemo(
     () => flattenTree(processedEntries, {
-      collapsed,
+      // Flat variants ignore collapse state (nothing to expand/collapse).
+      collapsed: showNesting ? collapsed : undefined,
       sortFn,
       leafPosition: sectionsConfig.showLeafTasks !== 'none' ? sectionsConfig.showLeafTasks : undefined,
+      flat: !showNesting,
     }),
-    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks]
+    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting]
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 

@@ -86,6 +86,10 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   const { entry, hasChildren } = node;
   const { todo } = entry;
   const variant = useTableVariant();
+  // A non-nesting variant (the flat search list) drops the indent + collapse
+  // affordance even if handed hierarchical data; both live variants nest.
+  const nested = variant.showNesting;
+  const depth = nested ? displayDepth : 0;
   // The name cell doubles as the drag image so the cursor carries a readable chip.
   const dragImageRef = useRef<HTMLDivElement>(null);
   const style: React.CSSProperties = { gridTemplateColumns };
@@ -205,10 +209,10 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         ) : undefined}
         isCollapsed={isCollapsed}
         onToggleCollapse={() => onToggleCollapse(todo.id)}
-        hasToggle={hasChildren}
+        hasToggle={nested && hasChildren}
         toggleTitle={{ expand: 'Expand collection', collapse: 'Collapse collection' }}
         count={taskCount}
-        depth={displayDepth}
+        depth={depth}
         leading={dragHandle('mr-1')}
         actions={
           <>
@@ -448,13 +452,15 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             ring-1 ring-inset ring-[var(--accent2)]/60
             */}
         <div
-          style={{ paddingLeft: NAME_BASE_PAD + displayDepth * INDENT }}
+          style={{ paddingLeft: NAME_BASE_PAD + depth * INDENT }}
           className={`flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
             isEditing('title') && !titleWrapped ? 'h-9' : 'py-[8px]'
           } ${isEditing('title') && "ring-1 ring-inset ring-[var(--accent2)]/60"}
           `}
-        > 
-          {hasChildren ? (
+        >
+          {/* Collapse chevron (nesting variants only) — a spacer keeps the checkbox
+              aligned when a row has no children. A flat variant drops both. */}
+          {nested && (hasChildren ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
@@ -465,7 +471,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             </button>
           ) : (
             <span className="shrink-0 w-5.5" />
-          )}
+          ))}
 
           {dragHandle()}
 
