@@ -7,9 +7,10 @@ import { RowDnD, TableModel } from './TaskTable';
 // The scroll container + chrome for one table surface, chosen by `variant.chrome`:
 //   • title  — a single centered Name column with a project-style heading (List).
 //   • header — the full spreadsheet's sticky, resizable column-header bar (Table).
+//   • none   — bare rows, no header/title, for an embedded column/search pane
+//              whose width + padding are owned by the surrounding view.
 // It hosts the chrome-agnostic row region (`children`) in the right slot and owns
-// the scroll ref + the fallback container drop. (`none` chrome — bare, for the
-// upcoming column/search surfaces — is not handled yet.)
+// the scroll ref + the fallback container drop.
 interface TableSurfaceProps {
   variant: TableVariant;
   model: TableModel;
@@ -31,6 +32,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
     'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 hover:bg-[#0f0f0f] select-none';
 
   const titleChrome = variant.chrome === 'title';
+  const headerChrome = variant.chrome === 'header';
   const scroll = dnd?.tableScroll;
 
   return (
@@ -43,7 +45,11 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
       // this never double-fires.
       onDrop={dnd ? (e) => { e.preventDefault(); dnd.onRowDrop(); } : undefined}
       className={`flex-1 min-w-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full ${
-        titleChrome ? 'overflow-y-auto overflow-x-hidden px-6' : 'overflow-auto [&::-webkit-scrollbar]:h-2 ml-4 pr-4'
+        headerChrome
+          ? 'overflow-auto [&::-webkit-scrollbar]:h-2 ml-4 pr-4'
+          : titleChrome
+            ? 'overflow-y-auto overflow-x-hidden px-6'
+            : 'overflow-y-auto overflow-x-hidden'
       }`}
     >
       {titleChrome ? (
@@ -57,7 +63,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
           </div>
           {children}
         </div>
-      ) : (
+      ) : headerChrome ? (
         <>
           {/* Header row — full-bleed bar: its background + bottom border span the
               whole width (no left/right gaps), but it carries the same TABLE_PAD
@@ -93,6 +99,9 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
             {children}
           </div>
         </>
+      ) : (
+        // 'none' chrome — bare rows; the embedding view owns width + padding.
+        <div className="w-full text-white">{children}</div>
       )}
     </div>
   );

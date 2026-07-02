@@ -84,9 +84,15 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       onDrop={onDrop}
       // List view gives sections an airier, Todoist-like rhythm: more space above
       // (pt-6) and a little room (pb-2) between the label and its underline; table
-      // view stays tight (pt-4). Both keep the bottom border.
-      className={`relative grid items-end border-white/8 border-b group/row ${
-        mode === 'list' ? 'min-h-12 pt-6 pb-2' : 'min-h-12 pt-4'
+      // view stays tight (pt-4). Column mode drops to the 36px task-row height so a
+      // section header reads as just another even-height row. All keep the bottom
+      // border.
+      className={`relative grid border-white/8 border-b group/row ${
+        mode === 'column'
+          ? 'items-center min-h-[36px]'
+          : mode === 'list'
+            ? 'items-end min-h-12 pt-6 pb-2'
+            : 'items-end min-h-12 pt-4'
       } ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}

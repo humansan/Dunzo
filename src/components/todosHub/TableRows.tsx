@@ -144,7 +144,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
         type="button"
         onClick={onNewInView}
         className={`flex w-full h-9 text-white/60 hover:text-white hover:bg-white/3 cursor-pointer transition-colors ${
-          variant.mode === 'list' ? 'border-b border-white/5' : 'border-b border-white/8 bg-[#0a0a0a]'
+          variant.mode === 'table' ? 'border-b border-white/8 bg-[#0a0a0a]' : 'border-b border-white/5'
         }`}
       >
         <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
