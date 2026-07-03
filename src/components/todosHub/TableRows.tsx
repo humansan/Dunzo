@@ -31,7 +31,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
   effectiveColumns,
   effectiveGrid,
 }) => {
-  const { editing, startEdit, stopEdit, openMenu, toggleCollapse } = interaction;
+  const { editing, startEdit, stopEdit, openMenu, toggleCollapse, onActivate, selectedId } = interaction;
   const { onSaveTodo, onToggleTodo, onAddSubtask, onQuickAddTask, onQuickAddInGroup, onNewInView } = rowHandlers;
   const {
     sectionsConfig,
@@ -75,6 +75,8 @@ export const TableRows: React.FC<TableRowsProps> = ({
           wrappedFields={wrappedFields}
           taskCount={node.entry.todo.isCollection ? (visibleTaskCounts.get(node.id) ?? 0) : undefined}
           hideDragHandle={!dnd}
+          onActivate={onActivate}
+          isSelected={selectedId === node.id}
           isDragSource={dnd?.rowDragId === node.id}
           dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === node.id ? { pos: dnd.rowDrop.pos, depth: dnd.rowDrop.depth } : null}
           onRowDragStart={dnd?.onRowDragStart}
@@ -117,6 +119,8 @@ export const TableRows: React.FC<TableRowsProps> = ({
             lastColKey={lastColKey}
             wrappedFields={wrappedFields}
             hideDragHandle={!dnd}
+            onActivate={onActivate}
+            isSelected={selectedId === row.node.id}
             isDragSource={dnd?.rowDragId === row.node.id}
             dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === row.node.id ? { pos: dnd.rowDrop.pos, depth: dnd.rowDrop.depth } : null}
             onRowDragStart={dnd?.onRowDragStart}

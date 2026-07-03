@@ -7,6 +7,7 @@ import {
   GanttChart,
   Group,
   Columns3,
+  Columns2,
   Filter,
   ArrowUpDown,
   Search,
@@ -24,8 +25,8 @@ export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
 export const HubToolbar: React.FC<{
   sidebarHidden: boolean;
   onToggleSidebar: () => void;
-  viewMode: 'table' | 'list';
-  onSetViewMode: (m: 'table' | 'list') => void;
+  viewMode: 'table' | 'list' | 'columns';
+  onSetViewMode: (m: 'table' | 'list' | 'columns') => void;
   selectedCollectionId: string | null;
   todoById: Map<string, Todo>;
   viewLabel: string;
@@ -92,6 +93,7 @@ export const HubToolbar: React.FC<{
           {([
             { key: 'table', label: 'Table', icon: Table, disabled: false },
             { key: 'list', label: 'List', icon: List, disabled: false },
+            { key: 'columns', label: 'Columns', icon: Columns2, disabled: false },
             { key: 'timeline', label: 'Timeline', icon: GanttChart, disabled: true },
           ] as const).map(({ key, label, icon: Icon, disabled }) => {
             const active = !disabled && viewMode === key;
@@ -100,7 +102,7 @@ export const HubToolbar: React.FC<{
                 key={key}
                 type="button"
                 disabled={disabled}
-                onClick={disabled ? undefined : () => onSetViewMode(key as 'table' | 'list')}
+                onClick={disabled ? undefined : () => onSetViewMode(key as 'table' | 'list' | 'columns')}
                 title={disabled ? 'Timeline view coming soon' : undefined}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium transition-colors ${
                   active

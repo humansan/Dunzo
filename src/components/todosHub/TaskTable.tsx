@@ -1,6 +1,8 @@
 import React from 'react';
 import { Todo } from '../../types';
-import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig } from './types';
+import { OrganizerEntry } from '../../utils/todoFilters';
+import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig, COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
+import { flattenTree } from './treeUtils';
 import { useRowDnD } from './useRowDnD';
 import { TableVariant, TableVariantContext } from './variant';
 import { TableSurface } from './TableSurface';
@@ -37,6 +39,36 @@ export interface TableModel {
   currentCount: number;
 }
 
+// Assemble a flat (single-level, name-only) TableModel from a plain entry slice —
+// the shared basis for every chrome-less surface (the search results and each
+// Finder column). It flattens the slice with no nesting/collapse and leaves the
+// column-layout fields at their name-only defaults; `sortFn` orders the rows
+// (omitted → hub order). Callers memoize on their own inputs.
+export function buildFlatModel(
+  entries: OrganizerEntry[],
+  todoById: Map<string, Todo>,
+  opts: { sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number } = {}
+): TableModel {
+  return {
+    columns: COLUMNS,
+    gridTemplateColumns: '',
+    lastColKey: NAME_COL_KEY,
+    wrappedFields: new Set(),
+    startResize: () => {},
+    sectionsConfig: DEFAULT_SECTIONS_CONFIG,
+    flattened: flattenTree(entries, { flat: true, sortFn: opts.sortFn }),
+    groupedRows: [],
+    collPathById: new Map(),
+    visibleTaskCounts: new Map(),
+    todoById,
+    collapsed: new Set(),
+    selectedCollectionId: null,
+    selectedView: 'all',
+    viewLabel: '',
+    currentCount: entries.length,
+  };
+}
+
 // Editing / menu / collapse state + the callbacks that change it.
 export interface TableInteraction {
   editing: EditState;
@@ -44,6 +76,12 @@ export interface TableInteraction {
   stopEdit: () => void;
   openMenu: (id: string, x: number, y: number) => void;
   toggleCollapse: (id: string) => void;
+  // Finder-columns drill: `onActivate` "opens" a collection row (a new column to
+  // its right) instead of collapsing its children inline; `selectedId` marks the
+  // row whose column is currently open, for the highlight. Both optional — only
+  // the columns view supplies them; every other surface leaves them undefined.
+  onActivate?: (id: string) => void;
+  selectedId?: string | null;
 }
 
 // Task mutations triggered from within a row or the add-row button.
