@@ -243,15 +243,23 @@ export function useHubData(params: {
   // Rendered rows for collection-grouped (default) mode. processedEntries respects
   // filters + hideEmptyCollections. leafPosition segregates tasks vs sub-collections.
   // The dragged row stays visible (dimmed), so nothing is excluded during a drag.
+  // When hideSubcollections is on, sub-collection rows are dropped so flattenTree
+  // re-parents their orphaned tasks to the root — every descendant task surfaces
+  // flat (task→subtask nesting, whose parents are tasks, is preserved).
   const flattened = useMemo(
-    () => flattenTree(processedEntries, {
-      // Flat variants ignore collapse state (nothing to expand/collapse).
-      collapsed: showNesting ? collapsed : undefined,
-      sortFn,
-      leafPosition: sectionsConfig.showLeafTasks !== 'none' ? sectionsConfig.showLeafTasks : undefined,
-      flat: !showNesting,
-    }),
-    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting]
+    () => {
+      const treeEntries = sectionsConfig.hideSubcollections
+        ? processedEntries.filter((e) => !e.todo.isCollection)
+        : processedEntries;
+      return flattenTree(treeEntries, {
+        // Flat variants ignore collapse state (nothing to expand/collapse).
+        collapsed: showNesting ? collapsed : undefined,
+        sortFn,
+        leafPosition: sectionsConfig.showLeafTasks !== 'none' ? sectionsConfig.showLeafTasks : undefined,
+        flat: !showNesting,
+      });
+    },
+    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, sectionsConfig.hideSubcollections]
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 

@@ -78,6 +78,12 @@ export const SectionsMenu: React.FC<{
             <span className={labelCls}>Hide empty sections</span>
             <Toggle value={config.hideEmptyCollections} onChange={(v) => set('hideEmptyCollections', v)} />
           </div>
+
+          {/* Hide sub-collections — flatten to leaf tasks only */}
+          <div className={rowCls}>
+            <span className={labelCls}>Hide subcollections</span>
+            <Toggle value={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
+          </div>
         </div>
 
         <div className={sectionCls}>
