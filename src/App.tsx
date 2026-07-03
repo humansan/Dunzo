@@ -10,7 +10,9 @@ import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
 import { TodosHubView } from './components/TodosHubView';
-import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility } from './utils/todoFilters';
+import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from './utils/todoFilters';
+import { SearchModal } from './components/todosHub/SearchModal';
+import { TodoFullView } from './components/TodoFullView';
 import { toggledStatus } from './utils/todoStatus';
 import { CalendarView } from './components/CalendarView';
 import { StatsView } from './components/StatsView';
@@ -455,6 +457,27 @@ export default function App() {
     [dayTodos, todoById]
   );
 
+  // ── Global task search (⌘/Ctrl+K or the ribbon Search button) ────────────────
+  // Search lives at the app level so it's reachable from every view. It scopes to
+  // the active workspace's tasks; opening a result shows its full view here.
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchFullViewId, setSearchFullViewId] = useState<string | null>(null);
+  const searchEntries = useMemo(
+    () => getOrganizerTodos(dayTodos).filter((e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId),
+    [dayTodos, activeWorkspaceId]
+  );
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const searchFullTodo = searchFullViewId ? todoById.get(searchFullViewId) ?? null : null;
+
   const handleViewChange = (view: 'trackers' | 'todos' | 'hub' | 'calendar' | 'stats') => {
     setActiveView(view);
     if (view === 'todos' || view === 'hub' || view === 'calendar' || view === 'stats') {
@@ -505,6 +528,7 @@ export default function App() {
         onAccountClick={() => setIsAccountModalOpen(true)}
         onStopwatchClick={() => setIsStopwatchVisible(v => !v)}
         isStopwatchActive={timerState !== 'idle'}
+        onSearchClick={() => setIsSearchOpen(true)}
       />
 
       <div className={`transition-all duration-500 ${!isFullscreen ? 'pl-14' : 'pl-0'}`}>
@@ -726,6 +750,34 @@ export default function App() {
         theme={theme}
         onUpdateTheme={setTheme}
       />
+
+      {/* Global task search (⌘/Ctrl+K or the ribbon Search button) */}
+      {isSearchOpen && (
+        <SearchModal
+          entries={searchEntries}
+          todoById={todoById}
+          onSaveTodo={handleHubSaveTodo}
+          onToggleTodo={handleToggleTodo}
+          onOpenResult={(id) => { setSearchFullViewId(id); setIsSearchOpen(false); }}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      )}
+      <AnimatePresence>
+        {searchFullTodo && (
+          <TodoFullView
+            key={searchFullTodo.id}
+            todo={searchFullTodo}
+            date={searchFullTodo.dueDate || ''}
+            collectionOptions={hubCollectionOptions}
+            onCreateCollection={createCollection}
+            byId={todoById}
+            onClose={() => setSearchFullViewId(null)}
+            onSave={(updated, newDate) => handleHubSaveTodo({ ...updated, dueDate: newDate || undefined })}
+            onToggle={handleToggleTodo}
+            onDelete={(id) => { handleDeleteTodoById(id); setSearchFullViewId(null); }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Stopwatch Widget */}
       <AnimatePresence>

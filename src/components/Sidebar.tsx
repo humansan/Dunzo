@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks } from 'lucide-react';
+import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon-balanced.svg';
@@ -12,9 +12,10 @@ interface SidebarProps {
   onAccountClick: () => void;
   onStopwatchClick: () => void;
   isStopwatchActive: boolean;
+  onSearchClick: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVisible, isAuthenticated, onAccountClick, onStopwatchClick, isStopwatchActive }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVisible, isAuthenticated, onAccountClick, onStopwatchClick, isStopwatchActive, onSearchClick }) => {
   if (!isVisible) return null;
 
   const items = [
@@ -59,6 +60,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
       </div>
 
       <div className="flex flex-col gap-3">
+        <button
+          onClick={onSearchClick}
+          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+          title="Search tasks (⌘K)"
+        >
+          <Search size={18} strokeWidth={2.5} className="text-white/40 group-hover:text-white transition-colors" />
+        </button>
         <button
           onClick={onStopwatchClick}
           className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"

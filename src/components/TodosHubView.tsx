@@ -25,7 +25,6 @@ import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
 import { isDone } from '../utils/todoStatus';
 import { TaskTable } from './todosHub/TaskTable';
 import { VARIANTS } from './todosHub/variant';
-import { SearchModal } from './todosHub/SearchModal';
 import { ColumnsView } from './todosHub/ColumnsView';
 import { ColumnContext } from './todosHub/Column';
 import { FieldsMenu } from './todosHub/FieldsMenu';
@@ -331,8 +330,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const [deleteCollId, setDeleteCollId] = useState<string | null>(null);
   // Id of the collection whose Edit modal (name / color / parent) is open.
   const [editCollId, setEditCollId] = useState<string | null>(null);
-  // Command-palette search overlay (⌘/Ctrl+K or the toolbar Search button).
-  const [searchOpen, setSearchOpen] = useState(false);
   const [fullViewId, setFullViewId] = useState<string | null>(null);
   const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
@@ -475,11 +472,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        setSearchOpen((v) => !v);
-        return;
-      }
       if (e.key === 'Escape') {
         setEditing(null); setMenu(null); setColorPickerOpen(false);
         setSectionsMenu(null); setFieldsMenu(null); setFilterMenu(null); setSortMenu(null);
@@ -600,7 +592,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           sortCount={activeSorts.length}
           menuOpen={toolbarMenuOpen}
           onToggleMenu={onToggleMenu}
-          onOpenSearch={() => setSearchOpen(true)}
         />
 
         {/* Body — the Finder columns navigator, or the single shared table/list
@@ -791,18 +782,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           />
         )}
       </AnimatePresence>
-
-      {/* Command-palette search — a flat, name-only TaskTable over this workspace. */}
-      {searchOpen && (
-        <SearchModal
-          entries={entries}
-          todoById={todoById}
-          onSaveTodo={onSaveTodo}
-          onToggleTodo={handleToggleTodo}
-          onOpenResult={(id) => { setFullViewId(id); setSearchOpen(false); }}
-          onClose={() => setSearchOpen(false)}
-        />
-      )}
     </div>
   );
 };
