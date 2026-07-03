@@ -74,6 +74,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
           lastColKey={lastColKey}
           wrappedFields={wrappedFields}
           taskCount={node.entry.todo.isCollection ? (visibleTaskCounts.get(node.id) ?? 0) : undefined}
+          hideDragHandle={!dnd}
           isDragSource={dnd?.rowDragId === node.id}
           dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === node.id ? { pos: dnd.rowDrop.pos, depth: dnd.rowDrop.depth } : null}
           onRowDragStart={dnd?.onRowDragStart}
@@ -115,6 +116,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
             columns={effectiveColumns}
             lastColKey={lastColKey}
             wrappedFields={wrappedFields}
+            hideDragHandle={!dnd}
             isDragSource={dnd?.rowDragId === row.node.id}
             dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === row.node.id ? { pos: dnd.rowDrop.pos, depth: dnd.rowDrop.depth } : null}
             onRowDragStart={dnd?.onRowDragStart}
@@ -139,21 +141,24 @@ export const TableRows: React.FC<TableRowsProps> = ({
 
       {rows}
 
-      {/* Add row */}
-      <button
-        type="button"
-        onClick={onNewInView}
-        className={`flex w-full h-9 text-white/60 hover:text-white hover:bg-white/3 cursor-pointer transition-colors ${
-          variant.mode === 'table' ? 'border-b border-white/8 bg-[#0a0a0a]' : 'border-b border-white/5'
-        }`}
-      >
-        <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
-          <Plus size={15} />
-          <span>New</span>
-        </div>
-      </button>
+      {/* Add row — editable surfaces only. A read-only surface (search) omits
+          onNewInView, dropping both the add-row and its collection empty state. */}
+      {onNewInView && (
+        <button
+          type="button"
+          onClick={onNewInView}
+          className={`flex w-full h-9 text-white/60 hover:text-white hover:bg-white/3 cursor-pointer transition-colors ${
+            variant.mode === 'table' ? 'border-b border-white/8 bg-[#0a0a0a]' : 'border-b border-white/5'
+          }`}
+        >
+          <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
+            <Plus size={15} />
+            <span>New</span>
+          </div>
+        </button>
+      )}
 
-      {isEmpty && (
+      {onNewInView && isEmpty && (
         <div className="px-3 py-6 text-xs text-white/60">
           {selectedCollectionId
             ? 'No tasks in this collection yet. Click “New” to add one.'

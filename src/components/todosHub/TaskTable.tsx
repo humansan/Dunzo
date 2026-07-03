@@ -53,7 +53,8 @@ export interface TableRowHandlers {
   onAddSubtask: (parentId: string) => string;
   onQuickAddTask: (parentId: string) => void;
   onQuickAddInGroup: (groupValue: string) => void;
-  onNewInView: () => void;
+  // Omit on read-only surfaces (search) to drop the add-row + its empty state.
+  onNewInView?: () => void;
 }
 
 export interface TaskTableProps {
