@@ -47,6 +47,12 @@ interface HubRowProps {
   taskCount?: number;
   // Quick-add a task under a collection: auto-expands and enters edit mode.
   onQuickAddTask?: (parentId: string) => void;
+  // ── Finder-columns drill (columns view only) ────────────────────────────────
+  // When set, a collection row "opens" (drills into a new column) on click via
+  // onActivate instead of collapsing inline, showing a › affordance; isSelected
+  // marks the row whose column is currently open. Undefined elsewhere.
+  onActivate?: (id: string) => void;
+  isSelected?: boolean;
   // ── Native drag & drop (sidebar-style: indicator only, nothing shifts) ──────
   isDragSource?: boolean;          // this row is the one being dragged (dim it)
   dropIndicator?: DropIndicator;   // where the drop will land, drawn on this row
@@ -76,6 +82,8 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   hideDragHandle = false,
   taskCount,
   onQuickAddTask,
+  onActivate,
+  isSelected = false,
   isDragSource = false,
   dropIndicator = null,
   onRowDragStart,
@@ -187,13 +195,19 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // bits — inline-rename pill, drag handle, options + add buttons — passed in.
   if (todo.isCollection) {
     const color = todo.color || DEFAULT_COLLECTION_COLOR;
+    // Columns view: the header opens a child column on click (drill) rather than
+    // inline-renaming, so the rename pill/editor is swapped for the drill wiring
+    // (rename stays available via the ⋯ menu → Edit collection).
+    const drill = !!onActivate;
     return (
       <SectionHeader
         gridTemplateColumns={gridTemplateColumns}
         color={color}
         label={todo.text || 'Untitled collection'}
-        onPillClick={(e) => startEdit(todo.id, 'title', e)}
-        pillOverride={isEditing('title') ? (
+        onActivate={drill ? () => onActivate!(todo.id) : undefined}
+        isSelected={isSelected}
+        onPillClick={drill ? undefined : (e) => startEdit(todo.id, 'title', e)}
+        pillOverride={!drill && isEditing('title') ? (
           <input
             type="text"
             autoFocus

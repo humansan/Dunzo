@@ -218,6 +218,26 @@ export function useHubData(params: {
     };
   }, [activeSorts, todoById]);
 
+  // Finder-columns slice: the direct children of every node (task or collection),
+  // grouped by effective parentId over the whole workspace tree filtered by the
+  // active filters (collections are structural, never filtered). Ordering is left
+  // to buildFlatModel (via sortFn), so this only groups. ColumnsView drills level
+  // by level through childrenOf; a parentId pointing outside the workspace is a root.
+  const columnChildren = useMemo(() => {
+    const ids = new Set(entries.map((e) => e.todo.id));
+    const kept = activeFilters.length
+      ? entries.filter((e) => e.todo.isCollection || activeFilters.every((f) => matchesFilter(e, f, todoById)))
+      : entries;
+    const m = new Map<string | null, OrganizerEntry[]>();
+    for (const e of kept) {
+      const pid = e.todo.parentId && ids.has(e.todo.parentId) ? e.todo.parentId : null;
+      const arr = m.get(pid);
+      if (arr) arr.push(e); else m.set(pid, [e]);
+    }
+    return m;
+  }, [entries, activeFilters, todoById]);
+  const childrenOf = (id: string | null): OrganizerEntry[] => columnChildren.get(id) ?? [];
+
   // Visible (post-filter) task count per collection, used for the header chip counts.
   const visibleTaskCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -331,6 +351,7 @@ export function useHubData(params: {
     filteredEntries,
     processedEntries,
     sortFn,
+    childrenOf,
     visibleTaskCounts,
     groupedRows,
     flattened,

@@ -76,6 +76,12 @@ export interface TableInteraction {
   stopEdit: () => void;
   openMenu: (id: string, x: number, y: number) => void;
   toggleCollapse: (id: string) => void;
+  // Finder-columns drill: `onActivate` "opens" a collection row (a new column to
+  // its right) instead of collapsing its children inline; `selectedId` marks the
+  // row whose column is currently open, for the highlight. Both optional — only
+  // the columns view supplies them; every other surface leaves them undefined.
+  onActivate?: (id: string) => void;
+  selectedId?: string | null;
 }
 
 // Task mutations triggered from within a row or the add-row button.

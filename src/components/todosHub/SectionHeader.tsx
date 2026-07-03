@@ -34,6 +34,10 @@ export interface SectionHeaderProps {
   leading?: React.ReactNode;
   actions?: React.ReactNode;
   dropDecorations?: React.ReactNode;
+  // Finder-columns drill (columns view): the whole row opens a child column on
+  // click, showing a trailing › and, when `isSelected`, an open-row highlight.
+  onActivate?: () => void;
+  isSelected?: boolean;
   // Outer-row passthrough (drag source dimming, drag image, native DnD, context menu).
   isDragSource?: boolean;
   dragImageRef?: React.Ref<HTMLDivElement>;
@@ -57,6 +61,8 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   leading,
   actions,
   dropDecorations,
+  onActivate,
+  isSelected = false,
   isDragSource = false,
   dragImageRef,
   onContextMenu,
@@ -79,6 +85,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   return (
     <div
       style={{ gridTemplateColumns }}
+      onClick={onActivate}
       onContextMenu={onContextMenu}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -93,7 +100,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
           : mode === 'list'
             ? 'items-end min-h-12 pt-6 pb-2'
             : 'items-end min-h-12 pt-4'
-      } ${isDragSource ? 'opacity-50' : ''}`}
+      } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-white/[0.07]' : ''} ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}
       {/* Header group, pinned left so it stays visible on horizontal scroll.
@@ -125,6 +132,9 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         )}
 
         {actions}
+
+        {/* Drill affordance — pushed to the right edge; marks the row as openable. */}
+        {onActivate && <ChevronRight size={16} className="shrink-0 ml-auto mr-1 text-white/30" />}
       </div>
     </div>
   );
