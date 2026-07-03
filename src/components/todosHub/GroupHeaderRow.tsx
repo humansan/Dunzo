@@ -14,7 +14,6 @@ type GroupHeader = Extract<GroupRow, { type: 'header' }>;
 export const GroupHeaderRow: React.FC<{
   row: GroupHeader;
   gridTemplateColumns: string;
-  listView: boolean;
   onToggleCollapse: (id: string) => void;
   // Quick-add a task into this section, seeded with the section's attribute.
   // Receives the section's raw group value (e.g. a priority/status value, or a
@@ -25,11 +24,10 @@ export const GroupHeaderRow: React.FC<{
   isDropTarget?: boolean;
   onHeaderDragOver?: (e: React.DragEvent) => void;
   onHeaderDrop?: () => void;
-}> = ({ row, gridTemplateColumns, listView, onToggleCollapse, onAddTask, isDropTarget = false, onHeaderDragOver, onHeaderDrop }) => {
+}> = ({ row, gridTemplateColumns, onToggleCollapse, onAddTask, isDropTarget = false, onHeaderDragOver, onHeaderDrop }) => {
   const { id, value, label, color, count, isCollapsed } = row;
   return (
     <SectionHeader
-      listView={listView}
       gridTemplateColumns={gridTemplateColumns}
       color={color}
       label={label}

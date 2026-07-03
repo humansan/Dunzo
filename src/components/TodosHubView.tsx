@@ -23,7 +23,8 @@ import { HubSidebar } from './todosHub/HubSidebar';
 import { HubToolbar, ToolbarMenuKey } from './todosHub/HubToolbar';
 import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
 import { isDone } from '../utils/todoStatus';
-import { HubBody } from './todosHub/HubBody';
+import { TaskTable } from './todosHub/TaskTable';
+import { VARIANTS } from './todosHub/variant';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
 import { SortMenu } from './todosHub/SortMenu';
@@ -122,6 +123,9 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // Todoist-style single-column list. A global UI preference (like selectedView).
   const viewMode: 'table' | 'list' = layout.viewMode ?? 'table';
   const setViewMode = (m: 'table' | 'list') => patchLayout(() => ({ viewMode: m }));
+  // The persisted table/list toggle selects a view-variant descriptor; TaskTable
+  // and its rows read presentation off this instead of a `listView` boolean.
+  const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
 
   // Per-view layout + column widths (field order/visibility, filters, sorts,
   // section settings, resizable columns) — keyed by workspace + view.
@@ -180,6 +184,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     activeFilters,
     activeSorts,
     sectionsConfig,
+    showNesting: variant.showNesting,
   });
 
   // ── Toolbar menu anchor states ────────────────────────────────────────────────
@@ -475,16 +480,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // Table row drag-and-drop (reorder + nest in tree mode; reorder + cross-section
   // reassignment in attribute-grouped mode). Owns the table auto-scroll.
-  const {
-    tableScroll,
-    rowDragId,
-    rowDrop,
-    onRowDragStart,
-    onRowDragOver,
-    onHeaderDragOver,
-    onRowDrop,
-    resetDrag,
-  } = useRowDnD({
+  const dnd = useRowDnD({
     entries,
     processedEntries,
     flattened,
@@ -568,44 +564,37 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onToggleMenu={onToggleMenu}
         />
 
-        {/* Task table / list body — shared component, switched by viewMode. */}
-        <HubBody
-          listView={viewMode === 'list'}
-          tableScroll={tableScroll}
-          rowDragId={rowDragId}
-          rowDrop={rowDrop}
-          onRowDragStart={onRowDragStart}
-          onRowDragOver={onRowDragOver}
-          onHeaderDragOver={onHeaderDragOver}
-          onRowDrop={onRowDrop}
-          resetDrag={resetDrag}
-          visibleColumns={visibleColumns}
-          gridTemplateColumns={gridTemplateColumns}
-          startResize={startResize}
-          lastColKey={lastColKey}
-          wrappedFields={wrappedFields}
-          sectionsConfig={sectionsConfig}
-          flattened={flattened}
-          groupedRows={groupedRows}
-          collPathById={collPathById}
-          visibleTaskCounts={visibleTaskCounts}
-          selectedCollectionId={selectedCollectionId}
-          selectedView={selectedView}
-          viewLabel={viewLabel}
-          currentCount={currentCount}
-          todoById={todoById}
-          editing={editing}
-          startEdit={startEdit}
-          stopEdit={stopEdit}
-          onSaveTodo={onSaveTodo}
-          handleToggleTodo={handleToggleTodo}
-          onAddSubtask={onAddSubtask}
-          handleQuickAddTask={handleQuickAddTask}
-          handleQuickAddInGroup={handleQuickAddInGroup}
-          openMenu={openMenu}
-          collapsed={collapsed}
-          toggleCollapse={toggleCollapse}
-          handleNewInView={handleNewInView}
+        {/* Task table / list body — one shared surface, selected by the variant. */}
+        <TaskTable
+          variant={variant}
+          model={{
+            columns: visibleColumns,
+            gridTemplateColumns,
+            lastColKey,
+            wrappedFields,
+            startResize,
+            sectionsConfig,
+            flattened,
+            groupedRows,
+            collPathById,
+            visibleTaskCounts,
+            todoById,
+            collapsed,
+            selectedCollectionId,
+            selectedView,
+            viewLabel,
+            currentCount,
+          }}
+          interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
+          rowHandlers={{
+            onSaveTodo,
+            onToggleTodo: handleToggleTodo,
+            onAddSubtask,
+            onQuickAddTask: handleQuickAddTask,
+            onQuickAddInGroup: handleQuickAddInGroup,
+            onNewInView: handleNewInView,
+          }}
+          dnd={dnd}
         />
       </div>
 
