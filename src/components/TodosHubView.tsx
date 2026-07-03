@@ -642,6 +642,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
               onNewInView: handleNewInView,
             }}
             dnd={dnd}
+            bottomSpacer
           />
         )}
       </div>

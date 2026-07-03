@@ -3,6 +3,7 @@ import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig, COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
 import { flattenTree } from './treeUtils';
+import { BOTTOM_SPACER } from './constants';
 import { useRowDnD } from './useRowDnD';
 import { TableVariant, TableVariantContext } from './variant';
 import { TableSurface } from './TableSurface';
@@ -102,6 +103,10 @@ export interface TaskTableProps {
   rowHandlers: TableRowHandlers;
   // Omit to render without drag-to-reorder (flat / column surfaces).
   dnd?: RowDnD;
+  // Opt in to the dead space below the last row (so a bottom row isn't flush to the
+  // edge and the context menu has room). The task-planner table/list/columns want
+  // it; compact surfaces like the search modal don't.
+  bottomSpacer?: boolean;
 }
 
 export const TaskTable: React.FC<TaskTableProps> = ({
@@ -110,6 +115,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   interaction,
   rowHandlers,
   dnd,
+  bottomSpacer = false,
 }) => {
   // A name-only variant collapses to the single Name column; the header, rows, and
   // width anchor all read these so they never disagree. minmax(0,1fr) lets the Name
@@ -137,6 +143,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
           effectiveColumns={effectiveColumns}
           effectiveGrid={effectiveGrid}
         />
+        {bottomSpacer && <div aria-hidden style={{ height: BOTTOM_SPACER }} />}
       </TableSurface>
     </TableVariantContext.Provider>
   );
