@@ -26,6 +26,8 @@ import { isDone } from '../utils/todoStatus';
 import { TaskTable } from './todosHub/TaskTable';
 import { VARIANTS } from './todosHub/variant';
 import { SearchModal } from './todosHub/SearchModal';
+import { ColumnsView } from './todosHub/ColumnsView';
+import { ColumnContext } from './todosHub/Column';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
 import { SortMenu } from './todosHub/SortMenu';
@@ -122,8 +124,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // Which view renders the data: the spreadsheet-style table (default) or the
   // Todoist-style single-column list. A global UI preference (like selectedView).
-  const viewMode: 'table' | 'list' = layout.viewMode ?? 'table';
-  const setViewMode = (m: 'table' | 'list') => patchLayout(() => ({ viewMode: m }));
+  const viewMode: 'table' | 'list' | 'columns' = layout.viewMode ?? 'table';
+  const setViewMode = (m: 'table' | 'list' | 'columns') => patchLayout(() => ({ viewMode: m }));
   // The persisted table/list toggle selects a view-variant descriptor; TaskTable
   // and its rows read presentation off this instead of a `listView` boolean.
   const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
@@ -166,6 +168,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     uniqueValues,
     processedEntries,
     sortFn,
+    childrenOf,
     visibleTaskCounts,
     groupedRows,
     flattened,
@@ -527,6 +530,33 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const saveFullTodo = (updated: Todo, newDate: string) =>
     onSaveTodo({ ...updated, dueDate: newDate || undefined });
 
+  // Add a task at a Finder column's level: parent it to that column's node, seed
+  // the active filters (so it stays visible), and drop into its title editor.
+  const addTaskInColumn = (parentId: string | null) => {
+    const id = onAddTodo({ parentId, patch: inheritedFilterPatch });
+    if (parentId) setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
+    setEditing({ id, col: 'title', rect: null });
+  };
+
+  // Shared data + handlers every Finder column needs (built once, forwarded down).
+  const columnCtx: ColumnContext = {
+    childrenOf,
+    byId,
+    todoById,
+    isDescendantOf,
+    sortFn,
+    onReorder,
+    onSaveTodo,
+    onToggleTodo: handleToggleTodo,
+    onAddSubtask,
+    onAddInColumn: addTaskInColumn,
+    editing,
+    startEdit,
+    stopEdit,
+    openMenu,
+    clearInteraction: () => { setEditing(null); setMenu(null); },
+  };
+
   return (
     <div className="h-full flex">
       {/* Left pane — full-height collection picker (resizable) */}
@@ -573,38 +603,47 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onOpenSearch={() => setSearchOpen(true)}
         />
 
-        {/* Task table / list body — one shared surface, selected by the variant. */}
-        <TaskTable
-          variant={variant}
-          model={{
-            columns: visibleColumns,
-            gridTemplateColumns,
-            lastColKey,
-            wrappedFields,
-            startResize,
-            sectionsConfig,
-            flattened,
-            groupedRows,
-            collPathById,
-            visibleTaskCounts,
-            todoById,
-            collapsed,
-            selectedCollectionId,
-            selectedView,
-            viewLabel,
-            currentCount,
-          }}
-          interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
-          rowHandlers={{
-            onSaveTodo,
-            onToggleTodo: handleToggleTodo,
-            onAddSubtask,
-            onQuickAddTask: handleQuickAddTask,
-            onQuickAddInGroup: handleQuickAddInGroup,
-            onNewInView: handleNewInView,
-          }}
-          dnd={dnd}
-        />
+        {/* Body — the Finder columns navigator, or the single shared table/list
+            surface selected by the variant. */}
+        {viewMode === 'columns' ? (
+          <ColumnsView
+            ctx={columnCtx}
+            rootId={selectedCollectionId}
+            labelFor={(nodeId) => (nodeId ? todoById.get(nodeId)?.text || 'Untitled' : viewLabel)}
+          />
+        ) : (
+          <TaskTable
+            variant={variant}
+            model={{
+              columns: visibleColumns,
+              gridTemplateColumns,
+              lastColKey,
+              wrappedFields,
+              startResize,
+              sectionsConfig,
+              flattened,
+              groupedRows,
+              collPathById,
+              visibleTaskCounts,
+              todoById,
+              collapsed,
+              selectedCollectionId,
+              selectedView,
+              viewLabel,
+              currentCount,
+            }}
+            interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
+            rowHandlers={{
+              onSaveTodo,
+              onToggleTodo: handleToggleTodo,
+              onAddSubtask,
+              onQuickAddTask: handleQuickAddTask,
+              onQuickAddInGroup: handleQuickAddInGroup,
+              onNewInView: handleNewInView,
+            }}
+            dnd={dnd}
+          />
+        )}
       </div>
 
       {/* Sections menu — view-level settings */}

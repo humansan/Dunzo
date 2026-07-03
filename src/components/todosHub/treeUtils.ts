@@ -35,6 +35,9 @@ export function flattenTree(
   };
 
   // Flat mode: one sorted pass, no tree walk, no collapse — every node at depth 0.
+  // Nodes are presented as a parentless root list (parentId null): a flat surface
+  // shows no hierarchy, and a Finder column reorders its slice as one sibling group
+  // re-anchored to the column's own parent on commit.
   if (opts.flat) {
     return entries
       .filter((e) => e.todo.id !== opts.excludeId)
@@ -42,7 +45,7 @@ export function flattenTree(
       .sort(cmp)
       .map((e) => ({
         id: e.todo.id,
-        parentId: e.todo.parentId ?? null,
+        parentId: null,
         depth: 0,
         entry: e,
         hasChildren: false,
