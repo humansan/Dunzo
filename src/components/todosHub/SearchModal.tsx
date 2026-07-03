@@ -3,10 +3,8 @@ import { createPortal } from 'react-dom';
 import { Search, X } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
-import { COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
-import { flattenTree } from './treeUtils';
 import { VARIANTS } from './variant';
-import { TaskTable, TableModel, TableInteraction, TableRowHandlers } from './TaskTable';
+import { TaskTable, TableInteraction, TableRowHandlers, buildFlatModel } from './TaskTable';
 
 // A command-palette search over the active workspace's tasks — the first live use
 // of a flat, name-only, chrome-less `search` variant of the shared TaskTable. It
@@ -41,26 +39,7 @@ export const SearchModal: React.FC<{
     return out;
   }, [entries, q]);
 
-  const flattened = useMemo(() => flattenTree(matches, { flat: true }), [matches]);
-
-  const model = useMemo<TableModel>(() => ({
-    columns: COLUMNS,
-    gridTemplateColumns: '',
-    lastColKey: 'title',
-    wrappedFields: new Set(),
-    startResize: NOOP,
-    sectionsConfig: DEFAULT_SECTIONS_CONFIG,
-    flattened,
-    groupedRows: [],
-    collPathById: new Map(),
-    visibleTaskCounts: new Map(),
-    todoById,
-    collapsed: new Set(),
-    selectedCollectionId: null,
-    selectedView: 'all',
-    viewLabel: '',
-    currentCount: matches.length,
-  }), [flattened, matches.length, todoById]);
+  const model = useMemo(() => buildFlatModel(matches, todoById), [matches, todoById]);
 
   // Clicking a result's title opens its full view (startEdit is repurposed as the
   // row's open action — a name-only surface has no other clickable cell).
