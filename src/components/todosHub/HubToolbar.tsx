@@ -10,7 +10,6 @@ import {
   Columns2,
   Filter,
   ArrowUpDown,
-  Search,
 } from 'lucide-react';
 import { Todo } from '../../types';
 import { collectionPath } from '../../utils/todoFilters';
@@ -35,7 +34,6 @@ export const HubToolbar: React.FC<{
   sortCount: number;
   menuOpen: Record<ToolbarMenuKey, boolean>;
   onToggleMenu: (which: ToolbarMenuKey, e: React.MouseEvent) => void;
-  onOpenSearch: () => void;
 }> = ({
   sidebarHidden,
   onToggleSidebar,
@@ -49,7 +47,6 @@ export const HubToolbar: React.FC<{
   sortCount,
   menuOpen,
   onToggleMenu,
-  onOpenSearch,
 }) => {
   const actions: { key: ToolbarMenuKey; label: string; icon: React.ElementType; count?: number }[] = [
     { key: 'sections', label: 'Sections', icon: Group },
@@ -119,16 +116,8 @@ export const HubToolbar: React.FC<{
           })}
         </div>
 
-        {/* Right-side actions — Search / Sections / Fields / Filter / Sort */}
+        {/* Right-side actions — Sections / Fields / Filter / Sort */}
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            title="Search tasks (⌘K)"
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-          >
-            <Search size={14} /> Search
-          </button>
           {actions.map(({ key, label, icon: Icon, count }) => (
             <button
               key={key}

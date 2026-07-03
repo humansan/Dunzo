@@ -90,6 +90,6 @@ export const Column: React.FC<{
   };
 
   return (
-    <TaskTable variant={VARIANTS.column} model={model} interaction={interaction} rowHandlers={rowHandlers} dnd={dnd} />
+    <TaskTable variant={VARIANTS.column} model={model} interaction={interaction} rowHandlers={rowHandlers} dnd={dnd} bottomSpacer />
   );
 };

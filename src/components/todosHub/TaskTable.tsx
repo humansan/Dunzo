@@ -3,6 +3,7 @@ import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig, COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
 import { flattenTree } from './treeUtils';
+import { BOTTOM_SPACER } from './constants';
 import { useRowDnD } from './useRowDnD';
 import { TableVariant, TableVariantContext } from './variant';
 import { TableSurface } from './TableSurface';
@@ -39,15 +40,13 @@ export interface TableModel {
   currentCount: number;
 }
 
-// Assemble a flat (single-level, name-only) TableModel from a plain entry slice —
-// the shared basis for every chrome-less surface (the search results and each
-// Finder column). It flattens the slice with no nesting/collapse and leaves the
-// column-layout fields at their name-only defaults; `sortFn` orders the rows
-// (omitted → hub order). Callers memoize on their own inputs.
-export function buildFlatModel(
-  entries: OrganizerEntry[],
+// The name-only, chrome-less TableModel every flat/nesting surface shares (search
+// results + each Finder column): the layout fields sit at their name-only defaults
+// and the caller supplies the already-flattened rows + collapse set.
+function nameOnlyModel(
+  flattened: FlatNode[],
   todoById: Map<string, Todo>,
-  opts: { sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number } = {}
+  collapsed: Set<string>
 ): TableModel {
   return {
     columns: COLUMNS,
@@ -56,17 +55,41 @@ export function buildFlatModel(
     wrappedFields: new Set(),
     startResize: () => {},
     sectionsConfig: DEFAULT_SECTIONS_CONFIG,
-    flattened: flattenTree(entries, { flat: true, sortFn: opts.sortFn }),
+    flattened,
     groupedRows: [],
     collPathById: new Map(),
     visibleTaskCounts: new Map(),
     todoById,
-    collapsed: new Set(),
+    collapsed,
     selectedCollectionId: null,
     selectedView: 'all',
     viewLabel: '',
-    currentCount: entries.length,
+    currentCount: flattened.length,
   };
+}
+
+// A flat (single-level) name-only model — a Finder column's one sibling level.
+// `sortFn` orders the rows (omitted → hub order). Callers memoize on their inputs.
+export function buildFlatModel(
+  entries: OrganizerEntry[],
+  todoById: Map<string, Todo>,
+  opts: { sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number } = {}
+): TableModel {
+  return nameOnlyModel(flattenTree(entries, { flat: true, sortFn: opts.sortFn }), todoById, new Set());
+}
+
+// A nesting name-only model (search results): the entries as a collapsible tree.
+// `collapsed` hides subtrees and rides on the model so rows read their toggle state.
+export function buildTreeModel(
+  entries: OrganizerEntry[],
+  todoById: Map<string, Todo>,
+  opts: { sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number; collapsed: Set<string> }
+): TableModel {
+  return nameOnlyModel(
+    flattenTree(entries, { collapsed: opts.collapsed, sortFn: opts.sortFn }),
+    todoById,
+    opts.collapsed
+  );
 }
 
 // Editing / menu / collapse state + the callbacks that change it.
@@ -102,6 +125,10 @@ export interface TaskTableProps {
   rowHandlers: TableRowHandlers;
   // Omit to render without drag-to-reorder (flat / column surfaces).
   dnd?: RowDnD;
+  // Opt in to the dead space below the last row (so a bottom row isn't flush to the
+  // edge and the context menu has room). The task-planner table/list/columns want
+  // it; compact surfaces like the search modal don't.
+  bottomSpacer?: boolean;
 }
 
 export const TaskTable: React.FC<TaskTableProps> = ({
@@ -110,6 +137,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
   interaction,
   rowHandlers,
   dnd,
+  bottomSpacer = false,
 }) => {
   // A name-only variant collapses to the single Name column; the header, rows, and
   // width anchor all read these so they never disagree. minmax(0,1fr) lets the Name
@@ -137,6 +165,7 @@ export const TaskTable: React.FC<TaskTableProps> = ({
           effectiveColumns={effectiveColumns}
           effectiveGrid={effectiveGrid}
         />
+        {bottomSpacer && <div aria-hidden style={{ height: BOTTOM_SPACER }} />}
       </TableSurface>
     </TableVariantContext.Provider>
   );

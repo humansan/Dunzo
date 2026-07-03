@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import { HubRow } from './HubRow';
 import { GroupHeaderRow } from './GroupHeaderRow';
 import { ColDef } from './types';
-import { BOTTOM_SPACER } from './constants';
 import { TableVariant } from './variant';
 import { RowDnD, TableModel, TableInteraction, TableRowHandlers } from './TaskTable';
 
@@ -171,10 +170,6 @@ export const TableRows: React.FC<TableRowsProps> = ({
               : <>No todos in this collection. Click “+ New”.</>}
         </div>
       )}
-
-      {/* Bottom dead space so the last row isn't flush to the edge and the
-          right-click context menu has room to open fully below it. */}
-      <div aria-hidden style={{ height: BOTTOM_SPACER }} />
     </>
   );
 };
