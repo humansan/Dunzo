@@ -243,14 +243,28 @@ export function useHubData(params: {
   // Rendered rows for collection-grouped (default) mode. processedEntries respects
   // filters + hideEmptyCollections. leafPosition segregates tasks vs sub-collections.
   // The dragged row stays visible (dimmed), so nothing is excluded during a drag.
-  // When hideSubcollections is on, sub-collection rows are dropped so flattenTree
-  // re-parents their orphaned tasks to the root — every descendant task surfaces
-  // flat (task→subtask nesting, whose parents are tasks, is preserved).
+  // When hideSubcollections is on we keep only the tasks sitting directly in the
+  // view's root collection — every nested sub-collection and everything inside it
+  // is dropped (task→subtask nesting, whose parents are tasks, is preserved).
+  //   • picked collection → keep tasks whose nearest collection ancestor is it.
+  //   • 'all' / 'uncategorized' → keep top-level collection headers, the tasks
+  //     directly under them, and uncategorized tasks; drop nested sub-collections.
   const flattened = useMemo(
     () => {
-      const treeEntries = sectionsConfig.hideSubcollections
-        ? processedEntries.filter((e) => !e.todo.isCollection)
-        : processedEntries;
+      let treeEntries = processedEntries;
+      if (sectionsConfig.hideSubcollections) {
+        treeEntries = processedEntries.filter((e) => {
+          const nearestColl = collectionOf(e.todo, todoById);
+          if (selectedCollectionId) {
+            return !e.todo.isCollection && nearestColl === selectedCollectionId;
+          }
+          if (e.todo.isCollection) return nearestColl === null; // top-level only
+          return (
+            nearestColl === null ||
+            collectionOf(todoById.get(nearestColl)!, todoById) === null
+          );
+        });
+      }
       return flattenTree(treeEntries, {
         // Flat variants ignore collapse state (nothing to expand/collapse).
         collapsed: showNesting ? collapsed : undefined,
@@ -259,7 +273,7 @@ export function useHubData(params: {
         flat: !showNesting,
       });
     },
-    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, sectionsConfig.hideSubcollections]
+    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, sectionsConfig.hideSubcollections, selectedCollectionId, todoById]
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 

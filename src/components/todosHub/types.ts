@@ -80,8 +80,9 @@ export interface SectionsConfig {
   showLeafTasks: 'top' | 'bottom' | 'none';
   // Hide collections that have no visible tasks in the current view.
   hideEmptyCollections: boolean;
-  // Hide sub-collection header rows so the collection-tree view shows only its
-  // leaf tasks (every descendant task surfaces flat, regardless of nesting).
+  // Show only the tasks that sit directly in the current view's root collection:
+  // nested sub-collections and every task inside them are dropped (task→subtask
+  // nesting under a kept task is preserved).
   hideSubcollections: boolean;
   // Which field drives the section headers. 'collection' = default tree mode.
   groupBy: ColKey;
