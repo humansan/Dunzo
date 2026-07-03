@@ -40,15 +40,13 @@ export interface TableModel {
   currentCount: number;
 }
 
-// Assemble a flat (single-level, name-only) TableModel from a plain entry slice —
-// the shared basis for every chrome-less surface (the search results and each
-// Finder column). It flattens the slice with no nesting/collapse and leaves the
-// column-layout fields at their name-only defaults; `sortFn` orders the rows
-// (omitted → hub order). Callers memoize on their own inputs.
-export function buildFlatModel(
-  entries: OrganizerEntry[],
+// The name-only, chrome-less TableModel every flat/nesting surface shares (search
+// results + each Finder column): the layout fields sit at their name-only defaults
+// and the caller supplies the already-flattened rows + collapse set.
+function nameOnlyModel(
+  flattened: FlatNode[],
   todoById: Map<string, Todo>,
-  opts: { sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number } = {}
+  collapsed: Set<string>
 ): TableModel {
   return {
     columns: COLUMNS,
@@ -57,17 +55,41 @@ export function buildFlatModel(
     wrappedFields: new Set(),
     startResize: () => {},
     sectionsConfig: DEFAULT_SECTIONS_CONFIG,
-    flattened: flattenTree(entries, { flat: true, sortFn: opts.sortFn }),
+    flattened,
     groupedRows: [],
     collPathById: new Map(),
     visibleTaskCounts: new Map(),
     todoById,
-    collapsed: new Set(),
+    collapsed,
     selectedCollectionId: null,
     selectedView: 'all',
     viewLabel: '',
-    currentCount: entries.length,
+    currentCount: flattened.length,
   };
+}
+
+// A flat (single-level) name-only model — a Finder column's one sibling level.
+// `sortFn` orders the rows (omitted → hub order). Callers memoize on their inputs.
+export function buildFlatModel(
+  entries: OrganizerEntry[],
+  todoById: Map<string, Todo>,
+  opts: { sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number } = {}
+): TableModel {
+  return nameOnlyModel(flattenTree(entries, { flat: true, sortFn: opts.sortFn }), todoById, new Set());
+}
+
+// A nesting name-only model (search results): the entries as a collapsible tree.
+// `collapsed` hides subtrees and rides on the model so rows read their toggle state.
+export function buildTreeModel(
+  entries: OrganizerEntry[],
+  todoById: Map<string, Todo>,
+  opts: { sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number; collapsed: Set<string> }
+): TableModel {
+  return nameOnlyModel(
+    flattenTree(entries, { collapsed: opts.collapsed, sortFn: opts.sortFn }),
+    todoById,
+    opts.collapsed
+  );
 }
 
 // Editing / menu / collapse state + the callbacks that change it.

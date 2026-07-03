@@ -32,7 +32,8 @@ export const VARIANTS: Record<'table' | 'list' | 'column' | 'search', TableVaria
   table:  { mode: 'table',  showNesting: true,  columns: 'all',  chrome: 'header', dnd: true },
   list:   { mode: 'list',   showNesting: true,  columns: 'name', chrome: 'title',  dnd: true },
   column: { mode: 'column', showNesting: false, columns: 'name', chrome: 'none',   dnd: false },
-  search: { mode: 'column', showNesting: false, columns: 'name', chrome: 'none',   dnd: false },
+  // Search shows nesting so a matched task's subtasks can be expanded/collapsed.
+  search: { mode: 'column', showNesting: true,  columns: 'name', chrome: 'none',   dnd: false },
 };
 
 // Provided at each table surface by <TaskTable>, so nested rows/headers read the
