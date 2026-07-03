@@ -59,6 +59,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
       showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
       hideEmptyCollections: raw_sections.hideEmptyCollections ?? DEFAULT_SECTIONS_CONFIG.hideEmptyCollections,
+      hideSubcollections:   raw_sections.hideSubcollections   ?? DEFAULT_SECTIONS_CONFIG.hideSubcollections,
       groupBy:              raw_sections.groupBy              ?? DEFAULT_SECTIONS_CONFIG.groupBy,
       groupSortDirection:   raw_sections.groupSortDirection   ?? DEFAULT_SECTIONS_CONFIG.groupSortDirection,
     };
