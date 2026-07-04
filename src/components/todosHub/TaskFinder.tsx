@@ -5,6 +5,7 @@ import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { VARIANTS } from './variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from './TaskTable';
+import { useTaskFinderSearch } from './useTaskFinderSearch';
 
 // A command-palette over the active workspace's tasks, driven by `onPick`: search
 // wires it to open a task's full view, a picker (e.g. reparent) wires it to its own
@@ -53,10 +54,13 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       return n;
     });
 
-  // Match tasks on title + notes (capped), then pull in each match's subtask subtree
-  // so a matched task keeps its children — the tree flatten renders them collapsibly.
+  // Which tasks match — VSCode-style fuzzy on the name + all-fields haystack (§hook).
+  const matches = useTaskFinderSearch(entries, todoById, query, RESULT_LIMIT);
+
+  // Pull in each match's subtask subtree so a matched task keeps its children — the
+  // tree flatten renders them collapsibly (interim list; Phase 5 replaces this).
   const entrySet = useMemo(() => {
-    if (!q) return [];
+    if (matches.length === 0) return [];
     const childrenByParent = new Map<string, OrganizerEntry[]>();
     for (const e of entries) {
       if (e.todo.isCollection) continue;
@@ -69,16 +73,9 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       set.set(e.todo.id, e);
       for (const c of childrenByParent.get(e.todo.id) ?? []) addSubtree(c);
     };
-    let n = 0;
-    for (const e of entries) {
-      if (e.todo.isCollection) continue;
-      if ((e.todo.text ?? '').toLowerCase().includes(q) || (e.todo.notes ?? '').toLowerCase().includes(q)) {
-        addSubtree(e);
-        if (++n >= RESULT_LIMIT) break;
-      }
-    }
+    for (const e of matches) addSubtree(e);
     return [...set.values()];
-  }, [entries, q]);
+  }, [matches, entries]);
 
   const model = useMemo(() => buildTreeModel(entrySet, todoById, { collapsed }), [entrySet, todoById, collapsed]);
 
