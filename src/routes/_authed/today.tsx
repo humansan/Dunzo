@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { TodoView } from '../../components/TodoView';
+import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
 
 export const Route = createFileRoute('/_authed/today')({
   component: TodayRoute,
+  errorComponent: ViewErrorFallback,
 });
 
 function TodayRoute() {

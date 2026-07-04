@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Clock, LayoutGrid, List, Maximize2 } from 'lucide-react';
 import { TrackerCard } from '../../components/TrackerCard';
 import { ActiveTodoTracker } from '../../components/ActiveTodoTracker';
+import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
 
 export const Route = createFileRoute('/_authed/trackers')({
   component: TrackersRoute,
+  errorComponent: ViewErrorFallback,
 });
 
 function TrackersRoute() {

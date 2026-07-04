@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { TodosHubView } from '../../components/TodosHubView';
+import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
 
 export const Route = createFileRoute('/_authed/planner')({
   component: PlannerRoute,
+  errorComponent: ViewErrorFallback,
 });
 
 function PlannerRoute() {

@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { StatsView } from '../../components/StatsView';
+import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
 
 export const Route = createFileRoute('/_authed/stats')({
   component: StatsRoute,
+  errorComponent: ViewErrorFallback,
 });
 
 function StatsRoute() {

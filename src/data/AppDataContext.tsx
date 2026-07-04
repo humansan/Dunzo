@@ -447,20 +447,11 @@ function useProvideAppData() {
     setIsAccountModalOpen(false);
   };
 
-  const retryData = () => {
-    todosQuery.refetch();
-    trackersQuery.refetch();
-    workspacesQuery.refetch();
-  };
-
   return {
-    // session + gates
+    // session + gates (data pending/error is owned by the _authed route loader now)
     authSession,
     sessionPending,
     isAuthenticated,
-    isDataError: todosQuery.isError || trackersQuery.isError || workspacesQuery.isError,
-    isDataLoading: todosQuery.isLoading || workspacesQuery.isLoading || settingsQuery.isLoading,
-    retryData,
     // data
     todos,
     trackers,

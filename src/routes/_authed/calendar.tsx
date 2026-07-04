@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { CalendarView } from '../../components/CalendarView';
+import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
 
 export const Route = createFileRoute('/_authed/calendar')({
   component: CalendarRoute,
+  errorComponent: ViewErrorFallback,
 });
 
 function CalendarRoute() {

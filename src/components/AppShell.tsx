@@ -1,26 +1,16 @@
 import { useEffect } from 'react';
 import { Outlet, useRouter, useRouterState } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { LoaderCircle, Minimize2 } from 'lucide-react';
-import appLogo from '../assets/icon-invert2.png';
+import { Minimize2 } from 'lucide-react';
 import { AddTrackerModal } from './AddTrackerModal';
 import { AccountModal } from './AccountModal';
+import { LoadingScreen } from './LoadingScreen';
 import { Sidebar } from './Sidebar';
 import { StopwatchWidget } from './StopwatchWidget';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
 import { TaskFinder } from './todosHub/TaskFinder';
 import { TodoFullView } from './TodoFullView';
 import { useAppData } from '../data/AppDataContext';
-
-// Full-screen loading state: app logo, a continuously spinning loader, and a
-// short status message. Shared by the auth/data gates below.
-export const LoadingScreen: React.FC<{ message: string }> = ({ message }) => (
-  <div className="h-screen flex flex-col items-center justify-center gap-5 bg-neutral-950 text-white/40 text-sm">
-    <img src={appLogo} alt="" className="w-16 h-16" />
-    <LoaderCircle className="w-6 h-6 animate-spin text-white/60" />
-    <p>{message}</p>
-  </div>
-);
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
 // once and only the routed <Outlet/> changes, so sibling views never remount. Also
@@ -29,9 +19,6 @@ export const AppShell: React.FC = () => {
   const {
     sessionPending,
     isAuthenticated,
-    isDataError,
-    isDataLoading,
-    retryData,
     isFullscreen, setIsFullscreen,
     isStopwatchVisible, setIsStopwatchVisible,
     isStopwatchFullscreen, setIsStopwatchFullscreen,
@@ -85,23 +72,8 @@ export const AppShell: React.FC = () => {
   if (!isAuthenticated) {
     return <LoadingScreen message="Loading…" />;
   }
-  // ── Data gates (Step 3 converts these to route loader + pending/error). ───────
-  if (isDataError) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center gap-4 bg-neutral-950 text-white/60 text-sm">
-        <p>Couldn’t load your data.</p>
-        <button
-          onClick={retryData}
-          className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-  if (isDataLoading) {
-    return <LoadingScreen message="Loading your workspace…" />;
-  }
+  // Data pending/error is owned by the `_authed` route loader now
+  // (pendingComponent / errorComponent) — no render-time data gate here.
 
   // /today, /planner and /calendar are full-height scroll-locked surfaces; the rest
   // (/trackers, /stats) scroll the page. Derived from the route (was `activeView`).
