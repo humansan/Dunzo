@@ -236,7 +236,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   // 5. Chart Data Prep
   const chartData = useMemo(() => {
     const today = new Date();
-    const list = [];
+    const list: { name: string; xp: number; fullDate: string; tasks: number }[] = [];
 
     switch (chartInterval) {
       case 'day': {

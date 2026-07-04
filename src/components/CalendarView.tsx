@@ -57,7 +57,7 @@ function formatDuration(startMin: number, endMin: number): string {
   const hours = Math.floor(duration / 60);
   const mins = duration % 60;
 
-  const parts = [];
+  const parts: string[] = [];
   if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
   if (mins > 0) parts.push(`${mins} ${mins === 1 ? 'minute' : 'minutes'}`);
 
