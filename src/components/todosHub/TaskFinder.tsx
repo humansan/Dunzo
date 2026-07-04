@@ -6,23 +6,43 @@ import { OrganizerEntry } from '../../utils/todoFilters';
 import { VARIANTS } from './variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from './TaskTable';
 
-// A command-palette search over the active workspace's tasks — a nesting, name-only,
-// chrome-less `search` variant of the shared TaskTable. It matches tasks (never
-// collections) by title + notes, then includes each match's subtask subtree so the
-// results keep their hierarchy (expand/collapse), rendering through the same HubRow
-// stack as every other view. Clicking a result's title opens its full view; there
-// is no add-row (read-only surface).
+// A command-palette over the active workspace's tasks, driven by `onPick`: search
+// wires it to open a task's full view, a picker (e.g. reparent) wires it to its own
+// action. It matches tasks (never collections) by title + notes, pulls in each
+// match's subtask subtree so results keep their hierarchy (expand/collapse), and
+// renders them through the nesting, name-only, chrome-less `search` variant of the
+// shared TaskTable. There is no add-row (read-only surface).
+//
+// Phase 1: the flat result list is the existing search list; fuzzy/all-fields search
+// (Phase 2), the two-pane view (Phase 3), and the polished ranked list (Phase 5)
+// build on this shell.
 const RESULT_LIMIT = 50;
 const NOOP = () => {};
 
-export const SearchModal: React.FC<{
+export interface TaskFinderProps {
   entries: OrganizerEntry[];
   todoById: Map<string, Todo>;
+  // Choosing a task: search opens its full view; a picker returns it to the caller.
+  onPick: (id: string) => void;
+  onClose: () => void;
+  // Row mutations still available from the results (checkbox toggle / inline rename).
   onSaveTodo: (updatedTodo: Todo) => void;
   onToggleTodo: (id: string) => void;
-  onOpenResult: (id: string) => void;
-  onClose: () => void;
-}> = ({ entries, todoById, onSaveTodo, onToggleTodo, onOpenResult, onClose }) => {
+  // Optional chrome — a picker sets a heading ("Move to…") and its own placeholder.
+  title?: string;
+  placeholder?: string;
+}
+
+export const TaskFinder: React.FC<TaskFinderProps> = ({
+  entries,
+  todoById,
+  onPick,
+  onClose,
+  onSaveTodo,
+  onToggleTodo,
+  title,
+  placeholder = 'Search tasks…',
+}) => {
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -62,15 +82,15 @@ export const SearchModal: React.FC<{
 
   const model = useMemo(() => buildTreeModel(entrySet, todoById, { collapsed }), [entrySet, todoById, collapsed]);
 
-  // Clicking a result's title opens its full view (startEdit is repurposed as the
-  // row's open action); the expand/collapse chevron uses toggleCollapse.
+  // Clicking a result's title fires onPick (startEdit is repurposed as the row's
+  // choose action); the expand/collapse chevron uses toggleCollapse.
   const interaction = useMemo<TableInteraction>(() => ({
     editing: null,
-    startEdit: (id) => onOpenResult(id),
+    startEdit: (id) => onPick(id),
     stopEdit: NOOP,
     openMenu: NOOP,
     toggleCollapse,
-  }), [onOpenResult]);
+  }), [onPick]);
 
   const rowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
@@ -96,6 +116,11 @@ export const SearchModal: React.FC<{
         className="w-full max-w-xl max-h-[65vh] flex flex-col rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl overflow-hidden"
         onMouseDown={(e) => e.stopPropagation()}
       >
+        {title && (
+          <div className="shrink-0 px-3 pt-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/35">
+            {title}
+          </div>
+        )}
         {/* Search field */}
         <div className="shrink-0 flex items-center gap-2 px-3 h-12 border-b border-white/10">
           <Search size={16} className="text-white/40" />
@@ -103,7 +128,7 @@ export const SearchModal: React.FC<{
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search tasks…"
+            placeholder={placeholder}
             className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
           />
           <button

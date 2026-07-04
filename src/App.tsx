@@ -11,7 +11,7 @@ import { Sidebar } from './components/Sidebar';
 import { TodoView } from './components/TodoView';
 import { TodosHubView } from './components/TodosHubView';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from './utils/todoFilters';
-import { SearchModal } from './components/todosHub/SearchModal';
+import { TaskFinder } from './components/todosHub/TaskFinder';
 import { TodoFullView } from './components/TodoFullView';
 import { toggledStatus } from './utils/todoStatus';
 import { CalendarView } from './components/CalendarView';
@@ -753,12 +753,12 @@ export default function App() {
 
       {/* Global task search (⌘/Ctrl+K or the ribbon Search button) */}
       {isSearchOpen && (
-        <SearchModal
+        <TaskFinder
           entries={searchEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
           onToggleTodo={handleToggleTodo}
-          onOpenResult={(id) => { setSearchFullViewId(id); setIsSearchOpen(false); }}
+          onPick={(id) => { setSearchFullViewId(id); setIsSearchOpen(false); }}
           onClose={() => setIsSearchOpen(false)}
         />
       )}
