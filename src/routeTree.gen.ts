@@ -9,27 +9,173 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedTrackersRouteImport } from './routes/_authed/trackers'
+import { Route as AuthedTodayRouteImport } from './routes/_authed/today'
+import { Route as AuthedStatsRouteImport } from './routes/_authed/stats'
+import { Route as AuthedPlannerRouteImport } from './routes/_authed/planner'
+import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
 
-export interface FileRoutesByFullPath {}
-export interface FileRoutesByTo {}
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedIndexRoute = AuthedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTrackersRoute = AuthedTrackersRouteImport.update({
+  id: '/trackers',
+  path: '/trackers',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTodayRoute = AuthedTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedStatsRoute = AuthedStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPlannerRoute = AuthedPlannerRouteImport.update({
+  id: '/planner',
+  path: '/planner',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => AuthedRoute,
+} as any)
+
+export interface FileRoutesByFullPath {
+  '/': typeof AuthedIndexRoute
+  '/calendar': typeof AuthedCalendarRoute
+  '/planner': typeof AuthedPlannerRoute
+  '/stats': typeof AuthedStatsRoute
+  '/today': typeof AuthedTodayRoute
+  '/trackers': typeof AuthedTrackersRoute
+}
+export interface FileRoutesByTo {
+  '/calendar': typeof AuthedCalendarRoute
+  '/planner': typeof AuthedPlannerRoute
+  '/stats': typeof AuthedStatsRoute
+  '/today': typeof AuthedTodayRoute
+  '/trackers': typeof AuthedTrackersRoute
+  '/': typeof AuthedIndexRoute
+}
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authed': typeof AuthedRouteWithChildren
+  '/_authed/calendar': typeof AuthedCalendarRoute
+  '/_authed/planner': typeof AuthedPlannerRoute
+  '/_authed/stats': typeof AuthedStatsRoute
+  '/_authed/today': typeof AuthedTodayRoute
+  '/_authed/trackers': typeof AuthedTrackersRoute
+  '/_authed/': typeof AuthedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: never
+  fullPaths: '/' | '/calendar' | '/planner' | '/stats' | '/today' | '/trackers'
   fileRoutesByTo: FileRoutesByTo
-  to: never
-  id: '__root__'
+  to: '/calendar' | '/planner' | '/stats' | '/today' | '/trackers' | '/'
+  id:
+    | '__root__'
+    | '/_authed'
+    | '/_authed/calendar'
+    | '/_authed/planner'
+    | '/_authed/stats'
+    | '/_authed/today'
+    | '/_authed/trackers'
+    | '/_authed/'
   fileRoutesById: FileRoutesById
 }
-export interface RootRouteChildren {}
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {}
+export interface RootRouteChildren {
+  AuthedRoute: typeof AuthedRouteWithChildren
 }
 
-const rootRouteChildren: RootRouteChildren = {}
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/': {
+      id: '/_authed/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/trackers': {
+      id: '/_authed/trackers'
+      path: '/trackers'
+      fullPath: '/trackers'
+      preLoaderRoute: typeof AuthedTrackersRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/today': {
+      id: '/_authed/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof AuthedTodayRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/stats': {
+      id: '/_authed/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof AuthedStatsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/planner': {
+      id: '/_authed/planner'
+      path: '/planner'
+      fullPath: '/planner'
+      preLoaderRoute: typeof AuthedPlannerRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/calendar': {
+      id: '/_authed/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AuthedCalendarRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+  }
+}
+
+interface AuthedRouteChildren {
+  AuthedCalendarRoute: typeof AuthedCalendarRoute
+  AuthedPlannerRoute: typeof AuthedPlannerRoute
+  AuthedStatsRoute: typeof AuthedStatsRoute
+  AuthedTodayRoute: typeof AuthedTodayRoute
+  AuthedTrackersRoute: typeof AuthedTrackersRoute
+  AuthedIndexRoute: typeof AuthedIndexRoute
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedCalendarRoute: AuthedCalendarRoute,
+  AuthedPlannerRoute: AuthedPlannerRoute,
+  AuthedStatsRoute: AuthedStatsRoute,
+  AuthedTodayRoute: AuthedTodayRoute,
+  AuthedTrackersRoute: AuthedTrackersRoute,
+  AuthedIndexRoute: AuthedIndexRoute,
+}
+
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthedRoute: AuthedRouteWithChildren,
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
