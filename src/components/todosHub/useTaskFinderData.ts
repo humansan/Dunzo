@@ -4,8 +4,7 @@ import { OrganizerEntry, collectionOf, collectionPath } from '../../utils/todoFi
 import { flattenTree } from './treeUtils';
 import { COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
 import { TableModel } from './TaskTable';
-
-export type FinderVisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: boolean };
+import { VisibleCollection } from './CollectionTree';
 
 // A collection breadcrumb (root→leaf) as the finder columns render it.
 const pathCells = (nearest: string | null, todoById: Map<string, Todo>) =>
@@ -53,7 +52,7 @@ export function useTaskFinderData(params: {
 
   // Sidebar tree — only collections that contain a match, grouped by parent and
   // walked in hub order, honoring the sidebar collapse set.
-  const visibleCollections = useMemo<FinderVisibleCollection[]>(() => {
+  const visibleCollections = useMemo<VisibleCollection[]>(() => {
     const colls = entries
       .filter((e) => e.todo.isCollection && withMatches.has(e.todo.id))
       .sort((a, b) => (a.todo.hubOrder ?? a.todo.createdAt) - (b.todo.hubOrder ?? b.todo.createdAt));
@@ -63,7 +62,7 @@ export function useTaskFinderData(params: {
       const pid = c.todo.parentId && ids.has(c.todo.parentId) ? c.todo.parentId : null;
       const arr = byParent.get(pid); if (arr) arr.push(c); else byParent.set(pid, [c]);
     }
-    const out: FinderVisibleCollection[] = [];
+    const out: VisibleCollection[] = [];
     const walk = (pid: string | null, depth: number) => {
       for (const c of byParent.get(pid) ?? []) {
         const kids = byParent.get(c.todo.id) ?? [];

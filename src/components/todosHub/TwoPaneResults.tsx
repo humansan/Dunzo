@@ -4,7 +4,7 @@ import { OrganizerEntry } from '../../utils/todoFilters';
 import { VARIANTS } from './variant';
 import { TaskTable, TableInteraction, TableRowHandlers } from './TaskTable';
 import { useTaskFinderData } from './useTaskFinderData';
-import { FinderCollectionList } from './FinderCollectionList';
+import { CollectionTree } from './CollectionTree';
 
 const NOOP = () => {};
 const toggleId = (set: (fn: (prev: Set<string>) => Set<string>) => void) => (id: string) =>
@@ -48,16 +48,18 @@ export const TwoPaneResults: React.FC<{
 
   return (
     <div className="flex-1 min-h-0 flex">
-      <FinderCollectionList
-        visibleCollections={visibleCollections}
-        selectedView={selectedView}
-        onSelectView={setSelectedView}
-        allCount={allCount}
-        uncategorizedCount={uncategorizedCount}
-        collectionCount={collectionCount}
-        collapsedColls={collapsedColls}
-        toggleCollColl={toggleId(setCollapsedColls)}
-      />
+      <div className="w-56 shrink-0 min-h-0 flex flex-col border-r border-white/10">
+        <CollectionTree
+          visibleCollections={visibleCollections}
+          selectedView={selectedView}
+          onSelectView={setSelectedView}
+          allCount={allCount}
+          uncategorizedCount={uncategorizedCount}
+          collectionCount={collectionCount}
+          collapsedColls={collapsedColls}
+          toggleCollColl={toggleId(setCollapsedColls)}
+        />
+      </div>
       <div className="flex-1 min-w-0 flex flex-col">
         {bodyModel.flattened.length === 0 ? (
           <div className="px-4 py-6 text-xs text-white/40">No matching tasks in this collection.</div>
