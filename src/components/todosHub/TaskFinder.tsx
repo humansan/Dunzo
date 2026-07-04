@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X } from 'lucide-react';
+import { Search, X, List, Columns2 } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
+import { useSyncedLayout } from '../../data/settings';
 import { VARIANTS } from './variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from './TaskTable';
 import { useTaskFinderSearch } from './useTaskFinderSearch';
+import { TwoPaneResults } from './TwoPaneResults';
 
 // A command-palette over the active workspace's tasks, driven by `onPick`: search
 // wires it to open a task's full view, a picker (e.g. reparent) wires it to its own
@@ -46,6 +48,10 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
+  // Flat / Two-pane result layout — one preference remembered across all finder uses.
+  const [layout, patchLayout] = useSyncedLayout();
+  const finderView = layout.finderView ?? 'flat';
+  const setFinderView = (v: 'flat' | 'twoPane') => patchLayout(() => ({ finderView: v }));
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const toggleCollapse = (id: string) =>
     setCollapsed((prev) => {
@@ -110,7 +116,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       onMouseDown={onClose}
     >
       <div
-        className="w-full max-w-xl max-h-[65vh] flex flex-col rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl overflow-hidden"
+        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-xl'} max-h-[70vh] flex flex-col rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl overflow-hidden`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {title && (
@@ -118,7 +124,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
             {title}
           </div>
         )}
-        {/* Search field */}
+        {/* Search field + Flat / Two-pane toggle */}
         <div className="shrink-0 flex items-center gap-2 px-3 h-12 border-b border-white/10">
           <Search size={16} className="text-white/40" />
           <input
@@ -128,6 +134,19 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
             placeholder={placeholder}
             className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
           />
+          <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-white/[0.04] p-0.5">
+            {([['flat', List, 'Flat list'], ['twoPane', Columns2, 'Collections']] as const).map(([v, Icon, label]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setFinderView(v)}
+                title={label}
+                className={`p-1 rounded-md transition-colors ${finderView === v ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+              >
+                <Icon size={15} />
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -137,12 +156,21 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           </button>
         </div>
 
-        {/* Results — nesting search-variant TaskTable, or a hint / empty message. */}
+        {/* Results — hint / empty message, else the Flat or Two-pane view. */}
         <div className="flex-1 min-h-0 flex flex-col">
           {!q ? (
             <div className="px-4 py-6 text-xs text-white/40">Type to search tasks by name or notes.</div>
-          ) : entrySet.length === 0 ? (
+          ) : matches.length === 0 ? (
             <div className="px-4 py-6 text-xs text-white/40">No tasks match “{query.trim()}”.</div>
+          ) : finderView === 'twoPane' ? (
+            <TwoPaneResults
+              entries={entries}
+              todoById={todoById}
+              matches={matches}
+              onPick={onPick}
+              onSaveTodo={onSaveTodo}
+              onToggleTodo={onToggleTodo}
+            />
           ) : (
             <TaskTable
               variant={VARIANTS.search}

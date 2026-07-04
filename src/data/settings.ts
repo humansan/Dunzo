@@ -19,6 +19,7 @@ import { stripNulls } from './normalize';
 export interface HubLayout {
   selectedView?: string;
   viewMode?: 'table' | 'list' | 'columns'; // table (default) / single-column list / Finder columns
+  finderView?: 'flat' | 'twoPane'; // Task Finder result layout (one pref across search/pickers)
   sidebarWidth?: number;
   sidebarHidden?: boolean;
   sidebarCollapsed?: string[]; // sidebar collection-tree collapse state
