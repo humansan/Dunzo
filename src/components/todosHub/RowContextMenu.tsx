@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Archive, Trash2, Maximize2, CornerDownRight, FolderPlus, Palette, Pencil } from 'lucide-react';
+import { Archive, Trash2, Maximize2, CornerDownRight, FolderPlus, Palette, Pencil, MoveRight } from 'lucide-react';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { COLLECTION_COLORS, DEFAULT_COLLECTION_COLOR } from './constants';
 
@@ -24,6 +24,7 @@ export const RowContextMenu: React.FC<{
   onCreateNestedCollection: (parentId: string) => void;
   onChangeColor: (entry: OrganizerEntry, color: string) => void;
   onMakeCollection: (entry: OrganizerEntry) => void;
+  onMoveTo: (id: string) => void;
   onExpand: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
@@ -40,6 +41,7 @@ export const RowContextMenu: React.FC<{
   onCreateNestedCollection,
   onChangeColor,
   onMakeCollection,
+  onMoveTo,
   onExpand,
   onArchive,
   onDelete,
@@ -96,6 +98,9 @@ export const RowContextMenu: React.FC<{
             </button>
             <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
               <CornerDownRight size={14} /> Create task inside
+            </button>
+            <button onClick={() => onMoveTo(menu.id)} className={itemCls}>
+              <MoveRight size={14} /> Move to…
             </button>
             <button onClick={() => entry && onMakeCollection(entry)} className={itemCls}>
               <FolderPlus size={14} /> Create collection

@@ -1,11 +1,8 @@
 import React from 'react';
-import { Box, Plus, Layers, Inbox, Shapes, ChevronRight, ChevronDown, FolderPlus } from 'lucide-react';
+import { Box, Plus, FolderPlus } from 'lucide-react';
 import { Workspace } from '../../types';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { DEFAULT_COLLECTION_COLOR, SIDEBAR_INDENT } from './constants';
 import { useCollectionDnD } from './useCollectionDnD';
-
-type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: boolean };
+import { CollectionTree, VisibleCollection } from './CollectionTree';
 
 // The hub's left pane: the Workspaces switcher (top) and the Collections tree
 // (All / Uncategorized pseudo-views + the nested, drag-reorderable collection
@@ -56,15 +53,6 @@ export const HubSidebar: React.FC<{
   onNewCollection,
   dnd,
 }) => {
-  const { sideScroll, dragCollId, setDragCollId, dropInfo, setDropInfo, onCollDragOver, onCollDrop } = dnd;
-
-  const sidebarItemCls = (view: string) =>
-    `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${
-      selectedView === view
-        ? 'bg-white/10 text-white font-medium'
-        : 'text-white/65 hover:bg-white/[0.05] hover:text-white'
-    }`;
-
   return (
     <aside
       style={{ width: sidebarWidth }}
@@ -123,94 +111,19 @@ export const HubSidebar: React.FC<{
         </button>
       </div>
 
-      {/* ── Collections section (bottom) ────────────────────────────────── */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {/* Fixed header: title + the two pseudo-views as separate rows */}
-        <div className="shrink-0 p-2 pb-1 space-y-0.5">
-          <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-white/30">
-            Collections
-          </div>
-          <button type="button" onClick={() => setSelectedView('all')} className={sidebarItemCls('all')} title="All Tasks">
-            <Layers size={15} className="shrink-0 text-white/45" />
-            <span className="flex-1 truncate">All Tasks</span>
-            <span className="text-xs text-white/35 font-mono mr-1.5">{allCount}</span>
-          </button>
-          <button type="button" onClick={() => setSelectedView('uncategorized')} className={sidebarItemCls('uncategorized')} title="Uncategorized">
-            <Inbox size={15} className="shrink-0 text-white/45" />
-            <span className="flex-1 truncate">Uncategorized</span>
-            <span className="text-xs text-white/35 font-mono mr-1.5">{uncategorizedCount}</span>
-          </button>
-        </div>
-
-        {/* Scrollable list of collections — nested tree, indented by depth.
-            The drop is handled here (not per-row) so releases that land in
-            the gap between rows still commit the current drop target. */}
-        <div
-          ref={sideScroll.ref}
-          className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full"
-          onDragOver={dragCollId ? sideScroll.onDragOver : undefined}
-          onDragEnter={dragCollId ? sideScroll.onDragEnter : undefined}
-          onDrop={(e) => { e.preventDefault(); onCollDrop(); }}
-        >
-          {visibleCollections.map(({ entry: c, depth, hasChildren }) => {
-            const color = c.todo.color || DEFAULT_COLLECTION_COLOR;
-            const indent = depth * SIDEBAR_INDENT;
-            const drop = dropInfo?.id === c.todo.id ? dropInfo.pos : null;
-            return (
-              <div
-                key={c.todo.id}
-                className="relative"
-                draggable
-                onDragStart={(e) => {
-                  setDragCollId(c.todo.id);
-                  e.dataTransfer.effectAllowed = 'move';
-                  e.dataTransfer.setData('text/plain', c.todo.id);
-                }}
-                onDragEnd={() => { setDragCollId(null); setDropInfo(null); sideScroll.stop(); }}
-                onDragOver={(e) => onCollDragOver(e, c.todo.id)}
-              >
-                {/* Reorder line — drawn at the target's indent level */}
-                {drop === 'before' && (
-                  <div className="pointer-events-none absolute -top-px left-0 right-1.5 z-10 h-0.5 rounded-full bg-[var(--accent2)]" style={{ marginLeft: 6 + indent }} />
-                )}
-                {drop === 'after' && (
-                  <div className="pointer-events-none absolute -bottom-px left-0 right-1.5 z-10 h-0.5 rounded-full bg-[var(--accent2)]" style={{ marginLeft: 6 + indent }} />
-                )}
-                <button
-                  type="button"
-                  onClick={() => setSelectedView(c.todo.id)}
-                  onContextMenu={(e) => { e.preventDefault(); openMenu(c.todo.id, e.clientX, e.clientY); }}
-                  style={{ paddingLeft: 6 + indent }}
-                  className={`${sidebarItemCls(c.todo.id)} ${dragCollId === c.todo.id ? 'opacity-40' : ''} ${
-                    drop === 'inside' ? 'ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/10' : ''
-                  }`}
-                  title={c.todo.text || 'Untitled collection'}
-                >
-                  <Shapes size={15} className="shrink-0" style={{ color }} />
-                  <span className="flex-1 truncate">{c.todo.text || 'Untitled collection'}</span>
-                  {/* Right slot: task count by default; on pane hover, collections
-                      with nested children swap it for an expand/collapse toggle. */}
-                  {hasChildren ? (
-                    <>
-                      <span className="text-xs text-white/35 group-hover/pane:hidden mr-1.5 font-mono">{collectionCount(c.todo.id)}</span>
-                      <span
-                        role="button"
-                        onClick={(e) => { e.stopPropagation(); toggleCollColl(c.todo.id); }}
-                        className="hidden shrink-0 -my-0.5 items-center justify-center rounded p-0.5 text-white/45 hover:text-white hover:bg-white/10 transition-colors group-hover/pane:flex"
-                        title={collapsedColls.has(c.todo.id) ? 'Expand' : 'Collapse'}
-                      >
-                        {collapsedColls.has(c.todo.id) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-xs text-white/35 font-mono mr-1.5">{collectionCount(c.todo.id)}</span>
-                  )}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* ── Collections section (bottom) — shared with the Task Finder ────── */}
+      <CollectionTree
+        selectedView={selectedView}
+        onSelectView={setSelectedView}
+        allCount={allCount}
+        uncategorizedCount={uncategorizedCount}
+        visibleCollections={visibleCollections}
+        collectionCount={collectionCount}
+        collapsedColls={collapsedColls}
+        toggleCollColl={toggleCollColl}
+        dnd={dnd}
+        onOpenMenu={openMenu}
+      />
 
       {/* New collection */}
       <button
