@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
-import { Outlet, useRouterState } from '@tanstack/react-router';
+import { Outlet, useRouter, useRouterState } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { LoaderCircle, Minimize2 } from 'lucide-react';
 import appLogo from '../assets/icon-invert2.png';
 import { AddTrackerModal } from './AddTrackerModal';
 import { AccountModal } from './AccountModal';
-import { AuthModal } from './AuthModal';
 import { Sidebar } from './Sidebar';
 import { StopwatchWidget } from './StopwatchWidget';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
@@ -69,19 +68,24 @@ export const AppShell: React.FC = () => {
     if (!isTrackers && isFullscreen) setIsFullscreen(false);
   }, [isTrackers, isFullscreen, setIsFullscreen]);
 
-  // ── Auth / data gates (unchanged from the old App; step 2 makes these a route
-  // boundary). ───────────────────────────────────────────────────────────────
-  if (sessionPending) {
+  // Auth is a route boundary now (`_authed` beforeLoad). A *confirmed* sign-out
+  // while inside the app — logout or a mid-session token expiry surfaced by the
+  // window-focus revalidation — routes back to /login. This replaces the old
+  // `!isAuthenticated → AuthModal` render gate that used to live here.
+  const router = useRouter();
+  useEffect(() => {
+    if (!sessionPending && !isAuthenticated) router.history.push('/login');
+  }, [sessionPending, isAuthenticated, router]);
+
+  // ── Auth bootstrap: the beforeLoad guard already proved a session, so this only
+  // shows a spinner while the in-component useSession() resolves on first mount;
+  // it never renders the login form (that lives on /login). Once authenticated,
+  // better-auth retains `data` across background revalidation, so this doesn't
+  // flash on refocus. ──────────────────────────────────────────────────────────
+  if (!isAuthenticated) {
     return <LoadingScreen message="Loading…" />;
   }
-  if (!isAuthenticated) {
-    // Forced sign-in gate (the screen renders its own full-screen background).
-    return (
-      <div className="h-screen bg-neutral-950">
-        <AuthModal isOpen onAuthenticated={() => {}} />
-      </div>
-    );
-  }
+  // ── Data gates (Step 3 converts these to route loader + pending/error). ───────
   if (isDataError) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4 bg-neutral-950 text-white/60 text-sm">

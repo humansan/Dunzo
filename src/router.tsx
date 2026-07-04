@@ -6,6 +6,10 @@ export const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
+  // The _authed/login beforeLoad guards await authClient.getSession(); a small
+  // pending threshold means a fast (client-cached) resolve never flashes a
+  // pending component during navigation.
+  defaultPendingMs: 200,
 });
 
 declare module '@tanstack/react-router' {

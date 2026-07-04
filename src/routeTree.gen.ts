@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedTrackersRouteImport } from './routes/_authed/trackers'
@@ -17,6 +18,11 @@ import { Route as AuthedStatsRouteImport } from './routes/_authed/stats'
 import { Route as AuthedPlannerRouteImport } from './routes/_authed/planner'
 import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -54,6 +60,7 @@ const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
+  '/login': typeof LoginRoute
   '/calendar': typeof AuthedCalendarRoute
   '/planner': typeof AuthedPlannerRoute
   '/stats': typeof AuthedStatsRoute
@@ -61,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/trackers': typeof AuthedTrackersRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/calendar': typeof AuthedCalendarRoute
   '/planner': typeof AuthedPlannerRoute
   '/stats': typeof AuthedStatsRoute
@@ -71,6 +79,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
+  '/login': typeof LoginRoute
   '/_authed/calendar': typeof AuthedCalendarRoute
   '/_authed/planner': typeof AuthedPlannerRoute
   '/_authed/stats': typeof AuthedStatsRoute
@@ -80,12 +89,27 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/calendar' | '/planner' | '/stats' | '/today' | '/trackers'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/calendar'
+    | '/planner'
+    | '/stats'
+    | '/today'
+    | '/trackers'
   fileRoutesByTo: FileRoutesByTo
-  to: '/calendar' | '/planner' | '/stats' | '/today' | '/trackers' | '/'
+  to:
+    | '/login'
+    | '/calendar'
+    | '/planner'
+    | '/stats'
+    | '/today'
+    | '/trackers'
+    | '/'
   id:
     | '__root__'
     | '/_authed'
+    | '/login'
     | '/_authed/calendar'
     | '/_authed/planner'
     | '/_authed/stats'
@@ -96,10 +120,18 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -175,6 +207,7 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
