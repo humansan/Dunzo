@@ -27,6 +27,7 @@ import { TaskTable } from './todosHub/TaskTable';
 import { VARIANTS } from './todosHub/variant';
 import { ColumnsView } from './todosHub/ColumnsView';
 import { ColumnContext } from './todosHub/Column';
+import { TaskFinder } from './todosHub/TaskFinder';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
 import { SortMenu } from './todosHub/SortMenu';
@@ -331,6 +332,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // Id of the collection whose Edit modal (name / color / parent) is open.
   const [editCollId, setEditCollId] = useState<string | null>(null);
   const [fullViewId, setFullViewId] = useState<string | null>(null);
+  // Task id being reparented via the "Move to…" picker (null = picker closed).
+  const [reparentId, setReparentId] = useState<string | null>(null);
   const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
 
@@ -549,6 +552,14 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     clearInteraction: () => { setEditing(null); setMenu(null); },
   };
 
+  // Reparent picker: the moved task + a stable "can't be a new parent" predicate
+  // (itself + its whole subtree, so the move can't create a cycle).
+  const reparentTarget = reparentId ? byId.get(reparentId)?.todo ?? null : null;
+  const reparentDisabled = useMemo(
+    () => (id: string) => id === reparentId || (byId.get(id) ? isDescendantOf(byId.get(id)!, reparentId!) : false),
+    [reparentId, byId] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   return (
     <div className="h-full flex">
       {/* Left pane — full-height collection picker (resizable) */}
@@ -722,6 +733,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onCreateNestedCollection={(id) => { handleNewNestedCollection(id); closeMenu(); }}
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
+          onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { setFullViewId(id); closeMenu(); }}
           onArchive={(id) => { onArchiveTodo(id); closeMenu(); }}
           onDelete={requestDeleteFromMenu}
@@ -782,6 +794,22 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           />
         )}
       </AnimatePresence>
+
+      {/* Reparent picker — pick a task to nest the target under, or move to top level. */}
+      {reparentTarget && (
+        <TaskFinder
+          entries={entries}
+          todoById={todoById}
+          onSaveTodo={onSaveTodo}
+          onToggleTodo={handleToggleTodo}
+          title={`Move “${reparentTarget.text || 'Untitled'}” to…`}
+          placeholder="Search for a task to nest under…"
+          isDisabled={reparentDisabled}
+          rootOption={{ label: 'Move to top level', onSelect: () => { onSaveTodo({ ...reparentTarget, parentId: null }); setReparentId(null); } }}
+          onPick={(newParentId) => { onSaveTodo({ ...reparentTarget, parentId: newParentId }); setReparentId(null); }}
+          onClose={() => setReparentId(null)}
+        />
+      )}
     </div>
   );
 };

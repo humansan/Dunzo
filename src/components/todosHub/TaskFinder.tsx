@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, List, Columns2 } from 'lucide-react';
+import { Search, X, List, Columns2, CornerUpLeft } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { useSyncedLayout } from '../../data/settings';
@@ -34,6 +34,10 @@ export interface TaskFinderProps {
   // Optional chrome — a picker sets a heading ("Move to…") and its own placeholder.
   title?: string;
   placeholder?: string;
+  // Picker: hide candidates that can't be chosen (reparent excludes self + subtree).
+  isDisabled?: (id: string) => boolean;
+  // Picker: a pinned choice above the results (reparent's "Move to top level").
+  rootOption?: { label: string; onSelect: () => void };
 }
 
 export const TaskFinder: React.FC<TaskFinderProps> = ({
@@ -45,6 +49,8 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   onToggleTodo,
   title,
   placeholder = 'Search tasks…',
+  isDisabled,
+  rootOption,
 }) => {
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
@@ -60,15 +66,24 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       return n;
     });
 
+  // A picker excludes candidates it can't accept — reparent → the moved task + its
+  // whole subtree (a cycle guard). Removing them from the candidate universe up front
+  // keeps them out of matches AND out of the subtree expansion below (an excluded
+  // task can be nested under a non-excluded match). Collections stay (structure).
+  const candidateEntries = useMemo(
+    () => (isDisabled ? entries.filter((e) => e.todo.isCollection || !isDisabled(e.todo.id)) : entries),
+    [entries, isDisabled]
+  );
+
   // Which tasks match — VSCode-style fuzzy on the name + all-fields haystack (§hook).
-  const matches = useTaskFinderSearch(entries, todoById, query, RESULT_LIMIT);
+  const matches = useTaskFinderSearch(candidateEntries, todoById, query, RESULT_LIMIT);
 
   // Pull in each match's subtask subtree so a matched task keeps its children — the
   // tree flatten renders them collapsibly (interim list; Phase 5 replaces this).
   const entrySet = useMemo(() => {
     if (matches.length === 0) return [];
     const childrenByParent = new Map<string, OrganizerEntry[]>();
-    for (const e of entries) {
+    for (const e of candidateEntries) {
       if (e.todo.isCollection) continue;
       const p = e.todo.parentId;
       if (p) { const a = childrenByParent.get(p) ?? []; a.push(e); childrenByParent.set(p, a); }
@@ -81,7 +96,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
     };
     for (const e of matches) addSubtree(e);
     return [...set.values()];
-  }, [matches, entries]);
+  }, [matches, candidateEntries]);
 
   const model = useMemo(() => buildTreeModel(entrySet, todoById, { collapsed }), [entrySet, todoById, collapsed]);
 
@@ -156,6 +171,18 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           </button>
         </div>
 
+        {/* Optional pinned choice above the results (e.g. reparent's top level). */}
+        {rootOption && (
+          <button
+            type="button"
+            onClick={rootOption.onSelect}
+            className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-white/10 text-sm text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors"
+          >
+            <CornerUpLeft size={15} className="text-white/40" />
+            {rootOption.label}
+          </button>
+        )}
+
         {/* Results — hint / empty message, else the Flat or Two-pane view. */}
         <div className="flex-1 min-h-0 flex flex-col">
           {!q ? (
@@ -164,7 +191,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
             <div className="px-4 py-6 text-xs text-white/40">No tasks match “{query.trim()}”.</div>
           ) : finderView === 'twoPane' ? (
             <TwoPaneResults
-              entries={entries}
+              entries={candidateEntries}
               todoById={todoById}
               matches={matches}
               onPick={onPick}
