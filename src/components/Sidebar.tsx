@@ -1,21 +1,35 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon-balanced.svg';
+import { AccountMenu } from './AccountMenu';
 
 interface SidebarProps {
   isVisible: boolean;
   isAuthenticated: boolean;
-  onAccountClick: () => void;
+  email?: string;
+  onOpenSettings: () => void;
+  onLogout: () => void;
   onStopwatchClick: () => void;
   isStopwatchActive: boolean;
   onSearchClick: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, onAccountClick, onStopwatchClick, isStopwatchActive, onSearchClick }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, email, onOpenSettings, onLogout, onStopwatchClick, isStopwatchActive, onSearchClick }) => {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const accountBtnRef = useRef<HTMLButtonElement>(null);
+  // Account menu anchored to the right of the logo button, growing upward.
+  const [menuPos, setMenuPos] = useState<{ left: number; bottom: number } | null>(null);
+
+  const toggleAccountMenu = () => {
+    if (menuPos) { setMenuPos(null); return; }
+    const r = accountBtnRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setMenuPos({ left: r.right + 8, bottom: window.innerHeight - r.bottom });
+  };
+
   if (!isVisible) return null;
 
   const items = [
@@ -79,7 +93,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, on
           />
         </button>
         <button
-          onClick={onAccountClick}
+          ref={accountBtnRef}
+          onClick={toggleAccountMenu}
           className="group relative w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-all"
           title={isAuthenticated ? 'Account' : 'Sign In'}
         >
@@ -100,6 +115,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, on
           />
         </button>
       </div>
+
+      {menuPos && (
+        <AccountMenu
+          pos={menuPos}
+          email={email}
+          onOpenSettings={() => { setMenuPos(null); onOpenSettings(); }}
+          onPremium={() => setMenuPos(null)}
+          onLogout={() => { setMenuPos(null); onLogout(); }}
+          onClose={() => setMenuPos(null)}
+        />
+      )}
     </motion.div>
   );
 };

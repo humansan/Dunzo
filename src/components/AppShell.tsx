@@ -18,6 +18,8 @@ export const AppShell: React.FC = () => {
   const {
     sessionPending,
     isAuthenticated,
+    authSession,
+    logout,
     isFullscreen, setIsFullscreen,
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
@@ -74,7 +76,9 @@ export const AppShell: React.FC = () => {
       <Sidebar
         isVisible={!isFullscreen && !isStopwatchFullscreen}
         isAuthenticated={isAuthenticated}
-        onAccountClick={() => router.history.push('/settings')}
+        email={authSession.data?.user?.email}
+        onOpenSettings={() => router.history.push('/settings')}
+        onLogout={logout}
         onStopwatchClick={() => setIsStopwatchVisible(v => !v)}
         isStopwatchActive={timerState !== 'idle'}
         onSearchClick={() => setIsSearchOpen(true)}
