@@ -10,6 +10,7 @@ export function PlannerScreen({ selectedView }: { selectedView: string }) {
   const router = useRouter();
   const onSelectView = (view: string) =>
     router.history.push(view === 'all' ? '/planner' : `/planner/${encodeURIComponent(view)}`);
+  const onOpenTask = (id: string) => router.history.push('/task/' + encodeURIComponent(id));
 
   return (
     <main className="h-screen py-0">
@@ -35,6 +36,7 @@ export function PlannerScreen({ selectedView }: { selectedView: string }) {
           onToggleTodo={d.handleToggleTodo}
           selectedView={selectedView}
           onSelectView={onSelectView}
+          onOpenTask={onOpenTask}
         />
       </div>
     </main>

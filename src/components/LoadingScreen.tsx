@@ -6,7 +6,7 @@ import appLogo from '../assets/icon-invert2.png';
 export const LoadingScreen: React.FC<{ message: string }> = ({ message }) => (
   <div className="h-screen flex flex-col items-center justify-center gap-5 bg-neutral-950 text-white/40 text-sm">
     <img src={appLogo} alt="" className="w-16 h-16" />
-    <LoaderCircle className="w-6 h-6 animate-spin text-white/60" />
+    <LoaderCircle className="w-6 h-6 animate-spin [animation-duration:2s] text-white/60" />
     <p>{message}</p>
   </div>
 );

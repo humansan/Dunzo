@@ -9,7 +9,6 @@ import { Sidebar } from './Sidebar';
 import { StopwatchWidget } from './StopwatchWidget';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
 import { TaskFinder } from './todosHub/TaskFinder';
-import { TodoFullView } from './TodoFullView';
 import { useAppData } from '../data/AppDataContext';
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
@@ -36,15 +35,10 @@ export const AppShell: React.FC = () => {
     theme, setTheme,
     // global search
     isSearchOpen, setIsSearchOpen,
-    setSearchFullViewId,
     searchEntries,
-    searchFullTodo,
     todoById,
-    hubCollectionOptions,
-    createCollection,
     handleHubSaveTodo,
     handleToggleTodo,
-    handleDeleteTodoById,
   } = useAppData();
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -135,33 +129,18 @@ export const AppShell: React.FC = () => {
         onUpdateTheme={setTheme}
       />
 
-      {/* Global task search (⌘/Ctrl+K or the ribbon Search button) */}
+      {/* Global task search (⌘/Ctrl+K or the ribbon Search button). Opening a
+          result navigates to the shared /task/$taskId route. */}
       {isSearchOpen && (
         <TaskFinder
           entries={searchEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
           onToggleTodo={handleToggleTodo}
-          onPick={(id) => { setSearchFullViewId(id); setIsSearchOpen(false); }}
+          onPick={(id) => { router.history.push('/task/' + encodeURIComponent(id)); setIsSearchOpen(false); }}
           onClose={() => setIsSearchOpen(false)}
         />
       )}
-      <AnimatePresence>
-        {searchFullTodo && (
-          <TodoFullView
-            key={searchFullTodo.id}
-            todo={searchFullTodo}
-            date={searchFullTodo.dueDate || ''}
-            collectionOptions={hubCollectionOptions}
-            onCreateCollection={createCollection}
-            byId={todoById}
-            onClose={() => setSearchFullViewId(null)}
-            onSave={(updated, newDate) => handleHubSaveTodo({ ...updated, dueDate: newDate || undefined })}
-            onToggle={handleToggleTodo}
-            onDelete={(id) => { handleDeleteTodoById(id); setSearchFullViewId(null); }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Stopwatch Widget */}
       <AnimatePresence>

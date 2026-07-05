@@ -17,6 +17,7 @@ import { Route as AuthedTodayRouteImport } from './routes/_authed/today'
 import { Route as AuthedStatsRouteImport } from './routes/_authed/stats'
 import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
 import { Route as AuthedPlannerIndexRouteImport } from './routes/_authed/planner/index'
+import { Route as AuthedTaskTaskIdRouteImport } from './routes/_authed/task.$taskId'
 import { Route as AuthedPlannerCollectionIdRouteImport } from './routes/_authed/planner/$collectionId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -58,6 +59,11 @@ const AuthedPlannerIndexRoute = AuthedPlannerIndexRouteImport.update({
   path: '/planner/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedTaskTaskIdRoute = AuthedTaskTaskIdRouteImport.update({
+  id: '/task/$taskId',
+  path: '/task/$taskId',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedPlannerCollectionIdRoute =
   AuthedPlannerCollectionIdRouteImport.update({
     id: '/planner/$collectionId',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof AuthedTodayRoute
   '/trackers': typeof AuthedTrackersRoute
   '/planner/$collectionId': typeof AuthedPlannerCollectionIdRoute
+  '/task/$taskId': typeof AuthedTaskTaskIdRoute
   '/planner/': typeof AuthedPlannerIndexRoute
 }
 export interface FileRoutesByTo {
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/trackers': typeof AuthedTrackersRoute
   '/': typeof AuthedIndexRoute
   '/planner/$collectionId': typeof AuthedPlannerCollectionIdRoute
+  '/task/$taskId': typeof AuthedTaskTaskIdRoute
   '/planner': typeof AuthedPlannerIndexRoute
 }
 export interface FileRoutesById {
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_authed/trackers': typeof AuthedTrackersRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/planner/$collectionId': typeof AuthedPlannerCollectionIdRoute
+  '/_authed/task/$taskId': typeof AuthedTaskTaskIdRoute
   '/_authed/planner/': typeof AuthedPlannerIndexRoute
 }
 export interface FileRouteTypes {
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/trackers'
     | '/planner/$collectionId'
+    | '/task/$taskId'
     | '/planner/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/trackers'
     | '/'
     | '/planner/$collectionId'
+    | '/task/$taskId'
     | '/planner'
   id:
     | '__root__'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/_authed/trackers'
     | '/_authed/'
     | '/_authed/planner/$collectionId'
+    | '/_authed/task/$taskId'
     | '/_authed/planner/'
   fileRoutesById: FileRoutesById
 }
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPlannerIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/task/$taskId': {
+      id: '/_authed/task/$taskId'
+      path: '/task/$taskId'
+      fullPath: '/task/$taskId'
+      preLoaderRoute: typeof AuthedTaskTaskIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/planner/$collectionId': {
       id: '/_authed/planner/$collectionId'
       path: '/planner/$collectionId'
@@ -211,6 +230,7 @@ interface AuthedRouteChildren {
   AuthedTrackersRoute: typeof AuthedTrackersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedPlannerCollectionIdRoute: typeof AuthedPlannerCollectionIdRoute
+  AuthedTaskTaskIdRoute: typeof AuthedTaskTaskIdRoute
   AuthedPlannerIndexRoute: typeof AuthedPlannerIndexRoute
 }
 
@@ -221,6 +241,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedTrackersRoute: AuthedTrackersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedPlannerCollectionIdRoute: AuthedPlannerCollectionIdRoute,
+  AuthedTaskTaskIdRoute: AuthedTaskTaskIdRoute,
   AuthedPlannerIndexRoute: AuthedPlannerIndexRoute,
 }
 

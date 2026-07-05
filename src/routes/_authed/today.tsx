@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { TodoView } from '../../components/TodoView';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
@@ -15,6 +15,7 @@ export const Route = createFileRoute('/_authed/today')({
 
 function TodayRoute() {
   const d = useAppData();
+  const router = useRouter();
   const navigate = Route.useNavigate();
   const { date } = Route.useSearch();
   const selectedDate = date ?? format(new Date(), 'yyyy-MM-dd');
@@ -39,6 +40,7 @@ function TodayRoute() {
           onCreateCollection={d.createCollection}
           selectedDate={selectedDate}
           onSelectDate={(next) => navigate({ search: { date: next } })}
+          onOpenTask={(id) => router.history.push('/task/' + encodeURIComponent(id))}
         />
       </div>
     </main>

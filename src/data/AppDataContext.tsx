@@ -422,7 +422,6 @@ function useProvideAppData() {
   // the active workspace's tasks; opening a result shows its full view (rendered
   // by AppShell).
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchFullViewId, setSearchFullViewId] = useState<string | null>(null);
   const searchEntries = useMemo(
     () => getOrganizerTodos(dayTodos).filter((e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId),
     [dayTodos, activeWorkspaceId]
@@ -437,7 +436,6 @@ function useProvideAppData() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-  const searchFullTodo = searchFullViewId ? todoById.get(searchFullViewId) ?? null : null;
 
   const logout = async () => {
     await authClient.signOut();
@@ -497,9 +495,7 @@ function useProvideAppData() {
     logout,
     // global task search
     isSearchOpen, setIsSearchOpen,
-    searchFullViewId, setSearchFullViewId,
     searchEntries,
-    searchFullTodo,
     // shell UI state
     isFullscreen, setIsFullscreen,
     // stopwatch

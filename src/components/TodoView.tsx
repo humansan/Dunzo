@@ -21,7 +21,6 @@ import { timeToPercentage } from '../utils/timeUtils';
 
 import { TrackerCard } from './TrackerCard';
 import { CalendarView } from './CalendarView';
-import { TodoFullView } from './TodoFullView';
 import { QuickEditValues } from './QuickEditTodo';
 import { XpProgressBar } from './XpProgressBar';
 import { StarStreak } from './StarStreak';
@@ -48,6 +47,8 @@ interface TodoViewProps {
   // The focused day (YYYY-MM-DD) is URL-driven (?date); the route owns it.
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  // Opening a task navigates to /task/$taskId (the shared full-view route).
+  onOpenTask: (id: string) => void;
 }
 
 // ─── TodoView ────────────────────────────────────────────────────────────────
@@ -69,6 +70,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
   onCreateCollection,
   selectedDate,
   onSelectDate,
+  onOpenTask,
 }) => {
   const orderedTrackers = useMemo(() => {
     const dayTracker = trackers.find(t => t.type === 'day');
@@ -79,7 +81,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
   // `selectedDate` comes from the route (?date); alias the setter so the existing
   // date-nav call sites (prev/next/today/pick) stay unchanged.
   const setSelectedDate = onSelectDate;
-  const [fullViewId, setFullViewId] = useState<string | null>(null);
 
   const currentDayData = useMemo(() => {
     return dayTodos.find(d => d.date === selectedDate) || { date: selectedDate, todos: [] };
@@ -178,34 +179,10 @@ export const TodoView: React.FC<TodoViewProps> = ({
     }
   };
 
-  // Full view: locate the todo (and the day it lives on) by id across all days,
-  // so the panel stays open even if the date is changed from within it.
-  const fullViewData = useMemo(() => {
-    if (!fullViewId) return null;
-    for (const d of dayTodos) {
-      const t = (d.todos || []).find(x => x && x.id === fullViewId);
-      if (t) return { todo: t, date: d.date };
-    }
-    return null;
-  }, [fullViewId, dayTodos]);
-
-  // Collection index + options for the quick-edit / full-view pickers.
+  // Collection index + options for the quick-edit pickers.
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
   const collOptions = useMemo(() => buildCollectionOptions(dayTodos, byId), [dayTodos, byId]);
 
-  const saveFullTodo = (updated: Todo, newDate: string) => {
-    let oldDate = newDate;
-    for (const d of dayTodos) {
-      if ((d.todos || []).some(t => t && t.id === updated.id)) { oldDate = d.date; break; }
-    }
-    if (newDate !== oldDate) {
-      onMoveTodo(oldDate, newDate, updated);
-    } else {
-      const day = dayTodos.find(d => d.date === oldDate);
-      const newTodos = (day?.todos || []).map(t => t && t.id === updated.id ? updated : t);
-      onUpdateTodos(oldDate, newTodos);
-    }
-  };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const current = parseISO(selectedDate);
@@ -319,7 +296,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
           onDelete={deleteTodo}
           onSaveEdit={persistEdit}
           onCommitEdit={persistEdit}
-          onOpenFull={(id) => setFullViewId(id)}
+          onOpenFull={onOpenTask}
           onAddToCalendar={addToCalendar}
           onStartTracking={onStartTracking}
           activeTodoId={activeTodoId}
@@ -351,25 +328,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
         </div>
       </div>
 
-      <AnimatePresence>
-        {fullViewData && (
-          <TodoFullView
-            key={fullViewData.todo.id}
-            todo={fullViewData.todo}
-            date={fullViewData.date}
-            collectionOptions={collOptions}
-            onCreateCollection={onCreateCollection}
-            byId={byId}
-            onClose={() => setFullViewId(null)}
-            onSave={saveFullTodo}
-            onToggle={onToggleTodo}
-            onDelete={(id) => {
-              const loc = dayTodos.find(d => (d.todos || []).some(t => t && t.id === id));
-              if (loc) onUpdateTodos(loc.date, (loc.todos || []).filter(t => t && t.id !== id));
-            }}
-          />
-        )}
-      </AnimatePresence>
 
       {xpEnabled && (
         <>

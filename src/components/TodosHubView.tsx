@@ -6,7 +6,6 @@ import {
   OrganizerEntry,
   CollectionOption,
 } from '../utils/todoFilters';
-import { TodoFullView } from './TodoFullView';
 import { ColKey, COLUMNS, EditState } from './todosHub/types';
 import {
   DEFAULT_COLLECTION_COLOR,
@@ -73,6 +72,8 @@ interface TodosHubViewProps {
   // The selected collection/view is URL-driven (/planner/$collectionId, bare = 'all').
   selectedView: string;
   onSelectView: (view: string) => void;
+  // Opening a task navigates to /task/$taskId (the shared full-view route).
+  onOpenTask: (id: string) => void;
 }
 
 export const TodosHubView: React.FC<TodosHubViewProps> = ({
@@ -96,6 +97,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   onRenameWorkspace,
   selectedView,
   onSelectView,
+  onOpenTask,
 }) => {
   // ── Collapse state (DB-synced) ─────────────────────────────────────────────
   // Table row collapse and sidebar collection-tree collapse (both feed the data
@@ -338,7 +340,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const [deleteCollId, setDeleteCollId] = useState<string | null>(null);
   // Id of the collection whose Edit modal (name / color / parent) is open.
   const [editCollId, setEditCollId] = useState<string | null>(null);
-  const [fullViewId, setFullViewId] = useState<string | null>(null);
   // Task id being reparented via the "Move to…" picker (null = picker closed).
   const [reparentId, setReparentId] = useState<string | null>(null);
   const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
@@ -527,10 +528,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       ? entries.find((e) => e.todo.id === editing.id) || null
       : null;
 
-  const fullViewEntry = fullViewId ? entries.find((e) => e.todo.id === fullViewId) || null : null;
-
-  const saveFullTodo = (updated: Todo, newDate: string) =>
-    onSaveTodo({ ...updated, dueDate: newDate || undefined });
 
   // Add a task at a Finder column's level: parent it to that column's node, seed
   // the active filters (so it stays visible), and drop into its title editor.
@@ -741,7 +738,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
-          onExpand={(id) => { setFullViewId(id); closeMenu(); }}
+          onExpand={(id) => { onOpenTask(id); closeMenu(); }}
           onArchive={(id) => { onArchiveTodo(id); closeMenu(); }}
           onDelete={requestDeleteFromMenu}
         />
@@ -784,23 +781,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
         );
       })()}
 
-      {/* Expanded full view */}
-      <AnimatePresence>
-        {fullViewEntry && (
-          <TodoFullView
-            key={fullViewEntry.todo.id}
-            todo={fullViewEntry.todo}
-            date={fullViewEntry.todo.dueDate || ''}
-            collectionOptions={collectionOptions}
-            onCreateCollection={onCreateCollection}
-            byId={todoById}
-            onClose={() => setFullViewId(null)}
-            onSave={saveFullTodo}
-            onToggle={onToggleTodo}
-            onDelete={(id) => { onDeleteTodo(id); setFullViewId(null); }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Reparent picker — pick a task to nest the target under, or move to top level. */}
       {reparentTarget && (
