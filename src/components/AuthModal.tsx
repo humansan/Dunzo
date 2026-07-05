@@ -360,7 +360,7 @@ const LoginScreen: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-[70] overflow-hidden">
       {/* Full-bleed background */}
       <img
         src={backgroundUrl}

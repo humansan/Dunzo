@@ -73,6 +73,8 @@ interface CalendarViewProps {
   initialDays?: number;
   hideHeader?: boolean;
   hideMiniCalendar?: boolean;
+  // Write-back so the focused day (?date) is deep-linkable; the route wires it.
+  onFocusDateChange?: (date: string) => void;
 }
 
 interface CreateFormState {
@@ -204,7 +206,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   initialDate,
   initialDays,
   hideHeader,
-  hideMiniCalendar
+  hideMiniCalendar,
+  onFocusDateChange
 }) => {
   const [dayCount, setDayCount] = useState(initialDays || 3);
   const [focusDate, setFocusDate] = useState(initialDate ? parseISO(initialDate) : new Date());
@@ -213,13 +216,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [createForm, setCreateForm] = useState<CreateFormState | null>(null);
   const [newTaskText, setNewTaskText] = useState('');
 
-  // Sync focus date if initialDate prop changes (e.g. from parent component)
+  // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard
+  // against the write-back round-trip: skip when it already matches focusDate, so our
+  // own onFocusDateChange navigations don't clobber miniCalMonth or re-fire.
   useEffect(() => {
-    if (initialDate) {
-      const parsed = parseISO(initialDate);
-      setFocusDate(parsed);
-      setMiniCalMonth(parsed);
-    }
+    if (!initialDate) return;
+    const parsed = parseISO(initialDate);
+    if (format(parsed, 'yyyy-MM-dd') === format(focusDate, 'yyyy-MM-dd')) return;
+    setFocusDate(parsed);
+    setMiniCalMonth(parsed);
   }, [initialDate]);
 
   const [editingEvent, setEditingEvent] = useState<{
@@ -306,18 +311,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, []);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
+  // Move the focused day and reflect it into the URL (?date) so the calendar is
+  // deep-linkable and back/forward works. miniCalMonth is handled per-caller to
+  // preserve the prior behavior (shiftDays leaves the mini-calendar month alone).
+  const commitFocusDate = (dt: Date) => {
+    setFocusDate(dt);
+    onFocusDateChange?.(format(dt, 'yyyy-MM-dd'));
+  };
+
   // Navigate
   const shiftDays = (dir: number) => {
-    setFocusDate((prev) => addDays(prev, dir * dayCount));
+    commitFocusDate(addDays(focusDate, dir * dayCount));
   };
 
   const goToday = () => {
-    setFocusDate(new Date());
+    commitFocusDate(new Date());
     setMiniCalMonth(new Date());
   };
 
   const handleMiniCalDateClick = (d: Date) => {
-    setFocusDate(d);
+    commitFocusDate(d);
     setMiniCalMonth(d);
   };
 
@@ -974,7 +987,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <>
             {/* Modal Overlay for Click Outside */}
             <div
-              className="fixed inset-0 z-40 bg-black/0"
+              className="fixed inset-0 z-[68] bg-black/0"
               onMouseDown={(e) => {
                 if (e.target === e.currentTarget) onClose();
               }}
@@ -983,7 +996,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="fixed z-50 w-72 bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl p-4 overflow-hidden"
+              className="fixed z-[70] w-72 bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl p-4 overflow-hidden"
               style={{
                 left: `${Math.min(x, window.innerWidth - 300)}px`,
                 top: `${Math.min(y, window.innerHeight - 220)}px`,

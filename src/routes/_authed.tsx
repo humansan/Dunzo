@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { AppDataProvider } from '../data/AppDataContext';
+import { StopwatchProvider } from '../data/StopwatchContext';
 import { AppShell } from '../components/AppShell';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { authClient } from '../auth';
@@ -39,7 +40,9 @@ export const Route = createFileRoute('/_authed')({
 function AuthedLayout() {
   return (
     <AppDataProvider>
-      <AppShell />
+      <StopwatchProvider>
+        <AppShell />
+      </StopwatchProvider>
     </AppDataProvider>
   );
 }

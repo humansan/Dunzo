@@ -3,14 +3,13 @@ import { Outlet, useRouter, useRouterState } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { Minimize2 } from 'lucide-react';
 import { AddTrackerModal } from './AddTrackerModal';
-import { AccountModal } from './AccountModal';
 import { LoadingScreen } from './LoadingScreen';
 import { Sidebar } from './Sidebar';
 import { StopwatchWidget } from './StopwatchWidget';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
 import { TaskFinder } from './todosHub/TaskFinder';
-import { TodoFullView } from './TodoFullView';
 import { useAppData } from '../data/AppDataContext';
+import { useStopwatch } from '../data/StopwatchContext';
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
 // once and only the routed <Outlet/> changes, so sibling views never remount. Also
@@ -20,32 +19,23 @@ export const AppShell: React.FC = () => {
     sessionPending,
     isAuthenticated,
     isFullscreen, setIsFullscreen,
-    isStopwatchVisible, setIsStopwatchVisible,
-    isStopwatchFullscreen, setIsStopwatchFullscreen,
-    timerState, elapsed,
-    startTimer, pauseTimer, stopTimer, resetTimer,
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
     handleAddTracker,
-    isAccountModalOpen, setIsAccountModalOpen,
-    authSession,
-    logout,
-    weekStartsOn, setWeekStartsOn,
-    countdownMode, setCountdownMode,
-    xpEnabled, setXpEnabled,
-    theme, setTheme,
     // global search
     isSearchOpen, setIsSearchOpen,
-    setSearchFullViewId,
     searchEntries,
-    searchFullTodo,
     todoById,
-    hubCollectionOptions,
-    createCollection,
     handleHubSaveTodo,
     handleToggleTodo,
-    handleDeleteTodoById,
   } = useAppData();
+  // Stopwatch is its own context so its 50ms tick doesn't re-render this shell.
+  const {
+    timerState,
+    startTimer, pauseTimer, stopTimer, resetTimer,
+    isStopwatchVisible, setIsStopwatchVisible,
+    isStopwatchFullscreen, setIsStopwatchFullscreen,
+  } = useStopwatch();
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Fullscreen is a trackers-only affordance; leaving that view exits it (matches
@@ -84,7 +74,7 @@ export const AppShell: React.FC = () => {
       <Sidebar
         isVisible={!isFullscreen && !isStopwatchFullscreen}
         isAuthenticated={isAuthenticated}
-        onAccountClick={() => setIsAccountModalOpen(true)}
+        onAccountClick={() => router.history.push('/settings')}
         onStopwatchClick={() => setIsStopwatchVisible(v => !v)}
         isStopwatchActive={timerState !== 'idle'}
         onSearchClick={() => setIsSearchOpen(true)}
@@ -119,56 +109,24 @@ export const AppShell: React.FC = () => {
         editingTracker={editingTracker}
       />
 
-      <AccountModal
-        isOpen={isAccountModalOpen}
-        onClose={() => setIsAccountModalOpen(false)}
-        email={authSession.data?.user?.email}
-        name={authSession.data?.user?.name}
-        onLogout={logout}
-        weekStartsOn={weekStartsOn}
-        onUpdateWeekStartsOn={setWeekStartsOn}
-        countdownMode={countdownMode}
-        onUpdateCountdownMode={setCountdownMode}
-        xpEnabled={xpEnabled}
-        onUpdateXpEnabled={setXpEnabled}
-        theme={theme}
-        onUpdateTheme={setTheme}
-      />
-
-      {/* Global task search (⌘/Ctrl+K or the ribbon Search button) */}
+      {/* Global task search (⌘/Ctrl+K or the ribbon Search button). Opening a
+          result navigates to the shared /task/$taskId route. */}
       {isSearchOpen && (
         <TaskFinder
           entries={searchEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
           onToggleTodo={handleToggleTodo}
-          onPick={(id) => { setSearchFullViewId(id); setIsSearchOpen(false); }}
+          onPick={(id) => { router.history.push('/task/' + encodeURIComponent(id)); setIsSearchOpen(false); }}
           onClose={() => setIsSearchOpen(false)}
         />
       )}
-      <AnimatePresence>
-        {searchFullTodo && (
-          <TodoFullView
-            key={searchFullTodo.id}
-            todo={searchFullTodo}
-            date={searchFullTodo.dueDate || ''}
-            collectionOptions={hubCollectionOptions}
-            onCreateCollection={createCollection}
-            byId={todoById}
-            onClose={() => setSearchFullViewId(null)}
-            onSave={(updated, newDate) => handleHubSaveTodo({ ...updated, dueDate: newDate || undefined })}
-            onToggle={handleToggleTodo}
-            onDelete={(id) => { handleDeleteTodoById(id); setSearchFullViewId(null); }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Stopwatch Widget */}
       <AnimatePresence>
         {isStopwatchVisible && (
           <StopwatchWidget
             timerState={timerState}
-            elapsed={elapsed}
             onStart={startTimer}
             onPause={pauseTimer}
             onStop={stopTimer}
@@ -187,7 +145,6 @@ export const AppShell: React.FC = () => {
         {isStopwatchFullscreen && (
           <StopwatchFullscreen
             timerState={timerState}
-            elapsed={elapsed}
             onStart={startTimer}
             onPause={pauseTimer}
             onStop={stopTimer}

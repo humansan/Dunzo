@@ -1,15 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { TodosHubView } from '../../components/TodosHubView';
-import { ViewErrorFallback } from '../../components/ViewErrorFallback';
-import { useAppData } from '../../data/AppDataContext';
+import { useRouter } from '@tanstack/react-router';
+import { TodosHubView } from './TodosHubView';
+import { useAppData } from '../data/AppDataContext';
 
-export const Route = createFileRoute('/_authed/planner')({
-  component: PlannerRoute,
-  errorComponent: ViewErrorFallback,
-});
-
-function PlannerRoute() {
+// Shared planner surface for both /planner (bare = 'all') and /planner/$collectionId.
+// `selectedView` comes from the route; selecting a view navigates so the collection
+// lives in the URL. viewMode + per-view config stay DB-synced inside TodosHubView.
+export function PlannerScreen({ selectedView }: { selectedView: string }) {
   const d = useAppData();
+  const router = useRouter();
+  const onSelectView = (view: string) =>
+    router.history.push(view === 'all' ? '/planner' : `/planner/${encodeURIComponent(view)}`);
+  const onOpenTask = (id: string) => router.history.push('/task/' + encodeURIComponent(id));
+
   return (
     <main className="h-screen py-0">
       <div className="h-screen">
@@ -32,6 +34,9 @@ function PlannerRoute() {
           onArchiveTodo={d.handleArchiveTodo}
           onReorder={d.handleReorderHubTodos}
           onToggleTodo={d.handleToggleTodo}
+          selectedView={selectedView}
+          onSelectView={onSelectView}
+          onOpenTask={onOpenTask}
         />
       </div>
     </main>
