@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Todo } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
@@ -32,12 +32,16 @@ export function applyTodoBatch(list: Todo[], b: TodoBatch): Todo[] {
   return next;
 }
 
-export function useTodos(enabled: boolean) {
-  return useQuery({
+// Shared query definition so route loaders (ensureQueryData) and the hook stay in
+// lockstep. The loader omits `enabled` (it runs only after the auth beforeLoad).
+export const todosQueryOptions = () =>
+  queryOptions({
     queryKey: queryKeys.todos,
     queryFn: async () => stripNullsList(await apiFetch<Todo[]>('/todos')),
-    enabled,
   });
+
+export function useTodos(enabled: boolean) {
+  return useQuery({ ...todosQueryOptions(), enabled });
 }
 
 export const useCreateTodo = () =>

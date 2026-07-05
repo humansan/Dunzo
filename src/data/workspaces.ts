@@ -1,16 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Todo, Workspace } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { useOptimisticListMutation } from './optimistic';
 import { stripNullsList } from './normalize';
 
-export function useWorkspaces(enabled: boolean) {
-  return useQuery({
+export const workspacesQueryOptions = () =>
+  queryOptions({
     queryKey: queryKeys.workspaces,
     queryFn: async () => stripNullsList(await apiFetch<Workspace[]>('/workspaces')),
-    enabled,
   });
+
+export function useWorkspaces(enabled: boolean) {
+  return useQuery({ ...workspacesQueryOptions(), enabled });
 }
 
 export const useCreateWorkspace = () =>

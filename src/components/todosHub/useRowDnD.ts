@@ -99,7 +99,7 @@ export function useRowDnD(params: {
     if (idx === -1) return true;
     for (let i = idx + 1; i < nodes.length; i++) {
       const n = nodes[i];
-      if (n.id === rowDragId || isDescendantOf(n.entry, rowDragId)) continue; // leaving
+      if (n.id === rowDragId || (rowDragId !== null && isDescendantOf(n.entry, rowDragId))) continue; // leaving
       if (n.depth > target.depth) continue; // target's own subtree
       const sameParent =
         n.parentId === target.parentId &&

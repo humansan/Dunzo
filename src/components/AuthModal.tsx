@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
 import { authClient } from '../auth';
@@ -16,14 +16,30 @@ function getResetToken(): string | null {
   return new URLSearchParams(window.location.search).get('token');
 }
 
+// A light draft (email + mode) persisted so a remount / hard refresh doesn't wipe
+// typed input on the login screen. Passwords are deliberately never persisted.
+const AUTH_DRAFT_KEY = 'dun-auth-draft';
+function readAuthDraft(): { email?: string; mode?: AuthMode } {
+  try {
+    return JSON.parse(sessionStorage.getItem(AUTH_DRAFT_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
 // ─── Signed-out view (full-screen login gate) ────────────────────────────────
 
 const LoginScreen: React.FC<{
   onAuthenticated: () => void;
 }> = ({ onAuthenticated }) => {
   const resetToken = getResetToken();
-  const [mode, setMode] = useState<AuthMode>(resetToken ? 'reset' : 'login');
-  const [email, setEmail] = useState('');
+  const [draft] = useState(readAuthDraft);
+  // Restore only a benign mode (never a stale forgot/reset flow) unless the URL
+  // carries a reset token.
+  const [mode, setMode] = useState<AuthMode>(
+    resetToken ? 'reset' : draft.mode === 'signup' ? 'signup' : 'login'
+  );
+  const [email, setEmail] = useState(draft.email ?? '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,6 +48,11 @@ const LoginScreen: React.FC<{
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [resetDone, setResetDone] = useState(false);
+
+  // Keep the draft in sync (email + mode only; never passwords).
+  useEffect(() => {
+    sessionStorage.setItem(AUTH_DRAFT_KEY, JSON.stringify({ email, mode }));
+  }, [email, mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +70,7 @@ const LoginScreen: React.FC<{
               name: email.split('@')[0],
             });
       if (error) throw new Error(error.message || 'Authentication failed');
+      sessionStorage.removeItem(AUTH_DRAFT_KEY);
       onAuthenticated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -64,7 +86,9 @@ const LoginScreen: React.FC<{
     try {
       const { error } = await (authClient as any).requestPasswordReset({
         email,
-        redirectTo: window.location.origin + window.location.pathname,
+        // Land the reset link on the public /login route so the ?token= isn't
+        // swallowed by the _authed guard (which would nest it in ?redirect=).
+        redirectTo: window.location.origin + '/login',
       });
       if (error) throw new Error(error.message || 'Could not send reset email');
       setForgotSent(true);

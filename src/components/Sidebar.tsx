@@ -1,12 +1,11 @@
 import React from 'react';
 import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks, Search } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Link, useRouterState } from '@tanstack/react-router';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon-balanced.svg';
 
 interface SidebarProps {
-  activeView: 'trackers' | 'todos' | 'hub' | 'calendar' | 'stats';
-  onViewChange: (view: 'trackers' | 'todos' | 'hub' | 'calendar' | 'stats') => void;
   isVisible: boolean;
   isAuthenticated: boolean;
   onAccountClick: () => void;
@@ -15,15 +14,16 @@ interface SidebarProps {
   onSearchClick: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVisible, isAuthenticated, onAccountClick, onStopwatchClick, isStopwatchActive, onSearchClick }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, onAccountClick, onStopwatchClick, isStopwatchActive, onSearchClick }) => {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (!isVisible) return null;
 
   const items = [
-    { key: 'todos' as const, icon: CheckSquare, title: 'Daily Todos', color: '--accent2' },
-    { key: 'hub' as const, icon: Blocks, title: 'Task Planner', color: '--accent2' },
-    { key: 'trackers' as const, icon: Clock, title: 'Trackers', color: '--accent2' },
-    { key: 'calendar' as const, icon: Calendar, title: 'Calendar', color: '--accent2' },
-    { key: 'stats' as const, icon: BarChart2, title: 'Stats', color: '--accent2' },
+    { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos', color: '--accent2' },
+    { to: '/planner' as const, icon: Blocks, title: 'Task Planner', color: '--accent2' },
+    { to: '/trackers' as const, icon: Clock, title: 'Trackers', color: '--accent2' },
+    { to: '/calendar' as const, icon: Calendar, title: 'Calendar', color: '--accent2' },
+    { to: '/stats' as const, icon: BarChart2, title: 'Stats', color: '--accent2' },
   ];
 
   return (
@@ -35,11 +35,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
       <div className="flex flex-col gap-3">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = activeView === item.key;
+          const isActive = pathname.startsWith(item.to);
           return (
-            <button
-              key={item.key}
-              onClick={() => onViewChange(item.key)}
+            <Link
+              key={item.to}
+              to={item.to}
               className={`group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
                 isActive
                   ? `bg-[var(${item.color})] text-black shadow-lg shadow-[var(${item.color})]/20`
@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, isVi
                   className={`absolute -left-3 w-1 h-5 bg-[var(${item.color})] rounded-r-full`}
                 />
               )}
-            </button>
+            </Link>
           );
         })}
       </div>

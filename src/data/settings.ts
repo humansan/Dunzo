@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Theme } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
@@ -47,12 +47,14 @@ export function resolveAction<T>(action: SetStateAction<T>, prev: T): T {
 
 // The settings query. `enabled` drives the actual fetch (App passes the auth
 // flag); internal hooks pass `false` and ride along as pure cache observers.
-export function useSettings(enabled: boolean = false) {
-  return useQuery({
+export const settingsQueryOptions = () =>
+  queryOptions({
     queryKey: queryKeys.settings,
     queryFn: async () => stripNulls(await apiFetch<UserSettings>('/settings')),
-    enabled,
   });
+
+export function useSettings(enabled: boolean = false) {
+  return useQuery({ ...settingsQueryOptions(), enabled });
 }
 
 // Returns a debounced, optimistic `update(partial)` that merges into the cache now

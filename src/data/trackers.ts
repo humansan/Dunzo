@@ -1,16 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Tracker } from '../types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { useOptimisticListMutation } from './optimistic';
 import { stripNullsList } from './normalize';
 
-export function useTrackers(enabled: boolean) {
-  return useQuery({
+export const trackersQueryOptions = () =>
+  queryOptions({
     queryKey: queryKeys.trackers,
     queryFn: async () => stripNullsList(await apiFetch<Tracker[]>('/trackers')),
-    enabled,
   });
+
+export function useTrackers(enabled: boolean) {
+  return useQuery({ ...trackersQueryOptions(), enabled });
 }
 
 export const useCreateTracker = () =>

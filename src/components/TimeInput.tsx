@@ -187,7 +187,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
   const startColumnDrag = (
     e: React.MouseEvent,
     kind: 'hour' | 'minute',
-    colRef: React.RefObject<HTMLDivElement>
+    colRef: React.RefObject<HTMLDivElement | null>
   ) => {
     e.preventDefault();
     const base = cur ?? { h12: 12, min: 0, pm: false };
@@ -230,7 +230,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
 
   // One stepped column: 12 centered labels + the accent marker line.
   const renderRail = (
-    colRef: React.RefObject<HTMLDivElement>,
+    colRef: React.RefObject<HTMLDivElement | null>,
     items: number[],
     activeValue: number | null,
     lineFrac: number | null,
