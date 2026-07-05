@@ -70,6 +70,9 @@ interface TodosHubViewProps {
   onSelectWorkspace: (id: string) => void;
   onAddWorkspace: () => string;
   onRenameWorkspace: (id: string, name: string) => void;
+  // The selected collection/view is URL-driven (/planner/$collectionId, bare = 'all').
+  selectedView: string;
+  onSelectView: (view: string) => void;
 }
 
 export const TodosHubView: React.FC<TodosHubViewProps> = ({
@@ -91,6 +94,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   onSelectWorkspace,
   onAddWorkspace,
   onRenameWorkspace,
+  selectedView,
+  onSelectView,
 }) => {
   // ── Collapse state (DB-synced) ─────────────────────────────────────────────
   // Table row collapse and sidebar collection-tree collapse (both feed the data
@@ -118,9 +123,11 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     });
 
   // ── Sidebar selection (which collection / view the table shows) ────────────
-  // Declared early so the per-view config hook below can derive its storage key.
-  const selectedView = layout.selectedView ?? 'all';
-  const setSelectedView = (v: string) => patchLayout(() => ({ selectedView: v }));
+  // URL-driven now: `selectedView` is a prop from the route (/planner/$collectionId,
+  // bare = 'all'). Alias the setter to the route navigator so existing call sites
+  // (reset-to-all on new workspace, the sidebar select) are unchanged. viewMode and
+  // the per-view config below stay DB-synced.
+  const setSelectedView = onSelectView;
 
   // Which view renders the data: the spreadsheet-style table (default) or the
   // Todoist-style single-column list. A global UI preference (like selectedView).

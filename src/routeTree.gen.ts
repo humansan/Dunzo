@@ -15,8 +15,9 @@ import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedTrackersRouteImport } from './routes/_authed/trackers'
 import { Route as AuthedTodayRouteImport } from './routes/_authed/today'
 import { Route as AuthedStatsRouteImport } from './routes/_authed/stats'
-import { Route as AuthedPlannerRouteImport } from './routes/_authed/planner'
 import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
+import { Route as AuthedPlannerIndexRouteImport } from './routes/_authed/planner/index'
+import { Route as AuthedPlannerCollectionIdRouteImport } from './routes/_authed/planner/$collectionId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -47,45 +48,54 @@ const AuthedStatsRoute = AuthedStatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedPlannerRoute = AuthedPlannerRouteImport.update({
-  id: '/planner',
-  path: '/planner',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPlannerIndexRoute = AuthedPlannerIndexRouteImport.update({
+  id: '/planner/',
+  path: '/planner/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedPlannerCollectionIdRoute =
+  AuthedPlannerCollectionIdRouteImport.update({
+    id: '/planner/$collectionId',
+    path: '/planner/$collectionId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
   '/calendar': typeof AuthedCalendarRoute
-  '/planner': typeof AuthedPlannerRoute
   '/stats': typeof AuthedStatsRoute
   '/today': typeof AuthedTodayRoute
   '/trackers': typeof AuthedTrackersRoute
+  '/planner/$collectionId': typeof AuthedPlannerCollectionIdRoute
+  '/planner/': typeof AuthedPlannerIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/calendar': typeof AuthedCalendarRoute
-  '/planner': typeof AuthedPlannerRoute
   '/stats': typeof AuthedStatsRoute
   '/today': typeof AuthedTodayRoute
   '/trackers': typeof AuthedTrackersRoute
   '/': typeof AuthedIndexRoute
+  '/planner/$collectionId': typeof AuthedPlannerCollectionIdRoute
+  '/planner': typeof AuthedPlannerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/calendar': typeof AuthedCalendarRoute
-  '/_authed/planner': typeof AuthedPlannerRoute
   '/_authed/stats': typeof AuthedStatsRoute
   '/_authed/today': typeof AuthedTodayRoute
   '/_authed/trackers': typeof AuthedTrackersRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/planner/$collectionId': typeof AuthedPlannerCollectionIdRoute
+  '/_authed/planner/': typeof AuthedPlannerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -93,29 +103,32 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/calendar'
-    | '/planner'
     | '/stats'
     | '/today'
     | '/trackers'
+    | '/planner/$collectionId'
+    | '/planner/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/calendar'
-    | '/planner'
     | '/stats'
     | '/today'
     | '/trackers'
     | '/'
+    | '/planner/$collectionId'
+    | '/planner'
   id:
     | '__root__'
     | '/_authed'
     | '/login'
     | '/_authed/calendar'
-    | '/_authed/planner'
     | '/_authed/stats'
     | '/_authed/today'
     | '/_authed/trackers'
     | '/_authed/'
+    | '/_authed/planner/$collectionId'
+    | '/_authed/planner/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,13 +180,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedStatsRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/planner': {
-      id: '/_authed/planner'
-      path: '/planner'
-      fullPath: '/planner'
-      preLoaderRoute: typeof AuthedPlannerRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/calendar': {
       id: '/_authed/calendar'
       path: '/calendar'
@@ -181,25 +187,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedCalendarRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/planner/': {
+      id: '/_authed/planner/'
+      path: '/planner'
+      fullPath: '/planner/'
+      preLoaderRoute: typeof AuthedPlannerIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/planner/$collectionId': {
+      id: '/_authed/planner/$collectionId'
+      path: '/planner/$collectionId'
+      fullPath: '/planner/$collectionId'
+      preLoaderRoute: typeof AuthedPlannerCollectionIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedCalendarRoute: typeof AuthedCalendarRoute
-  AuthedPlannerRoute: typeof AuthedPlannerRoute
   AuthedStatsRoute: typeof AuthedStatsRoute
   AuthedTodayRoute: typeof AuthedTodayRoute
   AuthedTrackersRoute: typeof AuthedTrackersRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedPlannerCollectionIdRoute: typeof AuthedPlannerCollectionIdRoute
+  AuthedPlannerIndexRoute: typeof AuthedPlannerIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCalendarRoute: AuthedCalendarRoute,
-  AuthedPlannerRoute: AuthedPlannerRoute,
   AuthedStatsRoute: AuthedStatsRoute,
   AuthedTodayRoute: AuthedTodayRoute,
   AuthedTrackersRoute: AuthedTrackersRoute,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedPlannerCollectionIdRoute: AuthedPlannerCollectionIdRoute,
+  AuthedPlannerIndexRoute: AuthedPlannerIndexRoute,
 }
 
 const AuthedRouteWithChildren =

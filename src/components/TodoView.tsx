@@ -45,6 +45,9 @@ interface TodoViewProps {
   onUpdateCountdownMode: (val: 'off' | 'time' | 'percent') => void;
   xpEnabled: boolean;
   onCreateCollection: (name: string) => string;
+  // The focused day (YYYY-MM-DD) is URL-driven (?date); the route owns it.
+  selectedDate: string;
+  onSelectDate: (date: string) => void;
 }
 
 // ─── TodoView ────────────────────────────────────────────────────────────────
@@ -64,6 +67,8 @@ export const TodoView: React.FC<TodoViewProps> = ({
   onUpdateCountdownMode,
   xpEnabled,
   onCreateCollection,
+  selectedDate,
+  onSelectDate,
 }) => {
   const orderedTrackers = useMemo(() => {
     const dayTracker = trackers.find(t => t.type === 'day');
@@ -71,7 +76,9 @@ export const TodoView: React.FC<TodoViewProps> = ({
     return dayTracker ? [dayTracker, ...others] : others;
   }, [trackers]);
 
-  const [selectedDate, setSelectedDate] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  // `selectedDate` comes from the route (?date); alias the setter so the existing
+  // date-nav call sites (prev/next/today/pick) stay unchanged.
+  const setSelectedDate = onSelectDate;
   const [fullViewId, setFullViewId] = useState<string | null>(null);
 
   const currentDayData = useMemo(() => {
