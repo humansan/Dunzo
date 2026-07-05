@@ -987,7 +987,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <>
             {/* Modal Overlay for Click Outside */}
             <div
-              className="fixed inset-0 z-40 bg-black/0"
+              className="fixed inset-0 z-[68] bg-black/0"
               onMouseDown={(e) => {
                 if (e.target === e.currentTarget) onClose();
               }}
@@ -996,7 +996,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="fixed z-50 w-72 bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl p-4 overflow-hidden"
+              className="fixed z-[70] w-72 bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl p-4 overflow-hidden"
               style={{
                 left: `${Math.min(x, window.innerWidth - 300)}px`,
                 top: `${Math.min(y, window.innerHeight - 220)}px`,

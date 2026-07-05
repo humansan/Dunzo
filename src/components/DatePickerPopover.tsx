@@ -100,7 +100,7 @@ export const DatePickerPopover: React.FC<DatePickerPopoverProps> = ({
               left: pos?.left ?? 0,
               visibility: pos ? 'visible' : 'hidden',
             }}
-            className="z-[60]"
+            className="z-[80]"
           >
             <CalendarInput
               value={value}

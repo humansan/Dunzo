@@ -61,8 +61,8 @@ export const CellEditorPopover: React.FC<{
       }}
       className={
         isDateOrTime
-          ? 'z-[58] shadow-2xl'
-          : 'z-[58] rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-2'
+          ? 'z-[65] shadow-2xl'
+          : 'z-[65] rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-2'
       }
     >
       {col === 'status' || col === 'priority' ? (
