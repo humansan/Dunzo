@@ -16,6 +16,16 @@
   --font-mono--font-feature-settings: "tnum";
 }
 
+/* Default accent theme. AppDataProvider overrides these per-user via an inline
+   style on <html> (which wins over this rule), but that provider only mounts
+   under the _authed routes — so these defaults are what the public /login screen
+   uses. Without them, var(--accent1/2) is undefined there and the accented
+   buttons/links render as black. */
+:root {
+  --accent1: #e1e354;
+  --accent2: #c6dabe;
+}
+
 body {
   @apply bg-[#0a0a0a] text-white antialiased;
 }

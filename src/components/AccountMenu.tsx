@@ -25,7 +25,7 @@ const waveCell = (i: number): React.CSSProperties => ({
 const PremiumItem: React.FC = () => (
   <>
     <span style={waveCell(0)}><Sparkles size={14} /></span>
-    <span aria-label="Premium" className="font-semibold">
+    <span aria-label="Premium" className="font-bold">
       {'Premium'.split('').map((ch, i) => (
         <span key={i} style={waveCell(i + 1)}>{ch}</span>
       ))}
@@ -65,14 +65,23 @@ export const AccountMenu: React.FC<{
         <button onClick={onOpenSettings} className={itemCls}>
           <Settings size={14} /> Settings
         </button>
-        <button onClick={onPremium} className={itemCls}>
-          <PremiumItem />
+        <button
+          onClick={onPremium}
+          className="group relative w-full overflow-hidden rounded-lg px-2.5 py-1.5 text-left text-white/80 transition-colors"
+        >
+          {/* Hover background: the same hue-rotate wave as the label, at low
+              opacity, instead of the plain white hover fill. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+            style={{ backgroundColor: 'rgba(240, 153, 201, 0.12)', animation: 'premium-wave 4s linear infinite' }}
+          />
+          <span className="relative z-10 flex items-center gap-2.5">
+            <PremiumItem />
+          </span>
         </button>
         <div className="my-1 border-t border-white/10" />
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
-        >
+        <button onClick={onLogout} className={itemCls}>
           <LogOut size={14} /> Log Out
         </button>
       </div>
