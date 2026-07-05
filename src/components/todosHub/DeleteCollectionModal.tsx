@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Inbox, Trash2 } from 'lucide-react';
-import { modalPop } from '../modalMotion';
+import { modalPop, overlayBackdrop } from '../modalMotion';
 
 // Confirmation modal shown when deleting a collection that still contains tasks:
 // promote the tasks up one level (into `promoteTarget`) or cascade-delete the
@@ -14,7 +14,7 @@ export const DeleteCollectionModal: React.FC<{
   onClose: () => void;
 }> = ({ name, promoteTarget, onPromote, onCascade, onClose }) => (
   <div
-    className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
+    className={`fixed inset-0 z-[70] flex items-center justify-center p-4 ${overlayBackdrop}`}
     onMouseDown={onClose}
   >
     <motion.div
