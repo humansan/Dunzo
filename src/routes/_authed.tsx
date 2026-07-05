@@ -15,6 +15,15 @@ import { settingsQueryOptions } from '../data/settings';
 // navigation (not on window focus), a background session revalidation on refocus
 // no longer remounts the login form — the old focus-flash / form-wipe bug.
 export const Route = createFileRoute('/_authed')({
+  // Overlays (settings / task full-view) are modeled as search-param state on the
+  // *current* page rather than sibling routes, so the page under AppShell's
+  // <Outlet/> never unmounts while an overlay is open. Validated here so every
+  // child page inherits them. See useOverlayNav for how they're opened (masked to
+  // the /settings and /task/$id URLs).
+  validateSearch: (search: Record<string, unknown>): { task?: string; settings?: boolean } => ({
+    task: typeof search.task === 'string' ? search.task : undefined,
+    settings: search.settings === true || search.settings === 'true' ? true : undefined,
+  }),
   beforeLoad: async ({ location }) => {
     const { data } = await authClient.getSession();
     if (!data) {

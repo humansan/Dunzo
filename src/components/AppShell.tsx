@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet, useRouter, useRouterState } from '@tanstack/react-router';
+import { Outlet, useRouter, useRouterState, useSearch } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { Minimize2 } from 'lucide-react';
 import { AddTrackerModal } from './AddTrackerModal';
@@ -7,8 +7,11 @@ import { LoadingScreen } from './LoadingScreen';
 import { Sidebar } from './Sidebar';
 import { StopwatchWidget } from './StopwatchWidget';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
+import { SettingsOverlay } from './SettingsOverlay';
+import { TaskOverlay } from './TaskOverlay';
 import { TaskFinder } from './todosHub/TaskFinder';
 import { useAppData } from '../data/AppDataContext';
+import { useOverlayNav } from '../data/useOverlayNav';
 import { useStopwatch } from '../data/StopwatchContext';
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
@@ -39,7 +42,19 @@ export const AppShell: React.FC = () => {
     isStopwatchFullscreen, setIsStopwatchFullscreen,
   } = useStopwatch();
 
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { openTask, openSettings } = useOverlayNav();
+
+  // Overlays are search-param state on the current page (settings / task), so the
+  // routed page under <Outlet/> stays mounted underneath. Closing pops the history
+  // entry the open pushed (back button also closes); a masked deep-link reload is
+  // handled by the standalone /settings and /task/$taskId routes instead.
+  const { task: taskOverlayId, settings: settingsOverlayOpen } = useSearch({ from: '/_authed' });
+  const closeOverlay = () => {
+    if (window.history.length > 1) router.history.back();
+    else router.navigate({ to: '.', search: (prev) => ({ ...prev, task: undefined, settings: undefined }) });
+  };
   // Fullscreen is a trackers-only affordance; leaving that view exits it (matches
   // the old handleViewChange behavior).
   const isTrackers = pathname.startsWith('/trackers');
@@ -51,7 +66,6 @@ export const AppShell: React.FC = () => {
   // while inside the app — logout or a mid-session token expiry surfaced by the
   // window-focus revalidation — routes back to /login. This replaces the old
   // `!isAuthenticated → AuthModal` render gate that used to live here.
-  const router = useRouter();
   useEffect(() => {
     if (!sessionPending && !isAuthenticated) router.history.push('/login');
   }, [sessionPending, isAuthenticated, router]);
@@ -77,7 +91,7 @@ export const AppShell: React.FC = () => {
         isVisible={!isFullscreen && !isStopwatchFullscreen}
         isAuthenticated={isAuthenticated}
         email={authSession.data?.user?.email}
-        onOpenSettings={() => router.history.push('/settings')}
+        onOpenSettings={openSettings}
         onLogout={logout}
         onStopwatchClick={() => setIsStopwatchVisible(v => !v)}
         isStopwatchActive={timerState !== 'idle'}
@@ -114,17 +128,22 @@ export const AppShell: React.FC = () => {
       />
 
       {/* Global task search (⌘/Ctrl+K or the ribbon Search button). Opening a
-          result navigates to the shared /task/$taskId route. */}
+          result opens the task full-view overlay (masked to /task/$taskId). */}
       {isSearchOpen && (
         <TaskFinder
           entries={searchEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
           onToggleTodo={handleToggleTodo}
-          onPick={(id) => { router.history.push('/task/' + encodeURIComponent(id)); setIsSearchOpen(false); }}
+          onPick={(id) => { openTask(id); setIsSearchOpen(false); }}
           onClose={() => setIsSearchOpen(false)}
         />
       )}
+
+      {/* Overlays layered above the persistent page <Outlet/> — driven by search
+          params so the page underneath never unmounts while they're open. */}
+      {settingsOverlayOpen && <SettingsOverlay onClose={closeOverlay} />}
+      {taskOverlayId && <TaskOverlay taskId={taskOverlayId} onClose={closeOverlay} />}
 
       {/* Stopwatch Widget */}
       <AnimatePresence>
