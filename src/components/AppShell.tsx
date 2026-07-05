@@ -3,7 +3,6 @@ import { Outlet, useRouter, useRouterState } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { Minimize2 } from 'lucide-react';
 import { AddTrackerModal } from './AddTrackerModal';
-import { AccountModal } from './AccountModal';
 import { LoadingScreen } from './LoadingScreen';
 import { Sidebar } from './Sidebar';
 import { StopwatchWidget } from './StopwatchWidget';
@@ -26,13 +25,6 @@ export const AppShell: React.FC = () => {
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
     handleAddTracker,
-    isAccountModalOpen, setIsAccountModalOpen,
-    authSession,
-    logout,
-    weekStartsOn, setWeekStartsOn,
-    countdownMode, setCountdownMode,
-    xpEnabled, setXpEnabled,
-    theme, setTheme,
     // global search
     isSearchOpen, setIsSearchOpen,
     searchEntries,
@@ -78,7 +70,7 @@ export const AppShell: React.FC = () => {
       <Sidebar
         isVisible={!isFullscreen && !isStopwatchFullscreen}
         isAuthenticated={isAuthenticated}
-        onAccountClick={() => setIsAccountModalOpen(true)}
+        onAccountClick={() => router.history.push('/settings')}
         onStopwatchClick={() => setIsStopwatchVisible(v => !v)}
         isStopwatchActive={timerState !== 'idle'}
         onSearchClick={() => setIsSearchOpen(true)}
@@ -111,22 +103,6 @@ export const AppShell: React.FC = () => {
         }}
         onAdd={handleAddTracker}
         editingTracker={editingTracker}
-      />
-
-      <AccountModal
-        isOpen={isAccountModalOpen}
-        onClose={() => setIsAccountModalOpen(false)}
-        email={authSession.data?.user?.email}
-        name={authSession.data?.user?.name}
-        onLogout={logout}
-        weekStartsOn={weekStartsOn}
-        onUpdateWeekStartsOn={setWeekStartsOn}
-        countdownMode={countdownMode}
-        onUpdateCountdownMode={setCountdownMode}
-        xpEnabled={xpEnabled}
-        onUpdateXpEnabled={setXpEnabled}
-        theme={theme}
-        onUpdateTheme={setTheme}
       />
 
       {/* Global task search (⌘/Ctrl+K or the ribbon Search button). Opening a

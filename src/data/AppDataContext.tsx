@@ -41,7 +41,6 @@ function useProvideAppData() {
   const [editingTracker, setEditingTracker] = useState<Tracker | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   // Real Neon Auth session. The app is gated on this (see AppShell): server
   // data loads only once authenticated.
   const authSession = authClient.useSession();
@@ -440,9 +439,9 @@ function useProvideAppData() {
   const logout = async () => {
     await authClient.signOut();
     // Evict all cached data so the previous account's todos/trackers/etc.
-    // can never be shown to the next account that signs in.
+    // can never be shown to the next account that signs in. The session goes
+    // null, so AppShell's redirect-out effect routes to /login (closing /settings).
     queryClient.clear();
-    setIsAccountModalOpen(false);
   };
 
   return {
@@ -490,8 +489,7 @@ function useProvideAppData() {
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
     viewMode, setViewMode,
-    // account modal
-    isAccountModalOpen, setIsAccountModalOpen,
+    // account (the settings route reads these)
     logout,
     // global task search
     isSearchOpen, setIsSearchOpen,

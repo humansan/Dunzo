@@ -15,6 +15,7 @@ import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedTrackersRouteImport } from './routes/_authed/trackers'
 import { Route as AuthedTodayRouteImport } from './routes/_authed/today'
 import { Route as AuthedStatsRouteImport } from './routes/_authed/stats'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
 import { Route as AuthedPlannerIndexRouteImport } from './routes/_authed/planner/index'
 import { Route as AuthedTaskTaskIdRouteImport } from './routes/_authed/task.$taskId'
@@ -49,6 +50,11 @@ const AuthedStatsRoute = AuthedStatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
   '/calendar': typeof AuthedCalendarRoute
+  '/settings': typeof AuthedSettingsRoute
   '/stats': typeof AuthedStatsRoute
   '/today': typeof AuthedTodayRoute
   '/trackers': typeof AuthedTrackersRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/calendar': typeof AuthedCalendarRoute
+  '/settings': typeof AuthedSettingsRoute
   '/stats': typeof AuthedStatsRoute
   '/today': typeof AuthedTodayRoute
   '/trackers': typeof AuthedTrackersRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/calendar': typeof AuthedCalendarRoute
+  '/_authed/settings': typeof AuthedSettingsRoute
   '/_authed/stats': typeof AuthedStatsRoute
   '/_authed/today': typeof AuthedTodayRoute
   '/_authed/trackers': typeof AuthedTrackersRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/calendar'
+    | '/settings'
     | '/stats'
     | '/today'
     | '/trackers'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/calendar'
+    | '/settings'
     | '/stats'
     | '/today'
     | '/trackers'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/login'
     | '/_authed/calendar'
+    | '/_authed/settings'
     | '/_authed/stats'
     | '/_authed/today'
     | '/_authed/trackers'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedStatsRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/calendar': {
       id: '/_authed/calendar'
       path: '/calendar'
@@ -225,6 +244,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedCalendarRoute: typeof AuthedCalendarRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedStatsRoute: typeof AuthedStatsRoute
   AuthedTodayRoute: typeof AuthedTodayRoute
   AuthedTrackersRoute: typeof AuthedTrackersRoute
@@ -236,6 +256,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCalendarRoute: AuthedCalendarRoute,
+  AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedStatsRoute: AuthedStatsRoute,
   AuthedTodayRoute: AuthedTodayRoute,
   AuthedTrackersRoute: AuthedTrackersRoute,
