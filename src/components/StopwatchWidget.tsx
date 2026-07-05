@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Maximize2, X } from 'lucide-react';
+import { StopwatchTime } from '../data/StopwatchContext';
 
 export type TimerState = 'idle' | 'running' | 'paused';
 
 interface StopwatchWidgetProps {
   timerState: TimerState;
-  elapsed: number;
   onStart: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -15,20 +15,8 @@ interface StopwatchWidgetProps {
   onMaximize: () => void;
 }
 
-function formatTime(elapsed: number): string {
-  const totalSeconds = Math.floor(elapsed / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return hours > 0
-    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
-
 export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
   timerState,
-  elapsed,
   onStart,
   onPause,
   onStop,
@@ -93,7 +81,7 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
       {/* Timer */}
       <div className="relative z-10 flex flex-col items-center px-6 pb-8">
         <div className="text-white font-bold font-mono tracking-tight text-6xl leading-none py-2">
-          {formatTime(elapsed)}
+          <StopwatchTime />
         </div>
 
         <div className="flex items-center justify-center gap-3 text-sm duration-0">

@@ -9,6 +9,7 @@ import { StopwatchWidget } from './StopwatchWidget';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
 import { TaskFinder } from './todosHub/TaskFinder';
 import { useAppData } from '../data/AppDataContext';
+import { useStopwatch } from '../data/StopwatchContext';
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
 // once and only the routed <Outlet/> changes, so sibling views never remount. Also
@@ -18,10 +19,6 @@ export const AppShell: React.FC = () => {
     sessionPending,
     isAuthenticated,
     isFullscreen, setIsFullscreen,
-    isStopwatchVisible, setIsStopwatchVisible,
-    isStopwatchFullscreen, setIsStopwatchFullscreen,
-    timerState, elapsed,
-    startTimer, pauseTimer, stopTimer, resetTimer,
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
     handleAddTracker,
@@ -32,6 +29,13 @@ export const AppShell: React.FC = () => {
     handleHubSaveTodo,
     handleToggleTodo,
   } = useAppData();
+  // Stopwatch is its own context so its 50ms tick doesn't re-render this shell.
+  const {
+    timerState,
+    startTimer, pauseTimer, stopTimer, resetTimer,
+    isStopwatchVisible, setIsStopwatchVisible,
+    isStopwatchFullscreen, setIsStopwatchFullscreen,
+  } = useStopwatch();
 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Fullscreen is a trackers-only affordance; leaving that view exits it (matches
@@ -123,7 +127,6 @@ export const AppShell: React.FC = () => {
         {isStopwatchVisible && (
           <StopwatchWidget
             timerState={timerState}
-            elapsed={elapsed}
             onStart={startTimer}
             onPause={pauseTimer}
             onStop={stopTimer}
@@ -142,7 +145,6 @@ export const AppShell: React.FC = () => {
         {isStopwatchFullscreen && (
           <StopwatchFullscreen
             timerState={timerState}
-            elapsed={elapsed}
             onStart={startTimer}
             onPause={pauseTimer}
             onStop={stopTimer}

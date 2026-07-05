@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Clock, LayoutGrid, List, Maximize2 } from 'lucide-react';
@@ -17,12 +18,13 @@ function TrackersRoute() {
     handleDeleteTracker,
     handleEditTracker,
     openTrackerModal,
-    viewMode, setViewMode,
     isFullscreen, setIsFullscreen,
     activeTodo,
     setActiveTodoId,
     handleToggleAndClose,
   } = useAppData();
+  // Grid/list toggle is local to this view (no other view reads it).
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   return (
     <>

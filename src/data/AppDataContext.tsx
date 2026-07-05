@@ -1,8 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Theme, DayTodos, Todo, Tracker } from '../types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '../utils/todoFilters';
 import { toggledStatus } from '../utils/todoStatus';
-import { TimerState } from '../components/StopwatchWidget';
 import { authClient } from '../auth';
 import { queryClient } from './queryClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from './todos';
@@ -39,7 +38,6 @@ function groupByDueDate(todos: Todo[]): DayTodos[] {
 function useProvideAppData() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTracker, setEditingTracker] = useState<Tracker | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Real Neon Auth session. The app is gated on this (see AppShell): server
   // data loads only once authenticated.
@@ -141,58 +139,6 @@ function useProvideAppData() {
   // Derived per-day bucket view for the day-grouped read surfaces (daily list,
   // calendar, stats) that still consume DayTodos[]. Not persisted.
   const dayTodos = useMemo(() => groupByDueDate(todos), [todos]);
-
-  // Stopwatch state — lives here so the timer keeps running while the widget UI is hidden
-  const [timerState, setTimerState] = useState<TimerState>('idle');
-  const [elapsed, setElapsed] = useState(0);
-  const [isStopwatchVisible, setIsStopwatchVisible] = useState(false);
-  const [isStopwatchFullscreen, setIsStopwatchFullscreen] = useState(false);
-  const startTimeRef = useRef<number>(0);
-  const pausedElapsedRef = useRef<number>(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const startTimer = useCallback(() => {
-    const now = Date.now();
-    setTimerState(prev => {
-      if (prev === 'idle') {
-        pausedElapsedRef.current = 0;
-      }
-      startTimeRef.current = now;
-      return 'running';
-    });
-  }, []);
-
-  const pauseTimer = useCallback(() => {
-    pausedElapsedRef.current = pausedElapsedRef.current + (Date.now() - startTimeRef.current);
-    setElapsed(pausedElapsedRef.current);
-    setTimerState('paused');
-  }, []);
-
-  const stopTimer = useCallback(() => {
-    setTimerState('idle');
-    setElapsed(0);
-    pausedElapsedRef.current = 0;
-  }, []);
-
-  const resetTimer = useCallback(() => {
-    setTimerState('idle');
-    setElapsed(0);
-    pausedElapsedRef.current = 0;
-  }, []);
-
-  useEffect(() => {
-    if (timerState === 'running') {
-      intervalRef.current = setInterval(() => {
-        setElapsed(pausedElapsedRef.current + (Date.now() - startTimeRef.current));
-      }, 50);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [timerState]);
 
   // Theme is DB-synced now; this effect only reflects it onto the CSS variables.
   useEffect(() => {
@@ -488,7 +434,6 @@ function useProvideAppData() {
     openTrackerModal,
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
-    viewMode, setViewMode,
     // account (the settings route reads these)
     logout,
     // global task search
@@ -496,11 +441,6 @@ function useProvideAppData() {
     searchEntries,
     // shell UI state
     isFullscreen, setIsFullscreen,
-    // stopwatch
-    timerState, elapsed,
-    startTimer, pauseTimer, stopTimer, resetTimer,
-    isStopwatchVisible, setIsStopwatchVisible,
-    isStopwatchFullscreen, setIsStopwatchFullscreen,
   };
 }
 

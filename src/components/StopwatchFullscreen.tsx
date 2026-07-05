@@ -2,27 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Minimize2, X, Image as ImageIcon, Sun } from 'lucide-react';
 import { TimerState } from './StopwatchWidget';
+import { StopwatchTime } from '../data/StopwatchContext';
 
 interface StopwatchFullscreenProps {
   timerState: TimerState;
-  elapsed: number;
   onStart: () => void;
   onPause: () => void;
   onStop: () => void;
   onReset: () => void;
   onMinimize: () => void;
   onClose: () => void;
-}
-
-function formatTime(elapsed: number): string {
-  const totalSeconds = Math.floor(elapsed / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return hours > 0
-    ? `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-    : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 const Slider: React.FC<{ value: number; onChange: (v: number) => void }> = ({ value, onChange }) => (
@@ -41,7 +30,6 @@ const Slider: React.FC<{ value: number; onChange: (v: number) => void }> = ({ va
 
 export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
   timerState,
-  elapsed,
   onStart,
   onPause,
   onStop,
@@ -171,7 +159,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
       {/* Timer — flex-1 region below the header, centers the time + controls */}
       <div className="relative z-[5] flex-1 flex flex-col items-center justify-center px-6">
         <div className="text-white font-bold font-mono tracking-tight leading-none text-center text-[clamp(4rem,18vw,11rem)] font-[">
-          {formatTime(elapsed)}
+          <StopwatchTime />
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-4 text-base duration-0">
