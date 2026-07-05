@@ -9,7 +9,7 @@ import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon.svg';
 import { ListSelect } from './todosHub/ListSelect';
 import { textInputCls } from './todosHub/TextInput';
-import { modalPop } from './modalMotion';
+import { modalPop, overlayBackdrop } from './modalMotion';
 
 type CountdownMode = 'off' | 'time' | 'percent';
 type Section = 'profile' | 'settings' | 'data';
@@ -489,7 +489,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onMouseDown={(e) => { if (e.target === overlayRef.current) onClose(); }}
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          className={`fixed inset-0 z-[70] flex items-center justify-center p-4 ${overlayBackdrop}`}
         >
           <motion.div
             {...modalPop}

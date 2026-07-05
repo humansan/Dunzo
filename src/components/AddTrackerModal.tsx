@@ -6,7 +6,7 @@ import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode }
 import { ListSelect } from './todosHub/ListSelect';
 import { textInputCls } from './todosHub/TextInput';
 import { DatePickerPopover } from './DatePickerPopover';
-import { modalPop } from './modalMotion';
+import { modalPop, overlayBackdrop } from './modalMotion';
 
 // `yyyy-MM-dd` -> a friendly display, falling back to a placeholder when empty.
 function formatDateField(val: string): string {
@@ -73,7 +73,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className={`absolute inset-0 ${overlayBackdrop}`}
           />
           <motion.div
             {...modalPop}

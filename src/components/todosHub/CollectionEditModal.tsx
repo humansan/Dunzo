@@ -4,7 +4,7 @@ import { X, ChevronDown, Check } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry, CollectionOption, collectionPath } from '../../utils/todoFilters';
 import { CollectionSearchField } from '../todoFields';
-import { modalPop } from '../modalMotion';
+import { modalPop, overlayBackdrop } from '../modalMotion';
 import { textInputCls } from './TextInput';
 import { COLLECTION_COLORS, DEFAULT_COLLECTION_COLOR, colorName } from './constants';
 
@@ -39,7 +39,7 @@ export const CollectionEditModal: React.FC<{
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
+      className={`fixed inset-0 z-[70] flex items-center justify-center p-4 ${overlayBackdrop}`}
       onMouseDown={onClose}
     >
       <motion.div

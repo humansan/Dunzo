@@ -4,6 +4,7 @@ import { Search, X, List, Columns2, CornerUpLeft } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { useSyncedLayout } from '../../data/settings';
+import { overlayBackdrop } from '../modalMotion';
 import { VARIANTS } from './variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from './TaskTable';
 import { useTaskFinderSearch } from './useTaskFinderSearch';
@@ -127,7 +128,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] px-4 bg-black/50"
+      className={`fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] px-4 ${overlayBackdrop}`}
       onMouseDown={onClose}
     >
       <div

@@ -10,3 +10,9 @@ export const modalPop = {
   exit: { opacity: 0, scale: 0.98 },
   transition: { duration: 0.13, ease: 'easeOut' } as Transition,
 };
+
+// Shared dim + blur backdrop appearance for overlay windows (settings, task full
+// view, ⌘K search, tracker form, collection modals) so they all look the same.
+// Compose with per-overlay positioning, e.g.:
+//   className={`fixed inset-0 flex items-center justify-center ${overlayBackdrop}`}
+export const overlayBackdrop = 'bg-black/60 backdrop-blur-sm';

@@ -1,6 +1,7 @@
 import { useRouter } from '@tanstack/react-router';
 import { TodosHubView } from './TodosHubView';
 import { useAppData } from '../data/AppDataContext';
+import { useOverlayNav } from '../data/useOverlayNav';
 
 // Shared planner surface for both /planner (bare = 'all') and /planner/$collectionId.
 // `selectedView` comes from the route; selecting a view navigates so the collection
@@ -8,9 +9,10 @@ import { useAppData } from '../data/AppDataContext';
 export function PlannerScreen({ selectedView }: { selectedView: string }) {
   const d = useAppData();
   const router = useRouter();
+  const { openTask } = useOverlayNav();
   const onSelectView = (view: string) =>
     router.history.push(view === 'all' ? '/planner' : `/planner/${encodeURIComponent(view)}`);
-  const onOpenTask = (id: string) => router.history.push('/task/' + encodeURIComponent(id));
+  const onOpenTask = (id: string) => openTask(id);
 
   return (
     <main className="h-screen py-0">

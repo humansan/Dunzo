@@ -1,38 +1,21 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { AccountModal } from '../../components/AccountModal';
+import { SettingsOverlay } from '../../components/SettingsOverlay';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
-import { useAppData } from '../../data/AppDataContext';
 
-// Account settings as its own route (was an AppShell overlay). Back-button /
-// deep-link closable — same pattern as /task/$taskId. The modal's profile/settings/
-// data sub-tabs stay internal state (no ?tab= param).
+// Standalone /settings route — only reached by a cold deep-link (reloading the
+// masked URL from the address bar). In-app opens render SettingsOverlay over the
+// current page via a search param instead (see useOverlayNav), so the page never
+// unmounts. Both paths render the same SettingsOverlay.
 export const Route = createFileRoute('/_authed/settings')({
   component: SettingsRoute,
   errorComponent: ViewErrorFallback,
 });
 
 function SettingsRoute() {
-  const d = useAppData();
   const router = useRouter();
   const close = () => {
     if (window.history.length > 1) router.history.back();
     else router.history.push('/today');
   };
-  return (
-    <AccountModal
-      isOpen
-      onClose={close}
-      email={d.authSession.data?.user?.email}
-      name={d.authSession.data?.user?.name}
-      onLogout={d.logout}
-      weekStartsOn={d.weekStartsOn}
-      onUpdateWeekStartsOn={d.setWeekStartsOn}
-      countdownMode={d.countdownMode}
-      onUpdateCountdownMode={d.setCountdownMode}
-      xpEnabled={d.xpEnabled}
-      onUpdateXpEnabled={d.setXpEnabled}
-      theme={d.theme}
-      onUpdateTheme={d.setTheme}
-    />
-  );
+  return <SettingsOverlay onClose={close} />;
 }
