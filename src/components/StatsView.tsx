@@ -32,19 +32,23 @@ import { isDone } from '../utils/todoStatus';
 import { motion, AnimatePresence } from 'motion/react';
 import { pillBg, pillBorder } from '../theme/pill';
 import { collectionColor } from './todosHub/constants';
+import { useThemeColor } from '../theme/useThemeColor';
 
 interface StatsViewProps {
   dayTodos: DayTodos[];
 }
-
-const GOLD = '#ffc24b';
-const VIOLET = '#a78bfa';
 
 // A collection along a task's path, as the stats surfaces consume it.
 interface CollChip { id: string; name: string; color: string }
 const UNCATEGORIZED: CollChip = { id: '__uncategorized__', name: 'Uncategorized', color: 'var(--color-fg-muted)' };
 
 export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
+  // XP stars/streak keep their fixed signature colors (gold/purple) across themes; the
+  // chart grid/axis follow the theme (resolved to concrete colors for recharts SVG).
+  const GOLD = '#ffc24b';
+  const VIOLET = '#a78bfa';
+  const FG = useThemeColor('fg');
+  const AXIS = useThemeColor('fg-muted');
   const [chartInterval, setChartInterval] = useState<'day' | 'fourDays' | 'week' | 'month'>(() => {
     const saved = localStorage.getItem('chronos-stats-interval');
     return (saved as any) || 'day';
@@ -459,11 +463,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
             key={i} 
             size={14} 
             strokeWidth={2}
-            fill={i < count ? GOLD : 'transparent'} 
-            style={{ 
-              color: i < count ? GOLD : 'rgba(255,255,255,0.15)',
-              filter: i < count ? `drop-shadow(0 0 3px ${GOLD}66)` : 'none' 
-            }} 
+            fill={i < count ? GOLD : 'transparent'}
+            style={{
+              color: i < count ? GOLD : `color-mix(in srgb, ${FG} 15%, transparent)`,
+              filter: i < count ? `drop-shadow(0 0 3px color-mix(in srgb, ${GOLD} 40%, transparent))` : 'none'
+            }}
           />
         ))}
       </div>
@@ -509,9 +513,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
           {/* Filled Circle badge */}
           <div 
             className="w-24 h-24 rounded-full flex items-center justify-center shrink-0 text-black text-4xl font-extrabold font-mono"
-            style={{ 
-              backgroundColor: GOLD, 
-              boxShadow: `0 0 25px ${GOLD}50`,
+            style={{
+              backgroundColor: GOLD,
+              boxShadow: `0 0 25px color-mix(in srgb, ${GOLD} 31%, transparent)`,
             }}
           >
             {streakInfo.current}
@@ -626,10 +630,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
         <div className="h-96 w-full mt-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} strokeDasharray="3 3" />
+              <CartesianGrid stroke={FG} strokeOpacity={0.06} vertical={false} strokeDasharray="3 3" />
               <XAxis
                 dataKey="name"
-                stroke="rgba(255,255,255,0.3)"
+                stroke={AXIS}
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
@@ -638,14 +642,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 interval={chartInterval === 'month' ? 1 : 'preserveStartEnd'}
               />
               <YAxis
-                stroke="rgba(255,255,255,0.3)"
+                stroke={AXIS}
                 fontSize={10}
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
                 fontFamily="Space Grotesk, monospace"
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: FG, fillOpacity: 0.05 }} />
               <Bar dataKey="xp" fill="var(--accent1)" />
             </BarChart>
           </ResponsiveContainer>

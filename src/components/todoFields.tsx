@@ -256,14 +256,15 @@ export const OptionSelectField: React.FC<{
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = value === opt.value;
+          const color = pill(opt.color)
           return (
             <button
               key={opt.value}
               type="button"
               onClick={() => onChange(selected ? undefined : opt.value)}
-              style={{ ...pill(opt.color), boxShadow: selected ? `0 0 0 2px ${opt.color}` : undefined }}
+              style={{ ...pill(opt.color)}}
               className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
-                selected ? '' : 'opacity-45 hover:opacity-100'
+                selected ? `ring-2 ring-[${pill(opt.color).color}]` : 'opacity-50 hover:opacity-100'
               }`}
             >
               {opt.label}

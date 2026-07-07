@@ -25,7 +25,7 @@ export const CompactDayTracker: React.FC = () => {
   const [whole, decimal] = percentageStr.split('.');
 
   return (
-    <div className="bg-surface p-5 rounded-3xl border border-fg/5 shadow-xl mb-8">
+    <div className="bg-surface p-5 rounded-3xl border border-fg/5 mb-8">
       <div className="text-center mb-2">
         <p className="text-fg/40 text-[10px] font-bold uppercase tracking-wider">
           {format(now, 'EEEE, MMMM do yyyy')}

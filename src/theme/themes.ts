@@ -1,5 +1,6 @@
 import type { RoleName } from './roles';
 import { classic } from './classic';
+import { gruvboxMaterial } from './gruvbox';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE THEME FILE. A theme owns BOTH layers:
@@ -29,8 +30,7 @@ export interface Theme {
 // Dark values reproduce today's look 1:1. Light values are a light rendering of the
 // same palette (tunable).
 
-// Gruvbox Material is added in a later step (see docs/THEMING_PLAN.md §4).
-export const THEMES: Theme[] = [classic];
+export const THEMES: Theme[] = [classic, gruvboxMaterial];
 
 export const DEFAULT_THEME_ID = 'classic';
 

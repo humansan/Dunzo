@@ -20,7 +20,7 @@ export const ROLE_NAMES = [
   // Relative date buckets (planner grouping headers)
   'date-past', 'date-today', 'date-tomorrow', 'date-next7', 'date-next30', 'date-next3m', 'date-nextyear',
   // XP system
-  'xp-gold', 'xp-tier2', 'xp-bar',
+  'xp-tier1', 'xp-tier2', 'xp-bar',
   // Collection pill swatches (their own theme-controlled set)
   'collection-1', 'collection-2', 'collection-3', 'collection-4',
   'collection-5', 'collection-6', 'collection-7', 'collection-8',

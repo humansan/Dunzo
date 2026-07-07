@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import { XpStats } from '../utils/xpUtils';
+import { useThemeColor } from '../theme/useThemeColor';
 
 interface XpProgressBarProps {
   stats: XpStats;
@@ -8,13 +9,18 @@ interface XpProgressBarProps {
   weeklyXp: number[];
 }
 
-const GOLD = '#ffc24b';
-const VIOLET = '#a78bfa';
-
 // Exponential ease-out: snappy start, soft landing.
 const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp }) => {
+  // XP indicator keeps its fixed signature colors across all themes (gold → purple,
+  // coral bar). Only the base "not yet lit" text follows the theme so it stays legible
+  // in light mode.
+  const GOLD = useThemeColor('xp-tier1');
+  const VIOLET = useThemeColor('xp-tier2');
+  console.log(VIOLET);
+  const CORAL = useThemeColor('xp-bar');
+  const FG = useThemeColor('fg');
   const {
     earned,
     target,
@@ -49,7 +55,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   }
 
   const pctLabel = `${Math.round(percent)}%`;
-  const barColor = reachedWeekBest ? VIOLET : "#ff723a"; //#ff774d coral maybe
+  const barColor = reachedWeekBest ? VIOLET : CORAL;
 
   // Count-up: smoothly tick the displayed number toward the real earned total.
   const count = useMotionValue(earned);
@@ -68,12 +74,14 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
         <div
           className="relative flex items-end gap-3.5 transition-all duration-300"
           style={{
-            textShadow: lit ? `0 0 18px ${lit}66, 0 0 6px ${lit}40` : 'none'
+            textShadow: lit
+              ? `0 0 18px color-mix(in srgb, ${lit} 40%, transparent), 0 0 6px color-mix(in srgb, ${lit} 25%, transparent)`
+              : 'none'
           }}
         >
           <div className="relative flex items-baseline gap-1.5 leading-none">
             <motion.span
-              animate={{ color: lit ?? '#ffffff' }}
+              animate={{ color: lit ?? FG }}
               transition={{ duration: 0.3, ease: EXPO_OUT }}
               className="text-7xl font-medium"
               style={{ fontVariantNumeric: 'tabular-nums' }}

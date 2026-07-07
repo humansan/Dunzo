@@ -22,6 +22,8 @@ export const SettingsOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) 
       onUpdateXpEnabled={d.setXpEnabled}
       mode={d.mode}
       onUpdateMode={d.setMode}
+      themeId={d.themeId}
+      onUpdateThemeId={d.setThemeId}
     />
   );
 };

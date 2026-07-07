@@ -9,9 +9,9 @@
 // like `var(--color-status-active)`. Because it's color-mix-based it never does hex
 // string concatenation (`${c}70`), which breaks on var() colors.
 
-export const pillBg = (color: string) => `color-mix(in srgb, ${color} 25%, transparent)`;
+export const pillBg = (color: string) => `color-mix(in srgb, ${color} 35%, transparent)`;
 export const pillText = (color: string) => `color-mix(in srgb, ${color} 30%, var(--color-fg))`;
-export const pillBorder = (color: string) => `color-mix(in srgb, ${color} 35%, transparent)`;
+export const pillBorder = (color: string) => `color-mix(in srgb, ${color} 30%, transparent)`;
 
 // Background + text for a tinted chip. Spread into a `style` prop.
 export const pill = (color: string): { backgroundColor: string; color: string } => ({
