@@ -11,7 +11,7 @@ import { useSettings, useUpdateSettings } from './settings';
 import { applyTheme, type ThemeMode } from '../theme/applyTheme';
 import { DEFAULT_THEME_ID } from '../theme/themes';
 
-const DEFAULT_THEME: Theme = { accent1: '#c6dabe', accent2: '#c6dabe' };
+const DEFAULT_THEME: Theme = { accent1: '#e1e354', accent2: '#c6dabe' };
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
 // Within-day order follows `dailyOrder` (the daily list's own persisted order;
