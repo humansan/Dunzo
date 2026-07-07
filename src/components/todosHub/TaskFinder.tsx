@@ -132,32 +132,32 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       onMouseDown={onClose}
     >
       <div
-        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-xl'} max-h-[70vh] flex flex-col rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl overflow-hidden`}
+        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-xl'} max-h-[70vh] flex flex-col rounded-xl border border-fg/10 bg-canvas shadow-2xl overflow-hidden`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="shrink-0 px-3 pt-2.5 text-[11px] font-semibold uppercase tracking-wide text-white/35">
+          <div className="shrink-0 px-3 pt-2.5 text-[11px] font-semibold uppercase tracking-wide text-fg/35">
             {title}
           </div>
         )}
         {/* Search field + Flat / Two-pane toggle */}
-        <div className="shrink-0 flex items-center gap-2 px-3 h-12 border-b border-white/10">
-          <Search size={16} className="text-white/40" />
+        <div className="shrink-0 flex items-center gap-2 px-3 h-12 border-b border-fg/10">
+          <Search size={16} className="text-fg/40" />
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
-            className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-sm text-fg placeholder:text-fg/35 focus:outline-none"
           />
-          <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-white/[0.04] p-0.5">
+          <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-fg/[0.04] p-0.5">
             {([['flat', List, 'Flat list'], ['twoPane', Columns2, 'Collections']] as const).map(([v, Icon, label]) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setFinderView(v)}
                 title={label}
-                className={`p-1 rounded-md transition-colors ${finderView === v ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+                className={`p-1 rounded-md transition-colors ${finderView === v ? 'bg-fg/10 text-fg' : 'text-fg/40 hover:text-fg'}`}
               >
                 <Icon size={15} />
               </button>
@@ -166,7 +166,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 p-1 rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+            className="shrink-0 p-1 rounded text-fg/40 hover:text-fg hover:bg-fg/10 transition-colors"
           >
             <X size={15} />
           </button>
@@ -177,9 +177,9 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           <button
             type="button"
             onClick={rootOption.onSelect}
-            className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-white/10 text-sm text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors"
+            className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-fg/10 text-sm text-fg/70 hover:text-fg hover:bg-fg/[0.04] transition-colors"
           >
-            <CornerUpLeft size={15} className="text-white/40" />
+            <CornerUpLeft size={15} className="text-fg/40" />
             {rootOption.label}
           </button>
         )}
@@ -187,9 +187,9 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
         {/* Results — hint / empty message, else the Flat or Two-pane view. */}
         <div className="flex-1 min-h-0 flex flex-col">
           {!q ? (
-            <div className="px-4 py-6 text-xs text-white/40">Type to search tasks by name or notes.</div>
+            <div className="px-4 py-6 text-xs text-fg/40">Type to search tasks by name or notes.</div>
           ) : matches.length === 0 ? (
-            <div className="px-4 py-6 text-xs text-white/40">No tasks match “{query.trim()}”.</div>
+            <div className="px-4 py-6 text-xs text-fg/40">No tasks match “{query.trim()}”.</div>
           ) : finderView === 'twoPane' ? (
             <TwoPaneResults
               entries={candidateEntries}

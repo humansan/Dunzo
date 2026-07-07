@@ -29,7 +29,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
   children,
 }) => {
   const headerCellCls =
-    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-white/75 hover:bg-[#0f0f0f] select-none';
+    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-fg/75 hover:bg-canvas select-none';
 
   const titleChrome = variant.chrome === 'title';
   const headerChrome = variant.chrome === 'header';
@@ -44,7 +44,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
       // commits the current indicator. Row/header onDrop call stopPropagation so
       // this never double-fires.
       onDrop={dnd ? (e) => { e.preventDefault(); dnd.onRowDrop(); } : undefined}
-      className={`flex-1 min-w-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full ${
+      className={`flex-1 min-w-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full ${
         headerChrome
           ? 'overflow-auto [&::-webkit-scrollbar]:h-2 ml-4 pr-4'
           : titleChrome
@@ -53,13 +53,13 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
       }`}
     >
       {titleChrome ? (
-        <div className="max-w-3xl mx-auto w-full text-white">
+        <div className="max-w-3xl mx-auto w-full text-fg">
           {/* Project-style title — the selected collection's name, else the view label. */}
           <div className="pt-3 mb-1">
-            <h1 className="text-3xl font-bold text-white truncate">
+            <h1 className="text-3xl font-bold text-fg truncate">
               {model.selectedCollectionId ? (model.todoById.get(model.selectedCollectionId)?.text || 'Untitled') : model.viewLabel}
             </h1>
-            <p className="mt-0.5 text-xs text-white/35">{model.currentCount} item{model.currentCount === 1 ? '' : 's'}</p>
+            <p className="mt-0.5 text-xs text-fg/35">{model.currentCount} item{model.currentCount === 1 ? '' : 's'}</p>
           </div>
           {children}
         </div>
@@ -70,7 +70,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
               padding and w-max width as the rows below, so the padding sits outside
               the grid tracks and the column borders line up with the body. */}
           <div
-            className="grid sticky top-0 z-30 w-max min-w-full bg-[#0a0a0a] border-y border-white/10 h-9"
+            className="grid sticky top-0 z-30 w-max min-w-full bg-canvas border-y border-fg/10 h-9"
             style={{ gridTemplateColumns: effectiveGrid, paddingLeft: TABLE_PAD, paddingRight: TABLE_PAD }}
           >
             {effectiveColumns.map((c, idx) => (
@@ -78,9 +78,9 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
                 key={c.key}
                 // The Name header gets the row's left padding so its label lines up with the row content.
                 style={idx === 0 ? { paddingLeft: 30 } : undefined}
-                className={`${headerCellCls} ${idx > 0 ? 'border-l border-white/8' : ''} ${
-                  idx === 0 ? 'sticky left-0 z-10 bg-[#0a0a0a] border-r border-white/8' : ''
-                } ${idx === effectiveColumns.length - 1 ? 'border-r border-white/8' : ''}`}
+                className={`${headerCellCls} ${idx > 0 ? 'border-l border-fg/8' : ''} ${
+                  idx === 0 ? 'sticky left-0 z-10 bg-canvas border-r border-fg/8' : ''
+                } ${idx === effectiveColumns.length - 1 ? 'border-r border-fg/8' : ''}`}
               >
                 <span className="truncate">{c.label}</span>
                 {/* Resize handle on the right edge */}
@@ -95,13 +95,13 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
             <div />
           </div>
 
-          <div className="w-max min-w-full text-white" style={{ paddingLeft: TABLE_PAD, paddingRight: TABLE_PAD }}>
+          <div className="w-max min-w-full text-fg" style={{ paddingLeft: TABLE_PAD, paddingRight: TABLE_PAD }}>
             {children}
           </div>
         </>
       ) : (
         // 'none' chrome — bare rows; the embedding view owns width + padding.
-        <div className="w-full text-white">{children}</div>
+        <div className="w-full text-fg">{children}</div>
       )}
     </div>
   );

@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, User, SlidersHorizontal, Database, Upload, Download, LogOut, RotateCcw } from 'lucide-react';
-import { Theme } from '../types';
+import { X, User, SlidersHorizontal, Database, Upload, Download, LogOut } from 'lucide-react';
 import { type ThemeMode } from '../theme/applyTheme';
 import { authClient } from '../auth';
 import { buildBackup, parseBackup, mergeImportToDb } from '../data/import';
@@ -27,13 +26,9 @@ interface AccountModalProps {
   onUpdateCountdownMode: (val: CountdownMode) => void;
   xpEnabled: boolean;
   onUpdateXpEnabled: (val: boolean) => void;
-  theme: Theme;
-  onUpdateTheme: (theme: Theme) => void;
   mode: ThemeMode;
   onUpdateMode: (mode: ThemeMode) => void;
 }
-
-const DEFAULT_THEME: Theme = { accent1: '#e1e354', accent2: '#c6dabe' };
 
 // ── Shared controls (mirror the Task Planner's Sections menu styling) ─────────
 
@@ -44,11 +39,11 @@ const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ 
     aria-checked={value}
     onClick={() => onChange(!value)}
     className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-      value ? 'bg-(--accent2)' : 'bg-white/15'
+      value ? 'bg-(--accent2)' : 'bg-fg/15'
     }`}
   >
     <span
-      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
+      className={`inline-block h-3.5 w-3.5 rounded-full bg-fg shadow-sm transition-transform ${
         value ? 'translate-x-[18px]' : 'translate-x-[3px]'
       }`}
     />
@@ -64,14 +59,14 @@ const Segment = <T extends string | number>({
   value: T;
   onChange: (v: T) => void;
 }) => (
-  <div className="flex gap-0.5 rounded-lg bg-white/[0.06] p-0.5">
+  <div className="flex gap-0.5 rounded-lg bg-fg/[0.06] p-0.5">
     {options.map((o) => (
       <button
         key={String(o.value)}
         type="button"
         onClick={() => onChange(o.value)}
         className={`flex-1 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
-          value === o.value ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/70'
+          value === o.value ? 'bg-fg/15 text-fg' : 'text-fg/40 hover:text-fg/70'
         }`}
       >
         {o.label}
@@ -83,16 +78,16 @@ const Segment = <T extends string | number>({
 // ── Shared layout atoms ───────────────────────────────────────────────────────
 
 const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h3 className="text-[10px] font-bold uppercase tracking-wider text-white/30 mb-3">{children}</h3>
+  <h3 className="text-[10px] font-bold uppercase tracking-wider text-fg/30 mb-3">{children}</h3>
 );
 
-const labelCls = 'text-[13px] text-white/65';
+const labelCls = 'text-[13px] text-fg/65';
 const rowCls = 'flex items-center justify-between gap-4';
 
 const fieldInput = `${textInputCls} w-full`;
-const fieldLabel = 'block text-[11px] font-medium text-white/45 mb-1';
+const fieldLabel = 'block text-[11px] font-medium text-fg/45 mb-1';
 const formButton =
-  'w-full rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40';
+  'w-full rounded-xl bg-fg/10 py-2.5 text-sm font-semibold text-fg transition-all hover:bg-fg/15 disabled:cursor-not-allowed disabled:opacity-40';
 
 type FormMsg = { kind: 'ok' | 'err'; text: string } | null;
 
@@ -168,9 +163,9 @@ const ProfilePane: React.FC<{
       {/* Identity */}
       <div>
         <SectionHeader>Profile</SectionHeader>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
-          {name && <p className="text-sm font-semibold text-white">{name}</p>}
-          <p className="text-[13px] text-white/50">{email ?? 'Signed in'}</p>
+        <div className="rounded-2xl border border-fg/10 bg-fg/[0.03] px-4 py-3.5">
+          {name && <p className="text-sm font-semibold text-fg">{name}</p>}
+          <p className="text-[13px] text-fg/50">{email ?? 'Signed in'}</p>
         </div>
       </div>
 
@@ -267,8 +262,6 @@ const SettingsPane: React.FC<{
   onUpdateCountdownMode: (val: CountdownMode) => void;
   xpEnabled: boolean;
   onUpdateXpEnabled: (val: boolean) => void;
-  theme: Theme;
-  onUpdateTheme: (theme: Theme) => void;
   mode: ThemeMode;
   onUpdateMode: (mode: ThemeMode) => void;
 }> = ({
@@ -278,31 +271,9 @@ const SettingsPane: React.FC<{
   onUpdateCountdownMode,
   xpEnabled,
   onUpdateXpEnabled,
-  theme,
-  onUpdateTheme,
   mode,
   onUpdateMode,
 }) => {
-  const colorRow = (key: 'accent1' | 'accent2', label: string) => (
-    <div className="space-y-1.5">
-      <span className={labelCls}>{label}</span>
-      <div className="flex gap-2">
-        <input
-          type="color"
-          value={theme[key]}
-          onChange={(e) => onUpdateTheme({ ...theme, [key]: e.target.value })}
-          className="h-8 w-10 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent"
-        />
-        <input
-          type="text"
-          value={theme[key]}
-          onChange={(e) => onUpdateTheme({ ...theme, [key]: e.target.value })}
-          className={`${textInputCls} flex-1 font-mono`}
-        />
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-7">
       {/* Tasks */}
@@ -339,14 +310,14 @@ const SettingsPane: React.FC<{
         <div className={rowCls}>
           <div>
             <p className={labelCls}>XP &amp; streaks</p>
-            <p className="text-[11px] text-white/30 mt-0.5">Show XP, progress bar and streak stars</p>
+            <p className="text-[11px] text-fg/30 mt-0.5">Show XP, progress bar and streak stars</p>
           </div>
           <Toggle value={xpEnabled} onChange={onUpdateXpEnabled} />
         </div>
       </div>
 
       {/* Appearance */}
-      <div className="space-y-4 border-t border-white/8 pt-6">
+      <div className="space-y-4 border-t border-fg/8 pt-6">
         <SectionHeader>Appearance</SectionHeader>
 
         <div className="space-y-1.5">
@@ -361,17 +332,6 @@ const SettingsPane: React.FC<{
             onChange={onUpdateMode}
           />
         </div>
-
-        {colorRow('accent1', 'Accent color 1')}
-        {colorRow('accent2', 'Accent color 2')}
-        <button
-          type="button"
-          onClick={() => onUpdateTheme(DEFAULT_THEME)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/5 py-2.5 text-xs font-bold text-white/50 transition-all hover:bg-white/10 hover:text-white"
-        >
-          <RotateCcw size={13} />
-          Reset to Defaults
-        </button>
       </div>
     </div>
   );
@@ -432,7 +392,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={handleExport}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-white/5 py-2.5 text-sm font-bold text-white/50 transition-all hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-fg/5 py-2.5 text-sm font-bold text-fg/50 transition-all hover:bg-fg/10 hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Download size={15} />
           {busy === 'export' ? 'Exporting…' : 'Export'}
@@ -441,7 +401,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={() => importRef.current?.click()}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-white/5 py-2.5 text-sm font-bold text-white/50 transition-all hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-fg/5 py-2.5 text-sm font-bold text-fg/50 transition-all hover:bg-fg/10 hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Upload size={15} />
           {busy === 'import' ? 'Importing…' : 'Import'}
@@ -453,7 +413,7 @@ const DataPane: React.FC = () => {
           {dataMsg.text}
         </p>
       )}
-      <p className="text-[11px] leading-relaxed text-white/25">
+      <p className="text-[11px] leading-relaxed text-fg/25">
         Export downloads your tasks, trackers, workspaces, and settings. Import merges them back in by
         id — new items are added, matching items are overwritten, and anything not in the file is left
         untouched.
@@ -482,8 +442,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onUpdateCountdownMode,
   xpEnabled,
   onUpdateXpEnabled,
-  theme,
-  onUpdateTheme,
   mode,
   onUpdateMode,
 }) => {
@@ -516,10 +474,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         >
           <motion.div
             {...modalPop}
-            className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-white/10 bg-[#1A1A1A] shadow-2xl"
+            className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-fg/10 bg-surface shadow-2xl"
           >
             {/* Nav rail — vibrant sign-in background image with dark text on top. */}
-            <div className="relative hidden sm:flex w-52 shrink-0 flex-col overflow-hidden border-r border-white/5">
+            <div className="relative hidden sm:flex w-52 shrink-0 flex-col overflow-hidden border-r border-fg/5">
               <img
                 src={backgroundUrl}
                 alt=""
@@ -561,7 +519,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               <div className="flex shrink-0 justify-end px-2 py-2">
                 <button
                   onClick={onClose}
-                  className="rounded-lg p-1.5 text-white/40 transition-all hover:bg-white/10 hover:text-white"
+                  className="rounded-lg p-1.5 text-fg/40 transition-all hover:bg-fg/10 hover:text-fg"
                 >
                   <X size={16} />
                 </button>
@@ -577,7 +535,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     type="button"
                     onClick={() => setSection(key)}
                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      section === key ? 'bg-white/[0.08] text-white' : 'text-white/40'
+                      section === key ? 'bg-fg/[0.08] text-fg' : 'text-fg/40'
                     }`}
                   >
                     {label}
@@ -594,8 +552,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   onUpdateCountdownMode={onUpdateCountdownMode}
                   xpEnabled={xpEnabled}
                   onUpdateXpEnabled={onUpdateXpEnabled}
-                  theme={theme}
-                  onUpdateTheme={onUpdateTheme}
                   mode={mode}
                   onUpdateMode={onUpdateMode}
                 />

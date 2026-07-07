@@ -30,11 +30,11 @@ function TrackersRoute() {
     <>
       {/* Header */}
       {!isFullscreen && (
-        <header className="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur-md border-bottom border-white/5">
+        <header className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md border-bottom border-fg/5">
           <div className="max-w-5xl mx-auto px-6 pt-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg flex items-center justify-center transition-colors bg-white/10`}>
-                <Clock size={18} strokeWidth={2.5} className='text-white' />
+              <div className={`p-2 rounded-lg flex items-center justify-center transition-colors bg-fg/10`}>
+                <Clock size={18} strokeWidth={2.5} className='text-fg' />
               </div>
               <h1 className="text-xl font-bold leading-none">
                 Time Trackers
@@ -42,16 +42,16 @@ function TrackersRoute() {
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="hidden sm:flex bg-white/5 rounded-lg p-1">
+              <div className="hidden sm:flex bg-fg/5 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-1 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+                  className={`p-1 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-fg/10 text-fg' : 'text-fg/40 hover:text-fg'}`}
                 >
                   <LayoutGrid size={18} />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+                  className={`p-1 rounded-md transition-colors ${viewMode === 'list' ? 'bg-fg/10 text-fg' : 'text-fg/40 hover:text-fg'}`}
                 >
                   <List size={18} strokeWidth={2.5} />
                 </button>
@@ -59,7 +59,7 @@ function TrackersRoute() {
 
               <button
                 onClick={() => setIsFullscreen(true)}
-                className="p-2 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
+                className="p-2 bg-fg/5 hover:bg-fg/10 text-fg/40 hover:text-fg rounded-lg transition-all"
                 title="Fullscreen Mode"
               >
                 <Maximize2 size={18} strokeWidth={2.5} />
@@ -67,7 +67,7 @@ function TrackersRoute() {
 
               <button
                 onClick={openTrackerModal}
-                className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all text-sm font-semibold"
+                className="flex items-center gap-2 px-3 py-2 bg-fg/5 hover:bg-fg/10 text-fg/40 hover:text-fg rounded-lg transition-all text-sm font-semibold"
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span>Add Widget</span>
@@ -98,12 +98,12 @@ function TrackersRoute() {
                 exit={{ opacity: 0 }}
                 className="col-span-full py-32 flex flex-col items-center justify-center text-center space-y-4"
               >
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                <div className="w-20 h-20 bg-fg/5 rounded-full flex items-center justify-center text-fg/20">
                   <Clock size={40} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-medium text-white/60">No trackers yet</h2>
-                  <p className="text-white/30 text-sm">Create your first progress widget to get started.</p>
+                  <h2 className="text-xl font-medium text-fg/60">No trackers yet</h2>
+                  <p className="text-fg/30 text-sm">Create your first progress widget to get started.</p>
                 </div>
               </motion.div>
             )}

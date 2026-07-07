@@ -111,7 +111,7 @@ const EventCard: React.FC<{
       onMouseLeave={() => setIsHovered(false)}
       className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-auto transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
-        } ${isDragging ? 'z-50 ring-1 ring-[var(--accent1)]' : 'z-10 ring-1 ring-neutral-950'}
+        } ${isDragging ? 'z-50 ring-1 ring-[var(--accent1)]' : 'z-10 ring-1 ring-canvas'}
       `}
       style={{
         top: `${top}px`,
@@ -153,25 +153,25 @@ const EventCard: React.FC<{
             </div>
           ) : (
             <div
-              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone(todo) ? 'bg-white/20' : 'bg-[var(--accent1)]'
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone(todo) ? 'bg-fg/20' : 'bg-[var(--accent1)]'
                 }`}
             />
           )}
         </div>
         <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
-          <span className={`text-[12px] font-semibold ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-white/30 line-through' : 'text-white'
+          <span className={`text-[12px] font-semibold ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg/30 line-through' : 'text-fg'
             }`}>
             {todo.text}
           </span>
           {isSmall && (
-            <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-white/15' : 'text-white/70'}`}>
+            <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-fg/15' : 'text-fg/70'}`}>
               {fullTimeDisplay}
             </span>
           )}
         </div>
       </div>
       {!isSmall && (
-        <div className={`text-[10px] truncate pl-4 ${isDone(todo) ? 'text-white/15' : 'text-white/70'
+        <div className={`text-[10px] truncate pl-4 ${isDone(todo) ? 'text-fg/15' : 'text-fg/70'
           }`}>
           {timeRange}
           {' '}
@@ -709,7 +709,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         {/* Header */}
         {!hideHeader && (
           <div className="flex items-center justify-between px-2 py-3 flex-shrink-0">
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-fg">
               {format(focusDate, 'MMMM yyyy')}
             </h2>
 
@@ -718,7 +718,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <div className="relative" ref={dayPickerRef}>
                 <button
                   onClick={() => setShowDayPicker(!showDayPicker)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-white/70 transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-fg/5 hover:bg-fg/10 rounded-lg text-xs font-bold text-fg/70 transition-all"
                 >
                   {dayCount} day{dayCount > 1 ? 's' : ''}
                   <ChevronDown size={12} />
@@ -729,7 +729,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
-                      className="absolute top-full mt-1 right-0 bg-[#1A1A1A] border border-white/10 rounded-xl shadow-2xl py-1 z-50 min-w-[80px]"
+                      className="absolute top-full mt-1 right-0 bg-surface border border-fg/10 rounded-xl shadow-2xl py-1 z-50 min-w-[80px]"
                     >
                       {DAY_OPTIONS.map((n) => (
                         <button
@@ -740,7 +740,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           }}
                           className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors ${dayCount === n
                             ? 'text-[var(--accent2)] bg-[var(--accent2)]/10'
-                            : 'text-white/60 hover:text-white hover:bg-white/5'
+                            : 'text-fg/60 hover:text-fg hover:bg-fg/5'
                             }`}
                         >
                           {n} day{n > 1 ? 's' : ''}
@@ -754,7 +754,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {/* Today button */}
               <button
                 onClick={goToday}
-                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-white/70 transition-all"
+                className="px-3 py-1.5 bg-fg/5 hover:bg-fg/10 rounded-lg text-xs font-bold text-fg/70 transition-all"
               >
                 Today
               </button>
@@ -762,13 +762,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {/* Nav arrows */}
               <button
                 onClick={() => shiftDays(-1)}
-                className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all"
+                className="p-1.5 bg-fg/5 hover:bg-fg/10 rounded-lg text-fg/40 hover:text-fg transition-all"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => shiftDays(1)}
-                className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all"
+                className="p-1.5 bg-fg/5 hover:bg-fg/10 rounded-lg text-fg/40 hover:text-fg transition-all"
               >
                 <ChevronRight size={16} />
               </button>
@@ -777,7 +777,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         )}
 
         {/* Column headers */}
-        <div className="flex flex-shrink-0 border-b border-white/5">
+        <div className="flex flex-shrink-0 border-b border-fg/5">
           {/* Gutter for time labels */}
           <div className="flex-shrink-0" style={{ width: GUTTER_WIDTH }} />
           {visibleDays.map((day) => {
@@ -785,15 +785,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             return (
               <div
                 key={day.toISOString()}
-                className="flex-1 text-center pb-3 border-l border-white/5"
+                className="flex-1 text-center pb-3 border-l border-fg/5"
               >
                 <div className="flex items-center justify-center gap-2">
-                  <span className={`text-sm font-bold uppercase tracking-wider ${today ? 'text-[var(--accent2)]' : 'text-white/30'}`}>
+                  <span className={`text-sm font-bold uppercase tracking-wider ${today ? 'text-[var(--accent2)]' : 'text-fg/30'}`}>
                     {format(day, 'EEE')}
                   </span>
                   <span className={`text-sm font-bold px-1.5 py-1 rounded-md transition-all ${today
                     ? 'bg-[var(--accent2)] text-black shadow-lg shadow-[var(--accent2)]/20'
-                    : 'text-white/70'
+                    : 'text-fg/70'
                     }`}>
                     {format(day, 'd')}
                   </span>
@@ -814,7 +814,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {HOURS.map((h) => (
                 <div
                   key={h}
-                  className="absolute right-2 text-[10px] font-mono text-white/25 -translate-y-1/2"
+                  className="absolute right-2 text-[10px] font-mono text-fg/25 -translate-y-1/2"
                   style={{ top: `${h * HOUR_HEIGHT}px` }}
                 >
                   {h === 0 ? '' : formatHour(h)}
@@ -829,15 +829,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 style={{ top: `${minutesToPx(nowMinutes)}px` }}
               >
                 {/* Global Thin Line — starts at the gutter edge so it spans the full day grid */}
-                <div className="absolute right-0 h-[1px] bg-[#d93d42] opacity-30" style={{ left: GUTTER_WIDTH }} />
+                <div className="absolute right-0 h-[1px] bg-danger opacity-30" style={{ left: GUTTER_WIDTH }} />
 
                 {/* Badge Container */}
                 <div className="absolute left-0 h-[1px]" style={{ width: GUTTER_WIDTH }}>
-                  <div className="absolute right-[2px] px-1.5 py-[3px] bg-[#d93d42] rounded text-[10px] font-mono font-bold text-white leading-none z-10 -translate-y-1/2 whitespace-nowrap">
+                  <div className="absolute right-[2px] px-1.5 py-[3px] bg-danger rounded text-[10px] font-mono font-bold text-fg leading-none z-10 -translate-y-1/2 whitespace-nowrap">
                     {format(now, 'h:mm a').toUpperCase()}
                   </div>
                   {/* Connector linking badge to global line */}
-                  <div className="absolute right-0 w-[2px] h-[1px] bg-[#d93d42]" />
+                  <div className="absolute right-0 w-[2px] h-[1px] bg-danger" />
                 </div>
               </div>
             )}
@@ -851,13 +851,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               return (
                 <div
                   key={day.toISOString()}
-                  className="flex-1 relative border-l border-white/5 cursor-crosshair"
+                  className="flex-1 relative border-l border-fg/5 cursor-crosshair"
                   onMouseDown={(e) => handleGridMouseDown(e, dateStr)}
                 >
                   {/* Current day bright red line */}
                   {today && (
                     <div
-                      className="absolute left-0 right-0 z-20 pointer-events-none h-[1px] bg-[#d93d42] mt-px -translate-y-1/2"
+                      className="absolute left-0 right-0 z-20 pointer-events-none h-[1px] bg-danger mt-px -translate-y-1/2"
                       style={{ top: `${minutesToPx(nowMinutes)}px` }}
                     />
                   )}
@@ -866,7 +866,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {HOURS.map((h) => (
                     <div
                       key={h}
-                      className="absolute left-0 right-0 border-t border-white/5"
+                      className="absolute left-0 right-0 border-t border-fg/5"
                       style={{ top: `${h * HOUR_HEIGHT}px` }}
                     />
                   ))}
@@ -875,7 +875,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {HOURS.map((h) => (
                     <div
                       key={`half-${h}`}
-                      className="absolute left-0 right-0 border-t border-white/[0.02]"
+                      className="absolute left-0 right-0 border-t border-fg/[0.02]"
                       style={{ top: `${h * HOUR_HEIGHT + HOUR_HEIGHT / 2}px` }}
                     />
                   ))}
@@ -959,7 +959,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
 
           {/* Ending line marking the bottom of the day — mirrors the top header border */}
-          <div className="border-t border-white/5" />
+          <div className="border-t border-fg/5" />
           {/* Breathing room so the final hours scroll clear of the fixed XP progress bar */}
           <div className="h-22 shrink-0" />
         </div>
@@ -996,19 +996,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="fixed z-[70] w-72 bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl p-4 overflow-hidden"
+              className="fixed z-[70] w-72 bg-surface border border-fg/10 rounded-2xl shadow-2xl p-4 overflow-hidden"
               style={{
                 left: `${Math.min(x, window.innerWidth - 300)}px`,
                 top: `${Math.min(y, window.innerHeight - 220)}px`,
               }}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-white/40 uppercase tracking-wider">
+                <span className="text-xs font-bold text-fg/40 uppercase tracking-wider">
                   {title}
                 </span>
                 <button
                   onClick={onClose}
-                  className="text-white/30 hover:text-white transition-colors"
+                  className="text-fg/30 hover:text-fg transition-colors"
                 >
                   <X size={14} />
                 </button>
@@ -1024,12 +1024,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   if (e.key === 'Escape') onClose();
                 }}
                 placeholder="Task name..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition-colors mb-3"
+                className="w-full bg-fg/5 border border-fg/10 rounded-xl px-3 py-2 text-sm text-fg focus:outline-none focus:border-fg/40 transition-colors mb-3"
               />
 
               <div className="flex gap-2 mb-3">
                 <div className="flex-1">
-                  <label className="block text-[9px] font-bold text-white/30 uppercase tracking-wider mb-1">
+                  <label className="block text-[9px] font-bold text-fg/30 uppercase tracking-wider mb-1">
                     Start
                   </label>
                   <input
@@ -1045,12 +1045,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         setCreateForm(prev => prev ? { ...prev, startTime: e.target.value } : null);
                       }
                     }}
-                    style={{ colorScheme: 'dark' }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-white/40 transition-colors"
+                                        className="w-full bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-xs font-mono text-fg focus:outline-none focus:border-fg/40 transition-colors"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-[9px] font-bold text-white/30 uppercase tracking-wider mb-1">
+                  <label className="block text-[9px] font-bold text-fg/30 uppercase tracking-wider mb-1">
                     End
                   </label>
                   <input
@@ -1066,13 +1065,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         setCreateForm(prev => prev ? { ...prev, dueTime: e.target.value } : null);
                       }
                     }}
-                    style={{ colorScheme: 'dark' }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-white/40 transition-colors"
+                                        className="w-full bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-xs font-mono text-fg focus:outline-none focus:border-fg/40 transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="text-[10px] text-white/30 mb-3">
+              <div className="text-[10px] text-fg/30 mb-3">
                 {format(parseISO(date), 'EEEE, MMM d, yyyy')}
               </div>
 
@@ -1080,7 +1078,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 {isEditing && (
                   <button
                     onClick={deleteEditedTask}
-                    className="flex-1 px-3 py-2 bg-[#d93d42]/10 hover:bg-[#d93d42]/20 text-[#d93d42] rounded-xl text-xs font-bold transition-colors"
+                    className="flex-1 px-3 py-2 bg-danger/10 hover:bg-danger/20 text-danger rounded-xl text-xs font-bold transition-colors"
                     tabIndex={-1}
                   >
                     Delete

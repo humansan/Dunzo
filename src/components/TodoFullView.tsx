@@ -54,9 +54,9 @@ const RightProp: React.FC<{
   onClear?: () => void;
   canClear?: boolean;
 }> = ({ icon, label, children, noDivider, onClear, canClear }) => (
-  <div className={`group/prop py-3 ${noDivider ? '' : 'border-b border-white/5'}`}>
+  <div className={`group/prop py-3 ${noDivider ? '' : 'border-b border-fg/5'}`}>
     <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider">
+      <div className="flex items-center gap-1.5 text-[10px] text-fg/35 font-bold uppercase tracking-wider">
         {icon}
         {label}
       </div>
@@ -65,7 +65,7 @@ const RightProp: React.FC<{
           type="button"
           onClick={onClear}
           title="Clear"
-          className="p-0.5 rounded text-white/20 hover:text-white/60 opacity-0 group-hover/prop:opacity-100 transition-all"
+          className="p-0.5 rounded text-fg/20 hover:text-fg/60 opacity-0 group-hover/prop:opacity-100 transition-all"
         >
           <X size={11} />
         </button>
@@ -82,11 +82,11 @@ const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ 
     aria-checked={value}
     onClick={() => onChange(!value)}
     className={`relative shrink-0 w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${
-      value ? 'bg-[var(--accent2)]' : 'bg-white/15'
+      value ? 'bg-[var(--accent2)]' : 'bg-fg/15'
     }`}
   >
     <span
-      className={`absolute top-0.5 left-0 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+      className={`absolute top-0.5 left-0 w-4 h-4 bg-fg rounded-full shadow-sm transition-transform duration-200 ${
         value ? 'translate-x-[18px]' : 'translate-x-[2px]'
       }`}
     />
@@ -180,18 +180,18 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     >
       <motion.div
         {...modalPop}
-        className="w-[900px] max-w-[95vw] h-[78vh] min-h-[500px] max-h-[900px] bg-[#1A1A1A] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="w-[900px] max-w-[95vw] h-[78vh] min-h-[500px] max-h-[900px] bg-surface border border-fg/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
       >
         {/* ── Top bar ─────────────────────────────── */}
-        <div className="flex items-center justify-between px-4 h-11 border-b border-white/5 shrink-0">
-          <div className="flex items-center gap-2 text-white/40 text-xs font-semibold">
+        <div className="flex items-center justify-between px-4 h-11 border-b border-fg/5 shrink-0">
+          <div className="flex items-center gap-2 text-fg/40 text-xs font-semibold">
             <CalendarDays size={14} />
             {dateStr ? format(parseISO(dateStr), 'EEE, MMM d') : 'No date'}
           </div>
           <button
             onClick={onClose}
             title="Close"
-            className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-all"
+            className="p-1.5 rounded-lg text-fg/30 hover:text-fg hover:bg-fg/10 transition-all"
           >
             <X size={16} />
           </button>
@@ -215,8 +215,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 onInput={resizeTitle}
                 rows={1}
                 placeholder="Task name"
-                className={`flex-1 bg-transparent resize-none overflow-hidden text-xl font-bold focus:outline-none leading-snug pt-0.5 placeholder:text-white/20 ${
-                  isDone(draft) ? 'text-white/25 line-through' : 'text-white'
+                className={`flex-1 bg-transparent resize-none overflow-hidden text-xl font-bold focus:outline-none leading-snug pt-0.5 placeholder:text-fg/20 ${
+                  isDone(draft) ? 'text-fg/25 line-through' : 'text-fg'
                 }`}
               />
             </div>
@@ -228,13 +228,13 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 onChange={(e) => update({ notes: e.target.value })}
                 onInput={resizeNotes}
                 placeholder="Add notes..."
-                className="w-full bg-transparent resize-none overflow-hidden text-sm text-white/70 placeholder:text-white/25 focus:outline-none leading-relaxed"
+                className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg/70 placeholder:text-fg/25 focus:outline-none leading-relaxed"
               />
             </div>
           </div>
 
           {/* Divider */}
-          <div className="w-px bg-white/5 shrink-0" />
+          <div className="w-px bg-fg/5 shrink-0" />
 
           {/* Right pane: properties + actions */}
           <div className="w-72 shrink-0 flex flex-col overflow-hidden">
@@ -305,9 +305,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               </RightProp>
 
               {/* Time: start → due, and % under due. Shared clear button on hover. */}
-              <div className="group/time relative py-3 border-b border-white/5">
+              <div className="group/time relative py-3 border-b border-fg/5">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5 text-[10px] text-fg/35 font-bold uppercase tracking-wider">
                     <Clock size={11} />
                     Time
                   </div>
@@ -316,7 +316,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                       type="button"
                       onClick={() => update({ startTime: undefined, dueTime: undefined, duePercentage: undefined })}
                       title="Clear time"
-                      className="p-0.5 rounded text-white/20 hover:text-white/60 opacity-0 group-hover/time:opacity-100 transition-all"
+                      className="p-0.5 rounded text-fg/20 hover:text-fg/60 opacity-0 group-hover/time:opacity-100 transition-all"
                     >
                       <X size={11} />
                     </button>
@@ -329,7 +329,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                       onChange={(patch) => update(patch)}
                       className={fieldCls}
                     />
-                    <ArrowRight size={11} className="justify-self-center text-white/30" />
+                    <ArrowRight size={11} className="justify-self-center text-fg/30" />
                     <EndTimeField
                       value={draft.dueTime}
                       onChange={(patch) => update(patch)}
@@ -337,7 +337,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     />
                   </div>
                   <div className="grid grid-cols-[1fr_14px_1fr] items-center gap-1.5">
-                    <div className="flex items-center gap-1.5 text-white/25 text-[10px] pl-1">
+                    <div className="flex items-center gap-1.5 text-fg/25 text-[10px] pl-1">
                       <Percent size={10} />
                       due
                     </div>
@@ -366,7 +366,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
               <RightProp icon={<Database size={11} />} label="Task Planner">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-white/40">Show in hub</span>
+                  <span className="text-xs text-fg/40">Show in hub</span>
                   <Toggle
                     value={draft.showInDatabase ?? false}
                     onChange={(val) => update({ showInDatabase: val })}
@@ -374,23 +374,23 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 </div>
               </RightProp>
 
-              <div className="py-3 border-b border-white/5">
-                <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider mb-1.5">
+              <div className="py-3 border-b border-fg/5">
+                <div className="flex items-center gap-1.5 text-[10px] text-fg/35 font-bold uppercase tracking-wider mb-1.5">
                   <Clock size={11} />
                   Created
                 </div>
-                <span className="text-xs text-white/40 font-mono">
+                <span className="text-xs text-fg/40 font-mono">
                   {format(new Date(draft.createdAt), "MMM d, yyyy '·' h:mm a")}
                 </span>
               </div>
 
               {draft.completedAt && (
-                <div className="py-3 border-b border-white/5">
-                  <div className="flex items-center gap-1.5 text-[10px] text-white/35 font-bold uppercase tracking-wider mb-1.5">
+                <div className="py-3 border-b border-fg/5">
+                  <div className="flex items-center gap-1.5 text-[10px] text-fg/35 font-bold uppercase tracking-wider mb-1.5">
                     <CircleDot size={11} />
                     Completed
                   </div>
-                  <span className="text-xs text-white/40 font-mono">
+                  <span className="text-xs text-fg/40 font-mono">
                     {format(new Date(draft.completedAt), "MMM d, yyyy '·' h:mm a")}
                   </span>
                 </div>
@@ -399,17 +399,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
             </div>
 
             {/* Bottom: Archive + Delete */}
-            <div className="shrink-0 px-5 py-4 border-t border-white/5 space-y-0.5">
+            <div className="shrink-0 px-5 py-4 border-t border-fg/5 space-y-0.5">
               <button
                 onClick={handleArchive}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-fg/50 hover:text-fg hover:bg-fg/5 transition-all"
               >
                 <Archive size={14} />
                 {draft.archived ? 'Unarchive' : 'Archive'}
               </button>
               <button
                 onClick={() => { onDelete(draft.id); onClose(); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-red-400 hover:bg-[#d93d42]/10 transition-all"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-fg/50 hover:text-red-400 hover:bg-danger/10 transition-all"
               >
                 <Trash2 size={14} />
                 Delete

@@ -22,7 +22,7 @@ export interface TimePatch {
 
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
 export const fieldInputClass =
-  'bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
+  'bg-fg/5 border border-fg/10 rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
 
 // ── Completion toggle ────────────────────────────────────────────────────────
 export const CompletedToggle: React.FC<{
@@ -35,7 +35,7 @@ export const CompletedToggle: React.FC<{
     <motion.div
       animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
       transition={{ duration: 0.3 }}
-      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : 'text-white/50 hover:text-white'}`}
+      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : 'text-fg/50 hover:text-fg'}`}
     >
       {completed
         ? <CheckCircleCutout size={size} strokeWidth={2.5} />
@@ -58,7 +58,6 @@ export const DateField: React.FC<{
     autoFocus={autoFocus}
     onBlur={onBlur}
     onChange={(e) => onChange(e.target.value)}
-    style={{ colorScheme: 'dark' }}
     className={className ?? fieldInputClass}
   />
 );
@@ -77,7 +76,6 @@ export const StartTimeField: React.FC<{
     autoFocus={autoFocus}
     onBlur={onBlur}
     onChange={(e) => onChange({ startTime: e.target.value || undefined })}
-    style={{ colorScheme: 'dark' }}
     className={className ?? fieldInputClass}
   />
 );
@@ -100,7 +98,6 @@ export const EndTimeField: React.FC<{
       const p = timeToPercentage(val);
       onChange({ dueTime: val || undefined, ...(p !== undefined ? { duePercentage: p } : {}) });
     }}
-    style={{ colorScheme: 'dark' }}
     className={className ?? fieldInputClass}
   />
 );
@@ -131,7 +128,6 @@ export const PercentField: React.FC<{
         onChange({ duePercentage: num, ...(t ? { dueTime: t } : {}) });
       }
     }}
-    style={{ colorScheme: 'dark' }}
     placeholder={placeholder}
     className={className ?? fieldInputClass}
   />
@@ -156,7 +152,6 @@ export const XpField: React.FC<{
       const v = e.target.value;
       onChange(v === '' ? undefined : Math.max(0, parseInt(v) || 0));
     }}
-    style={{ colorScheme: 'dark' }}
     placeholder="0"
     className={className ?? fieldInputClass}
   />
@@ -207,7 +202,7 @@ export const NotesField: React.FC<{
       placeholder={placeholder}
       className={
         className ??
-        'w-full bg-transparent resize-none text-sm text-white/80 placeholder:text-white/25 focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/25'
+        'w-full bg-transparent resize-none text-sm text-fg/80 placeholder:text-fg/25 focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fg/25'
       }
     />
   );
@@ -289,11 +284,11 @@ export const OptionSelectField: React.FC<{
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onChange(selected ? undefined : opt.value)}
             className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-lg text-left transition-colors ${
-              selected ? 'bg-white/10' : 'hover:bg-white/5'
+              selected ? 'bg-fg/10' : 'hover:bg-fg/5'
             }`}
           >
             <OptionChip option={opt} />
-            {selected && <Check size={14} className="ml-auto text-white/60" />}
+            {selected && <Check size={14} className="ml-auto text-fg/60" />}
           </button>
         );
       })}
@@ -315,7 +310,7 @@ export const CollectionBreadcrumb: React.FC<{
   <span className={`inline-flex items-center gap-0.5 min-w-0 ${className}`}>
     {path.map((c, i) => (
       <React.Fragment key={c.id}>
-        {i > 0 && <ChevronRight size={12} className="shrink-0 text-white/30" />}
+        {i > 0 && <ChevronRight size={12} className="shrink-0 text-fg/30" />}
         <span
           style={pill(collectionColor(c.color))}
           className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-medium"
@@ -378,7 +373,7 @@ export const CollectionSearchField: React.FC<{
   const dropdown = showPopup && (
     <div
       data-tag-suggestions
-      className={`absolute z-10 top-full left-0 mt-3 ${dropdownWidthCls} max-h-44 overflow-y-auto rounded-xl border border-white/10 bg-[#222222] shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full`}
+      className={`absolute z-10 top-full left-0 mt-3 ${dropdownWidthCls} max-h-44 overflow-y-auto rounded-xl border border-fg/10 bg-surface-raised shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full`}
     >
       {matches.map((o) => (
         <button
@@ -386,10 +381,10 @@ export const CollectionSearchField: React.FC<{
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => pick(o.id)}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-white/10 transition-colors"
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-fg/10 transition-colors"
         >
           <CollectionBreadcrumb path={o.path} className="flex-1" />
-          {o.id === value && <Check size={13} className="ml-auto shrink-0 text-white/50" />}
+          {o.id === value && <Check size={13} className="ml-auto shrink-0 text-fg/50" />}
         </button>
       ))}
       {input.trim() && !exact && (
@@ -397,7 +392,7 @@ export const CollectionSearchField: React.FC<{
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={create}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm text-fg/80 hover:bg-fg/10 hover:text-fg transition-colors"
         >
           <Shapes size={13} className="text-[var(--accent2)] shrink-0" />
           <span className="truncate">Create “{input.trim()}”</span>
@@ -421,7 +416,7 @@ export const CollectionSearchField: React.FC<{
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder={value ? '' : (placeholder ?? 'Add a collection…')}
-            className="flex-1 min-w-[80px] bg-transparent text-sm text-white placeholder:text-white/25 focus:outline-none h-7"
+            className="flex-1 min-w-[80px] bg-transparent text-sm text-fg placeholder:text-fg/25 focus:outline-none h-7"
           />
         </div>
         {dropdown}
@@ -437,7 +432,7 @@ export const CollectionSearchField: React.FC<{
           <button
             type="button"
             onClick={() => { onChange(null); setInput(''); }}
-            className="shrink-0 text-white/40 hover:text-white/80 transition-colors"
+            className="shrink-0 text-fg/40 hover:text-fg/80 transition-colors"
           >
             <X size={13} />
           </button>
@@ -453,7 +448,7 @@ export const CollectionSearchField: React.FC<{
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={placeholder ?? (value ? 'Change collection…' : 'Search or create collection…')}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-sm focus:outline-none focus:border-[var(--accent2)]"
+          className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent2)]"
         />
         {dropdown}
       </div>

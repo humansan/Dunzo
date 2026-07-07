@@ -222,7 +222,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-4 mt-1">
             <div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-fg">
                 {format(parseISO(selectedDate), 'MMMM yyyy')}
               </h2>
             </div>
@@ -235,7 +235,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                   <button
                     onClick={open}
                     title="Jump to date"
-                    className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
+                    className="p-1.5 bg-fg/5 hover:bg-fg/10 text-fg/40 hover:text-fg rounded-lg transition-all"
                   >
                     <CalendarDays size={16} />
                   </button>
@@ -243,26 +243,26 @@ export const TodoView: React.FC<TodoViewProps> = ({
               </DatePickerPopover>
               <button
                 onClick={() => setSelectedDate(format(new Date(), 'yyyy-MM-dd'))}
-                className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all text-xs font-semibold"
+                className="px-2.5 py-1.5 bg-fg/5 hover:bg-fg/10 text-fg/40 hover:text-fg rounded-lg transition-all text-xs font-semibold"
               >
                 Today
               </button>
               <button
                 onClick={() => navigateWeek('prev')}
-                className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
+                className="p-1.5 bg-fg/5 hover:bg-fg/10 text-fg/40 hover:text-fg rounded-lg transition-all"
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => navigateWeek('next')}
-                className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-lg transition-all"
+                className="p-1.5 bg-fg/5 hover:bg-fg/10 text-fg/40 hover:text-fg rounded-lg transition-all"
               >
                 <ChevronRight size={16} />
               </button>
             </div>
           </div>
 
-          <div className="flex justify-between items-end border-b border-white/5 pb-3 px-1">
+          <div className="flex justify-between items-end border-b border-fg/5 pb-3 px-1">
             {weekDays.map((day) => {
               const isSelected = isSameDay(day, parseISO(selectedDate));
               const isToday = isSameDay(day, new Date());
@@ -272,13 +272,13 @@ export const TodoView: React.FC<TodoViewProps> = ({
                   onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
                   className="flex flex-col items-center gap-1.5 group"
                 >
-                  <span className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-white/30 group-hover:text-white/60'
+                  <span className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-fg/30 group-hover:text-fg/60'
                     }`}>
                     {format(day, 'EEE')}
                   </span>
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${isSelected
                     ? 'bg-(--accent2) text-black scale-110'
-                    : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+                    : 'bg-fg/5 text-fg/50 hover:bg-fg/10 hover:text-fg'
                     } ${isToday && !isSelected ? 'ring-2 ring-[var(--accent2)]/40' : ''}`}>
                     {format(day, 'd')}
                   </div>

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Theme, DayTodos, Todo, Tracker } from '../types';
+import { DayTodos, Todo, Tracker } from '../types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '../utils/todoFilters';
 import { toggledStatus } from '../utils/todoStatus';
 import { authClient } from '../auth';
@@ -12,7 +12,6 @@ import { applyTheme, type ThemeMode } from '../theme/applyTheme';
 import { DEFAULT_THEME_ID } from '../theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '../components/todosHub/constants';
 
-const DEFAULT_THEME: Theme = { accent1: '#e1e354', accent2: '#c6dabe' };
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
 // Within-day order follows `dailyOrder` (the daily list's own persisted order;
@@ -85,8 +84,6 @@ function useProvideAppData() {
   const settings = settingsQuery.data;
   const updateSettings = useUpdateSettings();
 
-  const theme = settings?.theme ?? DEFAULT_THEME;
-  const setTheme = (t: Theme) => updateSettings({ theme: t });
   const weekStartsOn = settings?.weekStartsOn ?? 1;
   const setWeekStartsOn = (v: number) => updateSettings({ weekStartsOn: v });
   const countdownMode = settings?.countdownMode ?? 'off';
@@ -149,23 +146,16 @@ function useProvideAppData() {
   const dayTodos = useMemo(() => groupByDueDate(todos), [todos]);
 
   // Theme + mode are DB-synced; this effect reflects them onto the CSS variables.
-  // applyTheme writes the role/color tokens (--color-*/--c-*) and toggles `.dark`;
-  // the accent overrides (--accent1/2) are applied AFTER so the user's custom accent
-  // wins over the theme's default. When mode === 'system', also re-apply on OS change.
+  // applyTheme writes the role/color tokens (--color-*/--c-*), the theme-owned accents
+  // (--accent1/2), and toggles `.dark`. When mode === 'system', re-apply on OS change.
   useEffect(() => {
     applyTheme(themeId, mode);
-    document.documentElement.style.setProperty('--accent1', theme.accent1);
-    document.documentElement.style.setProperty('--accent2', theme.accent2);
     if (mode !== 'system') return;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => {
-      applyTheme(themeId, mode);
-      document.documentElement.style.setProperty('--accent1', theme.accent1);
-      document.documentElement.style.setProperty('--accent2', theme.accent2);
-    };
+    const onChange = () => applyTheme(themeId, mode);
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
-  }, [theme, themeId, mode]);
+  }, [themeId, mode]);
 
   useEffect(() => {
     if (activeTodoId) {
@@ -424,7 +414,6 @@ function useProvideAppData() {
     todoById,
     hubCollectionOptions,
     // settings/prefs
-    theme, setTheme,
     themeId, setThemeId,
     mode, setMode,
     weekStartsOn, setWeekStartsOn,

@@ -453,7 +453,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
 
     const count = starsOf(dateStr);
     return (
-      <div className="flex gap-0.5 text-white/20">
+      <div className="flex gap-0.5 text-fg/20">
         {[0, 1, 2].map(i => (
           <Star 
             key={i} 
@@ -475,14 +475,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-[#1C1C1E]/95 border border-white/10 backdrop-blur-md rounded-xl p-3 text-xs shadow-2xl text-left select-none pointer-events-none">
-          <p className="font-bold text-white mb-1.5 font-sans">{data.fullDate}</p>
-          <div className="flex flex-col gap-1 font-mono text-white/70">
+        <div className="bg-surface/95 border border-fg/10 backdrop-blur-md rounded-xl p-3 text-xs shadow-2xl text-left select-none pointer-events-none">
+          <p className="font-bold text-fg mb-1.5 font-sans">{data.fullDate}</p>
+          <div className="flex flex-col gap-1 font-mono text-fg/70">
             <p>
               Earned: <span className="font-bold text-[var(--accent1)]">{data.xp} XP</span>
             </p>
             <p>
-              Completed: <span className="font-bold text-white">{data.tasks} tasks</span>
+              Completed: <span className="font-bold text-fg">{data.tasks} tasks</span>
             </p>
           </div>
         </div>
@@ -498,7 +498,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent1)] text-black shadow-lg shadow-[var(--accent1)]/10">
           <BarChart2 size={22} strokeWidth={2.5} />
         </div>
-        <h1 className="text-xl font-bold tracking-tight leading-none text-white">
+        <h1 className="text-xl font-bold tracking-tight leading-none text-fg">
           Stats & Analytics
         </h1>
       </div>
@@ -519,13 +519,13 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
           
           {/* Records Text Block */}
           <div className="flex flex-col text-left font-sans">
-            <div className="text-white/80 text-sm tracking-wide">
+            <div className="text-fg/80 text-sm tracking-wide">
               Best Streak:{' '}
               <span className="font-bold text-lg font-mono" style={{ color: GOLD }}>
                 {streakInfo.best} d
               </span>{' '}
             </div>
-            <div className="text-white/80 text-sm tracking-wide">
+            <div className="text-fg/80 text-sm tracking-wide">
               Best Day:{' '}
               <span className="font-bold text-lg font-mono" style={{ color: 'var(--accent1)' }}>
                 {allTimeBestDay} xp 
@@ -536,7 +536,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
               </span>
               )
             </div>
-            <div className="text-white/80 text-sm tracking-wide">
+            <div className="text-fg/80 text-sm tracking-wide">
               Total XP Achieved:{' '}
               <span className="font-bold text-lg font-mono" style={{ color: VIOLET }}>
                 {totalXp} xp
@@ -549,52 +549,52 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
       {/* Comparative Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {/* 7d Card */}
-        <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 shadow-xl flex flex-col justify-between">
-          <span className="text-white/40 text-xs font-bold uppercase tracking-wider">Last 7 Days</span>
+        <div className="bg-surface p-5 rounded-2xl border border-fg/5 shadow-xl flex flex-col justify-between">
+          <span className="text-fg/40 text-xs font-bold uppercase tracking-wider">Last 7 Days</span>
           <div className="flex items-baseline gap-1.5 mt-3">
             <span className={`text-xl font-bold ${comparativeStats.isUp7 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {comparativeStats.isUp7 ? '⏶' : '⏷'}
             </span>
-            <span className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-3xl font-bold tracking-tight text-fg">
               {comparativeStats.xp7}
             </span>
-            <span className="text-xs font-medium text-white/30 font-mono ml-0.5">XP</span>
+            <span className="text-xs font-medium text-fg/30 font-mono ml-0.5">XP</span>
           </div>
-          <span className="text-xs text-white/60 font-medium mt-2">
+          <span className="text-xs text-fg/60 font-medium mt-2">
             vs. {comparativeStats.prevXp7} XP in previous 7d
           </span>
         </div>
 
         {/* 30d Card */}
-        <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 shadow-xl flex flex-col justify-between">
-          <span className="text-white/40 text-xs font-bold uppercase tracking-wider">Last 30 Days</span>
+        <div className="bg-surface p-5 rounded-2xl border border-fg/5 shadow-xl flex flex-col justify-between">
+          <span className="text-fg/40 text-xs font-bold uppercase tracking-wider">Last 30 Days</span>
           <div className="flex items-baseline gap-1.5 mt-3">
             <span className={`text-xl font-bold ${comparativeStats.isUp30 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {comparativeStats.isUp30 ? '⏶' : '⏷'}
             </span>
-            <span className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-3xl font-bold tracking-tight text-fg">
               {comparativeStats.xp30}
             </span>
-            <span className="text-xs font-medium text-white/30 font-mono ml-0.5">XP</span>
+            <span className="text-xs font-medium text-fg/30 font-mono ml-0.5">XP</span>
           </div>
-          <span className="text-xs text-white/60 font-medium mt-2">
+          <span className="text-xs text-fg/60 font-medium mt-2">
             vs. {comparativeStats.prevXp30} XP in previous 30d
           </span>
         </div>
 
         {/* 365d Card */}
-        <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 shadow-xl flex flex-col justify-between">
-          <span className="text-white/40 text-xs font-bold uppercase tracking-wider">Last 365 Days</span>
+        <div className="bg-surface p-5 rounded-2xl border border-fg/5 shadow-xl flex flex-col justify-between">
+          <span className="text-fg/40 text-xs font-bold uppercase tracking-wider">Last 365 Days</span>
           <div className="flex items-baseline gap-1.5 mt-3">
             <span className={`text-xl font-bold ${comparativeStats.isUp365 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {comparativeStats.isUp365 ? '⏶' : '⏷'}
             </span>
-            <span className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-3xl font-bold tracking-tight text-fg">
               {comparativeStats.xp365}
             </span>
-            <span className="text-xs font-medium text-white/30 font-mono ml-0.5">XP</span>
+            <span className="text-xs font-medium text-fg/30 font-mono ml-0.5">XP</span>
           </div>
-          <span className="text-xs text-white/60 font-medium mt-2">
+          <span className="text-xs text-fg/60 font-medium mt-2">
             vs. {comparativeStats.prevXp365} XP in previous 365d
           </span>
         </div>
@@ -603,10 +603,10 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
       {/* Trend Bar Chart */}
       <div className="mb-10 flex flex-col">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-white font-bold text-sm tracking-wide">XP History Trend</h3>
+          <h3 className="text-fg font-bold text-sm tracking-wide">XP History Trend</h3>
 
           {/* Interval Toggles */}
-          <div className="flex bg-neutral-900 rounded-lg p-1 text-xs">
+          <div className="flex bg-surface rounded-lg p-1 text-xs">
             {(['day', 'fourDays', 'week', 'month'] as const).map(key => (
               <button
                 key={key}
@@ -614,7 +614,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer transition-all ${
                   chartInterval === key
                     ? 'bg-[var(--accent1)] text-black shadow'
-                    : 'text-white/40 hover:text-white'
+                    : 'text-fg/40 hover:text-fg'
                 }`}
               >
                 {key === 'day' ? 'Day' : key === 'fourDays' ? '4 Days' : key === 'week' ? 'Week' : 'Month'}
@@ -654,7 +654,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
 
       {/* Categories Distribution */}
       <div className="mb-8 flex flex-col">
-        <h3 className="text-white font-bold text-sm tracking-wide mb-4">Collection Breakdown</h3>
+        <h3 className="text-fg font-bold text-sm tracking-wide mb-4">Collection Breakdown</h3>
         {categoryData.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center opacity-30 py-12">
             <Tag size={32} className="mb-2" />
@@ -671,7 +671,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                   className="px-1 text-center overflow-hidden"
                 >
                   {cat.percentage >= 8 && (
-                    <span className="block truncate text-xs font-medium text-white/70">
+                    <span className="block truncate text-xs font-medium text-fg/70">
                       {cat.name}
                     </span>
                   )}
@@ -688,12 +688,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                   className="group relative h-full transition-opacity hover:opacity-90"
                 >
                   {/* Hover tooltip */}
-                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 whitespace-nowrap bg-[#1C1C1E]/95 border border-white/10 backdrop-blur-md rounded-xl p-3 text-xs shadow-2xl text-left">
+                  <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 whitespace-nowrap bg-surface/95 border border-fg/10 backdrop-blur-md rounded-xl p-3 text-xs shadow-2xl text-left">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                      <span className="font-bold text-white font-sans">{cat.name}</span>
+                      <span className="font-bold text-fg font-sans">{cat.name}</span>
                     </div>
-                    <p className="font-mono text-white/70">
+                    <p className="font-mono text-fg/70">
                       <span className="font-bold text-[var(--accent1)]">{cat.xp} XP</span> ({cat.percentage}%)
                     </p>
                   </div>
@@ -705,14 +705,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
       </div>
 
       {/* Log Table Section */}
-      <div className="bg-[#1A1A1A] p-5 rounded-2xl border border-white/5 shadow-xl flex flex-col">
+      <div className="bg-surface p-5 rounded-2xl border border-fg/5 shadow-xl flex flex-col">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-white font-bold text-sm tracking-wide">
+          <h3 className="text-fg font-bold text-sm tracking-wide">
             {tableMode === 'log' ? 'Daily Activity Log' : 'Raw Entries'}
           </h3>
 
           {/* Table Mode Toggle */}
-          <div className="flex bg-neutral-900 rounded-lg p-1 text-xs">
+          <div className="flex bg-surface rounded-lg p-1 text-xs">
             {(['log', 'raw'] as const).map(mode => (
               <button
                 key={mode}
@@ -720,7 +720,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer transition-all ${
                   tableMode === mode
                     ? 'bg-[var(--accent1)] text-black shadow'
-                    : 'text-white/40 hover:text-white'
+                    : 'text-fg/40 hover:text-fg'
                 }`}
               >
                 {mode === 'log' ? 'Log' : 'Raw'}
@@ -738,21 +738,21 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-left text-sm">
                 <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40 whitespace-nowrap">Date</th>
-                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40 whitespace-nowrap">Text</th>
-                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40 whitespace-nowrap">Points</th>
-                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40 whitespace-nowrap">Collection</th>
-                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40 whitespace-nowrap">Info</th>
+                  <tr className="border-b border-fg/10">
+                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40 whitespace-nowrap">Date</th>
+                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40 whitespace-nowrap">Text</th>
+                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40 whitespace-nowrap">Points</th>
+                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40 whitespace-nowrap">Collection</th>
+                    <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40 whitespace-nowrap">Info</th>
                   </tr>
                 </thead>
                 <tbody>
                   {displayedRawRows.map((row, i) => (
-                    <tr key={i} className="border-b border-white/5 odd:bg-white/[0.015]">
-                      <td className="py-2.5 px-4 font-mono text-white/60 whitespace-nowrap">
+                    <tr key={i} className="border-b border-fg/5 odd:bg-fg/[0.015]">
+                      <td className="py-2.5 px-4 font-mono text-fg/60 whitespace-nowrap">
                         {format(parseISO(row.date), 'M/d/yyyy')}
                       </td>
-                      <td className="py-2.5 px-4 font-semibold text-white/90 whitespace-nowrap">
+                      <td className="py-2.5 px-4 font-semibold text-fg/90 whitespace-nowrap">
                         {row.text}
                       </td>
                       <td className="py-2.5 px-4 font-mono font-bold text-[var(--accent1)] whitespace-nowrap">
@@ -760,29 +760,29 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                       </td>
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         {row.colls.length === 0 ? (
-                          <span className="text-white/20 italic text-xs">—</span>
+                          <span className="text-fg/20 italic text-xs">—</span>
                         ) : (
                           <span className="font-medium" style={{ color: row.colls[row.colls.length - 1].color }}>
                             {row.colls.map(c => c.name).join(' › ')}
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-4 text-white/50">
+                      <td className="py-2.5 px-4 text-fg/50">
                         <div className="max-w-[360px] truncate">{row.notes}</div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-white/5">
-                <span className="text-xs text-white/30">
+              <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-fg/5">
+                <span className="text-xs text-fg/30">
                   {rawRows.length > 50
                     ? `Showing 50 most recent of ${rawRows.length} entries — export for all`
                     : `${rawRows.length} ${rawRows.length === 1 ? 'entry' : 'entries'}`}
                 </span>
                 <button
                   onClick={handleExportCsv}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-fg/5 hover:bg-fg/10 text-fg/70 hover:text-fg border border-fg/10 transition-colors cursor-pointer shrink-0"
                 >
                   <Download size={14} />
                   Export CSV
@@ -798,12 +798,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40">Date</th>
-                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40">XP Earned</th>
-                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40">Completed</th>
-                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40">Categories</th>
-                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-white/40">Stars</th>
+                <tr className="border-b border-fg/5">
+                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40">Date</th>
+                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40">XP Earned</th>
+                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40">Completed</th>
+                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40">Categories</th>
+                  <th className="py-3 px-4 text-xs font-bold uppercase tracking-wider text-fg/40">Stars</th>
                   <th className="py-3 px-4 w-10"></th>
                 </tr>
               </thead>
@@ -825,26 +825,26 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                     <React.Fragment key={dateStr}>
                       <tr 
                         onClick={() => toggleExpand(dateStr)}
-                        className="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer transition-colors select-none"
+                        className="border-b border-fg/5 hover:bg-fg/[0.02] cursor-pointer transition-colors select-none"
                       >
-                        <td className="py-3.5 px-4 text-sm font-semibold text-white/80">
+                        <td className="py-3.5 px-4 text-sm font-semibold text-fg/80">
                           {format(parseISO(dateStr), 'EEE, MMM d')}
                         </td>
                         <td className="py-3.5 px-4 text-sm font-bold font-mono text-[var(--accent1)]">
-                          {xpMap.get(dateStr) || 0} <span className="text-[10px] text-white/30 font-medium">XP</span>
+                          {xpMap.get(dateStr) || 0} <span className="text-[10px] text-fg/30 font-medium">XP</span>
                         </td>
-                        <td className="py-3.5 px-4 text-sm text-white/60">
+                        <td className="py-3.5 px-4 text-sm text-fg/60">
                           {dayTasks.length} / {totalCount} tasks
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="flex flex-wrap gap-1 max-w-xs">
                             {dayColls.length === 0 ? (
-                              <span className="text-[10px] text-white/20 italic">None</span>
+                              <span className="text-[10px] text-fg/20 italic">None</span>
                             ) : (
                               dayColls.slice(0, 3).map(c => (
                                 <span
                                   key={c.id}
-                                  className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 border text-white/60 transition-colors"
+                                  className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-fg/5 border text-fg/60 transition-colors"
                                   style={{ borderColor: pillBorder(c.color), color: c.color }}
                                 >
                                   {c.name}
@@ -852,7 +852,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                               ))
                             )}
                             {dayColls.length > 3 && (
-                              <span className="text-[9px] font-bold text-white/30 px-1 py-0.5">
+                              <span className="text-[9px] font-bold text-fg/30 px-1 py-0.5">
                                 +{dayColls.length - 3}
                               </span>
                             )}
@@ -863,9 +863,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           {isExpanded ? (
-                            <ChevronUp size={16} className="text-white/40" />
+                            <ChevronUp size={16} className="text-fg/40" />
                           ) : (
-                            <ChevronDown size={16} className="text-white/40" />
+                            <ChevronDown size={16} className="text-fg/40" />
                           )}
                         </td>
                       </tr>
@@ -874,7 +874,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                       <AnimatePresence initial={false}>
                         {isExpanded && (
                           <tr key={`${dateStr}-details`}>
-                            <td colSpan={6} className="bg-white/[0.01] border-b border-white/5 p-0">
+                            <td colSpan={6} className="bg-fg/[0.01] border-b border-fg/5 p-0">
                               <motion.div
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
@@ -882,18 +882,18 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                                 transition={{ duration: 0.25, ease: 'easeOut' }}
                                 className="px-6 py-4 flex flex-col gap-3 overflow-hidden"
                               >
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-white/30">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-fg/30">
                                   Completed Tasks Details
                                 </span>
                                 <div className="flex flex-col gap-2 max-w-3xl">
                                   {dayTasks.map(todo => (
                                     <div 
                                       key={todo.id} 
-                                      className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0"
+                                      className="flex items-center justify-between py-1.5 border-b border-fg/5 last:border-0"
                                     >
                                       <div className="flex items-center gap-2.5 min-w-0">
                                         <span className="text-emerald-400 shrink-0 text-xs">✔</span>
-                                        <span className="text-sm text-white/80 font-medium truncate">{todo.text}</span>
+                                        <span className="text-sm text-fg/80 font-medium truncate">{todo.text}</span>
                                         {collsForTodo(todo).length > 0 && (
                                           <div className="flex gap-1 shrink-0">
                                             {collsForTodo(todo).map(c => (
@@ -911,7 +911,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                                           </div>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-1 text-[11px] font-mono font-medium text-[#ffba44] bg-[#ffba44]/5 px-2 py-0.5 rounded shrink-0 border border-[#ffba44]/10">
+                                      <div className="flex items-center gap-1 text-[11px] font-mono font-medium text-warning bg-warning/5 px-2 py-0.5 rounded shrink-0 border border-warning/10">
                                         <Sparkles size={11} />
                                         <span>{todo.xp || 0} XP</span>
                                       </div>

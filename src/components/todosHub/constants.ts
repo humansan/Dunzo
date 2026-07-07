@@ -67,4 +67,4 @@ export const DEFAULT_SIDEBAR_WIDTH = 224;
 
 // Borderless input styling so the shared editors fill a spreadsheet cell.
 export const cellEditCls =
-  'w-full h-full bg-[#1e1e1e] px-2.5 text-sm font-mono text-white focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60';
+  'w-full h-full bg-surface px-2.5 text-sm font-mono text-fg focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60';

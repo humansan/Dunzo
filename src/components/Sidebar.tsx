@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
     <motion.div
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed left-0 top-0 bottom-0 w-14 bg-[#111] border-r border-white/5 flex flex-col items-center justify-between py-5 z-50"
+      className="fixed left-0 top-0 bottom-0 w-14 bg-canvas border-r border-fg/5 flex flex-col items-center justify-between py-5 z-50"
     >
       <div className="flex flex-col gap-3">
         {items.map((item) => {
@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
               className={`group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
                 isActive
                   ? `bg-[var(${item.color})] text-black shadow-lg shadow-[var(${item.color})]/20`
-                  : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
+                  : 'bg-fg/5 text-fg/40 hover:bg-fg/10 hover:text-fg'
               }`}
               title={item.title}
             >
@@ -76,20 +76,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
       <div className="flex flex-col gap-3">
         <button
           onClick={onSearchClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-fg/5 hover:bg-fg/10"
           title="Search tasks (⌘K)"
         >
-          <Search size={18} strokeWidth={2.5} className="text-white/40 group-hover:text-white transition-colors" />
+          <Search size={18} strokeWidth={2.5} className="text-fg/40 group-hover:text-fg transition-colors" />
         </button>
         <button
           onClick={onStopwatchClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-fg/5 hover:bg-fg/10"
           title="Stopwatch"
         >
           <Timer
             size={18}
             strokeWidth={2.5}
-            className={`transition-colors ${isStopwatchActive ? 'text-[var(--accent1)]' : 'text-white/40 group-hover:text-white'}`}
+            className={`transition-colors ${isStopwatchActive ? 'text-[var(--accent1)]' : 'text-fg/40 group-hover:text-fg'}`}
           />
         </button>
         <button

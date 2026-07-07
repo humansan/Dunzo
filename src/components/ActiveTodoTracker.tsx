@@ -50,7 +50,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
       initial={{ opacity: 0, scale: 0.9, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
-      className="relative w-full max-w-xl bg-[#141414] border border-white/5 rounded-3xl p-4 shadow-2xl overflow-hidden group"
+      className="relative w-full max-w-xl bg-surface border border-fg/5 rounded-3xl p-4 shadow-2xl overflow-hidden group"
     >
       {/* Close Button */}
       <button
@@ -58,7 +58,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
           e.stopPropagation();
           onClose();
         }}
-        className="absolute top-3 right-3 p-1.5 bg-black/40 hover:bg-black/60 text-white/40 hover:text-white rounded-full transition-all opacity-0 group-hover:opacity-100 z-20 border border-white/10"
+        className="absolute top-3 right-3 p-1.5 bg-black/40 hover:bg-black/60 text-fg/40 hover:text-fg rounded-full transition-all opacity-0 group-hover:opacity-100 z-20 border border-fg/10"
       >
         <X size={14} />
       </button>
@@ -66,13 +66,13 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
       <div className="flex items-center gap-4 relative z-10 pr-10">
         <button 
           onClick={onToggle}
-          className={`transition-colors ${isDone(todo) ? 'text-[var(--accent1)]' : 'text-white hover:text-[var(--accent1)]'}`}
+          className={`transition-colors ${isDone(todo) ? 'text-[var(--accent1)]' : 'text-fg hover:text-[var(--accent1)]'}`}
         >
           {isDone(todo) ? <CheckCircle2 size={24} /> : <Circle size={24} strokeWidth={2.5} />}
         </button>
 
         <div className="flex-1 min-w-0">
-          <h3 className={`text-lg font-medium transition-all ${isDone(todo) ? 'text-white/20 line-through' : 'text-white'}`}>
+          <h3 className={`text-lg font-medium transition-all ${isDone(todo) ? 'text-fg/20 line-through' : 'text-fg'}`}>
             {todo.text}
           </h3>
         </div>
@@ -99,7 +99,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
 
       {/* Progress Bar Container */}
       {todo.dueTime && todo.trackingStartedAt && (
-        <div className="mt-4 h-1.5 bg-white/5 rounded-full relative">
+        <div className="mt-4 h-1.5 bg-fg/5 rounded-full relative">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}

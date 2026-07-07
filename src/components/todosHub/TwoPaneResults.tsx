@@ -48,7 +48,7 @@ export const TwoPaneResults: React.FC<{
 
   return (
     <div className="flex-1 min-h-0 flex">
-      <div className="w-56 shrink-0 min-h-0 flex flex-col border-r border-white/10">
+      <div className="w-56 shrink-0 min-h-0 flex flex-col border-r border-fg/10">
         <CollectionTree
           visibleCollections={visibleCollections}
           selectedView={selectedView}
@@ -62,7 +62,7 @@ export const TwoPaneResults: React.FC<{
       </div>
       <div className="flex-1 min-w-0 flex flex-col">
         {bodyModel.flattened.length === 0 ? (
-          <div className="px-4 py-6 text-xs text-white/40">No matching tasks in this collection.</div>
+          <div className="px-4 py-6 text-xs text-fg/40">No matching tasks in this collection.</div>
         ) : (
           <TaskTable variant={VARIANTS.table} model={bodyModel} interaction={interaction} rowHandlers={rowHandlers} />
         )}

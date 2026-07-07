@@ -34,7 +34,15 @@ export function applyTheme(themeId: string | undefined, mode: ThemeMode): void {
     const colorName = variant.roles[role as RoleName];
     root.style.setProperty(`--color-${role}`, `var(--c-${colorName})`);
   }
+  // The app's brand accents are now theme-owned (no longer user-editable). Point the
+  // legacy --accent1/--accent2 vars (used throughout the app) at the theme's accent
+  // roles so every `var(--accent1/2)` follows the active theme + mode.
+  root.style.setProperty('--accent1', `var(--c-${variant.roles.accent})`);
+  root.style.setProperty('--accent2', `var(--c-${variant.roles.accent2})`);
   root.classList.toggle('dark', resolved === 'dark');
+  // Drives native form controls (date/time pickers, scrollbars) to match the theme,
+  // replacing the per-input `style={{ colorScheme: 'dark' }}` the app used to hardcode.
+  root.style.colorScheme = resolved;
 
   // Snapshot the critical values for the pre-paint bootstrap in index.html, so a
   // reload doesn't flash the @theme defaults (Classic dark) before React runs.

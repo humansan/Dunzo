@@ -9,7 +9,7 @@ import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './
 // collection); both share Archive + Delete. All actions are passed in as
 // callbacks so the parent owns the state mutations and menu-closing.
 const itemCls =
-  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-white/80 hover:bg-white/10 hover:text-white transition-colors';
+  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-fg/80 hover:bg-fg/10 hover:text-fg transition-colors';
 
 export const RowContextMenu: React.FC<{
   menu: { id: string; x: number; y: number };
@@ -56,7 +56,7 @@ export const RowContextMenu: React.FC<{
       <div
         ref={menuRef}
         style={{ position: 'fixed', left: menuPos?.left ?? menu.x, top: menuPos?.top ?? menu.y }}
-        className="z-[66] min-w-[170px] rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-1 text-sm"
+        className="z-[66] min-w-[170px] rounded-lg border border-fg/10 bg-surface shadow-2xl p-1 text-sm"
       >
         {entry?.todo.isCollection ? (
           <>
@@ -82,7 +82,7 @@ export const RowContextMenu: React.FC<{
                       title={colorName(slot)}
                       onClick={() => onChangeColor(entry, slot)}
                       className={`h-6 w-6 rounded-full transition-transform hover:scale-110 ${
-                        selected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1f1f1f]' : 'ring-1 ring-white/15'
+                        selected ? 'ring-2 ring-fg ring-offset-2 ring-offset-surface' : 'ring-1 ring-fg/15'
                       }`}
                       style={{ backgroundColor: collectionColor(slot) }}
                     />
@@ -112,7 +112,7 @@ export const RowContextMenu: React.FC<{
         </button>
         <button
           onClick={() => onDelete(menu.id)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-red-400 hover:bg-[#d93d42]/10 hover:text-red-300 transition-colors"
+          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-red-400 hover:bg-danger/10 hover:text-red-300 transition-colors"
         >
           <Trash2 size={14} /> Delete
         </button>

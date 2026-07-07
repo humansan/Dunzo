@@ -119,7 +119,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   }, [autoFocus]);
 
   return (
-    <div className={`bg-[#1A1A1A] border border-white/10 rounded-xl p-2.5 w-60 ${className ?? ''}`}>
+    <div className={`bg-surface border border-fg/10 rounded-xl p-2.5 w-60 ${className ?? ''}`}>
       <input
         ref={inputRef}
         type="text"
@@ -128,32 +128,31 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
         onKeyDown={handleTextKeyDown}
         onBlur={handleTextBlur}
         placeholder="MM/DD/YYYY"
-        style={{ colorScheme: 'dark' }}
-        className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-2.5 py-1 text-sm text-white placeholder:text-white/35 focus:outline-none hover:border-white/20 focus:border-[var(--accent2)] transition-colors"
+                className="w-full bg-overlay border border-fg/10 rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg/35 focus:outline-none hover:border-fg/20 focus:border-[var(--accent2)] transition-colors"
       />
       <div className="grid grid-cols-3 gap-1 mt-1.5">
         <button
           onClick={setToday}
-          className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] font-medium text-white/70 transition-colors"
+          className="px-2 py-1 bg-fg/5 hover:bg-fg/10 rounded-md text-[10px] font-medium text-fg/70 transition-colors"
         >
           Today
         </button>
         <button
           onClick={setTomorrow}
-          className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] font-medium text-white/70 transition-colors"
+          className="px-2 py-1 bg-fg/5 hover:bg-fg/10 rounded-md text-[10px] font-medium text-fg/70 transition-colors"
         >
           Tomorrow
         </button>
         <button
           onClick={setNextWeek}
-          className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] font-medium text-white/70 transition-colors"
+          className="px-2 py-1 bg-fg/5 hover:bg-fg/10 rounded-md text-[10px] font-medium text-fg/70 transition-colors"
         >
           Next Week
         </button>
       </div>
       {onShowInDailyListChange && (
         <div className={`flex items-center justify-between mt-2 px-0.5 ${!value ? 'opacity-40' : ''}`}>
-          <span className="text-[11px] text-white/60">Send to daily list</span>
+          <span className="text-[11px] text-fg/60">Send to daily list</span>
           <button
             type="button"
             role="switch"
@@ -161,11 +160,11 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
             disabled={!value}
             onClick={() => { if (value) onShowInDailyListChange(!showInDailyList); }}
             className={`relative shrink-0 w-8 h-[18px] rounded-full transition-colors duration-200 focus:outline-none ${
-              showInDailyList && value ? 'bg-[var(--accent2)]' : 'bg-white/15'
+              showInDailyList && value ? 'bg-[var(--accent2)]' : 'bg-fg/15'
             } ${!value ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <span
-              className={`absolute top-[2px] left-0 w-[14px] h-[14px] bg-white rounded-full shadow-sm transition-transform duration-200 ${
+              className={`absolute top-[2px] left-0 w-[14px] h-[14px] bg-fg rounded-full shadow-sm transition-transform duration-200 ${
                 showInDailyList && value ? 'translate-x-[16px]' : 'translate-x-[2px]'
               }`}
             />
@@ -182,7 +181,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
       </div>
       <button
         onClick={handleClear}
-        className="w-full mt-2 pt-2 border-t border-white/10 text-xs font-bold text-white/40 hover:text-white transition-colors text-left"
+        className="w-full mt-2 pt-2 border-t border-fg/10 text-xs font-bold text-fg/40 hover:text-fg transition-colors text-left"
       >
         Clear
       </button>
