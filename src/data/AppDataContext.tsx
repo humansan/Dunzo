@@ -8,6 +8,8 @@ import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } 
 import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from './trackers';
 import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './workspaces';
 import { useSettings, useUpdateSettings } from './settings';
+import { applyTheme, type ThemeMode } from '../theme/applyTheme';
+import { DEFAULT_THEME_ID } from '../theme/themes';
 
 const DEFAULT_THEME: Theme = { accent1: '#c6dabe', accent2: '#c6dabe' };
 
@@ -90,6 +92,11 @@ function useProvideAppData() {
   const setCountdownMode = (v: 'off' | 'time' | 'percent') => updateSettings({ countdownMode: v });
   const xpEnabled = settings?.xpEnabled ?? true;
   const setXpEnabled = (v: boolean) => updateSettings({ xpEnabled: v });
+  // Color theme + dark/light mode (DB-synced; applied to CSS vars by the effect below).
+  const themeId = settings?.themeId ?? DEFAULT_THEME_ID;
+  const setThemeId = (id: string) => updateSettings({ themeId: id });
+  const mode: ThemeMode = settings?.mode ?? 'dark';
+  const setMode = (m: ThemeMode) => updateSettings({ mode: m });
 
   // ── Task Planner workspaces (independent todo databases) ───────────────────
   // The workspace list is server data; activeWorkspaceId is now a DB-synced pref
@@ -140,11 +147,24 @@ function useProvideAppData() {
   // calendar, stats) that still consume DayTodos[]. Not persisted.
   const dayTodos = useMemo(() => groupByDueDate(todos), [todos]);
 
-  // Theme is DB-synced now; this effect only reflects it onto the CSS variables.
+  // Theme + mode are DB-synced; this effect reflects them onto the CSS variables.
+  // applyTheme writes the role/color tokens (--color-*/--c-*) and toggles `.dark`;
+  // the accent overrides (--accent1/2) are applied AFTER so the user's custom accent
+  // wins over the theme's default. When mode === 'system', also re-apply on OS change.
   useEffect(() => {
+    applyTheme(themeId, mode);
     document.documentElement.style.setProperty('--accent1', theme.accent1);
     document.documentElement.style.setProperty('--accent2', theme.accent2);
-  }, [theme]);
+    if (mode !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => {
+      applyTheme(themeId, mode);
+      document.documentElement.style.setProperty('--accent1', theme.accent1);
+      document.documentElement.style.setProperty('--accent2', theme.accent2);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [theme, themeId, mode]);
 
   useEffect(() => {
     if (activeTodoId) {
@@ -404,6 +424,8 @@ function useProvideAppData() {
     hubCollectionOptions,
     // settings/prefs
     theme, setTheme,
+    themeId, setThemeId,
+    mode, setMode,
     weekStartsOn, setWeekStartsOn,
     countdownMode, setCountdownMode,
     xpEnabled, setXpEnabled,

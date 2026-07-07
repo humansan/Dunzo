@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { X, User, SlidersHorizontal, Database, Upload, Download, LogOut, RotateCcw } from 'lucide-react';
 import { Theme } from '../types';
+import { type ThemeMode } from '../theme/applyTheme';
 import { authClient } from '../auth';
 import { buildBackup, parseBackup, mergeImportToDb } from '../data/import';
 import backgroundUrl from '../assets/background.jpg';
@@ -28,6 +29,8 @@ interface AccountModalProps {
   onUpdateXpEnabled: (val: boolean) => void;
   theme: Theme;
   onUpdateTheme: (theme: Theme) => void;
+  mode: ThemeMode;
+  onUpdateMode: (mode: ThemeMode) => void;
 }
 
 const DEFAULT_THEME: Theme = { accent1: '#e1e354', accent2: '#c6dabe' };
@@ -266,6 +269,8 @@ const SettingsPane: React.FC<{
   onUpdateXpEnabled: (val: boolean) => void;
   theme: Theme;
   onUpdateTheme: (theme: Theme) => void;
+  mode: ThemeMode;
+  onUpdateMode: (mode: ThemeMode) => void;
 }> = ({
   weekStartsOn,
   onUpdateWeekStartsOn,
@@ -275,6 +280,8 @@ const SettingsPane: React.FC<{
   onUpdateXpEnabled,
   theme,
   onUpdateTheme,
+  mode,
+  onUpdateMode,
 }) => {
   const colorRow = (key: 'accent1' | 'accent2', label: string) => (
     <div className="space-y-1.5">
@@ -341,6 +348,20 @@ const SettingsPane: React.FC<{
       {/* Appearance */}
       <div className="space-y-4 border-t border-white/8 pt-6">
         <SectionHeader>Appearance</SectionHeader>
+
+        <div className="space-y-1.5">
+          <span className={labelCls}>Theme</span>
+          <Segment
+            options={[
+              { value: 'dark', label: 'Dark' },
+              { value: 'light', label: 'Light' },
+              { value: 'system', label: 'System' },
+            ]}
+            value={mode}
+            onChange={onUpdateMode}
+          />
+        </div>
+
         {colorRow('accent1', 'Accent color 1')}
         {colorRow('accent2', 'Accent color 2')}
         <button
@@ -463,6 +484,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onUpdateXpEnabled,
   theme,
   onUpdateTheme,
+  mode,
+  onUpdateMode,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('profile');
@@ -573,6 +596,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   onUpdateXpEnabled={onUpdateXpEnabled}
                   theme={theme}
                   onUpdateTheme={onUpdateTheme}
+                  mode={mode}
+                  onUpdateMode={onUpdateMode}
                 />
               )}
               {section === 'data' && <DataPane />}

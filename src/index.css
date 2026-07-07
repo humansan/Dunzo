@@ -8,12 +8,62 @@
 
 @import "tailwindcss";
 
-
+/* Class-based dark mode (applyTheme toggles `.dark` on <html>), not
+   prefers-color-scheme. Lets `dark:` variants follow the chosen theme mode. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Space Grotesk", "DM Mono", ui-monospace, SFMono-Regular, monospace;
   --font-mono--font-feature-settings: "tnum";
+
+  /* ── Theme roles (see src/theme/) ──────────────────────────────────────────
+     Declaring one --color-<role> per RoleName makes `bg-<role>`, `text-<role>`,
+     `border-<role>` (and /opacity variants) real utilities. Values below are the
+     Classic-DARK defaults, so first paint (and the pre-auth /login screen, where
+     AppDataProvider isn't mounted) renders correctly. applyTheme() overrides these
+     per-theme/mode via inline styles on <html> that repoint each role at a
+     --c-<color> variable. Keep this list in sync with ROLE_NAMES in theme/roles.ts. */
+  --color-canvas: #0a0a0a;
+  --color-surface: #1a1a1a;
+  --color-surface-raised: #222222;
+  --color-overlay: #2a2a2a;
+  --color-scrim: #000000;
+  --color-fg: #ffffff;
+  --color-fg-muted: #9ca3af;
+  --color-fg-subtle: #6b7280;
+  --color-line: #ffffff;
+  --color-line-strong: #ffffff;
+  --color-accent: #c6dabe;
+  --color-accent2: #c6dabe;
+  --color-danger: #d93d42;
+  --color-warning: #ffba44;
+  --color-success: #22c55e;
+  --color-info: #3b82f6;
+  --color-status-todo: #6b7280;
+  --color-status-active: #3b82f6;
+  --color-status-done: #22c55e;
+  --color-priority-low: #6b7280;
+  --color-priority-med: #f59e0b;
+  --color-priority-high: #d93d42;
+  --color-date-past: #d93d42;
+  --color-date-today: #22c55e;
+  --color-date-tomorrow: #3b82f6;
+  --color-date-next7: #8b5cf6;
+  --color-date-next30: #0ea5e9;
+  --color-date-next3m: #f59e0b;
+  --color-date-nextyear: #64748b;
+  --color-xp-gold: #ffba44;
+  --color-xp-tier2: #8b5cf6;
+  --color-xp-bar: #ff723a;
+  --color-collection-1: #9ca3af;
+  --color-collection-2: #f87171;
+  --color-collection-3: #fb923c;
+  --color-collection-4: #fbbf24;
+  --color-collection-5: #4ade80;
+  --color-collection-6: #2dd4bf;
+  --color-collection-7: #60a5fa;
+  --color-collection-8: #c084fc;
 }
 
 /* Default accent theme. AppDataProvider overrides these per-user via an inline
@@ -27,7 +77,7 @@
 }
 
 body {
-  @apply bg-[#0a0a0a] text-white antialiased;
+  @apply bg-canvas text-fg antialiased;
 }
 
 /* Custom scrollbar */
@@ -40,12 +90,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--color-fg) 20%, transparent);
 }
 
 /* Calendar smooth scroll */
