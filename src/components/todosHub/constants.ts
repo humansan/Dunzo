@@ -34,9 +34,10 @@ export const COLLECTION_COLOR_NAMES: Record<string, string> = {
 };
 export const colorName = (c: string) => COLLECTION_COLOR_NAMES[c] || 'Custom';
 
-// Pill label color: lighten the collection color toward white so the name reads
-// with high contrast against the dark tinted-bg pill.
-export const pillTextColor = (color: string) => `color-mix(in srgb, ${color} 40%, white)`;
+// Pill label color: the shared theme-aware chip text (mixes the hue toward
+// --color-fg so it reads on both dark and light). Kept re-exported under the old
+// name so existing header/pill renderers don't need to change their imports.
+export { pillText as pillTextColor } from '../../theme/pill';
 
 // Hub view-config (column widths, per-view config, collapse state, selected view,
 // sidebar sizing) is now DB-synced through `user_settings` (see src/data/settings.ts

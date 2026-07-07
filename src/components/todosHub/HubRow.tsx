@@ -13,7 +13,8 @@ import {
   priorityOption,
 } from '../todoFields';
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from './types';
-import { INDENT, NAME_BASE_PAD, DEFAULT_COLLECTION_COLOR, pillTextColor, cellEditCls } from './constants';
+import { INDENT, NAME_BASE_PAD, DEFAULT_COLLECTION_COLOR, cellEditCls } from './constants';
+import { pill } from '../../theme/pill';
 import { SectionHeader } from './SectionHeader';
 import { useTableVariant } from './variant';
 import { isDone } from '../../utils/todoStatus';
@@ -217,7 +218,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
             placeholder="Collection name"
             size={1}
-            style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
+            style={pill(color)}
             className="w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px text-sm font-medium focus:outline-none placeholder:text-white/40 ring-1 ring-current/60"
           />
         ) : undefined}

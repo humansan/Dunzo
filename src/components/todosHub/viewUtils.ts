@@ -106,13 +106,13 @@ const FIELD_GROUP_ORDER: Partial<Record<ColKey, string[]>> = {
 // used when quick-adding a task into a date section. Past has no true earliest,
 // so it uses yesterday (the most recent past day).
 const DATE_BUCKETS: { id: string; label: string; color: string; startOffset: number }[] = [
-  { id: 'past',     label: 'Past',          color: '#ef4444', startOffset: -1 },
-  { id: 'today',    label: 'Today',         color: '#22c55e', startOffset: 0 },
-  { id: 'tomorrow', label: 'Tomorrow',      color: '#3b82f6', startOffset: 1 },
-  { id: 'next7',    label: 'Next 7 Days',   color: '#8b5cf6', startOffset: 2 },
-  { id: 'next30',   label: 'Next 30 Days',  color: '#0ea5e9', startOffset: 8 },
-  { id: 'next3m',   label: 'Next 3 Months', color: '#f59e0b', startOffset: 31 },
-  { id: 'nextyear', label: 'Next Year',     color: '#64748b', startOffset: 91 },
+  { id: 'past',     label: 'Past',          color: 'var(--color-date-past)',     startOffset: -1 },
+  { id: 'today',    label: 'Today',         color: 'var(--color-date-today)',    startOffset: 0 },
+  { id: 'tomorrow', label: 'Tomorrow',      color: 'var(--color-date-tomorrow)', startOffset: 1 },
+  { id: 'next7',    label: 'Next 7 Days',   color: 'var(--color-date-next7)',    startOffset: 2 },
+  { id: 'next30',   label: 'Next 30 Days',  color: 'var(--color-date-next30)',   startOffset: 8 },
+  { id: 'next3m',   label: 'Next 3 Months', color: 'var(--color-date-next3m)',   startOffset: 31 },
+  { id: 'nextyear', label: 'Next Year',     color: 'var(--color-date-nextyear)', startOffset: 91 },
 ];
 const DATE_BUCKET_BY_ID = new Map(DATE_BUCKETS.map((b) => [b.id, b]));
 
@@ -156,8 +156,8 @@ function groupKeyOrder(field: ColKey): string[] {
 }
 
 export function getGroupColor(field: ColKey, key: string): string {
-  if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.color ?? '#9ca3af';
-  return FIELD_OPTIONS[field]?.find((o) => o.label === key)?.color ?? '#9ca3af';
+  if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.color ?? 'var(--color-fg-muted)';
+  return FIELD_OPTIONS[field]?.find((o) => o.label === key)?.color ?? 'var(--color-fg-muted)';
 }
 
 // The Todo patch that moves a task into the group `value` for `field` — used when

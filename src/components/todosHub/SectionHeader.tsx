@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
-import { NAME_BASE_PAD, INDENT, pillTextColor } from './constants';
+import { NAME_BASE_PAD, INDENT } from './constants';
+import { pill as chipStyle } from '../../theme/pill';
 import { useTableVariant } from './variant';
 
 // The single source of truth for how a section header looks in the Task Planner —
@@ -73,7 +74,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   const pill = pillOverride ?? (
     <span
       onClick={onPillClick}
-      style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
+      style={chipStyle(color)}
       className={`min-w-0 max-w-full truncate rounded-full px-2.5 py-px font-medium ${
         onPillClick ? 'cursor-text' : ''
       } ${mode === 'list' ? 'text-base' : 'text-sm'}`}

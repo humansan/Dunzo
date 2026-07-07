@@ -5,6 +5,7 @@ import CheckCircleCutout from '../assets/CheckCircleCutout';
 import { timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { TodoStatus, TodoPriority } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
+import { pill } from '../theme/pill';
 
 // ── Shared todo field editors ────────────────────────────────────────────────
 // Small controlled inputs for each todo field, shared by the full-view panel and
@@ -218,28 +219,26 @@ export interface ChipOption {
   color: string; // base color; chip renders as tinted bg + color-mixed text (like collection pills)
 }
 
+// Colors are theme roles (see src/theme). Resolved from --color-* at render, so
+// status/priority chips follow the active theme + dark/light mode.
 export const STATUS_OPTIONS: ChipOption[] = [
-  { value: 'todo',        label: 'Todo',        color: '#6b7280' }, // gray
-  { value: 'in_progress', label: 'In Progress', color: '#3b82f6' }, // blue
-  { value: 'completed',   label: 'Completed',   color: '#22c55e' }, // green
+  { value: 'todo',        label: 'Todo',        color: 'var(--color-status-todo)' },
+  { value: 'in_progress', label: 'In Progress', color: 'var(--color-status-active)' },
+  { value: 'completed',   label: 'Completed',   color: 'var(--color-status-done)' },
 ];
 
 export const PRIORITY_OPTIONS: ChipOption[] = [
-  { value: 'low',    label: 'Low',    color: '#6b7280' }, // slate
-  { value: 'medium', label: 'Medium', color: '#f59e0b' }, // amber
-  { value: 'high',   label: 'High',   color: '#ef4444' }, // red
+  { value: 'low',    label: 'Low',    color: 'var(--color-priority-low)' },
+  { value: 'medium', label: 'Medium', color: 'var(--color-priority-med)' },
+  { value: 'high',   label: 'High',   color: 'var(--color-priority-high)' },
 ];
 
 export const statusOption   = (v?: TodoStatus)   => STATUS_OPTIONS.find((o)   => o.value === v);
 export const priorityOption = (v?: TodoPriority) => PRIORITY_OPTIONS.find((o) => o.value === v);
 
-// Tinted-bg pill — matches the collection header pill style for visual consistency.
-const chipBg   = (c: string) => `${c}70`;
-const chipText = (c: string) => `color-mix(in srgb, ${c} 20%, white)`;
-
 export const OptionChip: React.FC<{ option: ChipOption; className?: string }> = ({ option, className = '' }) => (
   <span
-    style={{ backgroundColor: chipBg(option.color), color: chipText(option.color) }}
+    style={pill(option.color)}
     className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${className}`}
   >
     {option.label}
@@ -266,11 +265,9 @@ export const OptionSelectField: React.FC<{
               key={opt.value}
               type="button"
               onClick={() => onChange(selected ? undefined : opt.value)}
-              style={{ backgroundColor: chipBg(opt.color), color: chipText(opt.color) }}
+              style={{ ...pill(opt.color), boxShadow: selected ? `0 0 0 2px ${opt.color}` : undefined }}
               className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
-                selected
-                  ? `ring-2 ring-[${opt.color}] ring-offset`
-                  : 'opacity-45 hover:opacity-100'
+                selected ? '' : 'opacity-45 hover:opacity-100'
               }`}
             >
               {opt.label}
@@ -308,9 +305,7 @@ export const OptionSelectField: React.FC<{
 // every collection along the path. The chip shows that whole path as tinted
 // pills separated by a chevron; the search picks/creates a single collection.
 
-const COLL_FALLBACK = '#9ca3af';
-const collChipText = (color?: string) => `color-mix(in srgb, ${color || COLL_FALLBACK} 40%, white)`;
-const collChipBg = (color?: string) => `${color || COLL_FALLBACK}40`;
+const COLL_FALLBACK = 'var(--color-collection-1)';
 
 // Renders a collection path as `[root] › [child] › [leaf]`.
 export const CollectionBreadcrumb: React.FC<{
@@ -322,7 +317,7 @@ export const CollectionBreadcrumb: React.FC<{
       <React.Fragment key={c.id}>
         {i > 0 && <ChevronRight size={12} className="shrink-0 text-white/30" />}
         <span
-          style={{ backgroundColor: collChipBg(c.color), color: collChipText(c.color) }}
+          style={pill(c.color || COLL_FALLBACK)}
           className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-medium"
         >
           {c.name}
