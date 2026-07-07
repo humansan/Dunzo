@@ -30,6 +30,8 @@ import { DayTodos, Todo } from '../types';
 import { hasDate, todoIndex, collectionOf, collectionPath } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
 import { motion, AnimatePresence } from 'motion/react';
+import { pillBg, pillBorder } from '../theme/pill';
+import { collectionColor } from './todosHub/constants';
 
 interface StatsViewProps {
   dayTodos: DayTodos[];
@@ -40,7 +42,7 @@ const VIOLET = '#a78bfa';
 
 // A collection along a task's path, as the stats surfaces consume it.
 interface CollChip { id: string; name: string; color: string }
-const UNCATEGORIZED: CollChip = { id: '__uncategorized__', name: 'Uncategorized', color: '#6b7280' };
+const UNCATEGORIZED: CollChip = { id: '__uncategorized__', name: 'Uncategorized', color: 'var(--color-fg-muted)' };
 
 export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   const [chartInterval, setChartInterval] = useState<'day' | 'fourDays' | 'week' | 'month'>(() => {
@@ -79,7 +81,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     collectionPath(collectionOf(t, byId), byId).map((c) => ({
       id: c.id,
       name: c.text || 'Untitled',
-      color: c.color || '#9ca3af',
+      color: collectionColor(c.color),
     }));
 
   // 1. Build Pre-Aggregated Data Maps for Speed
@@ -843,7 +845,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                                 <span
                                   key={c.id}
                                   className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 border text-white/60 transition-colors"
-                                  style={{ borderColor: `${c.color}30`, color: c.color }}
+                                  style={{ borderColor: pillBorder(c.color), color: c.color }}
                                 >
                                   {c.name}
                                 </span>
@@ -899,7 +901,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                                                 key={c.id}
                                                 className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                                                 style={{
-                                                  backgroundColor: `${c.color}15`,
+                                                  backgroundColor: pillBg(c.color),
                                                   color: c.color
                                                 }}
                                               >

@@ -10,6 +10,7 @@ import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './workspa
 import { useSettings, useUpdateSettings } from './settings';
 import { applyTheme, type ThemeMode } from '../theme/applyTheme';
 import { DEFAULT_THEME_ID } from '../theme/themes';
+import { DEFAULT_COLLECTION_SLOT } from '../components/todosHub/constants';
 
 const DEFAULT_THEME: Theme = { accent1: '#e1e354', accent2: '#c6dabe' };
 
@@ -313,7 +314,7 @@ function useProvideAppData() {
       text: name,
       showInDatabase: true,
       isCollection: true,
-      color: '#9ca3af',
+      color: DEFAULT_COLLECTION_SLOT,
       parentId,
       workspaceId,
       hubOrder: maxOrder + 1,

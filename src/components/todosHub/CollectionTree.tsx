@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layers, Inbox, Shapes, ChevronRight, ChevronDown } from 'lucide-react';
 import { OrganizerEntry } from '../../utils/todoFilters';
-import { DEFAULT_COLLECTION_COLOR, SIDEBAR_INDENT } from './constants';
+import { collectionColor, SIDEBAR_INDENT } from './constants';
 import { useCollectionDnD } from './useCollectionDnD';
 
 export type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: boolean };
@@ -72,7 +72,7 @@ export const CollectionTree: React.FC<{
         onDrop={dnd ? (e) => { e.preventDefault(); dnd.onCollDrop(); } : undefined}
       >
         {visibleCollections.map(({ entry: c, depth, hasChildren }) => {
-          const color = c.todo.color || DEFAULT_COLLECTION_COLOR;
+          const color = collectionColor(c.todo.color);
           const indent = depth * SIDEBAR_INDENT;
           const drop = dnd?.dropInfo?.id === c.todo.id ? dnd.dropInfo.pos : null;
           const button = (

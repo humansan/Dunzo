@@ -8,7 +8,7 @@ import {
 } from '../utils/todoFilters';
 import { ColKey, COLUMNS, EditState } from './todosHub/types';
 import {
-  DEFAULT_COLLECTION_COLOR,
+  collectionSlot,
   MIN_SIDEBAR_WIDTH,
   MAX_SIDEBAR_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
@@ -355,7 +355,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     onSaveTodo({
       ...entry.todo,
       isCollection: true,
-      color: entry.todo.color || DEFAULT_COLLECTION_COLOR,
+      color: collectionSlot(entry.todo.color),
       parentId: null,
       status: undefined,
       dueDate: undefined,

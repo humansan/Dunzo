@@ -2,7 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { Archive, Trash2, Maximize2, CornerDownRight, FolderPlus, Palette, Pencil, MoveRight } from 'lucide-react';
 import { OrganizerEntry } from '../../utils/todoFilters';
-import { COLLECTION_COLORS, DEFAULT_COLLECTION_COLOR } from './constants';
+import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './constants';
 
 // Right-click / 3-dot row menu. Branches on whether the target row is a
 // collection (Edit / nested collection / recolor) or a task (Expand / make
@@ -74,17 +74,17 @@ export const RowContextMenu: React.FC<{
             </button>
             {colorPickerOpen && (
               <div className="grid grid-cols-4 gap-1.5 px-2.5 py-2">
-                {COLLECTION_COLORS.map((color) => {
-                  const selected = (entry.todo.color || DEFAULT_COLLECTION_COLOR) === color;
+                {COLLECTION_SLOTS.map((slot) => {
+                  const selected = collectionSlot(entry.todo.color) === slot;
                   return (
                     <button
-                      key={color}
-                      title={color}
-                      onClick={() => onChangeColor(entry, color)}
+                      key={slot}
+                      title={colorName(slot)}
+                      onClick={() => onChangeColor(entry, slot)}
                       className={`h-6 w-6 rounded-full transition-transform hover:scale-110 ${
                         selected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1f1f1f]' : 'ring-1 ring-white/15'
                       }`}
-                      style={{ backgroundColor: color }}
+                      style={{ backgroundColor: collectionColor(slot) }}
                     />
                   );
                 })}

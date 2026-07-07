@@ -4,6 +4,8 @@ import { Calendar, Clock, Sparkles, Maximize2, X, Shapes } from 'lucide-react';
 import { formatTime12h, timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { CollectionOption } from '../utils/todoFilters';
 import { CollectionSearchField } from './todoFields';
+import { pillBg, pillText } from '../theme/pill';
+import { collectionColor } from './todosHub/constants';
 
 export interface QuickEditValues {
   text: string;
@@ -387,12 +389,12 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           <button
             type="button"
             onClick={() => setOpenEditor(o => o === 'collection' ? null : 'collection')}
-            style={currentCollection ? { backgroundColor: `${currentCollection.color || '#9ca3af'}14` } : undefined}
+            style={currentCollection ? { backgroundColor: pillBg(collectionColor(currentCollection.color)) } : undefined}
             className={`${chipBase} ${currentCollection ? '' : 'bg-white/5 hover:bg-white/10'}`}
           >
             <span
               className={`${chipText} max-w-[200px] ${currentCollection ? '' : 'text-white/55'}`}
-              style={currentCollection ? { color: `color-mix(in srgb, ${currentCollection.color || '#9ca3af'} 60%, white)` } : undefined}
+              style={currentCollection ? { color: pillText(collectionColor(currentCollection.color)) } : undefined}
             >
               <Shapes size={16} className="shrink-0" />
               <span className="relative top-px truncate">

@@ -6,7 +6,7 @@ import { OrganizerEntry, CollectionOption, collectionPath } from '../../utils/to
 import { CollectionSearchField } from '../todoFields';
 import { modalPop, overlayBackdrop } from '../modalMotion';
 import { textInputCls } from './TextInput';
-import { COLLECTION_COLORS, DEFAULT_COLLECTION_COLOR, colorName } from './constants';
+import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './constants';
 
 // ── Collection Edit modal ────────────────────────────────────────────────────
 // Rename, recolor, and re-parent a collection. The parent picker reuses the
@@ -21,7 +21,7 @@ export const CollectionEditModal: React.FC<{
   onClose: () => void;
 }> = ({ entry, options, todoById, onCreateCollection, onSave, onClose }) => {
   const [name, setName] = useState(entry.todo.text || '');
-  const [color, setColor] = useState(entry.todo.color || DEFAULT_COLLECTION_COLOR);
+  const [color, setColor] = useState(collectionSlot(entry.todo.color));
   const [parentId, setParentId] = useState<string | null>(entry.todo.parentId ?? null);
   const [colorOpen, setColorOpen] = useState(false);
 
@@ -85,7 +85,7 @@ export const CollectionEditModal: React.FC<{
                   colorOpen ? 'border-[var(--accent2)]' : 'border-white/10 hover:border-white/20'
                 }`}
               >
-                <span className="shrink-0 w-3.5 h-3.5 rounded-full" style={{ backgroundColor: color }} />
+                <span className="shrink-0 w-3.5 h-3.5 rounded-full" style={{ backgroundColor: collectionColor(color) }} />
                 <span className="flex-1 text-left">{colorName(color)}</span>
                 <ChevronDown
                   size={14}
@@ -94,14 +94,14 @@ export const CollectionEditModal: React.FC<{
               </button>
               {colorOpen && (
                 <div className="absolute z-10 top-full left-0 mt-1 w-full rounded-lg border border-white/10 bg-[#222222] shadow-2xl p-1 max-h-56 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
-                  {COLLECTION_COLORS.map((c) => (
+                  {COLLECTION_SLOTS.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => { setColor(c); setColorOpen(false); }}
                       className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left hover:bg-white/10 transition-colors"
                     >
-                      <span className="shrink-0 w-3.5 h-3.5 rounded-full" style={{ backgroundColor: c }} />
+                      <span className="shrink-0 w-3.5 h-3.5 rounded-full" style={{ backgroundColor: collectionColor(c) }} />
                       <span className="flex-1 text-sm text-white/90">{colorName(c)}</span>
                       {c === color && <Check size={13} className="shrink-0 text-white/50" />}
                     </button>

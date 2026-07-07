@@ -6,6 +6,7 @@ import { timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { TodoStatus, TodoPriority } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
 import { pill } from '../theme/pill';
+import { collectionColor } from './todosHub/constants';
 
 // ── Shared todo field editors ────────────────────────────────────────────────
 // Small controlled inputs for each todo field, shared by the full-view panel and
@@ -305,7 +306,6 @@ export const OptionSelectField: React.FC<{
 // every collection along the path. The chip shows that whole path as tinted
 // pills separated by a chevron; the search picks/creates a single collection.
 
-const COLL_FALLBACK = 'var(--color-collection-1)';
 
 // Renders a collection path as `[root] › [child] › [leaf]`.
 export const CollectionBreadcrumb: React.FC<{
@@ -317,7 +317,7 @@ export const CollectionBreadcrumb: React.FC<{
       <React.Fragment key={c.id}>
         {i > 0 && <ChevronRight size={12} className="shrink-0 text-white/30" />}
         <span
-          style={pill(c.color || COLL_FALLBACK)}
+          style={pill(collectionColor(c.color))}
           className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-medium"
         >
           {c.name}

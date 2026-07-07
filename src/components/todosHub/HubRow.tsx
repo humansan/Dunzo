@@ -13,7 +13,7 @@ import {
   priorityOption,
 } from '../todoFields';
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from './types';
-import { INDENT, NAME_BASE_PAD, DEFAULT_COLLECTION_COLOR, cellEditCls } from './constants';
+import { INDENT, NAME_BASE_PAD, cellEditCls, collectionColor } from './constants';
 import { pill } from '../../theme/pill';
 import { SectionHeader } from './SectionHeader';
 import { useTableVariant } from './variant';
@@ -195,7 +195,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // (same chrome/spacing as attribute-group headers) with the collection-specific
   // bits — inline-rename pill, drag handle, options + add buttons — passed in.
   if (todo.isCollection) {
-    const color = todo.color || DEFAULT_COLLECTION_COLOR;
+    const color = collectionColor(todo.color);
     // Columns view: the header opens a child column on click (drill) rather than
     // inline-renaming, so the rename pill/editor is swapped for the drill wiring
     // (rename stays available via the ⋯ menu → Edit collection).
