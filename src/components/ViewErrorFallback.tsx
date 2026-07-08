@@ -7,19 +7,19 @@ import { AlertTriangle } from 'lucide-react';
 export function ViewErrorFallback({ error }: ErrorComponentProps) {
   const router = useRouter();
   return (
-    <div className="h-full min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6 text-fg/60 text-sm">
-      <div className="w-14 h-14 rounded-full bg-fg/5 flex items-center justify-center text-amber-400/80">
+    <div className="h-full min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6 text-fg-subtle text-sm">
+      <div className="w-14 h-14 rounded-full bg-fill-subtle flex items-center justify-center text-amber-400/80">
         <AlertTriangle size={26} />
       </div>
       <div>
-        <p className="text-fg/80 font-semibold">This view hit an error.</p>
+        <p className="text-fg-muted font-semibold">This view hit an error.</p>
         {error?.message && (
-          <p className="mt-1 text-fg/40 max-w-md break-words">{error.message}</p>
+          <p className="mt-1 text-fg-faint max-w-md break-words">{error.message}</p>
         )}
       </div>
       <button
         onClick={() => router.invalidate()}
-        className="px-4 py-2 rounded-xl bg-fg/5 hover:bg-fg/10 text-fg font-semibold"
+        className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold"
       >
         Retry
       </button>

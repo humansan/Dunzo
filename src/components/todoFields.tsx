@@ -22,7 +22,7 @@ export interface TimePatch {
 
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
 export const fieldInputClass =
-  'bg-fg/5 border border-fg/10 rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
+  'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
 
 // ── Completion toggle ────────────────────────────────────────────────────────
 export const CompletedToggle: React.FC<{
@@ -35,7 +35,7 @@ export const CompletedToggle: React.FC<{
     <motion.div
       animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
       transition={{ duration: 0.3 }}
-      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : 'text-fg/50 hover:text-fg'}`}
+      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : 'text-fg-subtle hover:text-fg'}`}
     >
       {completed
         ? <CheckCircleCutout size={size} strokeWidth={2.5} />
@@ -202,7 +202,7 @@ export const NotesField: React.FC<{
       placeholder={placeholder}
       className={
         className ??
-        'w-full bg-transparent resize-none text-sm text-fg/80 placeholder:text-fg/25 focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fg/25'
+        'w-full bg-transparent resize-none text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fill-stronger'
       }
     />
   );
@@ -285,11 +285,11 @@ export const OptionSelectField: React.FC<{
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onChange(selected ? undefined : opt.value)}
             className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-lg text-left transition-colors ${
-              selected ? 'bg-fg/10' : 'hover:bg-fg/5'
+              selected ? 'bg-fill' : 'hover:bg-fill-subtle'
             }`}
           >
             <OptionChip option={opt} />
-            {selected && <Check size={14} className="ml-auto text-fg/60" />}
+            {selected && <Check size={14} className="ml-auto text-fg-subtle" />}
           </button>
         );
       })}
@@ -311,7 +311,7 @@ export const CollectionBreadcrumb: React.FC<{
   <span className={`inline-flex items-center gap-0.5 min-w-0 ${className}`}>
     {path.map((c, i) => (
       <React.Fragment key={c.id}>
-        {i > 0 && <ChevronRight size={12} className="shrink-0 text-fg/30" />}
+        {i > 0 && <ChevronRight size={12} className="shrink-0 text-fg-ghost" />}
         <span
           style={pill(collectionColor(c.color))}
           className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-medium"
@@ -374,7 +374,7 @@ export const CollectionSearchField: React.FC<{
   const dropdown = showPopup && (
     <div
       data-tag-suggestions
-      className={`absolute z-10 top-full left-0 mt-3 ${dropdownWidthCls} max-h-44 overflow-y-auto rounded-xl border border-fg/10 bg-surface-raised shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full`}
+      className={`absolute z-10 top-full left-0 mt-3 ${dropdownWidthCls} max-h-44 overflow-y-auto rounded-xl border border-line bg-surface-raised shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full`}
     >
       {matches.map((o) => (
         <button
@@ -382,10 +382,10 @@ export const CollectionSearchField: React.FC<{
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => pick(o.id)}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-fg/10 transition-colors"
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-fill transition-colors"
         >
           <CollectionBreadcrumb path={o.path} className="flex-1" />
-          {o.id === value && <Check size={13} className="ml-auto shrink-0 text-fg/50" />}
+          {o.id === value && <Check size={13} className="ml-auto shrink-0 text-fg-subtle" />}
         </button>
       ))}
       {input.trim() && !exact && (
@@ -393,7 +393,7 @@ export const CollectionSearchField: React.FC<{
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={create}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm text-fg/80 hover:bg-fg/10 hover:text-fg transition-colors"
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm text-fg-muted hover:bg-fill hover:text-fg transition-colors"
         >
           <Shapes size={13} className="text-[var(--accent2)] shrink-0" />
           <span className="truncate">Create “{input.trim()}”</span>
@@ -417,7 +417,7 @@ export const CollectionSearchField: React.FC<{
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder={value ? '' : (placeholder ?? 'Add a collection…')}
-            className="flex-1 min-w-[80px] bg-transparent text-sm text-fg placeholder:text-fg/25 focus:outline-none h-7"
+            className="flex-1 min-w-[80px] bg-transparent text-sm text-fg placeholder:text-fg-ghost focus:outline-none h-7"
           />
         </div>
         {dropdown}
@@ -433,7 +433,7 @@ export const CollectionSearchField: React.FC<{
           <button
             type="button"
             onClick={() => { onChange(null); setInput(''); }}
-            className="shrink-0 text-fg/40 hover:text-fg/80 transition-colors"
+            className="shrink-0 text-fg-faint hover:text-fg-muted transition-colors"
           >
             <X size={13} />
           </button>
@@ -449,7 +449,7 @@ export const CollectionSearchField: React.FC<{
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={placeholder ?? (value ? 'Change collection…' : 'Search or create collection…')}
-          className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent2)]"
+          className="w-full bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent2)]"
         />
         {dropdown}
       </div>

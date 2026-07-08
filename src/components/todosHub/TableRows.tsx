@@ -150,8 +150,8 @@ export const TableRows: React.FC<TableRowsProps> = ({
         <button
           type="button"
           onClick={onNewInView}
-          className={`flex w-full h-9 text-fg/60 hover:text-fg hover:bg-fg/3 cursor-pointer transition-colors ${
-            variant.mode === 'table' ? 'border-b border-fg/8 bg-canvas' : 'border-b border-fg/5'
+          className={`flex w-full h-9 text-fg-subtle hover:text-fg hover:bg-fill-subtle cursor-pointer transition-colors ${
+            variant.mode === 'table' ? 'border-b border-line-subtle bg-canvas' : 'border-b border-line-subtle'
           }`}
         >
           <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
@@ -162,7 +162,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
       )}
 
       {onNewInView && isEmpty && (
-        <div className="px-3 py-6 text-xs text-fg/60">
+        <div className="px-3 py-6 text-xs text-fg-subtle">
           {selectedCollectionId
             ? 'No tasks in this collection yet. Click “New” to add one.'
             : selectedView === 'uncategorized'

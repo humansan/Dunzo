@@ -63,12 +63,12 @@ export const HubToolbar: React.FC<{
           type="button"
           onClick={onToggleSidebar}
           title={sidebarHidden ? 'Show collections' : 'Hide collections'}
-          className="shrink-0 p-1 -ml-0.5 rounded text-fg/45 hover:text-fg hover:bg-fg/10 transition-colors"
+          className="shrink-0 p-1 -ml-0.5 rounded text-fg-subtle hover:text-fg hover:bg-fill transition-colors"
         >
           {sidebarHidden ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
         </button>
         <h1 className="text-lg font-bold">Task Planner</h1>
-        <span className="text-xs text-fg/25">/</span>
+        <span className="text-xs text-fg-ghost">/</span>
         {selectedCollectionId ? (
           <CollectionBreadcrumb
             path={collectionPath(selectedCollectionId, todoById).map((c) => ({
@@ -78,9 +78,9 @@ export const HubToolbar: React.FC<{
             }))}
           />
         ) : (
-          <span className="text-xs font-medium text-fg/70 truncate max-w-[260px]">{viewLabel}</span>
+          <span className="text-xs font-medium text-fg-muted truncate max-w-[260px]">{viewLabel}</span>
         )}
-        <span className="text-xs text-fg/40">{currentCount} item{currentCount === 1 ? '' : 's'}</span>
+        <span className="text-xs text-fg-faint">{currentCount} item{currentCount === 1 ? '' : 's'}</span>
       </div>
 
       {/* View toolbar */}
@@ -103,10 +103,10 @@ export const HubToolbar: React.FC<{
                 title={disabled ? 'Timeline view coming soon' : undefined}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium transition-colors ${
                   active
-                    ? 'bg-fg/10 text-fg'
+                    ? 'bg-fill text-fg'
                     : disabled
-                      ? 'text-fg/20 cursor-not-allowed'
-                      : 'text-fg/45 hover:text-fg hover:bg-fg/5'
+                      ? 'text-fg-ghost cursor-not-allowed'
+                      : 'text-fg-subtle hover:text-fg hover:bg-fill-subtle'
                 }`}
               >
                 <Icon size={14} />
@@ -124,7 +124,7 @@ export const HubToolbar: React.FC<{
               type="button"
               onClick={(e) => onToggleMenu(key, e)}
               className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] transition-colors ${
-                menuOpen[key] ? 'bg-fg/10 text-fg' : 'text-fg/50 hover:text-fg hover:bg-fg/5'
+                menuOpen[key] ? 'bg-fill text-fg' : 'text-fg-subtle hover:text-fg hover:bg-fill-subtle'
               }`}
             >
               <Icon size={14} /> {label}

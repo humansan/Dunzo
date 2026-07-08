@@ -145,9 +145,9 @@ const LoginScreen: React.FC<{
 
   // Login-specific field styling (kept local so the account modal is unaffected).
   const fieldClass =
-    'w-full bg-fg/5 border border-fg/10 rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent1)] transition-colors';
+    'w-full bg-fill-subtle border border-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent1)] transition-colors';
   const fieldLabel =
-    'block text-sm font-medium text-fg/80';
+    'block text-sm font-medium text-fg-muted';
 
   const renderForm = () => {
     // ── Forgot password ──────────────────────────────────────────────────────
@@ -156,11 +156,11 @@ const LoginScreen: React.FC<{
         return (
           <>
             <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Check your email</h2>
-            <p className="text-sm text-fg/60 mb-6">
-              We sent a password reset link to <span className="text-fg/90">{email}</span>.
+            <p className="text-sm text-fg-subtle mb-6">
+              We sent a password reset link to <span className="text-fg">{email}</span>.
               Check your inbox and follow the link to set a new password.
             </p>
-            <p className="text-sm text-fg/80">
+            <p className="text-sm text-fg-muted">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
@@ -175,7 +175,7 @@ const LoginScreen: React.FC<{
       return (
         <>
           <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-2">Reset your password</h2>
-          <p className="text-sm text-fg/60 mb-5">
+          <p className="text-sm text-fg-subtle mb-5">
             Enter your email and we'll send you a link to reset your password.
           </p>
           <form onSubmit={handleForgotSubmit} className="space-y-3.5">
@@ -202,7 +202,7 @@ const LoginScreen: React.FC<{
               {submitting ? 'Sending…' : 'Send Reset Link'}
             </button>
           </form>
-          <p className="text-sm text-fg/80 mt-5">
+          <p className="text-sm text-fg-muted mt-5">
             <button
               type="button"
               onClick={() => switchMode('login')}
@@ -221,7 +221,7 @@ const LoginScreen: React.FC<{
         return (
           <>
             <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Password updated</h2>
-            <p className="text-sm text-fg/60 mb-6">
+            <p className="text-sm text-fg-subtle mb-6">
               Your password has been changed. You can now log in with your new password.
             </p>
             <button
@@ -253,7 +253,7 @@ const LoginScreen: React.FC<{
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/30 hover:text-fg/70 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -274,7 +274,7 @@ const LoginScreen: React.FC<{
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/30 hover:text-fg/70 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
                   aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -339,7 +339,7 @@ const LoginScreen: React.FC<{
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/30 hover:text-fg/70 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -357,7 +357,7 @@ const LoginScreen: React.FC<{
             {submitting ? 'Please wait…' : mode === 'login' ? 'Log In' : 'Create Account'}
           </button>
         </form>
-        <p className="text-sm text-fg/80 mt-5">
+        <p className="text-sm text-fg-muted mt-5">
           {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
           <button
             type="button"

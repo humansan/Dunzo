@@ -27,7 +27,7 @@ export const SortMenu: React.FC<{
   return (
     <PopoverMenu anchor={anchor} title="Sort" onClose={onClose} className="w-[300px] p-2">
         {sorts.length === 0 ? (
-          <p className="px-2 py-2.5 text-[13px] text-fg/30 text-center">No sort applied</p>
+          <p className="px-2 py-2.5 text-[13px] text-fg-ghost text-center">No sort applied</p>
         ) : (
           <div className="space-y-1.5 mb-1 px-0.5">
             {sorts.map((s) => (
@@ -58,7 +58,7 @@ export const SortMenu: React.FC<{
                   type="button"
                   onClick={() => remove(s.id)}
                   title="Remove sort"
-                  className="shrink-0 p-0.5 rounded text-fg/35 hover:text-fg hover:bg-fg/10 transition-colors"
+                  className="shrink-0 p-0.5 rounded text-fg-faint hover:text-fg hover:bg-fill transition-colors"
                 >
                   <X size={14} />
                 </button>
@@ -70,7 +70,7 @@ export const SortMenu: React.FC<{
         <button
           type="button"
           onClick={addSort}
-          className="flex items-center gap-1.5 w-full px-2 py-1.5 mt-0.5 rounded-md text-[13px] text-fg/45 hover:text-fg hover:bg-fg/[0.06] transition-colors"
+          className="flex items-center gap-1.5 w-full px-2 py-1.5 mt-0.5 rounded-md text-[13px] text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
         >
           <Plus size={13} />
           Add sort

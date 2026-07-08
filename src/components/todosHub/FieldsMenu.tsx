@@ -72,23 +72,23 @@ export const FieldsMenu: React.FC<{
                 )}
                 <div
                   className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${
-                    dragKey === key ? 'opacity-40' : 'hover:bg-fg/[0.06]'
-                  } ${isHidden ? 'text-fg/40' : 'text-fg/80'}`}
+                    dragKey === key ? 'opacity-40' : 'hover:bg-fill-subtle'
+                  } ${isHidden ? 'text-fg-faint' : 'text-fg-muted'}`}
                 >
                   {isName ? (
-                    <Lock size={13} className="shrink-0 text-fg/25" />
+                    <Lock size={13} className="shrink-0 text-fg-ghost" />
                   ) : (
-                    <GripVertical size={14} className="shrink-0 cursor-grab active:cursor-grabbing text-fg/25 hover:text-fg/60" />
+                    <GripVertical size={14} className="shrink-0 cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle" />
                   )}
                   <span className="flex-1 truncate text-[13px]">{col.label}</span>
                   {isName ? (
-                    <span className="shrink-0 text-[10px] uppercase tracking-wide text-fg/25">Locked</span>
+                    <span className="shrink-0 text-[10px] uppercase tracking-wide text-fg-ghost">Locked</span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => onToggle(key)}
                       title={isHidden ? 'Show field' : 'Hide field'}
-                      className="shrink-0 p-0.5 rounded text-fg/40 hover:text-fg hover:bg-fg/10 transition-colors"
+                      className="shrink-0 p-0.5 rounded text-fg-faint hover:text-fg hover:bg-fill transition-colors"
                     >
                       {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -97,8 +97,8 @@ export const FieldsMenu: React.FC<{
                     type="button"
                     onClick={() => onToggleWrap(key)}
                     title={isWrapped ? 'Disable wrap' : 'Enable wrap'}
-                    className={`shrink-0 p-0.5 rounded hover:bg-fg/10 transition-colors ${
-                      isWrapped ? 'text-[var(--accent2)]' : 'text-fg/40 hover:text-fg'
+                    className={`shrink-0 p-0.5 rounded hover:bg-fill transition-colors ${
+                      isWrapped ? 'text-[var(--accent2)]' : 'text-fg-faint hover:text-fg'
                     }`}
                   >
                     <WrapText size={14} />

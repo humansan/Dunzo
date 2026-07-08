@@ -61,11 +61,11 @@ function AuthedLayout() {
 function DataErrorScreen() {
   const router = useRouter();
   return (
-    <div className="h-screen flex flex-col items-center justify-center gap-4 bg-canvas text-fg/60 text-sm">
+    <div className="h-screen flex flex-col items-center justify-center gap-4 bg-canvas text-fg-subtle text-sm">
       <p>Couldn’t load your data.</p>
       <button
         onClick={() => router.invalidate()}
-        className="px-4 py-2 rounded-xl bg-fg/5 hover:bg-fg/10 text-fg font-semibold"
+        className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold"
       >
         Retry
       </button>

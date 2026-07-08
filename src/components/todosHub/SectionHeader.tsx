@@ -95,13 +95,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       // view stays tight (pt-4). Column mode drops to the 36px task-row height so a
       // section header reads as just another even-height row. All keep the bottom
       // border.
-      className={`relative grid border-fg/8 border-b group/row ${
+      className={`relative grid border-line-subtle border-b group/row ${
         mode === 'column'
           ? 'items-center min-h-[36px]'
           : mode === 'list'
             ? 'items-end min-h-12 pt-6 pb-2'
             : 'items-end min-h-12 pt-4'
-      } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-fg/[0.07]' : ''} ${isDragSource ? 'opacity-50' : ''}`}
+      } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-fill' : ''} ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}
       {/* Header group, pinned left so it stays visible on horizontal scroll.
@@ -115,7 +115,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
-            className="shrink-0 p-0.5 flex items-center justify-center rounded text-fg/30 hover:text-fg/60 hover:bg-fg/10 transition-colors"
+            className="shrink-0 p-0.5 flex items-center justify-center rounded text-fg-ghost hover:text-fg-subtle hover:bg-fill transition-colors"
             title={isCollapsed ? toggleTitle?.expand : toggleTitle?.collapse}
           >
             {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
@@ -129,13 +129,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         {pill}
 
         {count !== undefined && (
-          <span className="shrink-0 text-xs px-1.5 text-fg/40 font-mono">{count}</span>
+          <span className="shrink-0 text-xs px-1.5 text-fg-faint font-mono">{count}</span>
         )}
 
         {actions}
 
         {/* Drill affordance — pushed to the right edge; marks the row as openable. */}
-        {onActivate && <ChevronRight size={16} className="shrink-0 ml-auto mr-1 text-fg/30" />}
+        {onActivate && <ChevronRight size={16} className="shrink-0 ml-auto mr-1 text-fg-ghost" />}
       </div>
     </div>
   );

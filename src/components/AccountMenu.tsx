@@ -8,7 +8,7 @@ import { Settings, Sparkles, LogOut } from 'lucide-react';
 // It anchors to the right of the button and grows upward (hence `bottom`, since
 // the button sits at the very bottom of the ribbon).
 const itemCls =
-  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-fg/80 hover:bg-fg/10 hover:text-fg transition-colors';
+  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-fg-muted hover:bg-fill hover:text-fg transition-colors';
 
 // Wraps a wave "cell" (the icon or one letter): all share the same hue-rotate
 // loop, but a staggered negative delay offsets the colors so they ripple as a
@@ -26,7 +26,7 @@ const PremiumItem: React.FC = () => (
   <>
     <span style={waveCell(0)}><Sparkles size={14} /></span>
     <span aria-label="Premium" className="font-bold">
-      {'Premium'.split('').map((ch, i) => (
+      {'Coming soon...'.split('').map((ch, i) => (
         <span key={i} style={waveCell(i + 1)}>{ch}</span>
       ))}
     </span>
@@ -56,18 +56,18 @@ export const AccountMenu: React.FC<{
       />
       <div
         style={{ position: 'fixed', left: pos.left, bottom: pos.bottom }}
-        className="z-[66] min-w-[190px] rounded-lg border border-fg/10 bg-surface shadow-2xl p-1 text-sm"
+        className="z-[66] min-w-[190px] rounded-lg border border-line bg-surface shadow-2xl p-1 text-sm"
       >
-        <div className="px-2.5 pt-1.5 pb-1 text-[11px] text-fg/40 truncate">
+        <div className="px-2.5 pt-1.5 pb-1 text-[11px] text-fg-faint truncate">
           {email ?? 'Signed in'}
         </div>
-        <div className="my-1 border-t border-fg/10" />
+        <div className="my-1 border-t border-line" />
         <button onClick={onOpenSettings} className={itemCls}>
           <Settings size={14} /> Settings
         </button>
         <button
           onClick={onPremium}
-          className="group relative w-full overflow-hidden rounded-lg px-2.5 py-1.5 text-left text-fg/80 transition-colors"
+          className="group relative w-full overflow-hidden rounded-lg px-2.5 py-1.5 text-left text-fg-muted transition-colors"
         >
           {/* Hover background: the same hue-rotate wave as the label, at low
               opacity, instead of the plain white hover fill. */}
@@ -80,7 +80,7 @@ export const AccountMenu: React.FC<{
             <PremiumItem />
           </span>
         </button>
-        <div className="my-1 border-t border-fg/10" />
+        <div className="my-1 border-t border-line" />
         <button onClick={onLogout} className={itemCls}>
           <LogOut size={14} /> Log Out
         </button>

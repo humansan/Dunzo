@@ -62,7 +62,7 @@ export const CellEditorPopover: React.FC<{
       className={
         isDateOrTime
           ? 'z-[65] shadow-2xl'
-          : 'z-[65] rounded-lg border border-fg/10 bg-surface shadow-2xl p-2'
+          : 'z-[65] rounded-lg border border-line bg-surface shadow-2xl p-2'
       }
     >
       {col === 'status' || col === 'priority' ? (
@@ -124,7 +124,7 @@ export const CellEditorPopover: React.FC<{
           minHeight={60}
           maxHeight={220}
           onChange={(val) => save({ notes: val || undefined })}
-          className="w-full bg-transparent text-sm text-fg/90 placeholder:text-fg/25 focus:outline-none resize-none leading-relaxed [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full"
+          className="w-full bg-transparent text-sm text-fg placeholder:text-fg-ghost focus:outline-none resize-none leading-relaxed [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full"
         />
       )}
     </div>,

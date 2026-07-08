@@ -45,15 +45,15 @@ export const CollectionEditModal: React.FC<{
       <motion.div
         {...modalPop}
         onMouseDown={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-fg/10 bg-surface shadow-2xl"
+        className="w-full max-w-md rounded-2xl border border-line bg-surface shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-fg/10 px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <h2 className="text-base font-bold text-fg">Edit</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-fg/40 hover:text-fg transition-colors"
+            className="text-fg-faint hover:text-fg transition-colors"
           >
             <X size={18} />
           </button>
@@ -82,28 +82,28 @@ export const CollectionEditModal: React.FC<{
                 type="button"
                 onClick={() => setColorOpen((v) => !v)}
                 className={`w-full flex items-center gap-2.5 bg-overlay border rounded-lg px-2.5 h-8 text-[13px] text-fg transition-colors focus:outline-none ${
-                  colorOpen ? 'border-[var(--accent2)]' : 'border-fg/10 hover:border-fg/20'
+                  colorOpen ? 'border-[var(--accent2)]' : 'border-line hover:border-line-strong'
                 }`}
               >
                 <span className="shrink-0 w-3.5 h-3.5 rounded-full" style={{ backgroundColor: collectionColor(color) }} />
                 <span className="flex-1 text-left">{colorName(color)}</span>
                 <ChevronDown
                   size={14}
-                  className={`shrink-0 text-fg/40 transition-transform ${colorOpen ? 'rotate-180' : ''}`}
+                  className={`shrink-0 text-fg-faint transition-transform ${colorOpen ? 'rotate-180' : ''}`}
                 />
               </button>
               {colorOpen && (
-                <div className="absolute z-10 top-full left-0 mt-1 w-full rounded-lg border border-fg/10 bg-surface-raised shadow-2xl p-1 max-h-56 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div className="absolute z-10 top-full left-0 mt-1 w-full rounded-lg border border-line bg-surface-raised shadow-2xl p-1 max-h-56 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full">
                   {COLLECTION_SLOTS.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => { setColor(c); setColorOpen(false); }}
-                      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left hover:bg-fg/10 transition-colors"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left hover:bg-fill transition-colors"
                     >
                       <span className="shrink-0 w-3.5 h-3.5 rounded-full" style={{ backgroundColor: collectionColor(c) }} />
-                      <span className="flex-1 text-sm text-fg/90">{colorName(c)}</span>
-                      {c === color && <Check size={13} className="shrink-0 text-fg/50" />}
+                      <span className="flex-1 text-sm text-fg">{colorName(c)}</span>
+                      {c === color && <Check size={13} className="shrink-0 text-fg-subtle" />}
                     </button>
                   ))}
                 </div>
@@ -126,11 +126,11 @@ export const CollectionEditModal: React.FC<{
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 border-t border-fg/10 px-5 py-3.5">
+        <div className="flex justify-end gap-2 border-t border-line px-5 py-3.5">
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-lg text-sm text-fg/60 hover:text-fg hover:bg-fg/5 transition-colors"
+            className="px-3.5 py-1.5 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
           >
             Cancel
           </button>

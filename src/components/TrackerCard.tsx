@@ -73,7 +73,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
           <h3 className="text-[var(--accent1)] text-[11px] font-bold tracking-wider uppercase mb-0.5">
             {data.label}
           </h3>
-          <p className="text-fg/40 text-[11px] font-medium">
+          <p className="text-fg-faint text-[11px] font-medium">
             {data.subLabel}
           </p>
           {secondaryText && (
@@ -86,13 +86,13 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(tracker)}
-            className="p-1.5 hover:bg-fg/10 rounded-lg text-fg/40 hover:text-fg transition-colors"
+            className="p-1.5 hover:bg-fill rounded-lg text-fg-faint hover:text-fg transition-colors"
           >
             <Settings2 size={12} />
           </button>
           <button
             onClick={() => onDelete(tracker.id)}
-            className="p-1.5 hover:bg-red-500/10 rounded-lg text-fg/40 hover:text-red-400 transition-colors"
+            className="p-1.5 hover:bg-red-500/10 rounded-lg text-fg-faint hover:text-red-400 transition-colors"
           >
             <Trash2 size={12} />
           </button>
@@ -116,12 +116,12 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
           </span>
         )}
 
-        <div className="ml-auto text-fg/20 text-xs font-medium italic">
+        <div className="ml-auto text-fg-ghost text-xs font-medium italic">
           {/* {getOrdinal(dayOfMonth)} */}
         </div>
       </div>
 
-      <div className="relative h-1 w-full bg-fg/5 rounded-full">
+      <div className="relative h-1 w-full bg-fill-subtle rounded-full">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${data.percentage}%` }}

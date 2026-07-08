@@ -101,19 +101,19 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
 
             {/* Today: still available ⬩ yesterday */}
             <span className="text-[12px] font-medium leading-tight">
-              <span className='text-fg/85'>
+              <span className='text-fg'>
               <span className="">{upForGrabs}</span> up for grabs ⬩ 
               <span className=""> {yesterday}</span> yesterday</span>
-              {/* <span className="text-fg/95">{upForGrabs}</span>
-              <span className="text-fg/60"> up for grabs</span>
-              <span className="text-fg/30"> ⬩ </span>
-              <span className="text-fg/95">{yesterday}</span>
-              <span className="text-fg/60"> yesterday</span> */}
+              {/* <span className="text-fg">{upForGrabs}</span>
+              <span className="text-fg-subtle"> up for grabs</span>
+              <span className="text-fg-ghost"> ⬩ </span>
+              <span className="text-fg">{yesterday}</span>
+              <span className="text-fg-subtle"> yesterday</span> */}
             </span>
 
             {/* Records: avg 7d ⬩ best 7d ⬩ best all time */}
             <span className="text-[12px] leading-tight">
-              <span className='text-fg/70'>
+              <span className='text-fg-muted'>
               <span className=""> {avgLast7Days} </span> avg 7d ⬩
               <span className=""> {bestLast7Days} </span> best 7d ⬩
               <span className=""> {bestAllTime} </span> best all-time
@@ -155,14 +155,14 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
       <div className="fixed bottom-0 left-14 right-0 z-30 pointer-events-none">
         <div className="relative flex justify-center mb-1">
           <span
-            className="text-[12px] tracking-wide text-fg/60 font-mono"
+            className="text-[12px] tracking-wide text-fg-subtle font-mono"
             style={{ fontVariantNumeric: 'tabular-nums' }}
           >
             {pctLabel}
           </span>
         </div>
 
-        <div className="relative h-2 w-full bg-fg/10">
+        <div className="relative h-2 w-full bg-fill">
           {/* Soft blurred glow that follows the fill */}
           <motion.div
             className="absolute inset-y-0 left-0 blur-lg opacity-90"

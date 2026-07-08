@@ -188,12 +188,12 @@ const TodoItem: React.FC<TodoItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group flex items-start gap-2 py-1.5 border-b border-fg/5 ${isDragging ? 'opacity-0' : ''}`}
+      className={`relative group flex items-start gap-2 py-1.5 border-b border-line-subtle ${isDragging ? 'opacity-0' : ''}`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-fg/40 hover:text-fg/70 transition-all flex items-center h-7"
+        className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-fg-faint hover:text-fg-muted transition-all flex items-center h-7"
       >
         <GripVertical size={18} />
       </button>
@@ -205,7 +205,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         <motion.div
           animate={isDone(todo) ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
           transition={{ duration: 0.3 }}
-          className={`transition-colors duration-100 ${isDone(todo) ? 'text-(--accent1)' : 'text-fg/50 hover:text-fg'}`}
+          className={`transition-colors duration-100 ${isDone(todo) ? 'text-(--accent1)' : 'text-fg-subtle hover:text-fg'}`}
         >
           {isDone(todo) ? <CheckCircleCutout size={21} strokeWidth={2.5} /> : <Circle size={21} strokeWidth={2.5} />}
         </motion.div>
@@ -214,7 +214,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
       <div className="flex items-start gap-1.5 min-w-0">
         <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
           <p className={`text-md leading-6 pt-0.5 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
-            ? 'text-fg/25 line-through translate-x-[3px]'
+            ? 'text-fg-ghost line-through translate-x-[3px]'
             : 'text-fg group-hover/text:text-(--accent2)'
           }`}>
             {todo.text}
@@ -224,7 +224,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         <button
           onClick={(e) => { e.stopPropagation(); onOpenFull(todo.id); }}
           title="Open full view"
-          className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg/50 hover:text-fg/80 hover:bg-fg/5 rounded-md transition-all shrink-0"
+          className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg-subtle hover:text-fg-muted hover:bg-fill-subtle rounded-md transition-all shrink-0"
         >
           <Maximize2 size={14} />
         </button>
@@ -233,7 +233,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           <button
             onClick={(e) => { e.stopPropagation(); onAddToCalendar(todo.id); }}
             title="Add to calendar"
-            className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg/50 hover:text-fg/80 hover:bg-fg/5 rounded-md transition-all shrink-0"
+            className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg-subtle hover:text-fg-muted hover:bg-fill-subtle rounded-md transition-all shrink-0"
           >
             <CalendarPlus size={14} />
           </button>
@@ -245,8 +245,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
       <div className="flex items-start gap-2 shrink-0 whitespace-nowrap">
         {todo.xp !== undefined && (
           <div className={`flex items-center justify-center gap-1.5 px-2.75 py-[5.5px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
-            ? 'bg-fg/5 text-fg/20'
-            : 'bg-warning/6 text-warning'
+            ? 'bg-fill-subtle text-fg-ghost'
+            : 'bg-warning-tint text-warning'
           }`}>
             <Sparkles size={16} />
             <span className="relative top-px">{todo.xp} XP</span>
@@ -257,14 +257,14 @@ const TodoItem: React.FC<TodoItemProps> = ({
           <div
             onClick={() => onStartTracking(todo.id)}
             className={`flex items-center justify-center gap-2 px-2.75 cursor-pointer py-[5.5px] rounded-lg transition ${isDone(todo)
-              ? 'bg-fg/5 shadow-none'
+              ? 'bg-fill-subtle shadow-none'
               : isActive
                 ? 'bg-[var(--accent1)] shadow-lg shadow-[var(--accent1)]/10'
                 : 'bg-[var(--accent1)]/6 shadow-none hover:bg-[var(--accent1)]/15'
             }`}>
             {todo.dueTime && (
               <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
-                ? 'text-fg/20'
+                ? 'text-fg-ghost'
                 : isActive
                   ? 'text-black'
                   : 'text-[var(--accent1)]'
@@ -275,7 +275,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
             )}
             {todo.dueTime && todo.duePercentage !== undefined && (
               <div className={`w-px h-4 transition-colors duration-500 ${isDone(todo)
-                ? 'bg-fg/10'
+                ? 'bg-fill'
                 : isActive
                   ? 'bg-black/20'
                   : 'bg-[var(--accent1)]/20'
@@ -283,7 +283,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
             )}
             {todo.duePercentage !== undefined && (
               <div className={`text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
-                ? 'text-fg/20'
+                ? 'text-fg-ghost'
                 : isActive
                   ? 'text-black'
                   : 'text-[var(--accent1)]'
@@ -295,7 +295,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         )}
 
         {countdownDisplay && !isDone(todo) && (
-          <div className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg transition-colors duration-500 ${isActive ? 'bg-danger text-fg' : 'bg-fg/5 text-danger'}`}>
+          <div className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg transition-colors duration-500 ${isActive ? 'bg-danger text-fg' : 'bg-fill-subtle text-danger'}`}>
             <div className="text-[13px] leading-none font-mono font-medium">
               <span className="relative top-px"> {countdownDisplay} </span>
             </div>
@@ -305,7 +305,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
       <button
         onClick={() => onDelete(todo.id)}
-        className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg/40 hover:text-red-400 hover:bg-danger/10 rounded-lg transition-all"
+        className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg-faint hover:text-red-400 hover:bg-danger-tint rounded-lg transition-all"
       >
         <Trash2 size={16} />
       </button>
@@ -499,7 +499,7 @@ export const ListView: React.FC<ListViewProps> = ({
       {!isAdding ? (
         <button
           onClick={openAddPanel}
-          className="flex items-center gap-2 py-2 text-fg/25 hover:text-fg/50 transition-all group duration-100"
+          className="flex items-center gap-2 py-2 text-fg-ghost hover:text-fg-subtle transition-all group duration-100"
         >
           <GripVertical size={18} className="invisible" />
           <Plus size={21} strokeWidth={2.5} />

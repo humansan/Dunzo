@@ -56,14 +56,14 @@ export const HubSidebar: React.FC<{
   return (
     <aside
       style={{ width: sidebarWidth }}
-      className="group/pane relative shrink-0 flex flex-col min-h-0 border-r border-fg/10"
+      className="group/pane relative shrink-0 flex flex-col min-h-0 border-r border-line"
     >
       {/* ── Workspaces section (top) — independent todo databases ───────── */}
-      <div className="shrink-0 flex flex-col max-h-[38%] border-b border-fg/10 p-2">
-        <div className="shrink-0 px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg/30">
+      <div className="shrink-0 flex flex-col max-h-[38%] border-b border-line p-2">
+        <div className="shrink-0 px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
           Workspaces
         </div>
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full">
           {workspaces.map((ws) => {
             const active = ws.id === activeWorkspaceId;
             if (renamingWorkspaceId === ws.id) {
@@ -79,7 +79,7 @@ export const HubSidebar: React.FC<{
                     if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
                   }}
                   placeholder="Workspace name"
-                  className="w-full rounded-lg px-2.5 py-1.5 text-sm font-medium bg-fg/10 text-fg focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60 placeholder:text-fg/40"
+                  className="w-full rounded-lg px-2.5 py-1.5 text-sm font-medium bg-fill text-fg focus:outline-none ring-1 ring-inset ring-[var(--accent2)]/60 placeholder:text-fg-faint"
                 />
               );
             }
@@ -90,11 +90,11 @@ export const HubSidebar: React.FC<{
                 onClick={() => onSelectWorkspace(ws.id)}
                 onDoubleClick={() => setRenamingWorkspaceId(ws.id)}
                 className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-left transition-colors ${
-                  active ? 'bg-fg/10 text-fg font-medium' : 'text-fg/65 hover:bg-fg/[0.05] hover:text-fg'
+                  active ? 'bg-fill text-fg font-medium' : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
                 }`}
                 title={ws.name || 'Untitled workspace'}
               >
-                <Box size={15} className="shrink-0 text-fg/45" />
+                <Box size={15} className="shrink-0 text-fg-subtle" />
                 <span className="flex-1 truncate">{ws.name || 'Untitled workspace'}</span>
               </button>
             );
@@ -104,7 +104,7 @@ export const HubSidebar: React.FC<{
           type="button"
           onClick={onNewWorkspace}
           title="New workspace"
-          className="shrink-0 mt-0.5 w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-fg/55 hover:text-fg hover:bg-fg/[0.06] transition-colors"
+          className="shrink-0 mt-0.5 w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
         >
           <Plus size={15} />
           <span>New workspace</span>
@@ -129,7 +129,7 @@ export const HubSidebar: React.FC<{
       <button
         type="button"
         onClick={onNewCollection}
-        className="shrink-0 m-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-fg/55 hover:text-fg hover:bg-fg/[0.06] transition-colors"
+        className="shrink-0 m-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
       >
         <FolderPlus size={15} />
         <span>New collection</span>

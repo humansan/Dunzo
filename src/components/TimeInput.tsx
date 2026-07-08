@@ -240,7 +240,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
     <div
       ref={colRef}
       onMouseDown={onDown}
-      className="relative h-[200px] rounded-lg border border-fg/10 cursor-pointer select-none overflow-hidden"
+      className="relative h-[200px] rounded-lg border border-line cursor-pointer select-none overflow-hidden"
     >
       {/* Marker line drawn first so the labels paint on top and stay readable. */}
       {lineFrac != null && (
@@ -255,7 +255,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
           <span
             key={v}
             className={`absolute left-0 right-0 text-center text-[11px] pointer-events-none transition-colors ${
-              active ? 'text-fg font-bold' : 'text-fg/40'
+              active ? 'text-fg font-bold' : 'text-fg-faint'
             }`}
             style={{ top: `${((i + 0.5) / 12) * 100}%`, transform: 'translateY(-50%)' }}
           >
@@ -272,7 +272,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
   ];
 
   return (
-    <div className={`bg-surface border border-fg/10 rounded-xl p-2.5 w-60 ${className ?? ''}`}>
+    <div className={`bg-surface border border-line rounded-xl p-2.5 w-60 ${className ?? ''}`}>
       <input
         ref={inputRef}
         type="text"
@@ -286,7 +286,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
         }}
         onBlur={() => commit(text)}
         placeholder="e.g. 9a or 3:24 PM or 54%"
-                className="w-full bg-overlay border border-fg/10 rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg/35 focus:outline-none hover:border-fg/20 focus:border-[var(--accent2)] transition-colors"
+                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-[var(--accent2)] transition-colors"
       />
 
       <div className="grid grid-cols-2 gap-1 mt-1.5">
@@ -295,7 +295,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
             key={p.time}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => applyTime(p.time)}
-            className="px-2 py-1 bg-fg/5 hover:bg-fg/10 rounded-md text-[10px] font-medium text-fg/70 transition-colors"
+            className="px-2 py-1 bg-fill-subtle hover:bg-fill rounded-md text-[10px] font-medium text-fg-muted transition-colors"
           >
             {p.label}
           </button>
@@ -332,7 +332,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
                 className={`rounded-md border px-2 py-1 text-[10px] font-bold transition-colors ${
                   active
                     ? 'bg-danger border-transparent text-fg'
-                    : 'border-fg/10 bg-fg/5 text-fg/55 hover:bg-fg/10 hover:text-fg/80'
+                    : 'border-line bg-fill-subtle text-fg-subtle hover:bg-fill hover:text-fg-muted'
                 }`}
               >
                 {label}
@@ -345,7 +345,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
       <button
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => { onChange(''); lastLeft.current = ''; lastRight.current = ''; setText(''); }}
-        className="w-full mt-2 pt-2 border-t border-fg/10 text-xs font-bold text-fg/40 hover:text-fg transition-colors text-left"
+        className="w-full mt-2 pt-2 border-t border-line text-xs font-bold text-fg-faint hover:text-fg transition-colors text-left"
       >
         Clear
       </button>

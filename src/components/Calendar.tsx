@@ -40,21 +40,21 @@ export const Calendar: React.FC<CalendarProps> = ({
       <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => onMonthChange(subDays(monthStart, 1))}
-          className="p-1 text-fg/40 hover:text-fg transition-colors"
+          className="p-1 text-fg-faint hover:text-fg transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="text-sm font-bold text-fg/60">{format(currentMonth, 'MMMM yyyy')}</span>
+        <span className="text-sm font-bold text-fg-subtle">{format(currentMonth, 'MMMM yyyy')}</span>
         <button
           onClick={() => onMonthChange(addDays(monthEnd, 1))}
-          className="p-1 text-fg/40 hover:text-fg transition-colors"
+          className="p-1 text-fg-faint hover:text-fg transition-colors"
         >
           <ChevronRight size={16} />
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center">
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-          <div key={d} className="text-[11px] font-bold text-fg/40 py-1">{d}</div>
+          <div key={d} className="text-[11px] font-bold text-fg-faint py-1">{d}</div>
         ))}
         {days.map((day) => {
           const inMonth = isSameMonth(day, currentMonth);
@@ -68,10 +68,10 @@ export const Calendar: React.FC<CalendarProps> = ({
                 ${today
                   ? 'bg-danger text-fg font-bold'
                   : selected
-                    ? 'bg-fg/20 text-fg font-bold'
+                    ? 'bg-fill-stronger text-fg font-bold'
                     : inMonth
-                      ? 'text-fg/60 hover:text-fg hover:bg-fg/10'
-                      : 'text-fg/20 hover:bg-fg/5'}
+                      ? 'text-fg-subtle hover:text-fg hover:bg-fill'
+                      : 'text-fg-ghost hover:bg-fill-subtle'}
               `}
             >
               {format(day, 'd')}

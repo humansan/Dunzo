@@ -25,15 +25,15 @@ export const CompactDayTracker: React.FC = () => {
   const [whole, decimal] = percentageStr.split('.');
 
   return (
-    <div className="bg-surface p-5 rounded-3xl border border-fg/5 mb-8">
+    <div className="bg-surface p-5 rounded-3xl border border-line-subtle mb-8">
       <div className="text-center mb-2">
-        <p className="text-fg/40 text-[10px] font-bold uppercase tracking-wider">
+        <p className="text-fg-faint text-[10px] font-bold uppercase tracking-wider">
           {format(now, 'EEEE, MMMM do yyyy')}
         </p>
       </div>
       
       <div className="flex justify-between items-end mb-4 px-1">
-        <div className="text-fg/80 font-mono text-3xl font-bold tracking-tighter">
+        <div className="text-fg-muted font-mono text-3xl font-bold tracking-tighter">
           {format(now, 'HH:mm:ss')}
         </div>
         <div className="flex items-baseline gap-0.5 text-[var(--accent1)]">
@@ -42,7 +42,7 @@ export const CompactDayTracker: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative h-2.5 w-full bg-fg/5 rounded-full">
+      <div className="relative h-2.5 w-full bg-fill-subtle rounded-full">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${data.percentage}%` }}

@@ -104,7 +104,7 @@ export const AppShell: React.FC = () => {
           {isFullscreen && (
             <div className="fixed bottom-0 right-0 z-50 w-40 h-40 flex items-end justify-end p-8 group">
               <button
-                className="p-3 bg-fg/10 hover:bg-fg/20 backdrop-blur-xl text-fg/40 hover:text-fg rounded-full shadow-2xl border border-fg/10 transition-all opacity-0 group-hover:opacity-100"
+                className="p-3 bg-fill hover:bg-fill-stronger backdrop-blur-xl text-fg-faint hover:text-fg rounded-full shadow-2xl border border-line transition-all opacity-0 group-hover:opacity-100"
                 onClick={() => setIsFullscreen(false)}
                 title="Exit Fullscreen"
               >

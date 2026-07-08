@@ -77,14 +77,14 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
           />
           <motion.div
             {...modalPop}
-            className="relative w-full max-w-md bg-surface border border-fg/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-md bg-surface border border-line rounded-2xl shadow-2xl flex flex-col max-h-[90vh]"
           >
             {/* Sticky header */}
             <div className="flex justify-between items-center px-6 pt-5 pb-3 shrink-0">
               <h2 className="text-lg font-bold text-fg">
                 {editingTracker ? 'Edit Tracker' : 'New Tracker'}
               </h2>
-              <button onClick={onClose} className="rounded-lg p-1.5 text-fg/40 transition-all hover:bg-fg/10 hover:text-fg">
+              <button onClick={onClose} className="rounded-lg p-1.5 text-fg-faint transition-all hover:bg-fill hover:text-fg">
                 <X size={16} />
               </button>
             </div>
@@ -92,7 +92,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
             {/* Scrollable body */}
             <form onSubmit={handleSubmit} className="overflow-y-auto px-6 pb-6 space-y-4">
               <div>
-                <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">Name</label>
+                <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Name</label>
                 <input
                   type="text"
                   value={name}
@@ -103,7 +103,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">Interval</label>
+                <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Interval</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(['day', 'week', 'month', 'year', 'custom'] as TrackerType[]).map((t) => (
                     <button
@@ -113,7 +113,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         type === t
                           ? 'bg-[var(--accent1)] text-black'
-                          : 'bg-fg/5 text-fg/60 hover:bg-fg/10'
+                          : 'bg-fill-subtle text-fg-subtle hover:bg-fill'
                       }`}
                     >
                       {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -125,7 +125,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               {type === 'custom' && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">Start Date</label>
+                    <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Start Date</label>
                     <DatePickerPopover value={startDate} onChange={setStartDate} className="w-full">
                       {({ open, isOpen }) => (
                         <button
@@ -133,16 +133,16 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                           onClick={open}
                           className={`${textInputCls} w-full flex items-center justify-between gap-2 text-left ${isOpen ? 'border-[var(--accent2)]' : ''}`}
                         >
-                          <span className={startDate ? 'text-fg' : 'text-fg/35'}>
+                          <span className={startDate ? 'text-fg' : 'text-fg-faint'}>
                             {formatDateField(startDate) || 'MM/DD/YYYY'}
                           </span>
-                          <CalendarDays size={14} className="text-fg/40 shrink-0" />
+                          <CalendarDays size={14} className="text-fg-faint shrink-0" />
                         </button>
                       )}
                     </DatePickerPopover>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">End Date</label>
+                    <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">End Date</label>
                     <DatePickerPopover value={endDate} onChange={setEndDate} className="w-full">
                       {({ open, isOpen }) => (
                         <button
@@ -150,10 +150,10 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                           onClick={open}
                           className={`${textInputCls} w-full flex items-center justify-between gap-2 text-left ${isOpen ? 'border-[var(--accent2)]' : ''}`}
                         >
-                          <span className={endDate ? 'text-fg' : 'text-fg/35'}>
+                          <span className={endDate ? 'text-fg' : 'text-fg-faint'}>
                             {formatDateField(endDate) || 'MM/DD/YYYY'}
                           </span>
-                          <CalendarDays size={14} className="text-fg/40 shrink-0" />
+                          <CalendarDays size={14} className="text-fg-faint shrink-0" />
                         </button>
                       )}
                     </DatePickerPopover>
@@ -162,13 +162,13 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               )}
 
               <div>
-                <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">Color</label>
+                <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Color</label>
                 <div className="flex gap-2">
                   <input
                     type="color"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="w-10 h-8 bg-transparent border border-fg/10 rounded-lg cursor-pointer shrink-0"
+                    className="w-10 h-8 bg-transparent border border-line rounded-lg cursor-pointer shrink-0"
                   />
                   <input
                     type="text"
@@ -180,7 +180,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">Precision</label>
+                <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Precision</label>
                 <ListSelect
                   ariaLabel="Precision"
                   className="w-full"
@@ -191,7 +191,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">Primary Value</label>
+                <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Primary Value</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {([
                     { key: 'percent_elapsed' as TrackerDisplayMode, label: '% Elapsed' },
@@ -206,7 +206,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         displayMode === opt.key
                           ? 'bg-[var(--accent1)] text-black'
-                          : 'bg-fg/5 text-fg/60 hover:bg-fg/10'
+                          : 'bg-fill-subtle text-fg-subtle hover:bg-fill'
                       }`}
                     >
                       {opt.label}
@@ -216,7 +216,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-fg/40 uppercase tracking-wider mb-1.5">Secondary Value</label>
+                <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Secondary Value</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {([
                     { key: 'percent_elapsed' as TrackerSecondaryDisplayMode, label: '% Elapsed' },
@@ -232,7 +232,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         secondaryDisplayMode === opt.key
                           ? 'bg-[var(--accent1)] text-black'
-                          : 'bg-fg/5 text-fg/60 hover:bg-fg/10'
+                          : 'bg-fill-subtle text-fg-subtle hover:bg-fill'
                       }`}
                     >
                       {opt.label}

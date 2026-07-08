@@ -42,7 +42,7 @@ const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ 
     aria-checked={value}
     onClick={() => onChange(!value)}
     className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-      value ? 'bg-(--accent2)' : 'bg-fg/15'
+      value ? 'bg-(--accent2)' : 'bg-fill-strong'
     }`}
   >
     <span
@@ -62,14 +62,14 @@ const Segment = <T extends string | number>({
   value: T;
   onChange: (v: T) => void;
 }) => (
-  <div className="flex gap-0.5 rounded-lg bg-fg/[0.06] p-0.5">
+  <div className="flex gap-0.5 rounded-lg bg-fill-subtle p-0.5">
     {options.map((o) => (
       <button
         key={String(o.value)}
         type="button"
         onClick={() => onChange(o.value)}
         className={`flex-1 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
-          value === o.value ? 'bg-fg/15 text-fg' : 'text-fg/40 hover:text-fg/70'
+          value === o.value ? 'bg-fill-strong text-fg' : 'text-fg-faint hover:text-fg-muted'
         }`}
       >
         {o.label}
@@ -81,16 +81,16 @@ const Segment = <T extends string | number>({
 // ── Shared layout atoms ───────────────────────────────────────────────────────
 
 const SectionHeader: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h3 className="text-[10px] font-bold uppercase tracking-wider text-fg/30 mb-3">{children}</h3>
+  <h3 className="text-[10px] font-bold uppercase tracking-wider text-fg-ghost mb-3">{children}</h3>
 );
 
-const labelCls = 'text-[13px] text-fg/65';
+const labelCls = 'text-[13px] text-fg-muted';
 const rowCls = 'flex items-center justify-between gap-4';
 
 const fieldInput = `${textInputCls} w-full`;
-const fieldLabel = 'block text-[11px] font-medium text-fg/45 mb-1';
+const fieldLabel = 'block text-[11px] font-medium text-fg-subtle mb-1';
 const formButton =
-  'w-full rounded-xl bg-fg/10 py-2.5 text-sm font-semibold text-fg transition-all hover:bg-fg/15 disabled:cursor-not-allowed disabled:opacity-40';
+  'w-full rounded-xl bg-fill py-2.5 text-sm font-semibold text-fg transition-all hover:bg-fill-strong disabled:cursor-not-allowed disabled:opacity-40';
 
 type FormMsg = { kind: 'ok' | 'err'; text: string } | null;
 
@@ -166,9 +166,9 @@ const ProfilePane: React.FC<{
       {/* Identity */}
       <div>
         <SectionHeader>Profile</SectionHeader>
-        <div className="rounded-2xl border border-fg/10 bg-fg/[0.03] px-4 py-3.5">
+        <div className="rounded-2xl border border-line bg-fill-subtle px-4 py-3.5">
           {name && <p className="text-sm font-semibold text-fg">{name}</p>}
-          <p className="text-[13px] text-fg/50">{email ?? 'Signed in'}</p>
+          <p className="text-[13px] text-fg-subtle">{email ?? 'Signed in'}</p>
         </div>
       </div>
 
@@ -317,14 +317,14 @@ const SettingsPane: React.FC<{
         <div className={rowCls}>
           <div>
             <p className={labelCls}>XP &amp; streaks</p>
-            <p className="text-[11px] text-fg/30 mt-0.5">Show XP, progress bar and streak stars</p>
+            <p className="text-[11px] text-fg-ghost mt-0.5">Show XP, progress bar and streak stars</p>
           </div>
           <Toggle value={xpEnabled} onChange={onUpdateXpEnabled} />
         </div>
       </div>
 
       {/* Appearance */}
-      <div className="space-y-4 border-t border-fg/8 pt-6">
+      <div className="space-y-4 border-t border-line-subtle pt-6">
         <SectionHeader>Appearance</SectionHeader>
 
         <div className="space-y-1.5">
@@ -408,7 +408,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={handleExport}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-fg/5 py-2.5 text-sm font-bold text-fg/50 transition-all hover:bg-fg/10 hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-fill-subtle py-2.5 text-sm font-bold text-fg-subtle transition-all hover:bg-fill hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Download size={15} />
           {busy === 'export' ? 'Exporting…' : 'Export'}
@@ -417,7 +417,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={() => importRef.current?.click()}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-fg/5 py-2.5 text-sm font-bold text-fg/50 transition-all hover:bg-fg/10 hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-fill-subtle py-2.5 text-sm font-bold text-fg-subtle transition-all hover:bg-fill hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Upload size={15} />
           {busy === 'import' ? 'Importing…' : 'Import'}
@@ -429,7 +429,7 @@ const DataPane: React.FC = () => {
           {dataMsg.text}
         </p>
       )}
-      <p className="text-[11px] leading-relaxed text-fg/25">
+      <p className="text-[11px] leading-relaxed text-fg-ghost">
         Export downloads your tasks, trackers, workspaces, and settings. Import merges them back in by
         id — new items are added, matching items are overwritten, and anything not in the file is left
         untouched.
@@ -492,10 +492,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
         >
           <motion.div
             {...modalPop}
-            className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-fg/10 bg-surface shadow-2xl"
+            className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl"
           >
             {/* Nav rail — vibrant sign-in background image with dark text on top. */}
-            <div className="relative hidden sm:flex w-52 shrink-0 flex-col overflow-hidden border-r border-fg/5">
+            <div className="relative hidden sm:flex w-52 shrink-0 flex-col overflow-hidden border-r border-line-subtle">
               <img
                 src={backgroundUrl}
                 alt=""
@@ -537,7 +537,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               <div className="flex shrink-0 justify-end px-2 py-2">
                 <button
                   onClick={onClose}
-                  className="rounded-lg p-1.5 text-fg/40 transition-all hover:bg-fg/10 hover:text-fg"
+                  className="rounded-lg p-1.5 text-fg-faint transition-all hover:bg-fill hover:text-fg"
                 >
                   <X size={16} />
                 </button>
@@ -553,7 +553,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                     type="button"
                     onClick={() => setSection(key)}
                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      section === key ? 'bg-fg/[0.08] text-fg' : 'text-fg/40'
+                      section === key ? 'bg-fill text-fg' : 'text-fg-faint'
                     }`}
                   >
                     {label}

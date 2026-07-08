@@ -39,26 +39,26 @@ export const CollectionTree: React.FC<{
   const itemCls = (view: string) =>
     `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${
       selectedView === view
-        ? 'bg-fg/10 text-fg font-medium'
-        : 'text-fg/65 hover:bg-fg/[0.05] hover:text-fg'
+        ? 'bg-fill text-fg font-medium'
+        : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
     }`;
 
   return (
     <div className="group/pane flex-1 min-h-0 flex flex-col">
       {/* Fixed header: title + the two pseudo-views as separate rows */}
       <div className="shrink-0 p-2 pb-1 space-y-0.5">
-        <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg/30">
+        <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
           Collections
         </div>
         <button type="button" onClick={() => onSelectView('all')} className={itemCls('all')} title="All Tasks">
-          <Layers size={15} className="shrink-0 text-fg/45" />
+          <Layers size={15} className="shrink-0 text-fg-subtle" />
           <span className="flex-1 truncate">All Tasks</span>
-          <span className="text-xs text-fg/35 font-mono mr-1.5">{allCount}</span>
+          <span className="text-xs text-fg-faint font-mono mr-1.5">{allCount}</span>
         </button>
         <button type="button" onClick={() => onSelectView('uncategorized')} className={itemCls('uncategorized')} title="Uncategorized">
-          <Inbox size={15} className="shrink-0 text-fg/45" />
+          <Inbox size={15} className="shrink-0 text-fg-subtle" />
           <span className="flex-1 truncate">Uncategorized</span>
-          <span className="text-xs text-fg/35 font-mono mr-1.5">{uncategorizedCount}</span>
+          <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
         </button>
       </div>
 
@@ -66,7 +66,7 @@ export const CollectionTree: React.FC<{
           handled on the container (not per-row) so releases in the gaps still commit. */}
       <div
         ref={dnd?.sideScroll.ref}
-        className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fg/15 [&::-webkit-scrollbar-thumb]:rounded-full"
+        className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full"
         onDragOver={dnd?.dragCollId ? dnd.sideScroll.onDragOver : undefined}
         onDragEnter={dnd?.dragCollId ? dnd.sideScroll.onDragEnter : undefined}
         onDrop={dnd ? (e) => { e.preventDefault(); dnd.onCollDrop(); } : undefined}
@@ -92,18 +92,18 @@ export const CollectionTree: React.FC<{
                   nested children swap it for an expand/collapse toggle. */}
               {hasChildren ? (
                 <>
-                  <span className="text-xs text-fg/35 group-hover/pane:hidden mr-1.5 font-mono">{collectionCount(c.todo.id)}</span>
+                  <span className="text-xs text-fg-faint group-hover/pane:hidden mr-1.5 font-mono">{collectionCount(c.todo.id)}</span>
                   <span
                     role="button"
                     onClick={(e) => { e.stopPropagation(); toggleCollColl(c.todo.id); }}
-                    className="hidden shrink-0 -my-0.5 items-center justify-center rounded p-0.5 text-fg/45 hover:text-fg hover:bg-fg/10 transition-colors group-hover/pane:flex"
+                    className="hidden shrink-0 -my-0.5 items-center justify-center rounded p-0.5 text-fg-subtle hover:text-fg hover:bg-fill transition-colors group-hover/pane:flex"
                     title={collapsedColls.has(c.todo.id) ? 'Expand' : 'Collapse'}
                   >
                     {collapsedColls.has(c.todo.id) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                   </span>
                 </>
               ) : (
-                <span className="text-xs text-fg/35 font-mono mr-1.5">{collectionCount(c.todo.id)}</span>
+                <span className="text-xs text-fg-faint font-mono mr-1.5">{collectionCount(c.todo.id)}</span>
               )}
             </button>
           );
