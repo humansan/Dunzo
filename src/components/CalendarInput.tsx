@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format, addDays, parseISO, isValid } from 'date-fns';
 import { Calendar } from './Calendar';
+import { Switch } from './Switch';
 
 interface CalendarInputProps {
   value: string;
@@ -153,22 +154,11 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
       {onShowInDailyListChange && (
         <div className={`flex items-center justify-between mt-2 px-0.5 ${!value ? 'opacity-40' : ''}`}>
           <span className="text-[11px] text-fg-subtle">Send to daily list</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showInDailyList}
+          <Switch
+            checked={showInDailyList && !!value}
             disabled={!value}
-            onClick={() => { if (value) onShowInDailyListChange(!showInDailyList); }}
-            className={`relative shrink-0 w-8 h-[18px] rounded-full transition-colors duration-200 focus:outline-none ${
-              showInDailyList && value ? 'bg-[var(--accent2)]' : 'bg-fill-strong'
-            } ${!value ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-          >
-            <span
-              className={`absolute top-[2px] left-0 w-[14px] h-[14px] bg-fg rounded-full shadow-sm transition-transform duration-200 ${
-                showInDailyList && value ? 'translate-x-[16px]' : 'translate-x-[2px]'
-              }`}
-            />
-          </button>
+            onChange={onShowInDailyListChange}
+          />
         </div>
       )}
       <div className="mt-2">

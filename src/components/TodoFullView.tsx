@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Todo } from '../types';
 import { btnGhost } from '../theme/buttons';
+import { Switch } from './Switch';
 import { CollectionOption, collectionOf, collectionPath } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
 import {
@@ -76,23 +77,6 @@ const RightProp: React.FC<{
   </div>
 );
 
-const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={value}
-    onClick={() => onChange(!value)}
-    className={`relative shrink-0 w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none ${
-      value ? 'bg-[var(--accent2)]' : 'bg-fill-strong'
-    }`}
-  >
-    <span
-      className={`absolute top-0.5 left-0 w-4 h-4 bg-fg rounded-full shadow-sm transition-transform duration-200 ${
-        value ? 'translate-x-[18px]' : 'translate-x-[2px]'
-      }`}
-    />
-  </button>
-);
 
 export const TodoFullView: React.FC<TodoFullViewProps> = ({
   todo,
@@ -368,8 +352,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <RightProp icon={<Database size={11} />} label="Task Planner">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-fg-faint">Show in hub</span>
-                  <Toggle
-                    value={draft.showInDatabase ?? false}
+                  <Switch
+                    checked={draft.showInDatabase ?? false}
                     onChange={(val) => update({ showInDatabase: val })}
                   />
                 </div>

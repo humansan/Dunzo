@@ -3,25 +3,8 @@ import { COLUMNS } from './types';
 import { SectionsConfig } from './types';
 import { PopoverMenu } from './PopoverMenu';
 import { ListSelect } from './ListSelect';
+import { Switch } from '../Switch';
 
-// Minimal inline toggle switch (no external dep).
-const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={value}
-    onClick={() => onChange(!value)}
-    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-      value ? 'bg-[var(--accent2)]' : 'bg-fill-strong'
-    }`}
-  >
-    <span
-      className={`inline-block h-3.5 w-3.5 rounded-full bg-fg shadow-sm transition-transform ${
-        value ? 'translate-x-[18px]' : 'translate-x-[3px]'
-      }`}
-    />
-  </button>
-);
 
 // Three-way segmented control for showLeafTasks.
 const Segment: React.FC<{
@@ -70,19 +53,19 @@ export const SectionsMenu: React.FC<{
           {/* Auto-archive */}
           <div className={rowCls}>
             <span className={labelCls}>Auto-archive completed</span>
-            <Toggle value={config.autoArchive} onChange={(v) => set('autoArchive', v)} />
+            <Switch checked={config.autoArchive} onChange={(v) => set('autoArchive', v)} />
           </div>
 
           {/* Hide empty collections */}
           <div className={rowCls}>
             <span className={labelCls}>Hide empty sections</span>
-            <Toggle value={config.hideEmptyCollections} onChange={(v) => set('hideEmptyCollections', v)} />
+            <Switch checked={config.hideEmptyCollections} onChange={(v) => set('hideEmptyCollections', v)} />
           </div>
 
           {/* Hide sub-collections — flatten to leaf tasks only */}
           <div className={rowCls}>
             <span className={labelCls}>Hide subcollections</span>
-            <Toggle value={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
+            <Switch checked={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
           </div>
         </div>
 

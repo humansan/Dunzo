@@ -8,6 +8,7 @@ import { buildBackup, parseBackup, mergeImportToDb } from '../data/import';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon.svg';
 import { ListSelect } from './todosHub/ListSelect';
+import { Switch } from './Switch';
 import { textInputCls } from './todosHub/TextInput';
 import { modalPop, overlayBackdrop } from './modalMotion';
 
@@ -31,24 +32,6 @@ interface AccountModalProps {
 }
 
 // ── Shared controls (mirror the Task Planner's Sections menu styling) ─────────
-
-const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={value}
-    onClick={() => onChange(!value)}
-    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-      value ? 'bg-(--accent2)' : 'bg-fill-strong'
-    }`}
-  >
-    <span
-      className={`inline-block h-3.5 w-3.5 rounded-full bg-fg shadow-sm transition-transform ${
-        value ? 'translate-x-[18px]' : 'translate-x-[3px]'
-      }`}
-    />
-  </button>
-);
 
 const Segment = <T extends string | number>({
   options,
@@ -312,7 +295,7 @@ const SettingsPane: React.FC<{
             <p className={labelCls}>XP &amp; streaks</p>
             <p className="text-[11px] text-fg-ghost mt-0.5">Show XP, progress bar and streak stars</p>
           </div>
-          <Toggle value={xpEnabled} onChange={onUpdateXpEnabled} />
+          <Switch checked={xpEnabled} onChange={onUpdateXpEnabled} />
         </div>
       </div>
 
