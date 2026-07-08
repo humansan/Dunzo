@@ -18,7 +18,7 @@ import { stripNulls } from './normalize';
 // as arrays (jsonb has no Set); the synced hooks adapt Set↔array.
 export interface HubLayout {
   selectedView?: string;
-  viewMode?: 'table' | 'list' | 'columns'; // table (default) / single-column list / Finder columns
+  viewMode?: 'table' | 'list'; // table (default) / single-column list
   finderView?: 'flat' | 'twoPane'; // Task Finder result layout (one pref across search/pickers)
   sidebarWidth?: number;
   sidebarHidden?: boolean;

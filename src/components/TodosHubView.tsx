@@ -24,8 +24,6 @@ import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
 import { isDone } from '../utils/todoStatus';
 import { TaskTable } from './todosHub/TaskTable';
 import { VARIANTS } from './todosHub/variant';
-import { ColumnsView } from './todosHub/ColumnsView';
-import { ColumnContext } from './todosHub/Column';
 import { TaskFinder } from './todosHub/TaskFinder';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
@@ -133,8 +131,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // Which view renders the data: the spreadsheet-style table (default) or the
   // Todoist-style single-column list. A global UI preference (like selectedView).
-  const viewMode: 'table' | 'list' | 'columns' = layout.viewMode ?? 'table';
-  const setViewMode = (m: 'table' | 'list' | 'columns') => patchLayout(() => ({ viewMode: m }));
+  const viewMode: 'table' | 'list' = layout.viewMode === 'list' ? 'list' : 'table';
+  const setViewMode = (m: 'table' | 'list') => patchLayout(() => ({ viewMode: m }));
   // The persisted table/list toggle selects a view-variant descriptor; TaskTable
   // and its rows read presentation off this instead of a `listView` boolean.
   const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
@@ -176,8 +174,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     viewEntries,
     uniqueValues,
     processedEntries,
-    sortFn,
-    childrenOf,
     visibleTaskCounts,
     groupedRows,
     flattened,
@@ -529,33 +525,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       : null;
 
 
-  // Add a task at a Finder column's level: parent it to that column's node, seed
-  // the active filters (so it stays visible), and drop into its title editor.
-  const addTaskInColumn = (parentId: string | null) => {
-    const id = onAddTodo({ parentId, patch: inheritedFilterPatch });
-    if (parentId) setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
-    setEditing({ id, col: 'title', rect: null });
-  };
-
-  // Shared data + handlers every Finder column needs (built once, forwarded down).
-  const columnCtx: ColumnContext = {
-    childrenOf,
-    byId,
-    todoById,
-    isDescendantOf,
-    sortFn,
-    onReorder,
-    onSaveTodo,
-    onToggleTodo: handleToggleTodo,
-    onAddSubtask,
-    onAddInColumn: addTaskInColumn,
-    editing,
-    startEdit,
-    stopEdit,
-    openMenu,
-    clearInteraction: () => { setEditing(null); setMenu(null); },
-  };
-
   // Reparent picker: the moved task + a stable "can't be a new parent" predicate
   // (itself + its whole subtree, so the move can't create a cycle).
   const reparentTarget = reparentId ? byId.get(reparentId)?.todo ?? null : null;
@@ -609,16 +578,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onToggleMenu={onToggleMenu}
         />
 
-        {/* Body — the Finder columns navigator, or the single shared table/list
-            surface selected by the variant. */}
-        {viewMode === 'columns' ? (
-          <ColumnsView
-            ctx={columnCtx}
-            rootId={selectedCollectionId}
-            labelFor={(nodeId) => (nodeId ? todoById.get(nodeId)?.text || 'Untitled' : viewLabel)}
-          />
-        ) : (
-          <TaskTable
+        {/* Body — the single shared table/list surface selected by the variant. */}
+        <TaskTable
             variant={variant}
             model={{
               columns: visibleColumns,
@@ -650,7 +611,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
             dnd={dnd}
             bottomSpacer
           />
-        )}
       </div>
 
       {/* Sections menu — view-level settings */}
