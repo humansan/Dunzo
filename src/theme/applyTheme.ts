@@ -31,8 +31,13 @@ export function applyTheme(themeId: string | undefined, mode: ThemeMode): void {
     root.style.setProperty(`--c-${name}`, hex);
   }
   for (const role of ROLE_NAMES) {
-    const colorName = variant.roles[role as RoleName];
-    root.style.setProperty(`--color-${role}`, `var(--c-${colorName})`);
+    const spec = variant.roles[role as RoleName];
+    // string → solid palette color; [name, alpha] → translucent token (see RoleValue).
+    const value =
+      typeof spec === 'string'
+        ? `var(--c-${spec})`
+        : `color-mix(in srgb, var(--c-${spec[0]}) ${spec[1]}%, transparent)`;
+    root.style.setProperty(`--color-${role}`, value);
   }
   // The app's brand accents are now theme-owned (no longer user-editable). Point the
   // legacy --accent1/--accent2 vars (used throughout the app) at the theme's accent
@@ -47,12 +52,17 @@ export function applyTheme(themeId: string | undefined, mode: ThemeMode): void {
   // Snapshot the critical values for the pre-paint bootstrap in index.html, so a
   // reload doesn't flash the @theme defaults (Classic dark) before React runs.
   try {
+    // canvas/fg are always solid palette references (never translucent tuples).
+    const solid = (r: RoleName) => {
+      const spec = variant.roles[r];
+      return typeof spec === 'string' ? variant.colors[spec] : undefined;
+    };
     localStorage.setItem(
       BOOT_KEY,
       JSON.stringify({
         dark: resolved === 'dark',
-        canvas: variant.colors[variant.roles.canvas],
-        fg: variant.colors[variant.roles.fg],
+        canvas: solid('canvas'),
+        fg: solid('fg'),
       })
     );
   } catch {

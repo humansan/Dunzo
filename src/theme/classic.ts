@@ -1,23 +1,42 @@
 import type { RoleName } from './roles';
-import { Theme } from './themes';
+import { Theme, RoleValue } from './themes';
 
-const classicRoles: Record<RoleName, string> = {
+// Shared by both variants for now; alphas are the dark seeds (= today's values, so dark is
+// unchanged). `['fg', N]` auto-inverts to translucent ink in light. Light gets its own
+// tuning pass later (either a separate role map or opaque-gray text overrides).
+const classicRoles: Record<RoleName, RoleValue> = {
   canvas: 'canvas',
   surface: 'surface',
   'surface-raised': 'raised',
   overlay: 'overlay',
   scrim: 'black',
   fg: 'fg',
-  'fg-muted': 'muted',
-  'fg-subtle': 'subtle',
-  line: 'fg',
-  'line-strong': 'fg',
+  // Text emphasis ramp — translucent fg (collapses the old text-fg/NN zoo)
+  'fg-muted': ['fg', 75],
+  'fg-subtle': ['fg', 55],
+  'fg-faint': ['fg', 40],
+  'fg-ghost': ['fg', 25],
+  // Hairlines — translucent fg
+  'line-subtle': ['fg', 6],
+  line: ['fg', 10],
+  'line-strong': ['fg', 20],
+  'line-stronger': ['fg', 40],
+  // Neutral fills — translucent fg
+  'fill-subtle': ['fg', 5],
+  fill: ['fg', 10],
+  'fill-strong': ['fg', 15],
+  'fill-stronger': ['fg', 20],
   accent: 'accent1',
   accent2: 'accent2',
   danger: 'red',
   warning: 'amber',
   success: 'emerald',
   info: 'blue',
+  // Feedback tint backgrounds — translucent hue
+  'danger-tint': ['red', 12],
+  'warning-tint': ['amber', 10],
+  'success-tint': ['emerald', 12],
+  'info-tint': ['blue', 12],
   'status-todo': 'subtle',
   'status-active': 'blue',
   'status-done': 'emerald',

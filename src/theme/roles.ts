@@ -7,13 +7,18 @@
 export const ROLE_NAMES = [
   // Surfaces (elevation) + modal backdrop
   'canvas', 'surface', 'surface-raised', 'overlay', 'scrim',
-  // Text + hairlines
-  'fg', 'fg-muted', 'fg-subtle', 'line', 'line-strong',
+  // Text emphasis ramp (translucent fg tiers — see docs/theming/token-map.md)
+  'fg', 'fg-muted', 'fg-subtle', 'fg-faint', 'fg-ghost',
+  // Hairlines (translucent fg; unused solid `line`/`line-strong` repurposed to the ramp)
+  'line-subtle', 'line', 'line-strong', 'line-stronger',
+  // Translucent neutral fills over content (hover / selected / panel lift)
+  'fill-subtle', 'fill', 'fill-strong', 'fill-stronger',
   // Brand accents (note: the user-customizable accent still lives on --accent1/--accent2;
   // these roles are the per-theme default surface for any future `bg-accent` usage)
   'accent', 'accent2',
-  // Feedback
+  // Feedback (solid) + their translucent tint backgrounds
   'danger', 'warning', 'success', 'info',
+  'danger-tint', 'warning-tint', 'success-tint', 'info-tint',
   // Task status / priority (Task Planner chips)
   'status-todo', 'status-active', 'status-done',
   'priority-low', 'priority-med', 'priority-high',

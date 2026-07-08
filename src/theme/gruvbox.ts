@@ -1,28 +1,45 @@
 import type { RoleName } from './roles';
-import { Theme } from './themes';
+import { Theme, RoleValue } from './themes';
 
 // ── Theme #2: "Gruvbox Material" ─────────────────────────────────────────────
 // Roles reference Gruvbox's own color names (bg0, aqua, …). Dark values are the
 // canonical Gruvbox Material Dark palette; light values are Gruvbox Material Light
-// (medium background), tunable.
+// (medium background), tunable. Translucent tokens are `[colorName, alpha%]` (see
+// RoleValue) — same alphas as Classic so the two themes stay structurally aligned.
 
-const gruvboxRoles: Record<RoleName, string> = {
+const gruvboxRoles: Record<RoleName, RoleValue> = {
   canvas: 'bg0',
   surface: 'bg1',
   'surface-raised': 'bg3',
   overlay: 'bg2',
   scrim: 'black',
   fg: 'fg0',
-  'fg-muted': 'grey2',
-  'fg-subtle': 'grey1',
-  line: 'fg0',
-  'line-strong': 'fg0',
+  // Text emphasis ramp — translucent fg
+  'fg-muted': ['fg0', 75],
+  'fg-subtle': ['fg0', 55],
+  'fg-faint': ['fg0', 40],
+  'fg-ghost': ['fg0', 25],
+  // Hairlines — translucent fg
+  'line-subtle': ['fg0', 6],
+  line: ['fg0', 10],
+  'line-strong': ['fg0', 20],
+  'line-stronger': ['fg0', 40],
+  // Neutral fills — translucent fg
+  'fill-subtle': ['fg0', 5],
+  fill: ['fg0', 10],
+  'fill-strong': ['fg0', 15],
+  'fill-stronger': ['fg0', 20],
   accent: 'aqua',
   accent2: 'green',
   danger: 'red',
   warning: 'yellow',
   success: 'green',
   info: 'blue',
+  // Feedback tint backgrounds — translucent hue
+  'danger-tint': ['red', 12],
+  'warning-tint': ['yellow', 10],
+  'success-tint': ['green', 12],
+  'info-tint': ['blue', 12],
   'status-todo': 'grey1',
   'status-active': 'blue',
   'status-done': 'green',
