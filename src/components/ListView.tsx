@@ -62,7 +62,6 @@ interface TodoItemProps {
   countdownMode: 'off' | 'time' | 'percent';
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
-  initialCollectionId?: string | null;
 }
 
 interface SortableItemProps {
@@ -83,7 +82,6 @@ interface SortableItemProps {
   countdownMode: 'off' | 'time' | 'percent';
   collectionOptions: CollectionOption[];
   onCreateCollection: (name: string) => string;
-  initialCollectionId: string | null;
 }
 
 export interface ListViewProps {
@@ -105,7 +103,6 @@ export interface ListViewProps {
   countdownMode?: 'off' | 'time' | 'percent';
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
-  initialCollectionIdOf?: (todo: Todo) => string | null;
   onReorder: (todos: Todo[]) => void;
 }
 
@@ -134,7 +131,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
   countdownMode,
   collectionOptions = [],
   onCreateCollection,
-  initialCollectionId = null,
 }) => {
   const countdownDisplay = useMemo(() => {
     if (countdownMode === 'off' || !todo.dueTime) return null;
@@ -165,6 +161,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
       <div ref={setNodeRef} style={style}>
         <QuickEditTodo
           mode="edit"
+          todoId={todo.id}
           initialText={todo.text}
           initialNotes={todo.notes || ''}
           initialDate={date}
@@ -172,7 +169,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialTime={todo.dueTime}
           initialPercent={todo.duePercentage}
           initialXp={todo.xp}
-          initialCollectionId={initialCollectionId}
+          initialStatus={todo.status}
+          initialPriority={todo.priority}
+          initialParentId={todo.parentId}
           collectionOptions={collectionOptions}
           onCreateCollection={onCreateCollection}
           onSubmit={(vals) => onSaveEdit(todo.id, vals)}
@@ -361,7 +360,6 @@ export const ListView: React.FC<ListViewProps> = ({
   countdownMode = 'off',
   collectionOptions = [],
   onCreateCollection,
-  initialCollectionIdOf,
   onReorder,
 }) => {
   const [isAdding, setIsAdding] = useState(false);
@@ -467,7 +465,6 @@ export const ListView: React.FC<ListViewProps> = ({
                 countdownMode={countdownMode}
                 collectionOptions={collectionOptions}
                 onCreateCollection={onCreateCollection || (() => '')}
-                initialCollectionId={initialCollectionIdOf ? initialCollectionIdOf(todo) : null}
               />
             );
           })}

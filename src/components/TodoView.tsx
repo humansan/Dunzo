@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { btnNeutral, btnToggle } from '../theme/buttons';
 import { Todo, DayTodos, Tracker } from '../types';
-import { todoIndex, collectionOf, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '../utils/todoFilters';
+import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '../utils/todoFilters';
 import { timeToPercentage } from '../utils/timeUtils';
 
 import { TrackerCard } from './TrackerCard';
@@ -121,9 +121,10 @@ export const TodoView: React.FC<TodoViewProps> = ({
       dueTime: vals.dueTime,
       duePercentage: vals.duePercentage,
       xp: vals.xp,
-      parentId: vals.collectionId ?? undefined,
+      status: vals.status ?? "todo",
+      priority: vals.priority,
+      parentId: vals.parentId ?? undefined,
       createdAt: Date.now(),
-      status: "todo",
     };
 
     const target = vals.date;
@@ -169,7 +170,9 @@ export const TodoView: React.FC<TodoViewProps> = ({
       dueTime: vals.dueTime,
       duePercentage: vals.duePercentage,
       xp: vals.xp,
-      parentId: vals.collectionId ?? undefined
+      status: vals.status,
+      priority: vals.priority,
+      parentId: vals.parentId ?? undefined
     };
 
     if (vals.date !== selectedDate) {
@@ -302,7 +305,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
           countdownMode={countdownMode}
           collectionOptions={collOptions}
           onCreateCollection={onCreateCollection}
-          initialCollectionIdOf={(todo) => collectionOf(todo, byId)}
           onReorder={(newTodos) => {
             // ListView only sees the daily-visible subset; keep the day's hidden
             // (dated planner) todos so handleUpdateTodos doesn't delete them.
