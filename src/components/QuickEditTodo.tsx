@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Astroid, Maximize2, X, Shapes, CircleDot, Flag, GitBranch } from 'lucide-react';
-import { formatTime12h, timeToPercentage, percentageToTime } from '../utils/timeUtils';
+import { Calendar, Clock, Astroid, Maximize2, Shapes, CircleDot, Flag, GitBranch } from 'lucide-react';
+import { formatTime12h, timeToPercentage } from '../utils/timeUtils';
 import { CollectionOption, collectionOf } from '../utils/todoFilters';
 import { TodoStatus, TodoPriority } from '../types';
 import { btnAccent } from '../theme/buttons';
@@ -9,14 +9,16 @@ import {
   CollectionSearchField,
   CollectionBreadcrumb,
   OptionSelectField,
+  OptionChip,
   statusOption,
   priorityOption,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
+  ChipOption,
 } from './todoFields';
-import { pillBg, pillText } from '../theme/pill';
 import { XpSlider } from './XpSlider';
 import { CalendarInput } from './CalendarInput';
+import { TimeInput } from './TimeInput';
 import { TaskFinder } from './todosHub/TaskFinder';
 import { useAppData } from '../data/AppDataContext';
 
@@ -199,16 +201,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     if (p !== undefined) setPercentStr(p.toString());
   };
 
-  const handlePercentChange = (val: string) => {
-    setPercentStr(val);
-    if (val === '') return;
-    const num = parseFloat(val);
-    if (!isNaN(num)) {
-      const t = percentageToTime(num);
-      if (t) setTime(t);
-    }
-  };
-
   const canSubmit = text.trim().length > 0;
 
   const submit = () => {
@@ -261,42 +253,31 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer';
   const chipText =
     'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
-  const fieldBase =
-    'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-sm font-mono focus:outline-none focus:border-[var(--accent2)]';
   const popover =
     'absolute z-20 top-full left-0 mt-2 rounded-xl border border-line bg-surface shadow-2xl p-2';
   // The collection / parent buttons: chip height, left-aligned, free to grow to the
   // full panel width (truncating only at the edge), with a hover-lit background.
   const rowBtn =
-    'flex items-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden bg-fill-subtle hover:bg-fill transition-colors';
+    'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden hover:bg-fill';
   // Keep Enter inside a popover from bubbling up and submitting the whole panel.
   const stopEnter = (e: React.KeyboardEvent) => { if (e.key === 'Enter') e.stopPropagation(); };
 
-  // A status/priority pill chip — styled like the collection chip: icon + tinted
-  // pill when set (bg/text from the option color), muted button when empty.
+  // A status/priority chip — rendered exactly like the collection chip: a hover-lit
+  // rowBtn container holding the field icon + the shared rounded OptionChip pill
+  // (the same pill used in the table / full view), or a muted label when unset.
   const optionChip = (
     key: 'status' | 'priority',
     icon: React.ReactNode,
-    label: string,
+    placeholder: string,
     value: string | undefined,
-    color: string | undefined,
-    options: typeof STATUS_OPTIONS,
+    option: ChipOption | undefined,
+    options: ChipOption[],
     onChange: (v: string | undefined) => void,
   ) => (
     <div ref={wrapRefs[key]} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpenEditor(o => (o === key ? null : key))}
-        style={value ? { backgroundColor: pillBg(color!) } : undefined}
-        className={`${chipBase} ${value ? '' : 'bg-fill-subtle hover:bg-fill'}`}
-      >
-        <span
-          className={`${chipText} ${value ? '' : 'text-fg-subtle'}`}
-          style={value ? { color: pillText(color!) } : undefined}
-        >
-          {icon}
-          <span className="relative top-px">{label}</span>
-        </span>
+      <button type="button" onClick={() => setOpenEditor(o => (o === key ? null : key))} className={rowBtn}>
+        {icon}
+        {option ? <OptionChip option={option} /> : <span className="text-fg-subtle">{placeholder}</span>}
       </button>
       {openEditor === key && (
         <div className={`${popover} w-48`} onKeyDown={stopEnter}>
@@ -342,7 +323,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       />
 
       {/* Chips — Date · Time+% · XP · Status · Priority */}
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
+      <div className="flex items-center gap-1.5 mt-3 flex-wrap">
         {/* Date */}
         <div ref={wrapRefs.date} className="relative">
           <button
@@ -390,39 +371,12 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
             )}
           </button>
           {openEditor === 'time' && (
-            <div className={popover} onKeyDown={stopEnter}>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center h-9 bg-fill-subtle border border-line rounded-lg focus-within:border-[var(--accent2)] overflow-hidden">
-                  <input
-                    autoFocus
-                    type="time"
-                    value={time}
-                    onChange={(e) => handleTimeChange(e.target.value)}
-                    className="bg-transparent px-3 h-full text-fg text-sm font-mono focus:outline-none w-[128px]"
-                  />
-                  <div className="w-px h-4 bg-fill-strong shrink-0" />
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="any"
-                    value={percentStr}
-                    onChange={(e) => handlePercentChange(e.target.value)}
-                    placeholder="%"
-                    className="bg-transparent px-3 h-full text-fg text-sm font-mono focus:outline-none w-[78px]"
-                  />
-                </div>
-                {(time || startTime) && (
-                  <button
-                    type="button"
-                    onClick={() => { setStartTime(''); setTime(''); setPercentStr(''); setOpenEditor(null); }}
-                    title="Clear"
-                    className="shrink-0 p-1.5 rounded-md text-fg-faint hover:text-fg-muted hover:bg-fill-subtle"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
-              </div>
+            <div className="absolute z-20 top-full left-0 mt-2" onKeyDown={stopEnter}>
+              <TimeInput
+                value={time}
+                autoFocus
+                onChange={(val) => { handleTimeChange(val); if (!val) setStartTime(''); }}
+              />
             </div>
           )}
         </div>
@@ -451,25 +405,25 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           )}
         </div>
 
-        {/* Status */}
-        {optionChip(
-          'status', <CircleDot size={16} />,
-          status ? statusOption(status)!.label : 'Status',
-          status, status ? statusOption(status)!.color : undefined,
-          STATUS_OPTIONS, (v) => setStatus(v as TodoStatus | undefined),
-        )}
+        <div className="flex">
+          {/* Status */}
+          {optionChip(
+            'status', <CircleDot size={16} className="shrink-0 text-fg-subtle" />,
+            'Status', status, status ? statusOption(status) : undefined,
+            STATUS_OPTIONS, (v) => setStatus(v as TodoStatus | undefined),
+          )}
 
-        {/* Priority */}
-        {optionChip(
-          'priority', <Flag size={16} />,
-          priority ? priorityOption(priority)!.label : 'Priority',
-          priority, priority ? priorityOption(priority)!.color : undefined,
-          PRIORITY_OPTIONS, (v) => setPriority(v as TodoPriority | undefined),
-        )}
+          {/* Priority */}
+          {optionChip(
+            'priority', <Flag size={16} className="shrink-0 text-fg-subtle" />,
+            'Priority', priority, priority ? priorityOption(priority) : undefined,
+            PRIORITY_OPTIONS, (v) => setPriority(v as TodoPriority | undefined),
+          )}        
+        </div>
       </div>
 
       {/* Collection · Set parent task */}
-      <div className="flex items-stretch gap-2 mt-2 flex-wrap">
+      <div className="flex items-stretch gap-1 mt-3 flex-wrap">
         <div ref={wrapRefs.collection} className="relative min-w-0 max-w-full">
           <button
             type="button"
@@ -504,7 +458,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center gap-2 mt-3">
+      <div className="flex items-center gap-2 mt-2">
         {mode === 'edit' && onOpenFull && (
           <button
             type="button"
