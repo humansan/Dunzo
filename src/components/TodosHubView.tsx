@@ -404,14 +404,17 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   const handleNewCollection = () => {
     const id = onAddCollection();
-    // setSelectedView(id);
-    setEditCollId(id);
+    setSelectedView(id);   // make it the active collection
+    setEditCollId(id);     // open the name/color modal
   };
-  // Context-menu "Create nested collection": add a child under the target and
-  // ensure the parent is expanded so the new node is visible.
+  // Context-menu "Create nested collection": add a child under the target, ensure
+  // the parent is expanded so the new node is visible, then select it and open its
+  // edit modal (mirrors the top-level New collection flow).
   const handleNewNestedCollection = (parentId: string) => {
-    onAddCollection(parentId);
+    const id = onAddCollection(parentId);
     setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
+    setSelectedView(id);   // make the new nested collection active
+    setEditCollId(id);     // open the name/color modal
   };
   // Seed patch derived from the view's active filters: any "is <value>" filter is
   // pre-applied to tasks created in this view, so a new task still satisfies the
