@@ -66,6 +66,29 @@ const gruvboxRoles: Record<RoleName, RoleValue> = {
   'collection-8': 'purple',
 };
 
+// Gruvbox light keeps its authentic warm (cards-darker-than-cream) surfaces, but the
+// translucent tokens get the same light-tuned alphas as Classic light (dark ink on a light
+// bg reads heavy → gentler fills). Mirrors classicLightRoles.
+const gruvboxLightRoles: Record<RoleName, RoleValue> = {
+  ...gruvboxRoles,
+  'fg-muted': ['fg0', 80],
+  'fg-subtle': ['fg0', 62],
+  'fg-faint': ['fg0', 46],
+  'fg-ghost': ['fg0', 32],
+  'line-subtle': ['fg0', 7],
+  line: ['fg0', 11],
+  'line-strong': ['fg0', 16],
+  'line-stronger': ['fg0', 28],
+  'fill-subtle': ['fg0', 4],
+  fill: ['fg0', 6],
+  'fill-strong': ['fg0', 9],
+  'fill-stronger': ['fg0', 12],
+  'danger-tint': ['red', 10],
+  'warning-tint': ['yellow', 12],
+  'success-tint': ['green', 10],
+  'info-tint': ['blue', 10],
+};
+
 const gruvboxDark: Record<string, string> = {
   bg0: '#1d2021',
   bg1: '#282828',
@@ -109,5 +132,5 @@ export const gruvboxMaterial: Theme = {
   id: 'gruvbox',
   name: 'Gruvbox Material',
   dark: { colors: gruvboxDark, roles: gruvboxRoles },
-  light: { colors: gruvboxLight, roles: gruvboxRoles },
+  light: { colors: gruvboxLight, roles: gruvboxLightRoles },
 };

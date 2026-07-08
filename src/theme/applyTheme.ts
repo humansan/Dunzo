@@ -15,6 +15,32 @@ export function resolveMode(mode: ThemeMode): 'dark' | 'light' {
   return mode === 'system' ? (prefersDark() ? 'dark' : 'light') : mode;
 }
 
+function hexToRgb(hex: string): [number, number, number] {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+// Resolve a role to a *concrete* color straight from theme data (no DOM), matching exactly
+// what applyTheme writes to --color-<role>: solid roles → their hex; translucent [name,α]
+// tuples → the equivalent rgba(). For the few contexts that can't consume a CSS var
+// (recharts SVG attrs, `${}`-built shadow strings). Because it's pure data it's correct on
+// first render and updates in the same render as a theme change — see useThemeColor.
+export function resolveRoleColor(
+  themeId: string | undefined,
+  mode: ThemeMode,
+  role: RoleName
+): string {
+  const variant = getTheme(themeId)[resolveMode(mode)];
+  const spec = variant.roles[role];
+  if (typeof spec === 'string') return variant.colors[spec] ?? '';
+  const hex = variant.colors[spec[0]];
+  if (!hex) return '';
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${spec[1] / 100})`;
+}
+
 // Write both token layers onto <html>:
 //   • Layer 1 colors  → --c-<name>
 //   • Layer 2 roles   → --color-<role>: var(--c-<colorName>)

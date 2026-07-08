@@ -18,7 +18,6 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   // in light mode.
   const GOLD = useThemeColor('xp-tier1');
   const VIOLET = useThemeColor('xp-tier2');
-  console.log(VIOLET);
   const CORAL = useThemeColor('xp-bar');
   const FG = useThemeColor('fg');
   const {

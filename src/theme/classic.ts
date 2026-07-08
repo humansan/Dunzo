@@ -63,6 +63,35 @@ const classicRoles: Record<RoleName, RoleValue> = {
   'collection-8': 'coll8',
 };
 
+// Light gets its OWN role map: same color assignments as dark, but the translucent tokens
+// carry light-tuned alphas. Fills are *lower* than dark (black-on-white reads heavier than
+// white-on-black); lines a touch higher (borders must read on white); text a touch higher
+// for contrast. Solid roles (surfaces, hues, accents) inherit from classicRoles and pick up
+// their light hexes from classicLight below. See docs/theming/token-map.md §4.3a.
+const classicLightRoles: Record<RoleName, RoleValue> = {
+  ...classicRoles,
+  // Text emphasis ramp (translucent near-black fg)
+  'fg-muted': ['fg', 80],
+  'fg-subtle': ['fg', 62],
+  'fg-faint': ['fg', 46],
+  'fg-ghost': ['fg', 32],
+  // Hairlines
+  'line-subtle': ['fg', 7],
+  line: ['fg', 11],
+  'line-strong': ['fg', 16],
+  'line-stronger': ['fg', 28],
+  // Neutral fills (gentler than dark)
+  'fill-subtle': ['fg', 4],
+  fill: ['fg', 6],
+  'fill-strong': ['fg', 9],
+  'fill-stronger': ['fg', 12],
+  // Feedback tints
+  'danger-tint': ['red', 10],
+  'warning-tint': ['amber', 12],
+  'success-tint': ['emerald', 10],
+  'info-tint': ['blue', 10],
+};
+
 const classicDark: Record<string, string> = {
   canvas: '#0a0a0a',
   surface: '#1a1a1a',
@@ -90,19 +119,22 @@ const classicDark: Record<string, string> = {
 };
 
 const classicLight: Record<string, string> = {
-  // Grayish page so white cards/menus separate and shadows read; elevation gets
-  // *brighter* toward white (opposite of dark, where it gets lighter from black).
-  canvas: '#ffffff',
-  surface: '#eceef2',
-  raised: '#f4f6f9',
-  overlay: '#e4e7ec',
+  // Elevation ASCENDS to white: canvas is a soft gray page (furthest back); each step up
+  // the stack brightens toward white so cards/menus separate from the page and read as
+  // raised (opposite of dark, where elevation lightens up from black). Depth also comes
+  // from the line hairlines + shadows.
+  canvas: '#e7e9ee',   // page (soft gray)
+  surface: '#f4f5f8',  // cards / panels / sidebars
+  raised: '#fafbfc',   // raised cards / inputs
+  overlay: '#ffffff',  // menus / popovers / modals (top of the stack)
   black: '#000000',
-  fg: '#000000',
-  muted: '#3f4652',   // secondary text — strong contrast on white (~8:1)
-  subtle: '#5b6472',  // tertiary text (~5:1)
+  fg: '#14161a',       // near-black primary text (softer than pure #000)
+  muted: '#3f4652',   // (legacy solid; text ramp now uses translucent fg)
+  subtle: '#5b6472',  // still used by status-todo / priority-low chips
   accent1: '#7a7d12', // olive-gold — balances readable-as-text vs black-text-on-accent-bg
   accent2: '#3f8f63', // medium green — same balance
   red: '#c62f34',
+  gold: '#c8890a',    // XP signature gold, deepened to read on white
   amber: '#a86616',
   emerald: '#0f8a4c',
   blue: '#2563eb',
@@ -120,5 +152,5 @@ export const classic: Theme = {
   id: 'classic',
   name: 'Classic',
   dark: { colors: classicDark, roles: classicRoles },
-  light: { colors: classicLight, roles: classicRoles },
+  light: { colors: classicLight, roles: classicLightRoles },
 };
