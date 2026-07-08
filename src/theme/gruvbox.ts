@@ -1,22 +1,21 @@
 import type { RoleName } from './roles';
+import { DERIVED_ROLES, type BaseRole } from './derived';
 import { Theme } from './themes';
 
 // ── Theme #2: "Gruvbox Material" ─────────────────────────────────────────────
 // Roles reference Gruvbox's own color names (bg0, aqua, …). Dark values are the
 // canonical Gruvbox Material Dark palette; light values are Gruvbox Material Light
-// (medium background), tunable.
+// (medium background), tunable. Translucent ramp roles come from DERIVED_ROLES (they
+// resolve against fg0, so fills/text/lines are Gruvbox-cream-tinted — matching how the
+// app's old bg-fg/N utilities already rendered under Gruvbox).
 
-const gruvboxRoles: Record<RoleName, string> = {
+const gruvboxBase: Record<BaseRole, string> = {
   canvas: 'bg0',
   surface: 'bg1',
   'surface-raised': 'bg3',
   overlay: 'bg2',
   scrim: 'black',
   fg: 'fg0',
-  'fg-muted': 'grey2',
-  'fg-subtle': 'grey1',
-  line: 'fg0',
-  'line-strong': 'fg0',
   accent: 'aqua',
   accent2: 'green',
   danger: 'red',
@@ -48,6 +47,8 @@ const gruvboxRoles: Record<RoleName, string> = {
   'collection-7': 'blue',
   'collection-8': 'purple',
 };
+
+const gruvboxRoles: Record<RoleName, string> = { ...gruvboxBase, ...DERIVED_ROLES };
 
 const gruvboxDark: Record<string, string> = {
   bg0: '#1d2021',

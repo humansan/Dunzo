@@ -10,6 +10,14 @@ const BOOT_KEY = 'theme-boot';
 export const prefersDark = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
+// A role value is either a Layer-1 color NAME (→ indirect through its --c-<name> var) or a
+// literal CSS value used directly (a hex, or a color-mix like the DERIVED_ROLES tokens).
+// Disambiguated by membership in the theme's `colors` map — literals are always CSS syntax
+// (#…, color-mix(…), var(…)), so they never collide with a bare color-name identifier.
+function resolveRole(value: string, colors: Record<string, string>): string {
+  return value in colors ? `var(--c-${value})` : value;
+}
+
 // The effective dark/light for a mode ('system' resolves against the OS).
 export function resolveMode(mode: ThemeMode): 'dark' | 'light' {
   return mode === 'system' ? (prefersDark() ? 'dark' : 'light') : mode;
@@ -31,14 +39,13 @@ export function applyTheme(themeId: string | undefined, mode: ThemeMode): void {
     root.style.setProperty(`--c-${name}`, hex);
   }
   for (const role of ROLE_NAMES) {
-    const colorName = variant.roles[role as RoleName];
-    root.style.setProperty(`--color-${role}`, `var(--c-${colorName})`);
+    root.style.setProperty(`--color-${role}`, resolveRole(variant.roles[role as RoleName], variant.colors));
   }
   // The app's brand accents are now theme-owned (no longer user-editable). Point the
   // legacy --accent1/--accent2 vars (used throughout the app) at the theme's accent
   // roles so every `var(--accent1/2)` follows the active theme + mode.
-  root.style.setProperty('--accent1', `var(--c-${variant.roles.accent})`);
-  root.style.setProperty('--accent2', `var(--c-${variant.roles.accent2})`);
+  root.style.setProperty('--accent1', resolveRole(variant.roles.accent, variant.colors));
+  root.style.setProperty('--accent2', resolveRole(variant.roles.accent2, variant.colors));
   root.classList.toggle('dark', resolved === 'dark');
   // Drives native form controls (date/time pickers, scrollbars) to match the theme,
   // replacing the per-input `style={{ colorScheme: 'dark' }}` the app used to hardcode.
