@@ -384,7 +384,7 @@ const LoginScreen: React.FC<{
 
       <div className="relative h-full w-full flex flex-col md:flex-row">
         {/* ── Brand panel ── */}
-        <div className="flex-1 flex flex-col justify-center items-center px-8 pt-14 pb-6 md:py-0">
+        <div className="flex-1 flex flex-col justify-center items-center px-16 pt-14 pb-6 md:py-0">
           <div className="max-w-sm">
             <img
               src={logoUrl}
@@ -398,7 +398,7 @@ const LoginScreen: React.FC<{
         </div>
 
         {/* ── Form panel ── */}
-        <div className="w-full md:w-[45%] flex items-center px-16">
+        <div className="w-full md:w-[50%] flex items-center px-16">
           {/* Visual block: full-height, hugs the right edge with a 4px gap */}
           <motion.div
             // initial={{ opacity: 0, y: 16 }}
