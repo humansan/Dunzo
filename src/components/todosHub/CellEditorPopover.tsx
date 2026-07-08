@@ -11,6 +11,7 @@ import {
 } from '../todoFields';
 import { CalendarInput } from '../CalendarInput';
 import { TimeInput } from '../TimeInput';
+import { XpSlider } from '../XpSlider';
 import { timeToPercentage } from '../../utils/timeUtils';
 import { EditState } from './types';
 
@@ -46,6 +47,9 @@ export const CellEditorPopover: React.FC<{
   if (!editing.rect) return null;
   const { col } = editing;
   const isDateOrTime = col === 'date' || col === 'startDate' || col === 'start' || col === 'end';
+  // Panels that supply their own popover shell (bg/border/padding); the wrapper
+  // stays chrome-less for these and just positions/sizes them.
+  const isPanel = isDateOrTime || col === 'xp';
   const save = (patch: Partial<Todo>) => onSaveTodo({ ...entry.todo, ...patch });
 
   return createPortal(
@@ -55,12 +59,12 @@ export const CellEditorPopover: React.FC<{
         position: 'fixed',
         left: popoverPos?.left ?? editing.rect.left,
         top: popoverPos?.top ?? editing.rect.bottom + 4,
-        width: isDateOrTime
+        width: isPanel
           ? 240
           : Math.max(editing.rect.width, col === 'status' || col === 'priority' ? 180 : 260),
       }}
       className={
-        isDateOrTime
+        isPanel
           ? 'z-[65] shadow-2xl'
           : 'z-[65] rounded-lg border border-line bg-surface shadow-2xl p-2'
       }
@@ -83,6 +87,12 @@ export const CellEditorPopover: React.FC<{
           onChange={(id) => { onSetTaskCollection(entry.todo.id, id); onClose(); }}
           onCreate={onCreateCollection}
           autoFocus
+        />
+      ) : col === 'xp' ? (
+        <XpSlider
+          value={entry.todo.xp}
+          autoFocus
+          onChange={(val) => save({ xp: val })}
         />
       ) : col === 'date' ? (
         <CalendarInput

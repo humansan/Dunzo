@@ -7,7 +7,6 @@ import { formatTime12h, percentageToTime, formatMinutes } from '../../utils/time
 import {
   CompletedToggle,
   PercentField,
-  XpField,
   CollectionBreadcrumb,
   OptionChip,
   statusOption,
@@ -327,11 +326,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           </DisplayCell>
         );
       case 'xp':
-        return isEditing('xp') ? (
-          <div className={editCellWrap}>
-            <XpField value={todo.xp} autoFocus onBlur={stopEdit} onChange={(val) => saveField({ xp: val })} className={cellEditCls} />
-          </div>
-        ) : (
+        return (
           <DisplayCell col="xp">
             <span className="truncate text-sm text-fg">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
           </DisplayCell>

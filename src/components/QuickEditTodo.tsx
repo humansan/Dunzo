@@ -1,12 +1,13 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Sparkles, Maximize2, X, Shapes } from 'lucide-react';
+import { Calendar, Clock, Sparkles, Astroid, Maximize2, X, Shapes } from 'lucide-react';
 import { formatTime12h, timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { CollectionOption } from '../utils/todoFilters';
 import { btnAccent } from '../theme/buttons';
 import { CollectionSearchField } from './todoFields';
 import { pillBg, pillText } from '../theme/pill';
 import { collectionColor } from './todosHub/constants';
+import { XpSlider } from './XpSlider';
 
 export interface QuickEditValues {
   text: string;
@@ -354,29 +355,8 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           </button>
 
           {openEditor === 'xp' && (
-            <div className={popover}>
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={xpStr}
-                  onChange={(e) => setXpStr(e.target.value)}
-                                    placeholder="XP"
-                  className={`${fieldBase} w-[110px]`}
-                />
-                {xpStr !== '' && (
-                  <button
-                    type="button"
-                    onClick={() => { setXpStr(''); setOpenEditor(null); }}
-                    title="Clear"
-                    className="shrink-0 p-1.5 rounded-md text-fg-faint hover:text-fg-muted hover:bg-fill-subtle"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
-              </div>
+            <div className="absolute z-20 top-full left-0 mt-2">
+              <XpSlider value={xpVal ?? undefined} onChange={(v) => setXpStr(v == null ? '' : String(v))} />
             </div>
           )}
         </div>

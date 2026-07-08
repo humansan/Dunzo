@@ -133,30 +133,6 @@ export const PercentField: React.FC<{
   />
 );
 
-// ── XP ───────────────────────────────────────────────────────────────────────
-export const XpField: React.FC<{
-  value?: number;
-  onChange: (val: number | undefined) => void;
-  className?: string;
-  autoFocus?: boolean;
-  onBlur?: () => void;
-}> = ({ value, onChange, className, autoFocus, onBlur }) => (
-  <input
-    type="number"
-    min="0"
-    step="1"
-    value={value ?? ''}
-    autoFocus={autoFocus}
-    onBlur={onBlur}
-    onChange={(e) => {
-      const v = e.target.value;
-      onChange(v === '' ? undefined : Math.max(0, parseInt(v) || 0));
-    }}
-    placeholder="0"
-    className={className ?? fieldInputClass}
-  />
-);
-
 // ── Notes (auto-growing textarea) ────────────────────────────────────────────
 export const NotesField: React.FC<{
   value: string;

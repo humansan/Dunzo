@@ -8,6 +8,7 @@ import {
   Clock,
   Percent,
   Sparkles,
+  Astroid,
   ArrowRight,
   CircleDot,
   Flag,
@@ -26,13 +27,13 @@ import {
   StartTimeField,
   EndTimeField,
   PercentField,
-  XpField,
   CollectionSearchField,
   OptionSelectField,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from './todoFields';
 import { textInputCls } from './todosHub/TextInput';
+import { XpSliderPopover } from './XpSlider';
 import { modalPop, overlayBackdrop } from './modalMotion';
 
 interface TodoFullViewProps {
@@ -342,11 +343,13 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 onClear={() => update({ xp: undefined })}
                 canClear={draft.xp !== undefined}
               >
-                <XpField
-                  value={draft.xp}
-                  onChange={(val) => update({ xp: val })}
-                  className={fieldCls}
-                />
+                <XpSliderPopover value={draft.xp} onChange={(val) => update({ xp: val })}>
+                  {({ open }) => (
+                    <button type="button" onClick={open} className={`${fieldCls} text-left`}>
+                      {draft.xp !== undefined ? `${draft.xp} XP` : <span className="text-fg-faint">Set XP</span>}
+                    </button>
+                  )}
+                </XpSliderPopover>
               </RightProp>
 
               <RightProp icon={<Database size={11} />} label="Task Planner">
