@@ -16,12 +16,7 @@ import { gruvboxMaterial } from './gruvbox';
 
 export interface ThemeVariant {
   colors: Record<string, string>;    // Layer 1: colorName -> hex
-  // Layer 2: role -> EITHER a Layer-1 color name (indirect, reusable palette color) OR a
-  // literal CSS value used directly (`role: '#abc'`, or a color-mix). applyTheme's
-  // resolveRole disambiguates by membership in `colors`. Direct values suit one-off or
-  // derived tokens that aren't reusable palette entries (see theme/derived.ts). Must cover
-  // every RoleName — themes build this as `{ ...base, ...DERIVED_ROLES }`.
-  roles: Record<RoleName, string>;
+  roles: Record<RoleName, string>;   // Layer 2: role -> colorName (must cover every RoleName)
 }
 
 export interface Theme {

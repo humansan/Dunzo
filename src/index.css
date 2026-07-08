@@ -29,31 +29,17 @@
   --color-surface-raised: #222222;
   --color-overlay: #2a2a2a;
   --color-scrim: #000000;
-  /* Translucent neutral fills (see theme/derived.ts) — resolve against --color-fg so they
-     auto-invert per mode. Values here mirror Classic-dark for first paint. */
-  --color-fill-subtle: color-mix(in srgb, var(--color-fg) 5%, transparent);
-  --color-fill: color-mix(in srgb, var(--color-fg) 10%, transparent);
-  --color-fill-strong: color-mix(in srgb, var(--color-fg) 15%, transparent);
-  --color-fill-stronger: color-mix(in srgb, var(--color-fg) 20%, transparent);
   --color-fg: #ffffff;
-  --color-fg-muted: color-mix(in srgb, var(--color-fg) 75%, transparent);
-  --color-fg-subtle: color-mix(in srgb, var(--color-fg) 55%, transparent);
-  --color-fg-faint: color-mix(in srgb, var(--color-fg) 40%, transparent);
-  --color-fg-ghost: color-mix(in srgb, var(--color-fg) 25%, transparent);
-  --color-line-subtle: color-mix(in srgb, var(--color-fg) 6%, transparent);
-  --color-line: color-mix(in srgb, var(--color-fg) 10%, transparent);
-  --color-line-strong: color-mix(in srgb, var(--color-fg) 20%, transparent);
-  --color-line-stronger: color-mix(in srgb, var(--color-fg) 40%, transparent);
+  --color-fg-muted: #9ca3af;
+  --color-fg-subtle: #6b7280;
+  --color-line: #ffffff;
+  --color-line-strong: #ffffff;
   --color-accent: #e1e354;
   --color-accent2: #c6dabe;
   --color-danger: #d93d42;
   --color-warning: #ffba44;
   --color-success: #22c55e;
   --color-info: #3b82f6;
-  --color-danger-tint: color-mix(in srgb, var(--color-danger) 12%, transparent);
-  --color-warning-tint: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  --color-success-tint: color-mix(in srgb, var(--color-success) 12%, transparent);
-  --color-info-tint: color-mix(in srgb, var(--color-info) 12%, transparent);
   --color-status-todo: #6b7280;
   --color-status-active: #3b82f6;
   --color-status-done: #22c55e;

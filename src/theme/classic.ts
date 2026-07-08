@@ -1,16 +1,17 @@
 import type { RoleName } from './roles';
-import { DERIVED_ROLES, type BaseRole } from './derived';
 import { Theme } from './themes';
 
-// Palette-referencing roles only. The translucent ramp roles (fills, text tiers, lines,
-// tints) come from DERIVED_ROLES — see the merge below and docs/theming/token-map.md.
-const classicBase: Record<BaseRole, string> = {
+const classicRoles: Record<RoleName, string> = {
   canvas: 'canvas',
   surface: 'surface',
   'surface-raised': 'raised',
   overlay: 'overlay',
   scrim: 'black',
   fg: 'fg',
+  'fg-muted': 'muted',
+  'fg-subtle': 'subtle',
+  line: 'fg',
+  'line-strong': 'fg',
   accent: 'accent1',
   accent2: 'accent2',
   danger: 'red',
@@ -42,8 +43,6 @@ const classicBase: Record<BaseRole, string> = {
   'collection-7': 'coll7',
   'collection-8': 'coll8',
 };
-
-const classicRoles: Record<RoleName, string> = { ...classicBase, ...DERIVED_ROLES };
 
 const classicDark: Record<string, string> = {
   canvas: '#0a0a0a',
