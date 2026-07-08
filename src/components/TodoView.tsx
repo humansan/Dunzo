@@ -15,6 +15,7 @@ import {
   ChevronRight,
   CalendarDays,
 } from 'lucide-react';
+import { btnNeutral, btnToggle } from '../theme/buttons';
 import { Todo, DayTodos, Tracker } from '../types';
 import { todoIndex, collectionOf, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '../utils/todoFilters';
 import { timeToPercentage } from '../utils/timeUtils';
@@ -235,7 +236,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                   <button
                     onClick={open}
                     title="Jump to date"
-                    className="p-1.5 bg-fill-subtle hover:bg-fill text-fg-faint hover:text-fg rounded-lg transition-all"
+                    className={`p-1.5 rounded-lg ${btnNeutral}`}
                   >
                     <CalendarDays size={16} />
                   </button>
@@ -243,19 +244,19 @@ export const TodoView: React.FC<TodoViewProps> = ({
               </DatePickerPopover>
               <button
                 onClick={() => setSelectedDate(format(new Date(), 'yyyy-MM-dd'))}
-                className="px-2.5 py-1.5 bg-fill-subtle hover:bg-fill text-fg-faint hover:text-fg rounded-lg transition-all text-xs font-semibold"
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold ${btnNeutral}`}
               >
                 Today
               </button>
               <button
                 onClick={() => navigateWeek('prev')}
-                className="p-1.5 bg-fill-subtle hover:bg-fill text-fg-faint hover:text-fg rounded-lg transition-all"
+                className={`p-1.5 rounded-lg ${btnNeutral}`}
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => navigateWeek('next')}
-                className="p-1.5 bg-fill-subtle hover:bg-fill text-fg-faint hover:text-fg rounded-lg transition-all"
+                className={`p-1.5 rounded-lg ${btnNeutral}`}
               >
                 <ChevronRight size={16} />
               </button>
@@ -276,10 +277,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
                     }`}>
                     {format(day, 'EEE')}
                   </span>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${isSelected
-                    ? 'bg-(--accent2) text-black scale-110'
-                    : 'bg-fill-subtle text-fg-subtle hover:bg-fill hover:text-fg'
-                    } ${isToday && !isSelected ? 'ring-2 ring-[var(--accent2)]/40' : ''}`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold ${btnToggle(isSelected)} ${isSelected ? 'scale-110' : ''} ${isToday && !isSelected ? 'ring-2 ring-[var(--accent2)]/40' : ''}`}>
                     {format(day, 'd')}
                   </div>
                 </button>

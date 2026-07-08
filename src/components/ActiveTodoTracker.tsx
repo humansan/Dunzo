@@ -80,7 +80,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
         {(todo.dueTime || todo.duePercentage !== undefined) && (
           <div className="flex items-center gap-2 px-3 py-1 bg-[var(--accent1)] rounded-lg shadow-lg shadow-[var(--accent1)]/10">
             {todo.dueTime && (
-              <div className="flex items-center gap-1.5 text-[13px] font-mono font-bold text-black">
+              <div className="flex items-center gap-1.5 text-[13px] font-mono font-bold text-canvas">
                 <Clock size={14} />
                 {todo.dueTime}
               </div>
@@ -89,7 +89,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
               <div className="w-px h-3 bg-black/20" />
             )}
             {todo.duePercentage !== undefined && (
-              <div className="text-[13px] font-mono font-bold text-black">
+              <div className="text-[13px] font-mono font-bold text-canvas">
                 {todo.duePercentage}%
               </div>
             )}

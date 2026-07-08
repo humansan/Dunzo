@@ -16,6 +16,7 @@ import {
   Database,
 } from 'lucide-react';
 import { Todo } from '../types';
+import { btnGhost } from '../theme/buttons';
 import { CollectionOption, collectionOf, collectionPath } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
 import {
@@ -402,7 +403,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
             <div className="shrink-0 px-5 py-4 border-t border-line-subtle space-y-0.5">
               <button
                 onClick={handleArchive}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-all"
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm ${btnGhost()}`}
               >
                 <Archive size={14} />
                 {draft.archived ? 'Unarchive' : 'Archive'}

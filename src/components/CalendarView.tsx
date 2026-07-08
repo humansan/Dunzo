@@ -16,6 +16,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Todo, DayTodos } from '../types';
+import { btnNeutral, btnAccent } from '../theme/buttons';
 import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
 import { isDone, toggledStatus } from '../utils/todoStatus';
 import { Calendar } from './Calendar';
@@ -121,8 +122,8 @@ const EventCard: React.FC<{
         backgroundColor: isDone(todo)
           ? ((isHovered || isDragging) ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)')
           : ((isHovered || isDragging)
-            ? 'color-mix(in srgb, var(--accent1) 40%, black 60%)'
-            : 'color-mix(in srgb, var(--accent1) 30%, black 70%)'),
+            ? 'color-mix(in srgb, var(--accent1) 40%, canvas 60%)'
+            : 'color-mix(in srgb, var(--accent1) 30%, canvas 70%)'),
         // border: isDone(todo)
         //   ? '1px solid rgba(255,255,255,0.05)'
         //   : '1px solid color-mix(in srgb, var(--accent1), transparent 70%)',
@@ -718,7 +719,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <div className="relative" ref={dayPickerRef}>
                 <button
                   onClick={() => setShowDayPicker(!showDayPicker)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-fill-subtle hover:bg-fill rounded-lg text-xs font-bold text-fg-muted transition-all"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${btnNeutral}`}
                 >
                   {dayCount} day{dayCount > 1 ? 's' : ''}
                   <ChevronDown size={12} />
@@ -754,7 +755,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {/* Today button */}
               <button
                 onClick={goToday}
-                className="px-3 py-1.5 bg-fill-subtle hover:bg-fill rounded-lg text-xs font-bold text-fg-muted transition-all"
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold ${btnNeutral}`}
               >
                 Today
               </button>
@@ -762,13 +763,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               {/* Nav arrows */}
               <button
                 onClick={() => shiftDays(-1)}
-                className="p-1.5 bg-fill-subtle hover:bg-fill rounded-lg text-fg-faint hover:text-fg transition-all"
+                className={`p-1.5 rounded-lg ${btnNeutral}`}
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => shiftDays(1)}
-                className="p-1.5 bg-fill-subtle hover:bg-fill rounded-lg text-fg-faint hover:text-fg transition-all"
+                className={`p-1.5 rounded-lg ${btnNeutral}`}
               >
                 <ChevronRight size={16} />
               </button>
@@ -792,7 +793,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     {format(day, 'EEE')}
                   </span>
                   <span className={`text-sm font-bold px-1.5 py-1 rounded-md transition-all ${today
-                    ? 'bg-[var(--accent2)] text-black shadow-lg shadow-[var(--accent2)]/20'
+                    ? 'bg-[var(--accent2)] text-canvas'
                     : 'text-fg-muted'
                     }`}>
                     {format(day, 'd')}
@@ -833,7 +834,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                 {/* Badge Container */}
                 <div className="absolute left-0 h-[1px]" style={{ width: GUTTER_WIDTH }}>
-                  <div className="absolute right-[2px] px-1.5 py-[3px] bg-danger rounded text-[10px] font-mono font-bold text-fg leading-none z-10 -translate-y-1/2 whitespace-nowrap">
+                  <div className="absolute right-[2px] px-1.5 py-[3px] bg-danger rounded text-[10px] font-mono font-bold text-white leading-none z-10 -translate-y-1/2 whitespace-nowrap">
                     {format(now, 'h:mm a').toUpperCase()}
                   </div>
                   {/* Connector linking badge to global line */}
@@ -1087,7 +1088,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 <button
                   onClick={onSubmit}
                   disabled={!textValue.trim()}
-                  className="flex-1 bg-[var(--accent2)] hover:opacity-90 disabled:opacity-30 text-black font-bold py-2 rounded-xl text-xs transition-all"
+                  className={`flex-1 py-2 rounded-xl text-xs ${btnAccent('accent2')}`}
                 >
                   {buttonText}
                 </button>

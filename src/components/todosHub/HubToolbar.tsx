@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Todo } from '../../types';
 import { collectionPath } from '../../utils/todoFilters';
+import { btnGhost } from '../../theme/buttons';
 import { CollectionBreadcrumb } from '../todoFields';
 
 export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
@@ -63,7 +64,7 @@ export const HubToolbar: React.FC<{
           type="button"
           onClick={onToggleSidebar}
           title={sidebarHidden ? 'Show collections' : 'Hide collections'}
-          className="shrink-0 p-1 -ml-0.5 rounded text-fg-subtle hover:text-fg hover:bg-fill transition-colors"
+          className={`shrink-0 p-1 -ml-0.5 rounded ${btnGhost()}`}
         >
           {sidebarHidden ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
         </button>
@@ -101,12 +102,8 @@ export const HubToolbar: React.FC<{
                 disabled={disabled}
                 onClick={disabled ? undefined : () => onSetViewMode(key as 'table' | 'list' | 'columns')}
                 title={disabled ? 'Timeline view coming soon' : undefined}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium transition-colors ${
-                  active
-                    ? 'bg-fill text-fg'
-                    : disabled
-                      ? 'text-fg-ghost cursor-not-allowed'
-                      : 'text-fg-subtle hover:text-fg hover:bg-fill-subtle'
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium ${
+                  disabled ? 'text-fg-ghost cursor-not-allowed transition-all' : btnGhost(active)
                 }`}
               >
                 <Icon size={14} />
@@ -123,9 +120,7 @@ export const HubToolbar: React.FC<{
               key={key}
               type="button"
               onClick={(e) => onToggleMenu(key, e)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] transition-colors ${
-                menuOpen[key] ? 'bg-fill text-fg' : 'text-fg-subtle hover:text-fg hover:bg-fill-subtle'
-              }`}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13px] ${btnGhost(menuOpen[key])}`}
             >
               <Icon size={14} /> {label}
               {count !== undefined && count > 0 && (

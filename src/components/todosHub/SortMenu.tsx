@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
 import { ColDef, ColKey, SortRule } from './types';
+import { btnGhost } from '../../theme/buttons';
 import { PopoverMenu } from './PopoverMenu';
 import { ListSelect } from './ListSelect';
 
@@ -70,7 +71,7 @@ export const SortMenu: React.FC<{
         <button
           type="button"
           onClick={addSort}
-          className="flex items-center gap-1.5 w-full px-2 py-1.5 mt-0.5 rounded-md text-[13px] text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
+          className={`flex items-center gap-1.5 w-full px-2 py-1.5 mt-0.5 rounded-md text-[13px] ${btnGhost()}`}
         >
           <Plus size={13} />
           Add sort

@@ -66,7 +66,7 @@ export const Calendar: React.FC<CalendarProps> = ({
               onClick={() => onDateClick(day)}
               className={`text-xs aspect-square w-full rounded-md flex items-center justify-center transition-all
                 ${today
-                  ? 'bg-danger text-fg font-bold'
+                  ? 'bg-danger text-white font-bold'
                   : selected
                     ? 'bg-fill-stronger text-fg font-bold'
                     : inMonth

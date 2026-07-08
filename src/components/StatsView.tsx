@@ -499,7 +499,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     <div className="py-8 max-w-5xl mx-auto px-4 select-none">
       {/* Page Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent1)] text-black shadow-lg shadow-[var(--accent1)]/10">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent1)] text-canvas shadow-lg shadow-[var(--accent1)]/10">
           <BarChart2 size={22} strokeWidth={2.5} />
         </div>
         <h1 className="text-xl font-bold tracking-tight leading-none text-fg">

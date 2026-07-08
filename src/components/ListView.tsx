@@ -266,7 +266,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
               <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
                 ? 'text-fg-ghost'
                 : isActive
-                  ? 'text-black'
+                  ? 'text-canvas'
                   : 'text-[var(--accent1)]'
               }`}>
                 <Clock size={16} />
@@ -285,7 +285,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
               <div className={`text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
                 ? 'text-fg-ghost'
                 : isActive
-                  ? 'text-black'
+                  ? 'text-canvas'
                   : 'text-[var(--accent1)]'
               }`}>
                 <span className="relative top-px">{Number.isInteger(todo.duePercentage) ? todo.duePercentage : Math.round(todo.duePercentage)}%</span>
@@ -295,7 +295,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         )}
 
         {countdownDisplay && !isDone(todo) && (
-          <div className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg transition-colors duration-500 ${isActive ? 'bg-danger text-fg' : 'bg-fill-subtle text-danger'}`}>
+          <div className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg transition-colors duration-500 ${isActive ? 'bg-danger text-white' : 'bg-fill-subtle text-danger'}`}>
             <div className="text-[13px] leading-none font-mono font-medium">
               <span className="relative top-px"> {countdownDisplay} </span>
             </div>

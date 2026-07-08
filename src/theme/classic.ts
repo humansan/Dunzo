@@ -12,10 +12,10 @@ const classicRoles: Record<RoleName, RoleValue> = {
   scrim: 'black',
   fg: 'fg',
   // Text emphasis ramp — translucent fg (collapses the old text-fg/NN zoo)
-  'fg-muted': ['fg', 75],
-  'fg-subtle': ['fg', 55],
-  'fg-faint': ['fg', 40],
-  'fg-ghost': ['fg', 25],
+  'fg-muted': ['fg', 80],
+  'fg-subtle': ['fg', 65],
+  'fg-faint': ['fg', 50],
+  'fg-ghost': ['fg', 35],
   // Hairlines — translucent fg
   'line-subtle': ['fg', 6],
   line: ['fg', 10],
@@ -71,20 +71,20 @@ const classicRoles: Record<RoleName, RoleValue> = {
 const classicLightRoles: Record<RoleName, RoleValue> = {
   ...classicRoles,
   // Text emphasis ramp (translucent near-black fg)
-  'fg-muted': ['fg', 80],
-  'fg-subtle': ['fg', 62],
-  'fg-faint': ['fg', 46],
-  'fg-ghost': ['fg', 32],
+  'fg-muted': ['fg', 90],
+  'fg-subtle': ['fg', 80],
+  'fg-faint': ['fg', 70],
+  'fg-ghost': ['fg', 60],
   // Hairlines
   'line-subtle': ['fg', 7],
   line: ['fg', 11],
   'line-strong': ['fg', 16],
   'line-stronger': ['fg', 28],
   // Neutral fills (gentler than dark)
-  'fill-subtle': ['fg', 4],
-  fill: ['fg', 6],
-  'fill-strong': ['fg', 9],
-  'fill-stronger': ['fg', 12],
+  'fill-subtle': ['fg', 5],
+  fill: ['fg', 9],
+  'fill-strong': ['fg', 12],
+  'fill-stronger': ['fg', 15],
   // Feedback tints
   'danger-tint': ['red', 10],
   'warning-tint': ['amber', 12],
@@ -93,7 +93,7 @@ const classicLightRoles: Record<RoleName, RoleValue> = {
 };
 
 const classicDark: Record<string, string> = {
-  canvas: '#0a0a0a',
+  canvas: '#111111',
   surface: '#1a1a1a',
   raised: '#222222',
   overlay: '#2a2a2a',
@@ -123,18 +123,18 @@ const classicLight: Record<string, string> = {
   // the stack brightens toward white so cards/menus separate from the page and read as
   // raised (opposite of dark, where elevation lightens up from black). Depth also comes
   // from the line hairlines + shadows.
-  canvas: '#e7e9ee',   // page (soft gray)
-  surface: '#f4f5f8',  // cards / panels / sidebars
+  canvas: '#efefef',   // page (soft gray)
+  surface: '#f5f5f5',  // cards / panels / sidebars
   raised: '#fafbfc',   // raised cards / inputs
   overlay: '#ffffff',  // menus / popovers / modals (top of the stack)
   black: '#000000',
-  fg: '#14161a',       // near-black primary text (softer than pure #000)
+  fg: '#000000',       // near-black primary text (softer than pure #000)
   muted: '#3f4652',   // (legacy solid; text ramp now uses translucent fg)
   subtle: '#5b6472',  // still used by status-todo / priority-low chips
-  accent1: '#7a7d12', // olive-gold — balances readable-as-text vs black-text-on-accent-bg
-  accent2: '#3f8f63', // medium green — same balance
-  red: '#c62f34',
-  gold: '#c8890a',    // XP signature gold, deepened to read on white
+  accent1: '#81a400', // olive-gold — balances readable-as-text vs black-text-on-accent-bg
+  accent2: '#6c8c83', // medium green — same balance
+  red: '#d42d33',
+  gold: '#e7a829',    // XP signature gold, deepened to read on white
   amber: '#a86616',
   emerald: '#0f8a4c',
   blue: '#2563eb',

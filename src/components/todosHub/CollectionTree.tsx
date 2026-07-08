@@ -2,6 +2,7 @@ import React from 'react';
 import { Layers, Inbox, Shapes, ChevronRight, ChevronDown } from 'lucide-react';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { collectionColor, SIDEBAR_INDENT } from './constants';
+import { btnGhost } from '../../theme/buttons';
 import { useCollectionDnD } from './useCollectionDnD';
 
 export type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: boolean };
@@ -96,7 +97,7 @@ export const CollectionTree: React.FC<{
                   <span
                     role="button"
                     onClick={(e) => { e.stopPropagation(); toggleCollColl(c.todo.id); }}
-                    className="hidden shrink-0 -my-0.5 items-center justify-center rounded p-0.5 text-fg-subtle hover:text-fg hover:bg-fill transition-colors group-hover/pane:flex"
+                    className={`hidden shrink-0 -my-0.5 items-center justify-center rounded p-0.5 group-hover/pane:flex ${btnGhost()}`}
                     title={collapsedColls.has(c.todo.id) ? 'Expand' : 'Collapse'}
                   >
                     {collapsedColls.has(c.todo.id) ? <ChevronRight size={16} /> : <ChevronDown size={16} />}

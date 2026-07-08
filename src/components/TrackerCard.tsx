@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Tracker, TrackerDisplayMode } from '../types';
 import { calculateProgress, getOrdinal } from '../utils/timeUtils';
+import { btnGhost } from '../theme/buttons';
 import { Trash2, Settings2 } from 'lucide-react';
 
 interface TrackerCardProps {
@@ -86,7 +87,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(tracker)}
-            className="p-1.5 hover:bg-fill rounded-lg text-fg-faint hover:text-fg transition-colors"
+            className={`p-1.5 rounded-lg ${btnGhost()}`}
           >
             <Settings2 size={12} />
           </button>

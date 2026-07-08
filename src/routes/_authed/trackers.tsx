@@ -5,6 +5,7 @@ import { Plus, Clock, LayoutGrid, List, Maximize2 } from 'lucide-react';
 import { TrackerCard } from '../../components/TrackerCard';
 import { ActiveTodoTracker } from '../../components/ActiveTodoTracker';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
+import { btnNeutral } from '../../theme/buttons';
 import { useAppData } from '../../data/AppDataContext';
 
 export const Route = createFileRoute('/_authed/trackers')({
@@ -59,7 +60,7 @@ function TrackersRoute() {
 
               <button
                 onClick={() => setIsFullscreen(true)}
-                className="p-2 bg-fill-subtle hover:bg-fill text-fg-faint hover:text-fg rounded-lg transition-all"
+                className={`p-2 rounded-lg ${btnNeutral}`}
                 title="Fullscreen Mode"
               >
                 <Maximize2 size={18} strokeWidth={2.5} />
@@ -67,7 +68,7 @@ function TrackersRoute() {
 
               <button
                 onClick={openTrackerModal}
-                className="flex items-center gap-2 px-3 py-2 bg-fill-subtle hover:bg-fill text-fg-faint hover:text-fg rounded-lg transition-all text-sm font-semibold"
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${btnNeutral}`}
               >
                 <Plus size={18} strokeWidth={2.5} />
                 <span>Add Widget</span>

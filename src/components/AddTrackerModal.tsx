@@ -4,6 +4,7 @@ import { X, CalendarDays } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '../types';
 import { ListSelect } from './todosHub/ListSelect';
+import { btnAccent, btnToggle } from '../theme/buttons';
 import { textInputCls } from './todosHub/TextInput';
 import { DatePickerPopover } from './DatePickerPopover';
 import { modalPop, overlayBackdrop } from './modalMotion';
@@ -110,11 +111,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       key={t}
                       type="button"
                       onClick={() => setType(t)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        type === t
-                          ? 'bg-[var(--accent1)] text-black'
-                          : 'bg-fill-subtle text-fg-subtle hover:bg-fill'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium ${btnToggle(type === t)}`}
                     >
                       {t.charAt(0).toUpperCase() + t.slice(1)}
                     </button>
@@ -203,11 +200,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       key={opt.key}
                       type="button"
                       onClick={() => setDisplayMode(opt.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        displayMode === opt.key
-                          ? 'bg-[var(--accent1)] text-black'
-                          : 'bg-fill-subtle text-fg-subtle hover:bg-fill'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium ${btnToggle(displayMode === opt.key)}`}
                     >
                       {opt.label}
                     </button>
@@ -229,11 +222,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                       key={opt.key}
                       type="button"
                       onClick={() => setSecondaryDisplayMode(opt.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        secondaryDisplayMode === opt.key
-                          ? 'bg-[var(--accent1)] text-black'
-                          : 'bg-fill-subtle text-fg-subtle hover:bg-fill'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium ${btnToggle(secondaryDisplayMode === opt.key)}`}
                     >
                       {opt.label}
                     </button>
@@ -243,7 +232,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
 
               <button
                 type="submit"
-                className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold py-3 rounded-2xl transition-all transform active:scale-[0.98] text-sm"
+                className={`w-full py-3 rounded-2xl text-sm ${btnAccent('accent2')}`}
               >
                 {editingTracker ? 'Save Changes' : 'Create Tracker'}
               </button>

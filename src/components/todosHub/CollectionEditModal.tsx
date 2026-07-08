@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { X, ChevronDown, Check } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry, CollectionOption, collectionPath } from '../../utils/todoFilters';
+import { btnAccent, btnGhost } from '../../theme/buttons';
 import { CollectionSearchField } from '../todoFields';
 import { modalPop, overlayBackdrop } from '../modalMotion';
 import { textInputCls } from './TextInput';
@@ -130,14 +131,14 @@ export const CollectionEditModal: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
+            className={`px-3.5 py-1.5 rounded-lg text-sm ${btnGhost()}`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={() => onSave({ text: name.trim(), color, parentId })}
-            className="px-3.5 py-1.5 rounded-lg text-sm font-semibold bg-[var(--accent2)] text-fg hover:opacity-90 transition-opacity"
+            className={`px-3.5 py-1.5 rounded-lg text-sm ${btnAccent('accent2')}`}
           >
             Save
           </button>

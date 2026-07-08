@@ -3,6 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Sparkles, Maximize2, X, Shapes } from 'lucide-react';
 import { formatTime12h, timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { CollectionOption } from '../utils/todoFilters';
+import { btnAccent } from '../theme/buttons';
 import { CollectionSearchField } from './todoFields';
 import { pillBg, pillText } from '../theme/pill';
 import { collectionColor } from './todosHub/constants';
@@ -342,9 +343,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           <button
             type="button"
             onClick={() => setOpenEditor(o => o === 'xp' ? null : 'xp')}
-            className={`${chipBase} ${xpVal !== null ? 'bg-warning-tint hover:bg-warning-tint' : 'bg-fill-subtle hover:bg-fill'}`}
+            className={`${chipBase} ${xpVal !== null ? 'bg-warning-tint text-warning' : 'bg-fill-subtle hover:bg-fill'}`}
           >
-            <span className={chipText} style={{ color: xpVal !== null ? GOLD : undefined }}>
+            <span className={chipText}>
               <Sparkles size={16} className={xpVal !== null ? '' : 'text-fg-subtle'} />
               <span className={`relative top-px ${xpVal !== null ? '' : 'text-fg-subtle'}`}>
                 {xpVal !== null ? `${xpVal} XP` : 'XP'}
@@ -438,7 +439,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="px-4 h-8 bg-[var(--accent2)] hover:opacity-90 text-black font-bold rounded-lg text-xs disabled:opacity-30 disabled:cursor-not-allowed"
+          className={`px-4 h-8 rounded-lg text-xs disabled:cursor-not-allowed ${btnAccent('accent2')}`}
         >
           {mode === 'add' ? 'Add task' : 'Save changes'}
         </button>

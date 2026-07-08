@@ -5,6 +5,7 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon-balanced.svg';
 import { AccountMenu } from './AccountMenu';
+import { btnNeutral, btnToggle } from '../theme/buttons';
 
 interface SidebarProps {
   isVisible: boolean;
@@ -33,11 +34,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
   if (!isVisible) return null;
 
   const items = [
-    { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos', color: '--accent2' },
-    { to: '/planner' as const, icon: Blocks, title: 'Task Planner', color: '--accent2' },
-    { to: '/trackers' as const, icon: Clock, title: 'Trackers', color: '--accent2' },
-    { to: '/calendar' as const, icon: Calendar, title: 'Calendar', color: '--accent2' },
-    { to: '/stats' as const, icon: BarChart2, title: 'Stats', color: '--accent2' },
+    { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos' },
+    { to: '/planner' as const, icon: Blocks, title: 'Task Planner' },
+    { to: '/trackers' as const, icon: Clock, title: 'Trackers' },
+    { to: '/calendar' as const, icon: Calendar, title: 'Calendar' },
+    { to: '/stats' as const, icon: BarChart2, title: 'Stats' },
   ];
 
   return (
@@ -54,18 +55,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
             <Link
               key={item.to}
               to={item.to}
-              className={`group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                isActive
-                  ? `bg-[var(${item.color})] text-black shadow-lg shadow-[var(${item.color})]/20`
-                  : 'bg-fill-subtle text-fg-faint hover:bg-fill hover:text-fg'
-              }`}
+              className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnToggle(isActive)}`}
               title={item.title}
             >
               <Icon size={18} strokeWidth={2.5} />
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active"
-                  className={`absolute -left-3 w-1 h-5 bg-[var(${item.color})] rounded-r-full`}
+                  className="absolute -left-3 w-1 h-5 bg-[var(--accent2)] rounded-r-full"
                 />
               )}
             </Link>
@@ -76,14 +73,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
       <div className="flex flex-col gap-3">
         <button
           onClick={onSearchClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-fill-subtle hover:bg-fill"
+          className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnNeutral}`}
           title="Search tasks (⌘K)"
         >
           <Search size={18} strokeWidth={2.5} className="text-fg-faint group-hover:text-fg transition-colors" />
         </button>
         <button
           onClick={onStopwatchClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-fill-subtle hover:bg-fill"
+          className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnNeutral}`}
           title="Stopwatch"
         >
           <Timer

@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
 import { authClient } from '../auth';
 import { applyTheme } from '../theme/applyTheme';
+import { btnAccent } from '../theme/buttons';
 import { DEFAULT_THEME_ID } from '../theme/themes';
 import backgroundUrl from '../assets/background.jpg';
 import logoUrl from '../assets/icon.svg';
@@ -197,7 +198,7 @@ const LoginScreen: React.FC<{
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className={`w-full h-9 rounded-lg cursor-pointer disabled:cursor-not-allowed ${btnAccent()}`}
             >
               {submitting ? 'Sending…' : 'Send Reset Link'}
             </button>
@@ -227,7 +228,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] cursor-pointer"
+              className={`w-full h-9 rounded-lg cursor-pointer ${btnAccent()}`}
             >
               Log In
             </button>
@@ -287,7 +288,7 @@ const LoginScreen: React.FC<{
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className={`w-full h-9 rounded-lg cursor-pointer disabled:cursor-not-allowed ${btnAccent()}`}
             >
               {submitting ? 'Saving…' : 'Set Password'}
             </button>
@@ -352,7 +353,7 @@ const LoginScreen: React.FC<{
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="w-full bg-[var(--accent1)] hover:opacity-90 text-canvas font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {submitting ? 'Please wait…' : mode === 'login' ? 'Log In' : 'Create Account'}
           </button>

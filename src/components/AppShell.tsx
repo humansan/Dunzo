@@ -86,7 +86,7 @@ export const AppShell: React.FC = () => {
   const lockHeight = pathname.startsWith('/today') || pathname.startsWith('/planner') || pathname.startsWith('/calendar');
 
   return (
-    <div className={`${lockHeight ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-canvas text-fg font-sans selection:bg-[var(--accent1)] selection:text-black`}>
+    <div className={`${lockHeight ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-canvas text-fg font-sans selection:bg-[var(--accent1)] selection:text-canvas`}>
       <Sidebar
         isVisible={!isFullscreen && !isStopwatchFullscreen}
         isAuthenticated={isAuthenticated}

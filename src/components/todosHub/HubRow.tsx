@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { GripVertical, MoreHorizontal, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { Todo } from '../../types';
+import { btnGhost } from '../../theme/buttons';
 import { formatTime12h, percentageToTime, formatMinutes } from '../../utils/timeUtils';
 import {
   CompletedToggle,
@@ -239,7 +240,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 const r = e.currentTarget.getBoundingClientRect();
                 openMenu(todo.id, r.left, r.bottom + 4);
               }}
-              className="shrink-0 mr-0.5 p-0.5 rounded text-fg-subtle hover:text-fg hover:bg-fill opacity-0 group-hover/row:opacity-100 transition-all"
+              className={`shrink-0 mr-0.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
             >
               <MoreHorizontal size={18} />
             </button>
@@ -247,7 +248,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               type="button"
               title="Add task"
               onClick={() => { onQuickAddTask ? onQuickAddTask(todo.id) : onAddSubtask(todo.id); }}
-              className="shrink-0 p-0.5 rounded text-fg-subtle hover:text-fg hover:bg-fill opacity-0 group-hover/row:opacity-100 transition-all"
+              className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
             >
               <Plus size={18} />
             </button>
@@ -532,7 +533,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                   const r = e.currentTarget.getBoundingClientRect();
                   openMenu(todo.id, r.left, r.bottom + 4);
                 }}
-                className="shrink-0 mr-1.5 p-0.5 rounded text-fg-subtle hover:text-fg hover:bg-fill opacity-0 group-hover/row:opacity-100 transition-all"
+                className={`shrink-0 mr-1.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
               >
                 <MoreHorizontal size={16} />
               </button>

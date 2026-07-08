@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Plus, FolderPlus } from 'lucide-react';
 import { Workspace } from '../../types';
 import { useCollectionDnD } from './useCollectionDnD';
+import { btnGhost } from '../../theme/buttons';
 import { CollectionTree, VisibleCollection } from './CollectionTree';
 
 // The hub's left pane: the Workspaces switcher (top) and the Collections tree
@@ -104,7 +105,7 @@ export const HubSidebar: React.FC<{
           type="button"
           onClick={onNewWorkspace}
           title="New workspace"
-          className="shrink-0 mt-0.5 w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
+          className={`shrink-0 mt-0.5 w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm ${btnGhost()}`}
         >
           <Plus size={15} />
           <span>New workspace</span>
@@ -129,7 +130,7 @@ export const HubSidebar: React.FC<{
       <button
         type="button"
         onClick={onNewCollection}
-        className="shrink-0 m-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
+        className={`shrink-0 m-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm ${btnGhost()}`}
       >
         <FolderPlus size={15} />
         <span>New collection</span>

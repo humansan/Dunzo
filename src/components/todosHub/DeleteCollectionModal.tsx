@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Inbox, Trash2 } from 'lucide-react';
 import { modalPop, overlayBackdrop } from '../modalMotion';
+import { btnGhost } from '../../theme/buttons';
 
 // Confirmation modal shown when deleting a collection that still contains tasks:
 // promote the tasks up one level (into `promoteTarget`) or cascade-delete the
@@ -60,7 +61,7 @@ export const DeleteCollectionModal: React.FC<{
         <button
           type="button"
           onClick={onClose}
-          className="px-3 py-1.5 rounded-lg text-sm text-fg-subtle hover:text-fg hover:bg-fill-subtle transition-colors"
+          className={`px-3 py-1.5 rounded-lg text-sm ${btnGhost()}`}
         >
           Cancel
         </button>
