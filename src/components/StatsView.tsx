@@ -617,7 +617,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 onClick={() => handleSetInterval(key)}
                 className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer transition-all ${
                   chartInterval === key
-                    ? 'bg-[var(--accent1)] text-black shadow'
+                    ? 'bg-[var(--accent1)] text-fg shadow'
                     : 'text-fg-faint hover:text-fg'
                 }`}
               >
@@ -723,7 +723,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 onClick={() => handleSetTableMode(mode)}
                 className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer transition-all ${
                   tableMode === mode
-                    ? 'bg-[var(--accent1)] text-black shadow'
+                    ? 'bg-[var(--accent1)] text-fg shadow'
                     : 'text-fg-faint hover:text-fg'
                 }`}
               >

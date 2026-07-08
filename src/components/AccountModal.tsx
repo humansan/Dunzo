@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { X, User, SlidersHorizontal, Database, Upload, Download, LogOut } from 'lucide-react';
 import { type ThemeMode } from '../theme/applyTheme';
-import { THEMES } from '../theme/themes';
 import { authClient } from '../auth';
 import { buildBackup, parseBackup, mergeImportToDb } from '../data/import';
 import backgroundUrl from '../assets/background.jpg';
@@ -29,8 +28,6 @@ interface AccountModalProps {
   onUpdateXpEnabled: (val: boolean) => void;
   mode: ThemeMode;
   onUpdateMode: (mode: ThemeMode) => void;
-  themeId: string;
-  onUpdateThemeId: (id: string) => void;
 }
 
 // ── Shared controls (mirror the Task Planner's Sections menu styling) ─────────
@@ -267,8 +264,6 @@ const SettingsPane: React.FC<{
   onUpdateXpEnabled: (val: boolean) => void;
   mode: ThemeMode;
   onUpdateMode: (mode: ThemeMode) => void;
-  themeId: string;
-  onUpdateThemeId: (id: string) => void;
 }> = ({
   weekStartsOn,
   onUpdateWeekStartsOn,
@@ -278,8 +273,6 @@ const SettingsPane: React.FC<{
   onUpdateXpEnabled,
   mode,
   onUpdateMode,
-  themeId,
-  onUpdateThemeId,
 }) => {
   return (
     <div className="space-y-7">
@@ -326,15 +319,6 @@ const SettingsPane: React.FC<{
       {/* Appearance */}
       <div className="space-y-4 border-t border-line-subtle pt-6">
         <SectionHeader>Appearance</SectionHeader>
-
-        <div className="space-y-1.5">
-          <span className={labelCls}>Color theme</span>
-          <Segment
-            options={THEMES.map((t) => ({ value: t.id, label: t.name }))}
-            value={themeId}
-            onChange={onUpdateThemeId}
-          />
-        </div>
 
         <div className="space-y-1.5">
           <span className={labelCls}>Mode</span>
@@ -460,8 +444,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onUpdateXpEnabled,
   mode,
   onUpdateMode,
-  themeId,
-  onUpdateThemeId,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('profile');
@@ -572,8 +554,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   onUpdateXpEnabled={onUpdateXpEnabled}
                   mode={mode}
                   onUpdateMode={onUpdateMode}
-                  themeId={themeId}
-                  onUpdateThemeId={onUpdateThemeId}
                 />
               )}
               {section === 'data' && <DataPane />}
