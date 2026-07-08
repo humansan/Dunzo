@@ -44,13 +44,6 @@ function formatHour(h: number): string {
   return `${h - 12} PM`;
 }
 
-function pxToTime(px: number): string {
-  const totalMins = Math.round((px / HOUR_HEIGHT) * 60);
-  const clamped = Math.max(0, Math.min(1439, totalMins));
-  const h = Math.floor(clamped / 60);
-  const m = Math.round(clamped % 60 / 15) * 15; // snap to 15-min
-  return `${h.toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
-}
 
 
 function formatDuration(startMin: number, endMin: number): string {
@@ -101,7 +94,10 @@ const EventCard: React.FC<{
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
-  const timeRange = `${formatTime12h(todo.startTime || '0:00')} – ${formatTime12h(todo.dueTime || pxToTime(minutesToPx(endMin)))}`;
+  // Only show a time that's actually set — never fabricate the missing side.
+  const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
+  const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
+  const timeRange = `${startLabel} – ${endLabel}`.trim();
   const durationStr = `(${formatDuration(startMin, endMin)})`;
   const fullTimeDisplay = `${timeRange} ${durationStr}`;
 
@@ -339,22 +335,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const getTodosForDate = useCallback(
     (dateStr: string): Todo[] => {
       const dayData = dayTodos.find((d) => d.date === dateStr);
-      return (dayData?.todos || [])
-        .filter((t) => t && (t.startTime || t.dueTime))
-        .map((t) => {
-          // Auto-assign start time if missing but dueTime exists
-          if (!t.startTime && t.dueTime) {
-            const endMins = timeToMinutes(t.dueTime);
-            const startMins = Math.max(0, endMins - 30);
-            const h = Math.floor(startMins / 60);
-            const m = startMins % 60;
-            return {
-              ...t,
-              startTime: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-            };
-          }
-          return t;
-        });
+      // Anything with a start OR an end time gets a block. The 30-minute default
+      // for a missing side is applied at render (kept off the todo) so the event
+      // card can tell which side was never set and omit it from the label.
+      return (dayData?.todos || []).filter((t) => t && (t.startTime || t.dueTime));
     },
     [dayTodos]
   );
@@ -883,14 +867,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                   {/* Event cards */}
                   {todos.map((todo) => {
-                    const startStr = todo.startTime || '0:00';
-                    const startMin = timeToMinutes(startStr);
-                    let endMin: number;
-                    if (todo.dueTime) {
-                      endMin = timeToMinutes(todo.dueTime);
-                    } else {
-                      endMin = startMin + 60; // default 1hr
-                    }
+                    // A missing side defaults to a 30-minute block (start-only →
+                    // start..start+30; end-only → end-30..end). The filter guarantees
+                    // at least one time is set, so the opposite field is present here.
+                    const startMin = todo.startTime
+                      ? timeToMinutes(todo.startTime)
+                      : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
+                    let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
                     if (endMin <= startMin) endMin = startMin + 30;
 
                     const isDraggingThis = draggingEvent?.todo.id === todo.id;
