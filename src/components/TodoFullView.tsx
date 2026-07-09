@@ -180,7 +180,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
         className="w-250 h-full max-h-250 bg-surface border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden"
       >
         {/* ── Top bar ─────────────────────────────── */}
-        <div className="flex items-center justify-between px-4 h-11 border-b border-line-subtle shrink-0">
+        <div className="flex items-center justify-between pl-4 pr-2 h-11 border-b border-line-subtle shrink-0">
           <div className="flex items-center gap-2 text-fg-faint text-xs font-semibold">
             <CalendarDays size={14} />
             {dateStr ? format(parseISO(dateStr), 'EEE, MMM d') : 'No date'}

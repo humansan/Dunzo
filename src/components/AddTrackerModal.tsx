@@ -160,12 +160,12 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
 
               <div>
                 <label className="block text-[10px] font-bold text-fg-faint uppercase tracking-wider mb-1.5">Color</label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
-                    className="w-10 h-8 bg-transparent border border-line rounded-lg cursor-pointer shrink-0"
+                    className="w-9 h-9"
                   />
                   <input
                     type="text"
