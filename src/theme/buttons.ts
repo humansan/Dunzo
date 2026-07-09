@@ -21,7 +21,7 @@
 
 // `disabled:opacity-50` is the shared disabled affordance; callers keep native `disabled`
 // (which already blocks clicks) and may add `disabled:cursor-not-allowed`.
-const base = 'transition-all disabled:opacity-50';
+const base = 'transition-all disabled:opacity-50 cursor-pointer';
 
 // Neutral resting state shared by types 2 & 3 (and type 1's toggled/open state).
 const neutralIdle = 'bg-fill-subtle text-fg-faint hover:bg-fill hover:text-fg';

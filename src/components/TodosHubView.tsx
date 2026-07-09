@@ -161,6 +161,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // lists, and per-collection counts.
   const {
     entries,
+    archivedEntries,
     selectedCollectionId,
     byId,
     todoById,
@@ -181,6 +182,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     collectionCount,
     allCount,
     uncategorizedCount,
+    archivedCount,
     currentCount,
     viewLabel,
   } = useHubData({
@@ -341,8 +343,12 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
 
-  // The todo the context menu currently targets (to branch task vs. collection items).
-  const menuEntry = menu ? entries.find((e) => e.todo.id === menu.id) || null : null;
+  // The todo the context menu currently targets (to branch task vs. collection
+  // items). Falls back to the archived set since a menu opened from the
+  // Archived view targets a todo not present in `entries`.
+  const menuEntry = menu
+    ? entries.find((e) => e.todo.id === menu.id) || archivedEntries.find((e) => e.todo.id === menu.id) || null
+    : null;
 
   // Convert a plain task into a top-level collection: flag it, give it a default
   // color, strip the task-only fields, and clear its due date (undated) so it
@@ -554,6 +560,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           setSelectedView={setSelectedView}
           allCount={allCount}
           uncategorizedCount={uncategorizedCount}
+          archivedCount={archivedCount}
           visibleCollections={visibleCollections}
           collectionCount={collectionCount}
           collapsedColls={collapsedColls}
@@ -609,7 +616,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
               onAddSubtask,
               onQuickAddTask: handleQuickAddTask,
               onQuickAddInGroup: handleQuickAddInGroup,
-              onNewInView: handleNewInView,
+              onNewInView: selectedView === 'archived' ? undefined : handleNewInView,
             }}
             dnd={dnd}
             bottomSpacer
@@ -702,7 +709,11 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { onOpenTask(id); closeMenu(); }}
-          onArchive={(id) => { onArchiveTodo(id); closeMenu(); }}
+          onArchive={(id) => {
+            if (menuEntry?.todo.archived) onSaveTodo({ ...menuEntry.todo, archived: false });
+            else onArchiveTodo(id);
+            closeMenu();
+          }}
           onDelete={requestDeleteFromMenu}
         />
       )}

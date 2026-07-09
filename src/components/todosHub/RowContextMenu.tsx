@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Archive, Trash2, Maximize2, CornerDownRight, FolderPlus, Palette, Pencil, MoveRight } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2, Maximize2, CornerDownRight, FolderPlus, Palette, Pencil, MoveRight } from 'lucide-react';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './constants';
 
@@ -108,7 +108,8 @@ export const RowContextMenu: React.FC<{
           </>
         )}
         <button onClick={() => onArchive(menu.id)} className={itemCls}>
-          <Archive size={14} /> Archive
+          {entry?.todo.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+          {entry?.todo.archived ? 'Unarchive' : 'Archive'}
         </button>
         <button
           onClick={() => onDelete(menu.id)}

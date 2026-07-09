@@ -24,6 +24,7 @@ export const HubSidebar: React.FC<{
   setSelectedView: (v: string) => void;
   allCount: number;
   uncategorizedCount: number;
+  archivedCount: number;
   visibleCollections: VisibleCollection[];
   collectionCount: (cid: string) => number;
   collapsedColls: Set<string>;
@@ -46,6 +47,7 @@ export const HubSidebar: React.FC<{
   setSelectedView,
   allCount,
   uncategorizedCount,
+  archivedCount,
   visibleCollections,
   collectionCount,
   collapsedColls,
@@ -118,6 +120,7 @@ export const HubSidebar: React.FC<{
         onSelectView={setSelectedView}
         allCount={allCount}
         uncategorizedCount={uncategorizedCount}
+        archivedCount={archivedCount}
         visibleCollections={visibleCollections}
         collectionCount={collectionCount}
         collapsedColls={collapsedColls}

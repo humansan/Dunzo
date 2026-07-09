@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { DayTodos, Todo } from '../../types';
 import {
   getOrganizerTodos,
+  getArchivedTodos,
   OrganizerEntry,
   todoIndex,
   collectionOf,
@@ -62,9 +63,22 @@ export function useHubData(params: {
     [dayTodos, activeWorkspaceId]
   );
 
-  // A real collection is selected (vs. the 'all' / 'uncategorized' pseudo-views).
+  // Archived todos, for the 'archived' pseudo-view — kept separate from `entries`
+  // since everything else in this file (collection tree, all/uncategorized counts,
+  // ancestor walks) is scoped to the non-archived organizer set.
+  const archivedEntries = useMemo(
+    () =>
+      getArchivedTodos(dayTodos).filter(
+        (e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId
+      ),
+    [dayTodos, activeWorkspaceId]
+  );
+
+  // A real collection is selected (vs. the 'all' / 'uncategorized' / 'archived' pseudo-views).
   const selectedCollectionId =
-    selectedView !== 'all' && selectedView !== 'uncategorized' ? selectedView : null;
+    selectedView !== 'all' && selectedView !== 'uncategorized' && selectedView !== 'archived'
+      ? selectedView
+      : null;
 
   // Ancestry helpers over the current entry set.
   const byId = useMemo(() => new Map(entries.map((e) => [e.todo.id, e])), [entries]);
@@ -78,13 +92,36 @@ export function useHubData(params: {
     }));
   // Precompute each entry's collection breadcrumb once per data change, so rows
   // get a stable `collPath` reference (otherwise every render hands each row a
-  // fresh array, defeating React.memo and re-walking ancestors per row).
+  // fresh array, defeating React.memo and re-walking ancestors per row). Covers
+  // archived entries too, since the Archived view renders rows never present in
+  // `entries`.
   const collPathById = useMemo(() => {
     const m = new Map<string, ReturnType<typeof collPathFor>>();
     for (const e of entries) m.set(e.todo.id, collPathFor(e.todo));
+    for (const e of archivedEntries) m.set(e.todo.id, collPathFor(e.todo));
     return m;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries, todoById]);
+  }, [entries, archivedEntries, todoById]);
+  // Archived entries plus their full ancestor chain (collections *and* parent
+  // tasks), pulled from the full todo index even when an ancestor itself isn't
+  // archived. Without this, an archived task whose collection/parent was never
+  // archived would render as a parentless orphan — no collection header, no
+  // subtask nesting — since flattenTree only links a node to a parent that's
+  // also present in the entry list it's given.
+  const archivedTreeEntries = useMemo(() => {
+    const byIdInTree = new Map<string, OrganizerEntry>();
+    for (const e of archivedEntries) {
+      byIdInTree.set(e.todo.id, e);
+      let pid = e.todo.parentId ?? null;
+      const seen = new Set<string>();
+      while (pid && todoById.has(pid) && !seen.has(pid)) {
+        seen.add(pid);
+        if (!byIdInTree.has(pid)) byIdInTree.set(pid, { todo: todoById.get(pid)! });
+        pid = todoById.get(pid)!.parentId ?? null;
+      }
+    }
+    return [...byIdInTree.values()];
+  }, [archivedEntries, todoById]);
   const hasCollectionAncestor = (e: OrganizerEntry): boolean => {
     let p = e.todo.parentId ?? null;
     const seen = new Set<string>();
@@ -156,14 +193,16 @@ export function useHubData(params: {
   // The entries the table renders for the current view.
   //   • 'all'          → everything (collections show inline as pill headers)
   //   • 'uncategorized'→ tasks with no collection ancestor (collections excluded)
+  //   • 'archived'     → every archived todo, regardless of collection
   //   • a collection id→ that collection's descendants (the collection node itself
   //     is excluded, so its direct children render at depth 0)
   const viewEntries = useMemo(() => {
     if (selectedView === 'all') return entries;
     if (selectedView === 'uncategorized')
       return entries.filter((e) => !e.todo.isCollection && !hasCollectionAncestor(e));
+    if (selectedView === 'archived') return archivedTreeEntries;
     return entries.filter((e) => isDescendantOf(e, selectedView));
-  }, [entries, selectedView, byId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entries, archivedTreeEntries, selectedView, byId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unique display values per field, computed from un-filtered view entries.
   // Used to populate the filter value dropdown.
@@ -282,6 +321,7 @@ export function useHubData(params: {
   const uncategorizedCount = entries.filter(
     (e) => !e.todo.isCollection && !hasCollectionAncestor(e)
   ).length;
+  const archivedCount = archivedEntries.filter((e) => !e.todo.isCollection).length;
   // Task-descendant count per collection (every non-collection descendant,
   // ignoring filters), precomputed in one ancestor walk instead of re-filtering
   // all entries for each sidebar row.
@@ -306,16 +346,21 @@ export function useHubData(params: {
     ? collectionCount(selectedCollectionId)
     : selectedView === 'uncategorized'
       ? uncategorizedCount
-      : allCount;
+      : selectedView === 'archived'
+        ? archivedCount
+        : allCount;
   const selectedCollectionEntry = selectedCollectionId ? byId.get(selectedCollectionId) || null : null;
   const viewLabel = selectedCollectionId
     ? selectedCollectionEntry?.todo.text || 'Untitled collection'
     : selectedView === 'uncategorized'
       ? 'Uncategorized'
-      : 'All Tasks';
+      : selectedView === 'archived'
+        ? 'Archived'
+        : 'All Tasks';
 
   return {
     entries,
+    archivedEntries,
     selectedCollectionId,
     byId,
     todoById,
@@ -337,6 +382,7 @@ export function useHubData(params: {
     collectionCount,
     allCount,
     uncategorizedCount,
+    archivedCount,
     currentCount,
     viewLabel,
   };

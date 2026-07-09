@@ -17,6 +17,7 @@ import { TimeInput } from './TimeInput';
 import { XpSlider } from './XpSlider';
 import { TaskFinder } from './todosHub/TaskFinder';
 import { useAppData } from '../data/AppDataContext';
+import { btnGhost } from '../theme/buttons';
 
 // ── Shared chip recipes ──────────────────────────────────────────────────────
 // Tinted, fixed-height chips (date / time / xp) and the left-aligned hover-lit
@@ -26,7 +27,7 @@ export const chipBase =
 export const chipText =
   'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
 export const rowBtn =
-  'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden hover:bg-fill';
+  'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden ' + btnGhost();
 // Shell for panels that don't bring their own (OptionSelectField, CollectionSearchField).
 export const chipPopoverCls = 'rounded-xl border border-line bg-surface shadow-2xl p-2';
 
