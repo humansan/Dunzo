@@ -10,7 +10,7 @@ interface XpProgressBarProps {
 }
 
 // Exponential ease-out: snappy start, soft landing.
-const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
+export const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp }) => {
   // XP indicator keeps its fixed signature colors across all themes (gold → purple,

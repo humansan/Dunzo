@@ -5,7 +5,6 @@ import {
   GripVertical,
   Trash2,
   Circle,
-  Clock,
   CheckSquare,
   Maximize2,
   CalendarPlus,
@@ -35,9 +34,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { Todo } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
-import { formatTime12h } from '../utils/timeUtils';
 import { pill } from '../theme/pill';
 import { priorityOption } from './todoFields';
+import { TaskTimeChips, formatCountdown } from './TaskTimeChips';
 import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -55,7 +54,6 @@ interface TodoItemProps {
   onOpenFull: (id: string) => void;
   onAddToCalendar?: (id: string) => void;
   onStartTracking: (id: string) => void;
-  isActive: boolean;
   isDragging?: boolean;
   style?: React.CSSProperties;
   attributes?: any;
@@ -80,7 +78,6 @@ interface SortableItemProps {
   onOpenFull: (id: string) => void;
   onAddToCalendar: (id: string) => void;
   onStartTracking: (id: string) => void;
-  isActive: boolean;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
   collectionOptions: CollectionOption[];
@@ -124,7 +121,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
   onOpenFull,
   onAddToCalendar,
   onStartTracking,
-  isActive,
   isDragging,
   style,
   attributes,
@@ -135,29 +131,10 @@ const TodoItem: React.FC<TodoItemProps> = ({
   collectionOptions = [],
   onCreateCollection,
 }) => {
-  const countdownDisplay = useMemo(() => {
-    if (countdownMode === 'off' || !todo.dueTime) return null;
-
-    const [hours, minutes] = todo.dueTime.split(':').map(Number);
-    const [year, month, day] = date.split('-').map(Number);
-    const target = new Date(year, month - 1, day, hours, minutes, 0, 0);
-
-    const diff = target.getTime() - now.getTime();
-    if (diff <= 0) {
-      return countdownMode === 'percent' ? '0%' : '00:00';
-    }
-
-    if (countdownMode === 'percent') {
-      const pct = Math.max(0, Math.round((diff / (24 * 60 * 60 * 1000)) * 100));
-      return `${pct}%`;
-    } else {
-      const totalSeconds = Math.floor(diff / 1000);
-      const h = Math.floor(totalSeconds / 3600);
-      const mins = Math.floor((totalSeconds % 3600) / 60);
-      const s = totalSeconds % 60;
-      return `${h.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    }
-  }, [todo.dueTime, todo.startTime, date, now, countdownMode]);
+  const countdownDisplay = useMemo(
+    () => formatCountdown(todo, date, now, countdownMode),
+    [todo, date, now, countdownMode]
+  );
 
   // Priority is shown as an icon-only square chip, tinted with the priority color.
   const prio = todo.priority ? priorityOption(todo.priority) : undefined;
@@ -268,54 +245,12 @@ const TodoItem: React.FC<TodoItemProps> = ({
           </div>
         )}
 
-        {(todo.dueTime || todo.duePercentage !== undefined) && (
-          <div
-            onClick={() => onStartTracking(todo.id)}
-            className={`flex items-center justify-center gap-2 px-2.75 cursor-pointer py-[5.5px] rounded-lg transition ${isDone(todo)
-              ? 'bg-fill-subtle shadow-none'
-              : isActive
-                ? 'bg-[var(--accent1)] shadow-lg shadow-[var(--accent1)]/10'
-                : 'bg-[var(--accent1)]/6 shadow-none hover:bg-[var(--accent1)]/15'
-            }`}>
-            {todo.dueTime && (
-              <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
-                ? 'text-fg-ghost'
-                : isActive
-                  ? 'text-canvas'
-                  : 'text-[var(--accent1)]'
-              }`}>
-                <Clock size={16} />
-                <span className="relative top-px">{formatTime12h(todo.dueTime)}</span>
-              </div>
-            )}
-            {todo.dueTime && todo.duePercentage !== undefined && (
-              <div className={`w-px h-4 transition-colors duration-500 ${isDone(todo)
-                ? 'bg-fill'
-                : isActive
-                  ? 'bg-black/20'
-                  : 'bg-[var(--accent1)]/20'
-              }`} />
-            )}
-            {todo.duePercentage !== undefined && (
-              <div className={`text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
-                ? 'text-fg-ghost'
-                : isActive
-                  ? 'text-canvas'
-                  : 'text-[var(--accent1)]'
-              }`}>
-                <span className="relative top-px">{Number.isInteger(todo.duePercentage) ? todo.duePercentage : Math.round(todo.duePercentage)}%</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {countdownDisplay && !isDone(todo) && (
-          <div className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg transition-colors duration-500 ${isActive ? 'bg-danger text-white' : 'bg-fill-subtle text-danger'}`}>
-            <div className="text-[13px] leading-none font-mono font-medium">
-              <span className="relative top-px"> {countdownDisplay} </span>
-            </div>
-          </div>
-        )}
+        <TaskTimeChips
+          todo={todo}
+          countdown={countdownDisplay}
+          done={isDone(todo)}
+          onTimeClick={() => onStartTracking(todo.id)}
+        />
 
         <button
           onClick={() => onDelete(todo.id)}
@@ -372,7 +307,6 @@ export const ListView: React.FC<ListViewProps> = ({
   onOpenFull,
   onAddToCalendar,
   onStartTracking = () => {},
-  activeTodoId = null,
   onAdd,
   countdownMode = 'off',
   collectionOptions = [],
@@ -477,7 +411,6 @@ export const ListView: React.FC<ListViewProps> = ({
                 onOpenFull={onOpenFull}
                 onAddToCalendar={onAddToCalendar || (() => {})}
                 onStartTracking={onStartTracking}
-                isActive={activeTodoId === todo.id}
                 now={now}
                 countdownMode={countdownMode}
                 collectionOptions={collectionOptions}
@@ -501,7 +434,6 @@ export const ListView: React.FC<ListViewProps> = ({
               onCommitEdit={() => {}}
               onOpenFull={() => {}}
               onStartTracking={() => {}}
-              isActive={activeTodoId === activeTodo.id}
               now={now}
               countdownMode={countdownMode}
             />

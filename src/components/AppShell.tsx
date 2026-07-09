@@ -6,6 +6,7 @@ import { AddTrackerModal } from './AddTrackerModal';
 import { LoadingScreen } from './LoadingScreen';
 import { Sidebar } from './Sidebar';
 import { StopwatchWidget } from './StopwatchWidget';
+import { ActiveTodoTracker } from './ActiveTodoTracker';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
 import { SettingsOverlay } from './SettingsOverlay';
 import { TaskOverlay } from './TaskOverlay';
@@ -33,6 +34,12 @@ export const AppShell: React.FC = () => {
     todoById,
     handleHubSaveTodo,
     handleToggleTodo,
+    // active-task tracker (shares the bottom overlay slot with the stopwatch)
+    activeTodo,
+    activeTodoId,
+    setActiveTodoId,
+    handleToggleAndClose,
+    countdownMode,
   } = useAppData();
   // Stopwatch is its own context so its 50ms tick doesn't re-render this shell.
   const {
@@ -61,6 +68,19 @@ export const AppShell: React.FC = () => {
   useEffect(() => {
     if (!isTrackers && isFullscreen) setIsFullscreen(false);
   }, [isTrackers, isFullscreen, setIsFullscreen]);
+
+  // The stopwatch widget and the active-task tracker share the bottom overlay
+  // slot, so only one may be open: activating a task hides the stopwatch, and
+  // opening the stopwatch clears the active task.
+  useEffect(() => {
+    if (activeTodoId) setIsStopwatchVisible(false);
+  }, [activeTodoId, setIsStopwatchVisible]);
+
+  const toggleStopwatch = () => {
+    const next = !isStopwatchVisible;
+    setIsStopwatchVisible(next);
+    if (next) setActiveTodoId(null);
+  };
 
   // Auth is a route boundary now (`_authed` beforeLoad). A *confirmed* sign-out
   // while inside the app — logout or a mid-session token expiry surfaced by the
@@ -93,7 +113,7 @@ export const AppShell: React.FC = () => {
         email={authSession.data?.user?.email}
         onOpenSettings={openSettings}
         onLogout={logout}
-        onStopwatchClick={() => setIsStopwatchVisible(v => !v)}
+        onStopwatchClick={toggleStopwatch}
         isStopwatchActive={timerState !== 'idle'}
         onSearchClick={() => setIsSearchOpen(true)}
       />
@@ -145,10 +165,12 @@ export const AppShell: React.FC = () => {
       {settingsOverlayOpen && <SettingsOverlay onClose={closeOverlay} />}
       {taskOverlayId && <TaskOverlay taskId={taskOverlayId} onClose={closeOverlay} />}
 
-      {/* Stopwatch Widget */}
-      <AnimatePresence>
-        {isStopwatchVisible && (
+      {/* Bottom overlay slot — the stopwatch widget and the active-task tracker
+          occupy the same spot, so at most one of them renders at a time. */}
+      <AnimatePresence mode="wait">
+        {isStopwatchVisible ? (
           <StopwatchWidget
+            key="stopwatch"
             timerState={timerState}
             onStart={startTimer}
             onPause={pauseTimer}
@@ -160,7 +182,15 @@ export const AppShell: React.FC = () => {
               setIsStopwatchFullscreen(true);
             }}
           />
-        )}
+        ) : activeTodo ? (
+          <ActiveTodoTracker
+            key="active-tracker"
+            todo={activeTodo}
+            countdownMode={countdownMode}
+            onClose={() => setActiveTodoId(null)}
+            onToggle={() => handleToggleAndClose(activeTodo.id)}
+          />
+        ) : null}
       </AnimatePresence>
 
       {/* Stopwatch Fullscreen */}

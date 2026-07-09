@@ -1,18 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { X, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { X, CheckCircle2, Circle } from 'lucide-react';
 import { Todo } from '../types';
 import { isDone } from '../utils/todoStatus';
-import { parse, differenceInSeconds, startOfDay } from 'date-fns';
+import { differenceInSeconds, startOfDay } from 'date-fns';
+import { TaskTimeChips, formatCountdown, CountdownMode } from './TaskTimeChips';
+import { EXPO_OUT } from './XpProgressBar';
+import { btnGhost } from '../theme/buttons';
 
 interface ActiveTodoTrackerProps {
   todo: Todo;
   onClose: () => void;
   onToggle: () => void;
+  /** The user's countdown preference; the tracker always shows a countdown, so
+   *  'off' falls back to the time format. */
+  countdownMode?: CountdownMode;
 }
 
-export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onClose, onToggle }) => {
+export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({
+  todo,
+  onClose,
+  onToggle,
+  countdownMode = 'off',
+}) => {
   const [progress, setProgress] = useState(0);
+  const [now, setNow] = useState(() => new Date());
+
+  // Tick once a second so the countdown stays live.
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     if (!todo.dueTime || !todo.trackingStartedAt) {
@@ -45,56 +63,46 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
     return () => clearInterval(interval);
   }, [todo]);
 
+  // The tracker always shows a countdown, regardless of the global setting.
+  const countdown = formatCountdown(todo, todo.dueDate, now, countdownMode === 'off' ? 'time' : countdownMode);
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9, y: 20 }}
-      className="relative w-full max-w-xl bg-surface border border-line-subtle rounded-3xl p-4 shadow-2xl overflow-hidden group"
+      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+      transition={{ duration: 0.1 }}
+      className="fixed bottom-8 left-[calc(50%+1.75rem)] -translate-x-1/2 z-60 w-[36rem] max-w-[calc(100vw-2rem)] bg-surface border border-line-subtle rounded-3xl p-4 shadow-2xl shadow-black/40 overflow-hidden group"
     >
-      {/* Close Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className="absolute top-3 right-3 p-1.5 bg-black/40 hover:bg-black/60 text-fg-faint hover:text-fg rounded-full transition-all opacity-0 group-hover:opacity-100 z-20 border border-line"
-      >
-        <X size={14} />
-      </button>
 
-      <div className="flex items-center gap-4 relative z-10 pr-10">
-        <button 
+      <div className="flex items-center gap-2 relative">
+        <button
           onClick={onToggle}
-          className={`transition-colors ${isDone(todo) ? 'text-[var(--accent1)]' : 'text-fg hover:text-[var(--accent1)]'}`}
+          className={`shrink-0 transition-colors ${isDone(todo) ? 'text-(--accent1)' : 'text-fg hover:text-(--accent1)'}`}
         >
           {isDone(todo) ? <CheckCircle2 size={24} /> : <Circle size={24} strokeWidth={2.5} />}
         </button>
 
         <div className="flex-1 min-w-0">
-          <h3 className={`text-lg font-medium transition-all ${isDone(todo) ? 'text-fg-ghost line-through' : 'text-fg'}`}>
+          <h3 className={`font-medium text-wrap transition-all ${isDone(todo) ? 'text-fg-ghost line-through' : 'text-fg'}`}>
             {todo.text}
           </h3>
         </div>
 
-        {(todo.dueTime || todo.duePercentage !== undefined) && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-[var(--accent1)] rounded-lg shadow-lg shadow-[var(--accent1)]/10">
-            {todo.dueTime && (
-              <div className="flex items-center gap-1.5 text-[13px] font-mono font-bold text-canvas">
-                <Clock size={14} />
-                {todo.dueTime}
-              </div>
-            )}
-            {todo.dueTime && todo.duePercentage !== undefined && (
-              <div className="w-px h-3 bg-black/20" />
-            )}
-            {todo.duePercentage !== undefined && (
-              <div className="text-[13px] font-mono font-bold text-canvas">
-                {todo.duePercentage}%
-              </div>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <TaskTimeChips todo={todo} countdown={countdown} variant="inverted" done={isDone(todo)} />
+        </div>
+
+        {/* Close Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className={`h-[27px] w-[27px] rounded-lg flex justify-center items-center ${btnGhost()}`}
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {/* Progress Bar Container */}
@@ -103,8 +111,8 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({ todo, onCl
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 1, ease: "linear" }}
-            className="absolute inset-y-0 left-0 bg-[var(--accent1)] rounded-full shadow-[0_0_8px_rgba(163,230,53,0.3)]"
+            transition={{ duration: 1, ease: EXPO_OUT }}
+            className="absolute inset-y-0 left-0 bg-(--accent1) rounded-full shadow-[0_0_8px_rgba(163,230,53,0.3)]"
           />
         </div>
       )}

@@ -3,7 +3,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Clock, LayoutGrid, List, Maximize2 } from 'lucide-react';
 import { TrackerCard } from '../../components/TrackerCard';
-import { ActiveTodoTracker } from '../../components/ActiveTodoTracker';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { btnNeutral } from '../../theme/buttons';
 import { useAppData } from '../../data/AppDataContext';
@@ -20,9 +19,6 @@ function TrackersRoute() {
     handleEditTracker,
     openTrackerModal,
     isFullscreen, setIsFullscreen,
-    activeTodo,
-    setActiveTodoId,
-    handleToggleAndClose,
   } = useAppData();
   // Grid/list toggle is local to this view (no other view reads it).
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -110,18 +106,8 @@ function TrackersRoute() {
             )}
           </div>
 
-          {/* Active Todo Tracker */}
-          <AnimatePresence>
-            {activeTodo && (
-              <div className="mt-12 flex justify-center">
-                <ActiveTodoTracker
-                  todo={activeTodo}
-                  onClose={() => setActiveTodoId(null)}
-                  onToggle={() => handleToggleAndClose(activeTodo.id)}
-                />
-              </div>
-            )}
-          </AnimatePresence>
+          {/* The active-task tracker now renders globally from AppShell, pinned to
+              the bottom of every page (sharing the stopwatch's overlay slot). */}
         </div>
       </main>
     </>
