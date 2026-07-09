@@ -10,6 +10,7 @@ import {
   Maximize2,
   CalendarPlus,
   Sparkles,
+  Flag,
 } from 'lucide-react';
 import CheckCircleCutout from '../assets/CheckCircleCutout';
 import {
@@ -35,6 +36,8 @@ import { Todo } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
 import { formatTime12h } from '../utils/timeUtils';
+import { pill } from '../theme/pill';
+import { priorityOption } from './todoFields';
 import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -156,6 +159,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
     }
   }, [todo.dueTime, todo.startTime, date, now, countdownMode]);
 
+  // Priority is shown as an icon-only square chip, tinted with the priority color.
+  const prio = todo.priority ? priorityOption(todo.priority) : undefined;
+
   if (isEditing) {
     return (
       <div ref={setNodeRef} style={style}>
@@ -241,7 +247,17 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
       <div className="flex-1" />
 
-      <div className="flex items-start gap-2 shrink-0 whitespace-nowrap">
+      <div className="flex items-start gap-1.5 shrink-0 whitespace-nowrap">
+        {prio && (
+          <div
+            title={`${prio.label} priority`}
+            style={isDone(todo) ? undefined : pill(prio.color)}
+            className={`flex items-center justify-center p-[5.5px] rounded-lg ${isDone(todo) ? 'bg-fill-subtle text-fg-ghost' : ''}`}
+          >
+            <Flag size={16} />
+          </div>
+        )}
+
         {todo.xp !== undefined && (
           <div className={`flex items-center justify-center gap-1.5 px-2.75 py-[5.5px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
             ? 'bg-fill-subtle text-fg-ghost'
@@ -300,14 +316,15 @@ const TodoItem: React.FC<TodoItemProps> = ({
             </div>
           </div>
         )}
+
+        <button
+          onClick={() => onDelete(todo.id)}
+          className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg-faint hover:text-red-400 hover:bg-danger-tint rounded-lg transition-all"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
 
-      <button
-        onClick={() => onDelete(todo.id)}
-        className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg-faint hover:text-red-400 hover:bg-danger-tint rounded-lg transition-all"
-      >
-        <Trash2 size={16} />
-      </button>
     </div>
   );
 };
