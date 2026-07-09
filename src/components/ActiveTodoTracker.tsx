@@ -99,7 +99,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({
             e.stopPropagation();
             onClose();
           }}
-          className={`h-[27px] w-[27px] rounded-lg flex justify-center items-center ${btnGhost()}`}
+          className={`h-[27px] w-[27px] rounded-lg flex justify-center items-center group-hover:opacity-100 opacity-0 ${btnGhost()}`}
         >
           <X size={16} />
         </button>
