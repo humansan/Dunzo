@@ -4,7 +4,7 @@ import { X, CalendarDays } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '../types';
 import { ListSelect } from './todosHub/ListSelect';
-import { btnAccent, btnToggle } from '../theme/buttons';
+import { btnAccent, btnGhost, btnNeutral, btnToggle } from '../theme/buttons';
 import { textInputCls } from './todosHub/TextInput';
 import { DatePickerPopover } from './DatePickerPopover';
 import { modalPop, overlayBackdrop } from './modalMotion';
@@ -230,12 +230,21 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className={`w-full py-3 rounded-2xl text-sm ${btnAccent('accent2')}`}
-              >
-                {editingTracker ? 'Save Changes' : 'Create Tracker'}
-              </button>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`px-3 h-8 rounded-lg text-xs font-bold ${btnNeutral}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`px-3 h-8 rounded-lg text-xs ${btnAccent('accent2')}`}
+                >
+                  {editingTracker ? 'Save changes' : 'Create widget'}
+                </button>
+              </div>
             </form>
           </motion.div>
         </div>

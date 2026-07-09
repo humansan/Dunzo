@@ -3,7 +3,7 @@ import { Maximize2, CircleDot, Flag } from 'lucide-react';
 import { timeToPercentage } from '../utils/timeUtils';
 import { CollectionOption } from '../utils/todoFilters';
 import { TodoStatus, TodoPriority } from '../types';
-import { btnAccent } from '../theme/buttons';
+import { btnAccent, btnNeutral } from '../theme/buttons';
 import { statusOption, priorityOption, STATUS_OPTIONS, PRIORITY_OPTIONS } from './todoFields';
 import {
   DateChip,
@@ -276,7 +276,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         <button
           type="button"
           onClick={cancel}
-          className="px-3 h-8 bg-fill-subtle hover:bg-fill text-fg-subtle rounded-lg text-xs font-bold"
+          className={`px-3 h-8 rounded-lg text-xs font-bold ${btnNeutral}`}
         >
           Cancel
         </button>
