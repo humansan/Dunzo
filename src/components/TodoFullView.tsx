@@ -6,34 +6,32 @@ import {
   Trash2,
   CalendarDays,
   Clock,
-  Percent,
-  Sparkles,
   Astroid,
-  ArrowRight,
   CircleDot,
   Flag,
-  Shapes,
   Archive,
   Database,
 } from 'lucide-react';
 import { Todo } from '../types';
 import { btnGhost } from '../theme/buttons';
 import { Switch } from './Switch';
-import { CollectionOption, collectionOf, collectionPath } from '../utils/todoFilters';
+import { CollectionOption, hasDate } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
+import { timeToPercentage } from '../utils/timeUtils';
 import {
   CompletedToggle,
-  DateField,
-  StartTimeField,
-  EndTimeField,
-  PercentField,
-  CollectionSearchField,
   OptionSelectField,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from './todoFields';
-import { textInputCls } from './todosHub/TextInput';
-import { XpSliderPopover } from './XpSlider';
+import {
+  DateChip,
+  TimeChip,
+  XpChip,
+  CollectionButton,
+  ParentTaskButton,
+  derivedCollectionId,
+} from './taskChips';
 import { modalPop, overlayBackdrop } from './modalMotion';
 
 interface TodoFullViewProps {
@@ -57,9 +55,9 @@ const RightProp: React.FC<{
   onClear?: () => void;
   canClear?: boolean;
 }> = ({ icon, label, children, noDivider, onClear, canClear }) => (
-  <div className={`group/prop py-3 ${noDivider ? '' : 'border-b border-line-subtle'}`}>
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider">
+  <div className={`group/prop py-2.5 ${noDivider ? '' : 'border-b border-line-subtle'}`}>
+    <div className="flex items-center justify-between mb-1.5">
+      <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider h-5">
         {icon}
         {label}
       </div>
@@ -68,9 +66,9 @@ const RightProp: React.FC<{
           type="button"
           onClick={onClear}
           title="Clear"
-          className="p-0.5 rounded text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/prop:opacity-100 transition-all"
+          className={`p-1 rounded text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/prop:opacity-100 transition-all ${btnGhost()}`}
         >
-          <X size={11} />
+          <X size={12} />
         </button>
       )}
     </div>
@@ -109,7 +107,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     const el = notesRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.max(el.scrollHeight, 160)}px`;
+    el.style.height = `${el.scrollHeight}px`;
   };
 
   useLayoutEffect(resizeTitle, [draft.text, todo.id]);
@@ -142,18 +140,31 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   };
 
   const handleDateChange = (val: string) => {
-    if (!val) return;
     setDateStr(val);
-    update({}, val);
+    // An undated task can't live on the daily list — drop it off and make sure it
+    // stays reachable in the Planner (mirrors normalizeVisibility).
+    if (!val) update({ showInDailyList: false, showInDatabase: true }, '');
+    else update({}, val);
   };
+
+  // The end time drives the percent-of-day readout (mirrors the table's `end` cell).
+  const handleDueTimeChange = (val: string) => {
+    update({ dueTime: val || undefined, duePercentage: val ? timeToPercentage(val) : undefined });
+  };
+
+  // "Show in" invariants: Daily needs a date, and the task must stay visible on at
+  // least one surface — so the sole enabled switch can't be turned off.
+  const dailyAllowed = hasDate(dateStr);
+  const plannerOn = draft.showInDatabase === true;
+  const dailyOn = draft.showInDailyList === true && dailyAllowed;
+  const plannerDisabled = plannerOn && !dailyOn;
+  const dailyDisabled = !dailyAllowed || (dailyOn && !plannerOn);
 
   const handleArchive = () => {
     const nowArchived = !draft.archived;
     update({ archived: nowArchived });
     if (nowArchived) onClose();
   };
-
-  const fieldCls = `${textInputCls} w-full font-mono`;
 
   return (
     <motion.div
@@ -162,11 +173,11 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
-      className={`fixed inset-0 z-[70] flex items-center justify-center ${overlayBackdrop}`}
+      className={`fixed inset-0 z-[70] p-16 flex items-center justify-center ${overlayBackdrop}`}
     >
       <motion.div
         {...modalPop}
-        className="w-[900px] max-w-[95vw] h-[78vh] min-h-[500px] max-h-[900px] bg-surface border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="w-250 h-full max-h-250 bg-surface border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden"
       >
         {/* ── Top bar ─────────────────────────────── */}
         <div className="flex items-center justify-between px-4 h-11 border-b border-line-subtle shrink-0">
@@ -217,13 +228,40 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed"
               />
             </div>
+
+            {/* Timestamps — below a divider, aligned with the notes column. */}
+            <div className="mt-8 pl-[34px]">
+              <div className="border-t border-line-subtle pt-4 space-y-4">
+                <div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider mb-1.5">
+                    <Clock size={11} />
+                    Created
+                  </div>
+                  <span className="text-xs text-fg-faint font-mono">
+                    {format(new Date(draft.createdAt), "MMM d, yyyy '·' h:mm a")}
+                  </span>
+                </div>
+
+                {draft.completedAt && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider mb-1.5">
+                      <CircleDot size={11} />
+                      Completed
+                    </div>
+                    <span className="text-xs text-fg-faint font-mono">
+                      {format(new Date(draft.completedAt), "MMM d, yyyy '·' h:mm a")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Divider */}
           <div className="w-px bg-fill-subtle shrink-0" />
 
           {/* Right pane: properties + actions */}
-          <div className="w-72 shrink-0 flex flex-col overflow-hidden">
+          <div className="w-80 shrink-0 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-5 py-2 no-scrollbar">
 
               <RightProp
@@ -255,154 +293,111 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               </RightProp>
 
               <RightProp
-                icon={<Shapes size={11} />}
-                label="Collection"
-                onClear={() => update({ parentId: null })}
-                canClear={collectionOf(draft, byId) !== null}
+                icon={<CalendarDays size={11} />}
+                label="Start"
+                onClear={() => update({ startDate: undefined, startTime: undefined })}
+                canClear={!!draft.startDate || !!draft.startTime}
               >
-                <CollectionSearchField
-                  variant="seamless"
-                  value={collectionOf(draft, byId)}
-                  currentPath={collectionPath(collectionOf(draft, byId), byId).map((c) => ({
-                    id: c.id,
-                    name: c.text || 'Untitled',
-                    color: c.color,
-                  }))}
-                  options={collectionOptions}
-                  onChange={(id) => update({ parentId: id })}
-                  onCreate={onCreateCollection}
-                />
-              </RightProp>
-
-              <RightProp icon={<CalendarDays size={11} />} label="Start Date">
-                <DateField
-                  value={draft.startDate || ''}
-                  onChange={(val) => update({ startDate: val || undefined })}
-                  className={fieldCls}
-                />
-              </RightProp>
-
-              <RightProp icon={<CalendarDays size={11} />} label="Due Date">
-                <DateField
-                  value={dateStr}
-                  onChange={handleDateChange}
-                  className={fieldCls}
-                />
-              </RightProp>
-
-              {/* Time: start → due, and % under due. Shared clear button on hover. */}
-              <div className="group/time relative py-3 border-b border-line-subtle">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider">
-                    <Clock size={11} />
-                    Time
-                  </div>
-                  {(draft.startTime || draft.dueTime || draft.duePercentage !== undefined) && (
-                    <button
-                      type="button"
-                      onClick={() => update({ startTime: undefined, dueTime: undefined, duePercentage: undefined })}
-                      title="Clear time"
-                      className="p-0.5 rounded text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/time:opacity-100 transition-all"
-                    >
-                      <X size={11} />
-                    </button>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_14px_1fr] items-center gap-1.5">
-                    <StartTimeField
-                      value={draft.startTime}
-                      onChange={(patch) => update(patch)}
-                      className={fieldCls}
-                    />
-                    <ArrowRight size={11} className="justify-self-center text-fg-ghost" />
-                    <EndTimeField
-                      value={draft.dueTime}
-                      onChange={(patch) => update(patch)}
-                      className={fieldCls}
-                    />
-                  </div>
-                  <div className="grid grid-cols-[1fr_14px_1fr] items-center gap-1.5">
-                    <div className="flex items-center gap-1.5 text-fg-ghost text-[10px] pl-1">
-                      <Percent size={10} />
-                      due
-                    </div>
-                    <div />
-                    <PercentField
-                      value={draft.duePercentage}
-                      onChange={(patch) => update(patch)}
-                      className={fieldCls}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <RightProp
-                icon={<Sparkles size={11} />}
-                label="XP"
-                onClear={() => update({ xp: undefined })}
-                canClear={draft.xp !== undefined}
-              >
-                <XpSliderPopover value={draft.xp} onChange={(val) => update({ xp: val })}>
-                  {({ open }) => (
-                    <button type="button" onClick={open} className={`${fieldCls} text-left`}>
-                      {draft.xp !== undefined ? `${draft.xp} XP` : <span className="text-fg-faint">Set XP</span>}
-                    </button>
-                  )}
-                </XpSliderPopover>
-              </RightProp>
-
-              <RightProp icon={<Database size={11} />} label="Task Planner">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-fg-faint">Show in hub</span>
-                  <Switch
-                    checked={draft.showInDatabase ?? false}
-                    onChange={(val) => update({ showInDatabase: val })}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <DateChip
+                    value={draft.startDate || ''}
+                    placeholder="Start date"
+                    onChange={(val) => update({ startDate: val || undefined })}
+                  />
+                  <TimeChip
+                    value={draft.startTime}
+                    onChange={(val) => update({ startTime: val || undefined })}
                   />
                 </div>
               </RightProp>
 
-              <div className="py-3 border-b border-line-subtle">
-                <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider mb-1.5">
-                  <Clock size={11} />
-                  Created
+              <RightProp
+                icon={<Clock size={11} />}
+                label="Due / End time"
+                onClear={() => update({ dueTime: undefined, duePercentage: undefined })}
+                canClear={draft.dueTime !== undefined}
+              >
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <DateChip value={dateStr} placeholder="Due date" onChange={handleDateChange} />
+                  <TimeChip
+                    value={draft.dueTime}
+                    percent={draft.duePercentage}
+                    onChange={handleDueTimeChange}
+                  />
                 </div>
-                <span className="text-xs text-fg-faint font-mono">
-                  {format(new Date(draft.createdAt), "MMM d, yyyy '·' h:mm a")}
-                </span>
-              </div>
+              </RightProp>
 
-              {draft.completedAt && (
-                <div className="py-3 border-b border-line-subtle">
-                  <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider mb-1.5">
-                    <CircleDot size={11} />
-                    Completed
+              <RightProp
+                icon={<Astroid size={11} />}
+                label="XP"
+                onClear={() => update({ xp: undefined })}
+                canClear={draft.xp !== undefined}
+              >
+                <XpChip value={draft.xp} onChange={(val) => update({ xp: val })} />
+              </RightProp>
+
+              {/* Where the task surfaces. Daily needs a date; at least one must stay on. */}
+              <RightProp icon={<Database size={11} />} label="Show in">
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-fg-faint">Task Planner</span>
+                    <Switch
+                      checked={plannerOn}
+                      disabled={plannerDisabled}
+                      onChange={(val) => update({ showInDatabase: val })}
+                      aria-label="Show in Task Planner"
+                    />
                   </div>
-                  <span className="text-xs text-fg-faint font-mono">
-                    {format(new Date(draft.completedAt), "MMM d, yyyy '·' h:mm a")}
-                  </span>
+                  <div
+                    className={`flex items-center justify-between ${dailyAllowed ? '' : 'opacity-40'}`}
+                    title={dailyAllowed ? undefined : 'Set a due date to show this task in Daily Tasks'}
+                  >
+                    <span className="text-xs text-fg-faint">Daily Tasks</span>
+                    <Switch
+                      checked={dailyOn}
+                      disabled={dailyDisabled}
+                      onChange={(val) => update({ showInDailyList: val })}
+                      aria-label="Show in Daily Tasks"
+                    />
+                  </div>
                 </div>
-              )}
+              </RightProp>
 
             </div>
+          </div>
+        </div>
 
-            {/* Bottom: Archive + Delete */}
-            <div className="shrink-0 px-5 py-4 border-t border-line-subtle space-y-0.5">
-              <button
-                onClick={handleArchive}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm ${btnGhost()}`}
-              >
-                <Archive size={14} />
-                {draft.archived ? 'Unarchive' : 'Archive'}
-              </button>
-              <button
-                onClick={() => { onDelete(draft.id); onClose(); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all"
-              >
-                <Trash2 size={14} />
-                Delete
-              </button>
-            </div>
+        {/* ── Bottom bar: placement (left) + destructive actions (right) ────── */}
+        <div className="shrink-0 flex items-center justify-between gap-4 px-5 py-3 border-t border-line-subtle">
+          <div className="flex flex-col items-start gap-2 min-w-0">
+            <CollectionButton
+              collectionId={derivedCollectionId(draft.parentId ?? null, byId)}
+              options={collectionOptions}
+              onChange={(id) => update({ parentId: id })}
+              onCreate={onCreateCollection}
+            />
+            <ParentTaskButton
+              todoId={draft.id}
+              parentId={draft.parentId ?? null}
+              onChange={(id) => update({ parentId: id })}
+            />
+          </div>
+          
+          <div className="flex flex-col items-stretch gap-0.5 shrink-0 w-32">
+            <button
+              onClick={handleArchive}
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg ${btnGhost()}`}
+            >
+              <Archive size={14} />
+              {draft.archived ? 'Unarchive' : 'Archive'}
+            </button>
+            <button
+              onClick={() => { onDelete(draft.id); onClose(); }}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
           </div>
         </div>
       </motion.div>

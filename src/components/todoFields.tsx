@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Circle, X, Check, ChevronRight, Shapes } from 'lucide-react';
 import CheckCircleCutout from '../assets/CheckCircleCutout';
-import { timeToPercentage, percentageToTime } from '../utils/timeUtils';
+import { percentageToTime } from '../utils/timeUtils';
 import { TodoStatus, TodoPriority } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
 import { pill } from '../theme/pill';
@@ -42,64 +42,6 @@ export const CompletedToggle: React.FC<{
         : <Circle size={size} strokeWidth={2.5} />}
     </motion.div>
   </button>
-);
-
-// ── Date ─────────────────────────────────────────────────────────────────────
-export const DateField: React.FC<{
-  value: string; // YYYY-MM-DD or ''
-  onChange: (val: string) => void;
-  className?: string;
-  autoFocus?: boolean;
-  onBlur?: () => void;
-}> = ({ value, onChange, className, autoFocus, onBlur }) => (
-  <input
-    type="date"
-    value={value}
-    autoFocus={autoFocus}
-    onBlur={onBlur}
-    onChange={(e) => onChange(e.target.value)}
-    className={className ?? fieldInputClass}
-  />
-);
-
-// ── Start time ───────────────────────────────────────────────────────────────
-export const StartTimeField: React.FC<{
-  value?: string;
-  onChange: (patch: TimePatch) => void;
-  className?: string;
-  autoFocus?: boolean;
-  onBlur?: () => void;
-}> = ({ value, onChange, className, autoFocus, onBlur }) => (
-  <input
-    type="time"
-    value={value || ''}
-    autoFocus={autoFocus}
-    onBlur={onBlur}
-    onChange={(e) => onChange({ startTime: e.target.value || undefined })}
-    className={className ?? fieldInputClass}
-  />
-);
-
-// ── End time (keeps duePercentage in sync) ──────────────────────────────────
-export const EndTimeField: React.FC<{
-  value?: string;
-  onChange: (patch: TimePatch) => void;
-  className?: string;
-  autoFocus?: boolean;
-  onBlur?: () => void;
-}> = ({ value, onChange, className, autoFocus, onBlur }) => (
-  <input
-    type="time"
-    value={value || ''}
-    autoFocus={autoFocus}
-    onBlur={onBlur}
-    onChange={(e) => {
-      const val = e.target.value;
-      const p = timeToPercentage(val);
-      onChange({ dueTime: val || undefined, ...(p !== undefined ? { duePercentage: p } : {}) });
-    }}
-    className={className ?? fieldInputClass}
-  />
 );
 
 // ── Percent goal (keeps dueTime in sync) ─────────────────────────────────────

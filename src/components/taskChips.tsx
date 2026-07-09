@@ -1,0 +1,363 @@
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { format, parseISO } from 'date-fns';
+import { Calendar, Clock, Astroid, Shapes, GitBranch } from 'lucide-react';
+import { formatTime12h } from '../utils/timeUtils';
+import { CollectionOption, collectionOf } from '../utils/todoFilters';
+import { Todo } from '../types';
+import {
+  CollectionSearchField,
+  CollectionBreadcrumb,
+  OptionSelectField,
+  OptionChip,
+  ChipOption,
+} from './todoFields';
+import { CalendarInput } from './CalendarInput';
+import { TimeInput } from './TimeInput';
+import { XpSlider } from './XpSlider';
+import { TaskFinder } from './todosHub/TaskFinder';
+import { useAppData } from '../data/AppDataContext';
+
+// ── Shared chip recipes ──────────────────────────────────────────────────────
+// Tinted, fixed-height chips (date / time / xp) and the left-aligned hover-lit
+// rowBtn used by the option / collection / parent buttons.
+export const chipBase =
+  'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer';
+export const chipText =
+  'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
+export const rowBtn =
+  'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden hover:bg-fill';
+// Shell for panels that don't bring their own (OptionSelectField, CollectionSearchField).
+export const chipPopoverCls = 'rounded-xl border border-line bg-surface shadow-2xl p-2';
+
+const MARGIN = 8;
+
+/**
+ * The anchored popover shell behind every chip. Portals to document.body so it is
+ * never clipped by a scrolling ancestor (e.g. TodoFullView's properties sidebar),
+ * places itself under the trigger and flips above when it would overflow, and
+ * dismisses on outside-click / Escape.
+ *
+ * Because React portals bubble events through the React tree (not the DOM), Enter
+ * and Escape are stopped here — otherwise a keypress inside a popover would submit
+ * the quick-edit panel or close the full-view modal.
+ */
+export const ChipPopover: React.FC<{
+  /** Panel width, used only for placement math; the panel sets its own width class. */
+  width?: number;
+  /** Extra classes for the anchor wrapper. */
+  className?: string;
+  /** `close` lets selection panels dismiss themselves on pick. */
+  panel: (close: () => void) => React.ReactNode;
+  children: (args: { open: () => void; isOpen: boolean }) => React.ReactNode;
+}> = ({ width = 240, className, panel, children }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => setIsOpen(false), []);
+  const open = useCallback(() => {
+    setPos(null); // re-measure on each open
+    setIsOpen(true);
+  }, []);
+
+  const updatePos = useCallback(() => {
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const popH = popoverRef.current?.offsetHeight ?? 0;
+
+    let left = Math.min(rect.left, window.innerWidth - width - MARGIN);
+    left = Math.max(MARGIN, left);
+
+    let top = rect.bottom + 4;
+    if (popH && top + popH > window.innerHeight - MARGIN) {
+      const above = rect.top - popH - 4;
+      top = above >= MARGIN ? above : Math.max(MARGIN, window.innerHeight - popH - MARGIN);
+    }
+    setPos({ top, left });
+  }, [width]);
+
+  // Measure once the panel is mounted so placement can account for its height.
+  useLayoutEffect(() => {
+    if (isOpen) updatePos();
+  }, [isOpen, updatePos]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (anchorRef.current?.contains(t) || popoverRef.current?.contains(t)) return;
+      setIsOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      window.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+    };
+  }, [isOpen, updatePos]);
+
+  // Contain Enter/Escape while open, whether focus sits on the trigger or inside
+  // the portaled panel (both bubble to the host through the React tree).
+  const containKeys = (e: React.KeyboardEvent) => {
+    if (!isOpen) return;
+    if (e.key === 'Enter') e.stopPropagation();
+    if (e.key === 'Escape') { e.stopPropagation(); close(); }
+  };
+
+  return (
+    <div ref={anchorRef} onKeyDown={containKeys} className={`relative ${className ?? ''}`}>
+      {children({ open, isOpen })}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            onKeyDown={containKeys}
+            style={{
+              position: 'fixed',
+              top: pos?.top ?? 0,
+              left: pos?.left ?? 0,
+              visibility: pos ? 'visible' : 'hidden',
+            }}
+            className="z-[80]"
+          >
+            {panel(close)}
+          </div>,
+          document.body,
+        )}
+    </div>
+  );
+};
+
+// ── Date ─────────────────────────────────────────────────────────────────────
+export const DateChip: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  showInDailyList?: boolean;
+  onShowInDailyListChange?: (val: boolean) => void;
+}> = ({ value, onChange, placeholder = 'Date', showInDailyList, onShowInDailyListChange }) => (
+  <ChipPopover
+    panel={() => (
+      <CalendarInput
+        value={value}
+        autoFocus
+        onChange={onChange}
+        showInDailyList={showInDailyList}
+        onShowInDailyListChange={onShowInDailyListChange}
+      />
+    )}
+  >
+    {({ open }) => (
+      <button
+        type="button"
+        onClick={open}
+        className={`${chipBase} ${value ? 'bg-[var(--accent2)]/7 hover:bg-[var(--accent2)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
+      >
+        <span className={`${chipText} ${value ? 'text-[var(--accent2)]' : 'text-fg-subtle'}`}>
+          <Calendar size={16} />
+          <span className="relative top-px">{value ? format(parseISO(value), 'MM/dd/yyyy') : placeholder}</span>
+        </span>
+      </button>
+    )}
+  </ChipPopover>
+);
+
+// ── Time (+ optional percent-of-day readout) ─────────────────────────────────
+export const TimeChip: React.FC<{
+  value?: string;
+  /** Percent of day; rendered after a divider when provided. */
+  percent?: number;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}> = ({ value, percent, onChange, placeholder = 'Time' }) => {
+  const pct = percent === undefined ? null : Number.isInteger(percent) ? percent : Math.round(percent);
+  return (
+    <ChipPopover panel={() => <TimeInput value={value} autoFocus onChange={onChange} />}>
+      {({ open }) => (
+        <button
+          type="button"
+          onClick={open}
+          className={`${chipBase} ${value ? 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
+        >
+          {value ? (
+            <>
+              <span className={`${chipText} text-[var(--accent1)]`}>
+                <Clock size={16} />
+                <span className="relative top-px">{formatTime12h(value)}</span>
+              </span>
+              {pct !== null && <div className="w-px h-4 bg-[var(--accent1)]/20" />}
+              {pct !== null && (
+                <span className={`${chipText} text-[var(--accent1)]`}>
+                  <span className="relative top-px">{pct}%</span>
+                </span>
+              )}
+            </>
+          ) : (
+            <span className={`${chipText} text-fg-subtle`}>
+              <Clock size={16} />
+              <span className="relative top-px">{placeholder}</span>
+            </span>
+          )}
+        </button>
+      )}
+    </ChipPopover>
+  );
+};
+
+// ── XP ───────────────────────────────────────────────────────────────────────
+export const XpChip: React.FC<{
+  value?: number;
+  onChange: (val: number | undefined) => void;
+}> = ({ value, onChange }) => {
+  const set = value !== undefined;
+  return (
+    <ChipPopover panel={() => <XpSlider value={value} autoFocus onChange={onChange} />}>
+      {({ open }) => (
+        <button
+          type="button"
+          onClick={open}
+          className={`${chipBase} ${set ? 'bg-warning-tint text-warning' : 'bg-fill-subtle hover:bg-fill'}`}
+        >
+          <span className={chipText}>
+            <Astroid size={16} className={set ? '' : 'text-fg-subtle'} />
+            <span className={`relative top-px ${set ? '' : 'text-fg-subtle'}`}>{set ? `${value} XP` : 'XP'}</span>
+          </span>
+        </button>
+      )}
+    </ChipPopover>
+  );
+};
+
+// ── Status / Priority ────────────────────────────────────────────────────────
+// A hover-lit rowBtn holding the field icon + the shared rounded OptionChip pill
+// (the same pill the table and full view use), or a muted label when unset.
+export const OptionChipButton: React.FC<{
+  icon: React.ReactNode;
+  placeholder: string;
+  value?: string;
+  option?: ChipOption;
+  options: ChipOption[];
+  onChange: (val: string | undefined) => void;
+}> = ({ icon, placeholder, value, option, options, onChange }) => (
+  <ChipPopover
+    width={192}
+    panel={(close) => (
+      <div className={`${chipPopoverCls} w-48`}>
+        <OptionSelectField options={options} value={value} onChange={(v) => { onChange(v); close(); }} />
+      </div>
+    )}
+  >
+    {({ open }) => (
+      <button type="button" onClick={open} className={rowBtn}>
+        {icon}
+        {option ? <OptionChip option={option} /> : <span className="text-fg-subtle">{placeholder}</span>}
+      </button>
+    )}
+  </ChipPopover>
+);
+
+// ── Collection ───────────────────────────────────────────────────────────────
+export const CollectionButton: React.FC<{
+  collectionId: string | null;
+  options: CollectionOption[];
+  onChange: (id: string | null) => void;
+  onCreate: (name: string) => string;
+}> = ({ collectionId, options, onChange, onCreate }) => {
+  const current = collectionId ? options.find((o) => o.id === collectionId) ?? null : null;
+  return (
+    <ChipPopover
+      width={256}
+      className="min-w-0 max-w-full"
+      panel={(close) => (
+        <div className={`${chipPopoverCls} w-64`}>
+          <CollectionSearchField
+            value={collectionId}
+            currentPath={current?.path || []}
+            options={options}
+            onChange={(id) => { onChange(id); close(); }}
+            onCreate={onCreate}
+            autoFocus
+          />
+        </div>
+      )}
+    >
+      {({ open }) => (
+        <button type="button" onClick={open} className={rowBtn}>
+          <Shapes size={16} className="shrink-0 text-fg-subtle" />
+          {current
+            ? <CollectionBreadcrumb path={current.path} className="min-w-0" />
+            : <span className="text-fg-subtle">Collection</span>}
+        </button>
+      )}
+    </ChipPopover>
+  );
+};
+
+// ── Parent task ──────────────────────────────────────────────────────────────
+export const ParentTaskButton: React.FC<{
+  /** The edited task; it and its subtree are excluded so a pick can't make a cycle. */
+  todoId?: string;
+  parentId: string | null;
+  onChange: (id: string | null) => void;
+}> = ({ todoId, parentId, onChange }) => {
+  const { searchEntries, todoById, handleHubSaveTodo, handleToggleTodo } = useAppData();
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const parentTodo = parentId ? todoById.get(parentId) ?? null : null;
+  const parentTaskName = parentTodo && !parentTodo.isCollection ? (parentTodo.text || 'Untitled') : null;
+
+  const isDisabled = (id: string): boolean => {
+    if (!todoId) return false;
+    if (id === todoId) return true;
+    let p = todoById.get(id)?.parentId ?? null;
+    const seen = new Set<string>();
+    while (p && todoById.has(p) && !seen.has(p)) {
+      if (p === todoId) return true;
+      seen.add(p);
+      p = todoById.get(p)!.parentId ?? null;
+    }
+    return false;
+  };
+
+  return (
+    <>
+      <button type="button" onClick={() => setPickerOpen(true)} className={rowBtn}>
+        <GitBranch size={16} className="shrink-0 text-fg-subtle" />
+        {parentTaskName
+          ? <span className="min-w-0 truncate text-fg">{parentTaskName}</span>
+          : <span className="text-fg-subtle">Set parent task</span>}
+      </button>
+      {pickerOpen && (
+        <TaskFinder
+          entries={searchEntries}
+          todoById={todoById}
+          onSaveTodo={handleHubSaveTodo}
+          onToggleTodo={handleToggleTodo}
+          title="Set parent task"
+          placeholder="Search for a task to nest under…"
+          isDisabled={isDisabled}
+          rootOption={{ label: 'No parent (top level)', onSelect: () => { onChange(null); setPickerOpen(false); } }}
+          onPick={(id) => { onChange(id); setPickerOpen(false); }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
+  );
+};
+
+/**
+ * The collection a task belongs to, given its immediate parent: the parent itself
+ * when it is a collection, otherwise the nearest collection above it. `parentId` is
+ * a single field shared by task-nesting and collection membership.
+ */
+export function derivedCollectionId(parentId: string | null, todoById: Map<string, Todo>): string | null {
+  if (!parentId) return null;
+  const parent = todoById.get(parentId);
+  if (!parent) return null;
+  return parent.isCollection ? parent.id : collectionOf(parent, todoById);
+}

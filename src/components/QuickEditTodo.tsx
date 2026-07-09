@@ -1,25 +1,19 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Astroid, Maximize2, Shapes, CircleDot, Flag, GitBranch } from 'lucide-react';
-import { formatTime12h, timeToPercentage } from '../utils/timeUtils';
-import { CollectionOption, collectionOf } from '../utils/todoFilters';
+import { Maximize2, CircleDot, Flag } from 'lucide-react';
+import { timeToPercentage } from '../utils/timeUtils';
+import { CollectionOption } from '../utils/todoFilters';
 import { TodoStatus, TodoPriority } from '../types';
 import { btnAccent } from '../theme/buttons';
+import { statusOption, priorityOption, STATUS_OPTIONS, PRIORITY_OPTIONS } from './todoFields';
 import {
-  CollectionSearchField,
-  CollectionBreadcrumb,
-  OptionSelectField,
-  OptionChip,
-  statusOption,
-  priorityOption,
-  STATUS_OPTIONS,
-  PRIORITY_OPTIONS,
-  ChipOption,
-} from './todoFields';
-import { XpSlider } from './XpSlider';
-import { CalendarInput } from './CalendarInput';
-import { TimeInput } from './TimeInput';
-import { TaskFinder } from './todosHub/TaskFinder';
+  DateChip,
+  TimeChip,
+  XpChip,
+  OptionChipButton,
+  CollectionButton,
+  ParentTaskButton,
+  derivedCollectionId,
+} from './taskChips';
 import { useAppData } from '../data/AppDataContext';
 
 export interface QuickEditValues {
@@ -34,8 +28,6 @@ export interface QuickEditValues {
   priority?: TodoPriority;
   parentId?: string | null; // immediate parent (a task or a collection)
 }
-
-type EditorKey = 'date' | 'time' | 'xp' | 'status' | 'priority' | 'collection';
 
 interface QuickEditTodoProps {
   mode: 'add' | 'edit';
@@ -78,9 +70,8 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   onOpenFull,
   onFlush,
 }) => {
-  // Global data for the parent picker + collection/parent display (this panel only
-  // ever renders inside the authed app, so the context is always present).
-  const { searchEntries, todoById, handleHubSaveTodo, handleToggleTodo } = useAppData();
+  // Used to resolve the immediate parent into the collection breadcrumb.
+  const { todoById } = useAppData();
 
   const [text, setText] = useState(initialText || '');
   const [notes, setNotes] = useState(initialNotes || '');
@@ -95,29 +86,10 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const [priority, setPriority] = useState<TodoPriority | undefined>(initialPriority);
   const [parentId, setParentId] = useState<string | null>(initialParentId ?? null);
 
-  // Which chip's dropdown editor is open (null = none), plus the standalone
-  // TaskFinder overlay for picking a parent task.
-  const [openEditor, setOpenEditor] = useState<EditorKey | null>(null);
-  const [parentPickerOpen, setParentPickerOpen] = useState(false);
-  const wrapRefs: Record<EditorKey, React.RefObject<HTMLDivElement | null>> = {
-    date: useRef<HTMLDivElement>(null),
-    time: useRef<HTMLDivElement>(null),
-    xp: useRef<HTMLDivElement>(null),
-    status: useRef<HTMLDivElement>(null),
-    priority: useRef<HTMLDivElement>(null),
-    collection: useRef<HTMLDivElement>(null),
-  };
   const nameRef = useRef<HTMLInputElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
-  // Resolve the immediate parent → its collection breadcrumb (walking up to the
-  // nearest collection) and, when the immediate parent is a task, its name.
-  const parentTodo = parentId ? todoById.get(parentId) ?? null : null;
-  const parentTaskName = parentTodo && !parentTodo.isCollection ? (parentTodo.text || 'Untitled') : null;
-  const collId = parentTodo
-    ? (parentTodo.isCollection ? parentTodo.id : collectionOf(parentTodo, todoById))
-    : null;
-  const currentCollection = collId ? (collectionOptions.find(o => o.id === collId) ?? null) : null;
+  const collId = derivedCollectionId(parentId, todoById);
 
   // Auto-size the notes textarea: one line by default, growing with content and
   // capping at ~3 lines before it becomes scrollable.
@@ -165,8 +137,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setStatus(initialStatus);
     setPriority(initialPriority);
     setParentId(initialParentId ?? null);
-    setOpenEditor(null);
-    setParentPickerOpen(false);
     committedRef.current = false;
   }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, initialXp, initialStatus, initialPriority, initialParentId]);
 
@@ -182,21 +152,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Close the open dropdown when clicking elsewhere. The self-shelled panels
-  // (Calendar/XP) render inside the chip wrapper, so their clicks aren't outside.
-  useEffect(() => {
-    if (!openEditor) return;
-    const onDown = (e: MouseEvent) => {
-      const wrap = wrapRefs[openEditor].current;
-      if (wrap && !wrap.contains(e.target as Node)) setOpenEditor(null);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [openEditor]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleTimeChange = (val: string) => {
     setTime(val);
-    if (!val) { setPercentStr(''); return; }
+    if (!val) { setPercentStr(''); setStartTime(''); return; }
     const p = timeToPercentage(val);
     if (p !== undefined) setPercentStr(p.toString());
   };
@@ -219,7 +177,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       setPriority(undefined);
       setParentId(null);
       setDate(initialDate);
-      setOpenEditor(null);
       committedRef.current = false;
       requestAnimationFrame(() => nameRef.current?.focus());
     }
@@ -230,75 +187,13 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     onCancel();
   };
 
-  // Exclude the edited task and its whole subtree from the parent picker (no cycles).
-  const parentDisabled = (id: string): boolean => {
-    if (!todoId) return false;
-    if (id === todoId) return true;
-    let p = todoById.get(id)?.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && todoById.has(p) && !seen.has(p)) {
-      if (p === todoId) return true;
-      seen.add(p);
-      p = todoById.get(p)!.parentId ?? null;
-    }
-    return false;
-  };
-
-  const pct = percentStr === ''
-    ? null
-    : (Number.isInteger(+percentStr) ? +percentStr : Math.round(+percentStr));
-
-  // Chip recipes (mirror the list-view time/percent badge).
-  const chipBase =
-    'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer';
-  const chipText =
-    'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
-  const popover =
-    'absolute z-20 top-full left-0 mt-2 rounded-xl border border-line bg-surface shadow-2xl p-2';
-  // The collection / parent buttons: chip height, left-aligned, free to grow to the
-  // full panel width (truncating only at the edge), with a hover-lit background.
-  const rowBtn =
-    'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden hover:bg-fill';
-  // Keep Enter inside a popover from bubbling up and submitting the whole panel.
-  const stopEnter = (e: React.KeyboardEvent) => { if (e.key === 'Enter') e.stopPropagation(); };
-
-  // A status/priority chip — rendered exactly like the collection chip: a hover-lit
-  // rowBtn container holding the field icon + the shared rounded OptionChip pill
-  // (the same pill used in the table / full view), or a muted label when unset.
-  const optionChip = (
-    key: 'status' | 'priority',
-    icon: React.ReactNode,
-    placeholder: string,
-    value: string | undefined,
-    option: ChipOption | undefined,
-    options: ChipOption[],
-    onChange: (v: string | undefined) => void,
-  ) => (
-    <div ref={wrapRefs[key]} className="relative">
-      <button type="button" onClick={() => setOpenEditor(o => (o === key ? null : key))} className={rowBtn}>
-        {icon}
-        {option ? <OptionChip option={option} /> : <span className="text-fg-subtle">{placeholder}</span>}
-      </button>
-      {openEditor === key && (
-        <div className={`${popover} w-48`} onKeyDown={stopEnter}>
-          <OptionSelectField
-            options={options}
-            value={value}
-            onChange={(v) => { onChange(v); setOpenEditor(null); }}
-          />
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div
       onKeyDown={(e) => {
+        // Chips stop Enter/Escape while their popover is open, so these only fire
+        // when no editor is up.
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          if (openEditor) setOpenEditor(null); else cancel();
-        }
+        if (e.key === 'Escape') { e.preventDefault(); cancel(); }
       }}
       className="my-2 mx-4 p-3.5 bg-surface border border-[var(--accent2)]/30 rounded-2xl shadow-xl"
     >
@@ -324,137 +219,45 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
 
       {/* Chips — Date · Time+% · XP · Status · Priority */}
       <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-        {/* Date */}
-        <div ref={wrapRefs.date} className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => (o === 'date' ? null : 'date'))}
-            className={`${chipBase} ${date ? 'bg-[var(--accent2)]/7 hover:bg-[var(--accent2)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
-          >
-            <span className={`${chipText} ${date ? 'text-[var(--accent2)]' : 'text-fg-subtle'}`}>
-              <Calendar size={16} />
-              <span className="relative top-px">{date ? format(parseISO(date), 'MM/dd/yyyy') : 'Due date'}</span>
-            </span>
-          </button>
-          {openEditor === 'date' && (
-            <div className="absolute z-20 top-full left-0 mt-2" onKeyDown={stopEnter}>
-              <CalendarInput value={date} autoFocus onChange={setDate} />
-            </div>
-          )}
-        </div>
-
-        {/* Time + % */}
-        <div ref={wrapRefs.time} className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => (o === 'time' ? null : 'time'))}
-            className={`${chipBase} ${time ? 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
-          >
-            {time ? (
-              <>
-                <span className={`${chipText} text-[var(--accent1)]`}>
-                  <Clock size={16} />
-                  <span className="relative top-px">{formatTime12h(time)}</span>
-                </span>
-                {pct !== null && <div className="w-px h-4 bg-[var(--accent1)]/20" />}
-                {pct !== null && (
-                  <span className={`${chipText} text-[var(--accent1)]`}>
-                    <span className="relative top-px">{pct}%</span>
-                  </span>
-                )}
-              </>
-            ) : (
-              <span className={`${chipText} text-fg-subtle`}>
-                <Clock size={16} />
-                <span className="relative top-px">Time</span>
-              </span>
-            )}
-          </button>
-          {openEditor === 'time' && (
-            <div className="absolute z-20 top-full left-0 mt-2" onKeyDown={stopEnter}>
-              <TimeInput
-                value={time}
-                autoFocus
-                onChange={(val) => { handleTimeChange(val); if (!val) setStartTime(''); }}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* XP */}
-        <div ref={wrapRefs.xp} className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => (o === 'xp' ? null : 'xp'))}
-            className={`${chipBase} ${xpStr !== '' ? 'bg-warning-tint text-warning' : 'bg-fill-subtle hover:bg-fill'}`}
-          >
-            <span className={chipText}>
-              <Astroid size={16} className={xpStr !== '' ? '' : 'text-fg-subtle'} />
-              <span className={`relative top-px ${xpStr !== '' ? '' : 'text-fg-subtle'}`}>
-                {xpStr !== '' ? `${Math.max(0, parseInt(xpStr) || 0)} XP` : 'XP'}
-              </span>
-            </span>
-          </button>
-          {openEditor === 'xp' && (
-            <div className="absolute z-20 top-full left-0 mt-2">
-              <XpSlider
-                value={xpStr === '' ? undefined : Math.max(0, parseInt(xpStr) || 0)}
-                onChange={(v) => setXpStr(v == null ? '' : String(v))}
-              />
-            </div>
-          )}
-        </div>
-
+        <DateChip value={date} onChange={setDate} placeholder="Due date" />
+        <TimeChip
+          value={time}
+          percent={percentStr === '' ? undefined : parseFloat(percentStr)}
+          onChange={handleTimeChange}
+        />
+        <XpChip
+          value={xpStr === '' ? undefined : Math.max(0, parseInt(xpStr) || 0)}
+          onChange={(v) => setXpStr(v == null ? '' : String(v))}
+        />
         <div className="flex">
-          {/* Status */}
-          {optionChip(
-            'status', <CircleDot size={16} className="shrink-0 text-fg-subtle" />,
-            'Status', status, status ? statusOption(status) : undefined,
-            STATUS_OPTIONS, (v) => setStatus(v as TodoStatus | undefined),
-          )}
-
-          {/* Priority */}
-          {optionChip(
-            'priority', <Flag size={16} className="shrink-0 text-fg-subtle" />,
-            'Priority', priority, priority ? priorityOption(priority) : undefined,
-            PRIORITY_OPTIONS, (v) => setPriority(v as TodoPriority | undefined),
-          )}        
+          <OptionChipButton
+            icon={<CircleDot size={16} className="shrink-0 text-fg-subtle" />}
+            placeholder="Status"
+            value={status}
+            option={status ? statusOption(status) : undefined}
+            options={STATUS_OPTIONS}
+            onChange={(v) => setStatus(v as TodoStatus | undefined)}
+          />
+          <OptionChipButton
+            icon={<Flag size={16} className="shrink-0 text-fg-subtle" />}
+            placeholder="Priority"
+            value={priority}
+            option={priority ? priorityOption(priority) : undefined}
+            options={PRIORITY_OPTIONS}
+            onChange={(v) => setPriority(v as TodoPriority | undefined)}
+          />
         </div>
       </div>
 
       {/* Collection · Set parent task */}
       <div className="flex items-stretch gap-1 mt-3 flex-wrap">
-        <div ref={wrapRefs.collection} className="relative min-w-0 max-w-full">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => (o === 'collection' ? null : 'collection'))}
-            className={rowBtn}
-          >
-            <Shapes size={16} className="shrink-0 text-fg-subtle" />
-            {currentCollection
-              ? <CollectionBreadcrumb path={currentCollection.path} className="min-w-0" />
-              : <span className="text-fg-subtle">Collection</span>}
-          </button>
-          {openEditor === 'collection' && (
-            <div className={`${popover} w-64`} onKeyDown={stopEnter}>
-              <CollectionSearchField
-                value={collId}
-                currentPath={currentCollection?.path || []}
-                options={collectionOptions}
-                onChange={(id) => { setParentId(id); setOpenEditor(null); }}
-                onCreate={(name) => (onCreateCollection ? onCreateCollection(name) : '')}
-                autoFocus
-              />
-            </div>
-          )}
-        </div>
-
-        <button type="button" onClick={() => setParentPickerOpen(true)} className={rowBtn}>
-          <GitBranch size={16} className="shrink-0 text-fg-subtle" />
-          {parentTaskName
-            ? <span className="min-w-0 truncate text-fg">{parentTaskName}</span>
-            : <span className="text-fg-subtle">Set parent task</span>}
-        </button>
+        <CollectionButton
+          collectionId={collId}
+          options={collectionOptions}
+          onChange={setParentId}
+          onCreate={(name) => (onCreateCollection ? onCreateCollection(name) : '')}
+        />
+        <ParentTaskButton todoId={todoId} parentId={parentId} onChange={setParentId} />
       </div>
 
       {/* Footer */}
@@ -486,22 +289,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           {mode === 'add' ? 'Add task' : 'Save changes'}
         </button>
       </div>
-
-      {/* Parent-task picker (portals to body) */}
-      {parentPickerOpen && (
-        <TaskFinder
-          entries={searchEntries}
-          todoById={todoById}
-          onSaveTodo={handleHubSaveTodo}
-          onToggleTodo={handleToggleTodo}
-          title="Set parent task"
-          placeholder="Search for a task to nest under…"
-          isDisabled={parentDisabled}
-          rootOption={{ label: 'No parent (top level)', onSelect: () => { setParentId(null); setParentPickerOpen(false); } }}
-          onPick={(id) => { setParentId(id); setParentPickerOpen(false); }}
-          onClose={() => setParentPickerOpen(false)}
-        />
-      )}
     </div>
   );
 };
