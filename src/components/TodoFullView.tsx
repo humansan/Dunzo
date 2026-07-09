@@ -261,7 +261,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
           <div className="w-px bg-fill-subtle shrink-0" />
 
           {/* Right pane: properties + actions */}
-          <div className="w-80 shrink-0 flex flex-col overflow-hidden">
+          <div className="w-76 shrink-0 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-5 py-2 no-scrollbar">
 
               <RightProp
@@ -301,7 +301,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <DateChip
                     value={draft.startDate || ''}
-                    placeholder="Start date"
+                    placeholder="Date"
                     onChange={(val) => update({ startDate: val || undefined })}
                   />
                   <TimeChip
@@ -318,7 +318,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 canClear={draft.dueTime !== undefined}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <DateChip value={dateStr} placeholder="Due date" onChange={handleDateChange} />
+                  <DateChip value={dateStr} placeholder="Date" onChange={handleDateChange} />
                   <TimeChip
                     value={draft.dueTime}
                     percent={draft.duePercentage}
@@ -393,7 +393,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
             </button>
             <button
               onClick={() => { onDelete(draft.id); onClose(); }}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all"
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all cursor-pointer"
             >
               <Trash2 size={14} />
               Delete
