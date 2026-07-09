@@ -70,6 +70,8 @@ interface TodosHubViewProps {
   // The selected collection/view is URL-driven (/planner/$collectionId, bare = 'all').
   selectedView: string;
   onSelectView: (view: string) => void;
+  // Whether `dayTodos` has finished loading — see useHubData.
+  dataReady: boolean;
   // Opening a task navigates to /task/$taskId (the shared full-view route).
   onOpenTask: (id: string) => void;
 }
@@ -95,6 +97,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   onRenameWorkspace,
   selectedView,
   onSelectView,
+  dataReady,
   onOpenTask,
 }) => {
   // ── Collapse state (DB-synced) ─────────────────────────────────────────────
@@ -190,6 +193,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     activeWorkspaceId,
     selectedView,
     setSelectedView,
+    dataReady,
     collapsed,
     collapsedColls,
     activeFilters,

@@ -28,6 +28,9 @@ export function useHubData(params: {
   activeWorkspaceId: string;
   selectedView: string;
   setSelectedView: (v: string) => void;
+  // Whether `dayTodos` reflects a completed server load. An empty list means "no
+  // todos" only when this is true; before that it just means "not loaded yet".
+  dataReady: boolean;
   collapsed: Set<string>;
   collapsedColls: Set<string>;
   activeFilters: FilterRule[];
@@ -43,6 +46,7 @@ export function useHubData(params: {
     activeWorkspaceId,
     selectedView,
     setSelectedView,
+    dataReady,
     collapsed,
     collapsedColls,
     activeFilters,
@@ -153,12 +157,16 @@ export function useHubData(params: {
     [entries]
   );
 
-  // If the selected collection was deleted/archived, fall back to All.
+  // If the selected collection was deleted/archived, fall back to All. Gated on
+  // dataReady: while the todos/workspaces are still loading `collections` is empty,
+  // and firing here would rewrite a /planner/$collectionId deep-link to /planner
+  // before the collection ever had a chance to appear.
   useEffect(() => {
+    if (!dataReady) return;
     if (selectedCollectionId && !collections.some((c) => c.todo.id === selectedCollectionId)) {
       setSelectedView('all');
     }
-  }, [selectedCollectionId, collections]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dataReady, selectedCollectionId, collections]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Collections grouped by their parent collection (root = null), each list in
   // hub order. A parentId pointing outside this workspace's collections is

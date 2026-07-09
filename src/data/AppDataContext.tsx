@@ -48,17 +48,23 @@ function useProvideAppData() {
   const isAuthenticated = !!authSession.data;
 
   // Defense in depth against cross-account data leaks: whenever the signed-in
-  // user identity changes (sign-in, sign-out, or token swap from another tab),
-  // drop the entire query cache so no resident data from the previous user can
-  // be served under the global (non-user-scoped) query keys. The logout handler
-  // also clears explicitly, but this catches every session transition.
+  // user identity changes (sign-out, or token swap from another tab), drop the
+  // entire query cache so no resident data from the previous user can be served
+  // under the global (non-user-scoped) query keys. The logout handler also clears
+  // explicitly, but this catches every session transition.
+  //
+  // The first resolve of useSession() (undefined → id) is NOT such a transition:
+  // there is no previous user, and the _authed loader already prefetched with this
+  // user's token. Clearing there would evict that warm cache mid-mount, so every
+  // cold load would render one frame with empty todos — long enough for the
+  // "collection is gone" / "task is gone" effects downstream to bounce a deep link
+  // back to /planner or out of the app entirely.
   const userId = authSession.data?.user?.id;
   const prevUserId = useRef(userId);
   useEffect(() => {
-    if (prevUserId.current !== userId) {
-      queryClient.clear();
-      prevUserId.current = userId;
-    }
+    if (prevUserId.current === userId) return;
+    if (prevUserId.current !== undefined) queryClient.clear();
+    prevUserId.current = userId;
   }, [userId]);
 
   // ── Server data (TanStack Query); fetched once authenticated ───────────────
@@ -83,6 +89,13 @@ function useProvideAppData() {
   const settingsQuery = useSettings(isAuthenticated);
   const settings = settingsQuery.data;
   const updateSettings = useUpdateSettings();
+
+  // True once the server has actually answered for the data a URL can point at.
+  // `todos` / `workspaces` are `data ?? []`, so they read "empty" while loading or
+  // erroring — indistinguishable from "this collection/task really was deleted".
+  // Anything that reacts to a missing id by navigating away must wait for this.
+  const isDataReady =
+    todosQuery.isSuccess && workspacesQuery.isSuccess && settingsQuery.isSuccess;
 
   const weekStartsOn = settings?.weekStartsOn ?? 1;
   const setWeekStartsOn = (v: number) => updateSettings({ weekStartsOn: v });
@@ -406,6 +419,7 @@ function useProvideAppData() {
     authSession,
     sessionPending,
     isAuthenticated,
+    isDataReady,
     // data
     todos,
     trackers,
