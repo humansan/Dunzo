@@ -3,7 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { GripVertical, MoreHorizontal, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { Todo } from '../../types';
 import { btnGhost } from '../../theme/buttons';
-import { formatTime12h, percentageToTime, formatMinutes } from '../../utils/timeUtils';
+import { formatTime12h, formatMinutes } from '../../utils/timeUtils';
 import {
   CompletedToggle,
   PercentField,
@@ -310,7 +310,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'percent':
         return isEditing('percent') ? (
           <div className={editCellWrap}>
-            <PercentField value={todo.duePercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
+            <PercentField kind="due" value={todo.duePercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="percent">
@@ -340,26 +340,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'startPercent':
         return isEditing('startPercent') ? (
           <div className={editCellWrap}>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="any"
-              defaultValue={todo.startPercentage ?? ''}
-              autoFocus
-              onBlur={stopEdit}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === '') { saveField({ startPercentage: undefined }); return; }
-                const num = parseFloat(val);
-                if (!isNaN(num)) {
-                  const t = percentageToTime(num);
-                  saveField({ startPercentage: num, ...(t ? { startTime: t } : {}) });
-                }
-              }}
-                            placeholder="e.g. 50"
-              className={cellEditCls}
-            />
+            <PercentField kind="start" value={todo.startPercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="startPercent">

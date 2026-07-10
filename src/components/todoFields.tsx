@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Circle, X, Check, ChevronRight, Shapes } from 'lucide-react';
 import CheckCircleCutout from '../assets/CheckCircleCutout';
-import { percentageToTime } from '../utils/timeUtils';
+import { percentageToTime, timeToPercentage } from '../utils/timeUtils';
 import { TodoStatus, TodoPriority } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
 import { pill } from '../theme/pill';
@@ -16,9 +16,42 @@ import { collectionColor } from './todosHub/constants';
 // Patch shape emitted by the time/percent fields (a subset of Todo).
 export interface TimePatch {
   startTime?: string;
+  startPercentage?: number;
   dueTime?: string;
   duePercentage?: number;
 }
+
+// Which of the two time/percent pairs an edit targets.
+export type TimeKind = 'start' | 'due';
+
+// A time and its percent-of-day are two views of one value, so an edit to either
+// must write BOTH keys — including the cleared case, where omitting the sibling
+// key leaves it stranded (the patch is spread over the todo, so an absent key
+// means "keep"). The counterpart is dropped only when it can't be derived: an
+// unparseable time or an out-of-range percent leaves the other side as it was.
+export const patchFromTime = (kind: TimeKind, time: string): TimePatch => {
+  const pct = time ? timeToPercentage(time) : undefined;
+  if (kind === 'start') {
+    return time && pct === undefined
+      ? { startTime: time }
+      : { startTime: time || undefined, startPercentage: pct };
+  }
+  return time && pct === undefined
+    ? { dueTime: time }
+    : { dueTime: time || undefined, duePercentage: pct };
+};
+
+export const patchFromPercent = (kind: TimeKind, pct: number | undefined): TimePatch => {
+  const time = pct === undefined ? undefined : percentageToTime(pct);
+  if (kind === 'start') {
+    return pct !== undefined && time === undefined
+      ? { startPercentage: pct }
+      : { startPercentage: pct, startTime: time };
+  }
+  return pct !== undefined && time === undefined
+    ? { duePercentage: pct }
+    : { duePercentage: pct, dueTime: time };
+};
 
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
 export const fieldInputClass =
@@ -44,15 +77,16 @@ export const CompletedToggle: React.FC<{
   </button>
 );
 
-// ── Percent goal (keeps dueTime in sync) ─────────────────────────────────────
+// ── Percent goal (keeps its paired time in sync) ─────────────────────────────
 export const PercentField: React.FC<{
+  kind: TimeKind;
   value?: number;
   onChange: (patch: TimePatch) => void;
   className?: string;
   autoFocus?: boolean;
   onBlur?: () => void;
   placeholder?: string;
-}> = ({ value, onChange, className, autoFocus, onBlur, placeholder = 'e.g. 50' }) => (
+}> = ({ kind, value, onChange, className, autoFocus, onBlur, placeholder = 'e.g. 50' }) => (
   <input
     type="number"
     min="0"
@@ -63,12 +97,9 @@ export const PercentField: React.FC<{
     onBlur={onBlur}
     onChange={(e) => {
       const val = e.target.value;
-      if (val === '') { onChange({ duePercentage: undefined }); return; }
+      if (val === '') { onChange(patchFromPercent(kind, undefined)); return; }
       const num = parseFloat(val);
-      if (!isNaN(num)) {
-        const t = percentageToTime(num);
-        onChange({ duePercentage: num, ...(t ? { dueTime: t } : {}) });
-      }
+      if (!isNaN(num)) onChange(patchFromPercent(kind, num));
     }}
     placeholder={placeholder}
     className={className ?? fieldInputClass}

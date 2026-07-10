@@ -17,10 +17,10 @@ import { btnGhost } from '../theme/buttons';
 import { Switch } from './Switch';
 import { CollectionOption, hasDate } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
-import { timeToPercentage } from '../utils/timeUtils';
 import {
   CompletedToggle,
   OptionSelectField,
+  patchFromTime,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from './todoFields';
@@ -152,10 +152,10 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     else update({}, val);
   };
 
-  // The end time drives the percent-of-day readout (mirrors the table's `end` cell).
-  const handleDueTimeChange = (val: string) => {
-    update({ dueTime: val || undefined, duePercentage: val ? timeToPercentage(val) : undefined });
-  };
+  // Each time carries a percent-of-day twin; patchFromTime writes both (and clears
+  // both), the same way the Planner's cells do.
+  const handleStartTimeChange = (val: string) => update(patchFromTime('start', val));
+  const handleDueTimeChange = (val: string) => update(patchFromTime('due', val));
 
   // "Show in" invariants: Daily needs a date, and the task must stay visible on at
   // least one surface — so the sole enabled switch can't be turned off.
@@ -273,7 +273,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <RightProp
                 icon={<CalendarDays size={11} />}
                 label="Start"
-                onClear={() => update({ startDate: undefined, startTime: undefined })}
+                onClear={() => update({ startDate: undefined, ...patchFromTime('start', '') })}
                 canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -284,7 +284,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                   />
                   <TimeChip
                     value={draft.startTime}
-                    onChange={(val) => update({ startTime: val || undefined })}
+                    percent={draft.startPercentage}
+                    onChange={handleStartTimeChange}
                   />
                 </div>
               </RightProp>
@@ -292,7 +293,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <RightProp
                 icon={<Clock size={11} />}
                 label="Due"
-                onClear={() => update({ dueTime: undefined, duePercentage: undefined })}
+                onClear={() => update(patchFromTime('due', ''))}
                 canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">

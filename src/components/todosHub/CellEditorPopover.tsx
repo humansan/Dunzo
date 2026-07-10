@@ -6,13 +6,13 @@ import {
   NotesField,
   CollectionSearchField,
   OptionSelectField,
+  patchFromTime,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from '../todoFields';
 import { CalendarInput } from '../CalendarInput';
 import { TimeInput } from '../TimeInput';
 import { XpSlider } from '../XpSlider';
-import { timeToPercentage } from '../../utils/timeUtils';
 import { EditState } from './types';
 
 // The portaled inline-cell editor: a popover anchored to the cell being edited
@@ -115,17 +115,13 @@ export const CellEditorPopover: React.FC<{
         <TimeInput
           value={entry.todo.startTime}
           autoFocus
-          onChange={(val) => save({ startTime: val || undefined })}
+          onChange={(val) => save(patchFromTime('start', val))}
         />
       ) : col === 'end' ? (
         <TimeInput
           value={entry.todo.dueTime}
           autoFocus
-          onChange={(val) => {
-            // Keep duePercentage in sync with the end time (mirrors EndTimeField).
-            const p = timeToPercentage(val);
-            save({ dueTime: val || undefined, ...(p !== undefined ? { duePercentage: p } : {}) });
-          }}
+          onChange={(val) => save(patchFromTime('due', val))}
         />
       ) : (
         <NotesField
