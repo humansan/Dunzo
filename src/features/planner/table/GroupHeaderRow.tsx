@@ -1,9 +1,9 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { NAME_BASE_PAD, INDENT } from './constants';
-import { btnGhost } from '../../theme/buttons';
-import { GroupRow } from './types';
-import { SectionHeader } from './SectionHeader';
+import { NAME_BASE_PAD, INDENT } from '@/features/planner/constants';
+import { btnGhost } from '@/theme/buttons';
+import { GroupRow } from '@/features/planner/types';
+import { SectionHeader } from '@/features/planner/table/SectionHeader';
 
 type GroupHeader = Extract<GroupRow, { type: 'header' }>;
 

@@ -18,7 +18,7 @@ import { btnNeutral } from '../theme/buttons';
 import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
 import { isDone, toggledStatus } from '../utils/todoStatus';
 import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '../utils/todoFilters';
-import { collectionColor } from './todosHub/constants';
+import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from './Calendar';
 import { Switch } from './Switch';
 

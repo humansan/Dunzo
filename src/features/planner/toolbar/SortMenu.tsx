@@ -1,9 +1,9 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
-import { ColDef, ColKey, SortRule } from './types';
-import { btnGhost } from '../../theme/buttons';
-import { PopoverMenu } from './PopoverMenu';
-import { ListSelect } from './ListSelect';
+import { ColDef, ColKey, SortRule } from '@/features/planner/types';
+import { btnGhost } from '@/theme/buttons';
+import { PopoverMenu } from '@/common/ui/PopoverMenu';
+import { ListSelect } from '@/common/ui/ListSelect';
 
 export const SortMenu: React.FC<{
   anchor: { right: number; top: number };

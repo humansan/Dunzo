@@ -1,10 +1,10 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { HubRow } from './HubRow';
-import { GroupHeaderRow } from './GroupHeaderRow';
-import { ColDef } from './types';
-import { TableVariant } from './variant';
-import { RowDnD, TableModel, TableInteraction, TableRowHandlers } from './TaskTable';
+import { HubRow } from '@/features/planner/table/HubRow';
+import { GroupHeaderRow } from '@/features/planner/table/GroupHeaderRow';
+import { ColDef } from '@/features/planner/types';
+import { TableVariant } from '@/features/planner/variant';
+import { RowDnD, TableModel, TableInteraction, TableRowHandlers } from '@/features/planner/table/TaskTable';
 
 // The reusable row-list region shared by every chrome: the width anchor (full-grid
 // only), the task/section rows (collection-tree or attribute-grouped), the add-row,

@@ -1,8 +1,8 @@
 import React from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
-import { NAME_BASE_PAD, INDENT } from './constants';
-import { pill as chipStyle } from '../../theme/pill';
-import { useTableVariant } from './variant';
+import { NAME_BASE_PAD, INDENT } from '@/features/planner/constants';
+import { pill as chipStyle } from '@/theme/pill';
+import { useTableVariant } from '@/features/planner/variant';
 import { btnGhost } from '@/theme/buttons';
 
 // The single source of truth for how a section header looks in the Task Planner —

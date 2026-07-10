@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { fuzzyMatch } from '../../utils/fuzzyMatch';
-import { COLUMNS } from './types';
-import { getFieldDisplayValue } from './viewUtils';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { fuzzyMatch } from '@/utils/fuzzyMatch';
+import { COLUMNS } from '@/features/planner/types';
+import { getFieldDisplayValue } from '@/features/planner/model/viewUtils';
 
 // The Task Finder's search core. A task is a hit when the query fuzzy-matches its
 // name (VSCode-style, §fuzzyMatch) OR when every query token appears in its all-fields

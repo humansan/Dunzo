@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Inbox, Trash2 } from 'lucide-react';
-import { modalPop, overlayBackdrop } from '../modalMotion';
-import { btnGhost } from '../../theme/buttons';
+import { modalPop, overlayBackdrop } from '@/components/modalMotion';
+import { btnGhost } from '@/theme/buttons';
 
 // Confirmation modal shown when deleting a collection that still contains tasks:
 // promote the tasks up one level (into `promoteTarget`) or cascade-delete the

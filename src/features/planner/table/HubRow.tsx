@@ -2,8 +2,8 @@ import React, { useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { GripVertical, MoreHorizontal, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { btnGhost } from '../../theme/buttons';
-import { formatTime12h, formatMinutes } from '../../utils/timeUtils';
+import { btnGhost } from '@/theme/buttons';
+import { formatTime12h, formatMinutes } from '@/utils/timeUtils';
 import {
   CompletedToggle,
   PercentField,
@@ -11,13 +11,14 @@ import {
   OptionChip,
   statusOption,
   priorityOption,
-} from '../todoFields';
-import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from './types';
-import { INDENT, NAME_BASE_PAD, cellEditCls, collectionColor } from './constants';
-import { pill } from '../../theme/pill';
-import { SectionHeader } from './SectionHeader';
-import { useTableVariant } from './variant';
-import { isDone } from '../../utils/todoStatus';
+} from '@/components/todoFields';
+import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from '@/features/planner/types';
+import { collectionColor } from '@/theme/collectionColor';
+import { INDENT, NAME_BASE_PAD, cellEditCls } from '@/features/planner/constants';
+import { pill } from '@/theme/pill';
+import { SectionHeader } from '@/features/planner/table/SectionHeader';
+import { useTableVariant } from '@/features/planner/variant';
+import { isDone } from '@/utils/todoStatus';
 
 // Where the dragged row will land relative to this row: a line before/after it
 // (reorder) or nested inside it. `depth` is the indent level to draw the line at.

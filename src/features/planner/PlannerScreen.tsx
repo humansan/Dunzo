@@ -1,11 +1,11 @@
 import { useRouter } from '@tanstack/react-router';
-import { TodosHubView } from './TodosHubView';
-import { useAppData } from '../data/AppDataContext';
-import { useOverlayNav } from '../data/useOverlayNav';
+import { PlannerView } from './PlannerView';
+import { useAppData } from '@/data/AppDataContext';
+import { useOverlayNav } from '@/data/useOverlayNav';
 
 // Shared planner surface for both /planner (bare = 'all') and /planner/$collectionId.
 // `selectedView` comes from the route; selecting a view navigates so the collection
-// lives in the URL. viewMode + per-view config stay DB-synced inside TodosHubView.
+// lives in the URL. viewMode + per-view config stay DB-synced inside PlannerView.
 export function PlannerScreen({ selectedView }: { selectedView: string }) {
   const d = useAppData();
   const router = useRouter();
@@ -17,7 +17,7 @@ export function PlannerScreen({ selectedView }: { selectedView: string }) {
   return (
     <main className="h-screen py-0">
       <div className="h-screen">
-        <TodosHubView
+        <PlannerView
           dayTodos={d.dayTodos}
           collectionOptions={d.hubCollectionOptions}
           onSetTaskCollection={d.setTaskCollection}

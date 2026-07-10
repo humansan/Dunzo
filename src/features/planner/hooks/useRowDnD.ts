@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { FlatNode, GroupRow, SectionsConfig } from './types';
-import { flattenTree, orderFromFlat } from './treeUtils';
-import { groupAssignmentPatch, groupCreateSpec } from './viewUtils';
-import { useDragAutoScroll } from './useDragAutoScroll';
-import { useStableCallback } from './useStableCallback';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { FlatNode, GroupRow, SectionsConfig } from '@/features/planner/types';
+import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
+import { groupAssignmentPatch, groupCreateSpec } from '@/features/planner/model/viewUtils';
+import { useDragAutoScroll } from '@/common/hooks/useDragAutoScroll';
+import { useStableCallback } from '@/common/hooks/useStableCallback';
 
 // The dragged row's resolved drop: which row, whether it lands before/after
 // (reorder) or inside (nest), the resolved parent + indent depth (to draw the

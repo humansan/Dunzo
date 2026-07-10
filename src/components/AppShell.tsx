@@ -10,7 +10,7 @@ import { ActiveTodoTracker } from './ActiveTodoTracker';
 import { StopwatchFullscreen } from './StopwatchFullscreen';
 import { SettingsOverlay } from './SettingsOverlay';
 import { TaskOverlay } from './TaskOverlay';
-import { TaskFinder } from './todosHub/TaskFinder';
+import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '../data/AppDataContext';
 import { useOverlayNav } from '../data/useOverlayNav';
 import { useStopwatch } from '../data/StopwatchContext';

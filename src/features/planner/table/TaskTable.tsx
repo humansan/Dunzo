@@ -1,13 +1,13 @@
 import React from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig, COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
-import { flattenTree } from './treeUtils';
-import { BOTTOM_SPACER } from './constants';
-import { useRowDnD } from './useRowDnD';
-import { TableVariant, TableVariantContext } from './variant';
-import { TableSurface } from './TableSurface';
-import { TableRows } from './TableRows';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig, COLUMNS, DEFAULT_SECTIONS_CONFIG } from '@/features/planner/types';
+import { flattenTree } from '@/features/planner/sidebar/treeUtils';
+import { BOTTOM_SPACER } from '@/features/planner/constants';
+import { useRowDnD } from '@/features/planner/hooks/useRowDnD';
+import { TableVariant, TableVariantContext } from '@/features/planner/variant';
+import { TableSurface } from '@/features/planner/table/TableSurface';
+import { TableRows } from '@/features/planner/table/TableRows';
 
 export type RowDnD = ReturnType<typeof useRowDnD>;
 

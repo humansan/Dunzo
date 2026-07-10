@@ -1,4 +1,4 @@
-import { OrganizerEntry } from '../../utils/todoFilters';
+import { OrganizerEntry } from '@/utils/todoFilters';
 
 // ── Column model ─────────────────────────────────────────────────────────────
 export type ColKey =

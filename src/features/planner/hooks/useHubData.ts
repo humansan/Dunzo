@@ -7,16 +7,16 @@ import {
   todoIndex,
   collectionOf,
   collectionPath,
-} from '../../utils/todoFilters';
-import { ColKey, COLUMNS, GroupRow, FilterRule, SortRule, SectionsConfig } from './types';
+} from '@/utils/todoFilters';
+import { ColKey, COLUMNS, GroupRow, FilterRule, SortRule, SectionsConfig } from '@/features/planner/types';
 import {
   getFieldDisplayValue,
   getFieldRawValue,
   compareRawValues,
   matchesFilter,
   buildGroupedItems,
-} from './viewUtils';
-import { flattenTree } from './treeUtils';
+} from '@/features/planner/model/viewUtils';
+import { flattenTree } from '@/features/planner/sidebar/treeUtils';
 
 // The hub's derived-data layer: takes the raw dayTodos plus the active view/
 // filter/sort/section settings and produces every memoized projection the table

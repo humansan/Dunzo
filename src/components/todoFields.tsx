@@ -5,7 +5,7 @@ import CheckCircleCutout from '../assets/CheckCircleCutout';
 import { percentageToTime, timeToPercentage } from '../utils/timeUtils';
 import { TodoStatus, TodoPriority } from '@shared/types';
 import { pill } from '../theme/pill';
-import { collectionColor } from './todosHub/constants';
+import { collectionColor } from '@/theme/collectionColor';
 
 // ── Shared todo field editors ────────────────────────────────────────────────
 // Small controlled inputs for each todo field, shared by the full-view panel and

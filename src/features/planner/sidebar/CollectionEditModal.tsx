@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, ChevronDown, Check } from 'lucide-react';
-import { OrganizerEntry, CollectionOption } from '../../utils/todoFilters';
-import { btnAccent, btnGhost, btnNeutral } from '../../theme/buttons';
-import { CollectionPickerButton } from '../CollectionPicker';
-import { modalPop, overlayBackdrop } from '../modalMotion';
-import { textInputCls } from './TextInput';
-import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './constants';
+import { OrganizerEntry, CollectionOption } from '@/utils/todoFilters';
+import { btnAccent, btnGhost, btnNeutral } from '@/theme/buttons';
+import { CollectionPickerButton } from '@/components/CollectionPicker';
+import { modalPop, overlayBackdrop } from '@/components/modalMotion';
+import { textInputCls } from '@/common/ui/TextInput';
+import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
 
 // ── Collection Edit modal ────────────────────────────────────────────────────
 // Rename, recolor, and re-parent a collection. The parent picker is the shared

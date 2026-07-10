@@ -8,9 +8,9 @@ import {
   SortRule,
   SectionsConfig,
   DEFAULT_SECTIONS_CONFIG,
-} from './types';
-import { MIN_COL_WIDTH } from './constants';
-import { useSyncedSetting } from '../../data/settings';
+} from '@/features/planner/types';
+import { MIN_COL_WIDTH } from '@/features/planner/constants';
+import { useSyncedSetting } from '@/data/settings';
 
 // Owns the table's per-view layout: column widths (persisted globally) and the
 // per-view config (field order/visibility, filters, sorts, section settings)

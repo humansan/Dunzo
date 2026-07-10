@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry, collectionOf, collectionPath } from '../../utils/todoFilters';
-import { flattenTree } from './treeUtils';
-import { COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
-import { TableModel } from './TaskTable';
-import { VisibleCollection } from './CollectionTree';
+import { OrganizerEntry, collectionOf, collectionPath } from '@/utils/todoFilters';
+import { flattenTree } from '@/features/planner/sidebar/treeUtils';
+import { COLUMNS, DEFAULT_SECTIONS_CONFIG } from '@/features/planner/types';
+import { TableModel } from '@/features/planner/table/TaskTable';
+import { VisibleCollection } from '@/features/planner/sidebar/CollectionTree';
 
 // A collection breadcrumb (root→leaf) as the finder columns render it.
 const pathCells = (nearest: string | null, todoById: Map<string, Todo>) =>

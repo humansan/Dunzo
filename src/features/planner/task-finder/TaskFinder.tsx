@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X, List, Columns2, CornerLeftUp } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { useSyncedLayout } from '../../data/settings';
-import { overlayBackdrop } from '../modalMotion';
-import { VARIANTS } from './variant';
-import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from './TaskTable';
-import { useTaskFinderSearch } from './useTaskFinderSearch';
-import { TwoPaneResults } from './TwoPaneResults';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { useSyncedLayout } from '@/data/settings';
+import { overlayBackdrop } from '@/components/modalMotion';
+import { VARIANTS } from '@/features/planner/variant';
+import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from '@/features/planner/table/TaskTable';
+import { useTaskFinderSearch } from '@/features/planner/task-finder/useTaskFinderSearch';
+import { TwoPaneResults } from '@/features/planner/task-finder/TwoPaneResults';
 
 // A command-palette over the active workspace's tasks, driven by `onPick`: search
 // wires it to open a task's full view, a picker (e.g. reparent) wires it to its own

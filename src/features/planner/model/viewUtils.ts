@@ -1,9 +1,9 @@
 import { format, parse, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
-import { OrganizerEntry, collectionOf, collectionPath } from '../../utils/todoFilters';
+import { OrganizerEntry, collectionOf, collectionPath } from '@/utils/todoFilters';
 import { Todo, TodoStatus, TodoPriority } from '@shared/types';
-import { formatTime12h, formatMinutes } from '../../utils/timeUtils';
-import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '../todoFields';
-import { ColKey, FilterRule, FlatNode, GroupRow } from './types';
+import { formatTime12h, formatMinutes } from '@/utils/timeUtils';
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/components/todoFields';
+import { ColKey, FilterRule, FlatNode, GroupRow } from '@/features/planner/types';
 
 // Returns a display-formatted string for a field — what the user sees in the
 // table cell. This is used for the filter value dropdown and for filter matching.

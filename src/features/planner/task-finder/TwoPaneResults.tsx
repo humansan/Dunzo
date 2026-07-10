@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { VARIANTS } from './variant';
-import { TaskTable, TableInteraction, TableRowHandlers } from './TaskTable';
-import { useTaskFinderData } from './useTaskFinderData';
-import { CollectionTree } from './CollectionTree';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { VARIANTS } from '@/features/planner/variant';
+import { TaskTable, TableInteraction, TableRowHandlers } from '@/features/planner/table/TaskTable';
+import { useTaskFinderData } from '@/features/planner/task-finder/useTaskFinderData';
+import { CollectionTree } from '@/features/planner/sidebar/CollectionTree';
 
 const NOOP = () => {};
 const toggleId = (set: (fn: (prev: Set<string>) => Set<string>) => void) => (id: string) =>

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PlannerScreen } from '../../../components/PlannerScreen';
+import { PlannerScreen } from '@/features/planner';
 import { ViewErrorFallback } from '../../../components/ViewErrorFallback';
 
 // Bare /planner = the "all" view (no collection in the path).

@@ -16,10 +16,10 @@ import {
   Pencil,
   GitBranch,
 } from 'lucide-react';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { CalendarInput } from '../CalendarInput';
-import { TimeInput } from '../TimeInput';
-import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './constants';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { CalendarInput } from '@/components/CalendarInput';
+import { TimeInput } from '@/components/TimeInput';
+import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
 
 // Right-click / 3-dot row menu. Branches on whether the target row is a
 // collection (Edit / nested collection / recolor) or a task — the task items

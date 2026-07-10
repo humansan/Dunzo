@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Plus, FolderPlus } from 'lucide-react';
 import { Workspace } from '@shared/types';
-import { useCollectionDnD } from './useCollectionDnD';
-import { btnGhost } from '../../theme/buttons';
-import { CollectionTree, VisibleCollection } from './CollectionTree';
+import { useCollectionDnD } from '@/features/planner/hooks/useCollectionDnD';
+import { btnGhost } from '@/theme/buttons';
+import { CollectionTree, VisibleCollection } from '@/features/planner/sidebar/CollectionTree';
 
 // The hub's left pane: the Workspaces switcher (top) and the Collections tree
 // (All / Uncategorized pseudo-views + the nested, drag-reorderable collection

@@ -1,5 +1,5 @@
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { FlatNode } from './types';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { FlatNode } from '@/features/planner/types';
 
 // ── Tree helpers ─────────────────────────────────────────────────────────────
 

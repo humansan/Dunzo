@@ -1,8 +1,8 @@
 import React from 'react';
-import { ColDef } from './types';
-import { TABLE_PAD } from './constants';
-import { TableVariant } from './variant';
-import { RowDnD, TableModel } from './TaskTable';
+import { ColDef } from '@/features/planner/types';
+import { TABLE_PAD } from '@/features/planner/constants';
+import { TableVariant } from '@/features/planner/variant';
+import { RowDnD, TableModel } from '@/features/planner/table/TaskTable';
 
 // The scroll container + chrome for one table surface, chosen by `variant.chrome`:
 //   • title  — a single centered Name column with a project-style heading (List).

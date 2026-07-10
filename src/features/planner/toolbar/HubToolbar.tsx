@@ -11,9 +11,9 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { collectionPath } from '../../utils/todoFilters';
-import { btnGhost } from '../../theme/buttons';
-import { CollectionBreadcrumb } from '../todoFields';
+import { collectionPath } from '@/utils/todoFilters';
+import { btnGhost } from '@/theme/buttons';
+import { CollectionBreadcrumb } from '@/components/todoFields';
 
 export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
 

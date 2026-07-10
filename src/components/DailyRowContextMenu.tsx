@@ -13,7 +13,7 @@ import {
 import { Todo } from '@shared/types';
 import { CalendarInput } from './CalendarInput';
 import { TimeInput } from './TimeInput';
-import { TaskFinder } from './todosHub/TaskFinder';
+import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '../data/AppDataContext';
 
 // Right-click menu for a daily-list row — the counterpart to the Task Planner's

@@ -1,19 +1,19 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Todo } from '@shared/types';
-import { OrganizerEntry, CollectionOption, collectionOf } from '../../utils/todoFilters';
+import { OrganizerEntry, CollectionOption, collectionOf } from '@/utils/todoFilters';
 import {
   NotesField,
   OptionSelectField,
   patchFromTime,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
-} from '../todoFields';
-import { CalendarInput } from '../CalendarInput';
-import { TimeInput } from '../TimeInput';
-import { XpSlider } from '../XpSlider';
-import { CollectionPicker, COLLECTION_PANEL_WIDTH } from '../CollectionPicker';
-import { EditState } from './types';
+} from '@/components/todoFields';
+import { CalendarInput } from '@/components/CalendarInput';
+import { TimeInput } from '@/components/TimeInput';
+import { XpSlider } from '@/components/XpSlider';
+import { CollectionPicker, COLLECTION_PANEL_WIDTH } from '@/components/CollectionPicker';
+import { EditState } from '@/features/planner/types';
 
 // The portaled inline-cell editor: a popover anchored to the cell being edited
 // that swaps in the right control for the column (status/priority chips, a

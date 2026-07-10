@@ -32,7 +32,7 @@ import { isDone } from '../utils/todoStatus';
 import { buildXpHistory, starsFor } from '../utils/xpUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import { pillBg, pillBorder } from '../theme/pill';
-import { collectionColor } from './todosHub/constants';
+import { collectionColor } from '@/theme/collectionColor';
 import { useThemeColor } from '../theme/useThemeColor';
 
 interface StatsViewProps {

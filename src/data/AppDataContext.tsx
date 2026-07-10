@@ -11,7 +11,7 @@ import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './workspa
 import { useSettings, useUpdateSettings } from './settings';
 import { applyTheme, type ThemeMode } from '../theme/applyTheme';
 import { DEFAULT_THEME_ID } from '../theme/themes';
-import { DEFAULT_COLLECTION_SLOT } from '../components/todosHub/constants';
+import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
 
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).

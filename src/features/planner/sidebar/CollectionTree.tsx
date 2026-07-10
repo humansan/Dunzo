@@ -1,9 +1,10 @@
 import React from 'react';
 import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown } from 'lucide-react';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { collectionColor, SIDEBAR_INDENT } from './constants';
-import { btnGhost } from '../../theme/buttons';
-import { useCollectionDnD } from './useCollectionDnD';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { collectionColor } from '@/theme/collectionColor';
+import { SIDEBAR_INDENT } from '@/features/planner/constants';
+import { btnGhost } from '@/theme/buttons';
+import { useCollectionDnD } from '@/features/planner/hooks/useCollectionDnD';
 
 export type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: boolean };
 

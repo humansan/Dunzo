@@ -5,39 +5,39 @@ import { DayTodos, Todo, Workspace } from '@shared/types';
 import {
   OrganizerEntry,
   CollectionOption,
-} from '../utils/todoFilters';
-import { ColKey, COLUMNS, EditState } from './todosHub/types';
+} from '@/utils/todoFilters';
+import { ColKey, COLUMNS, EditState } from '@/features/planner/types';
+import { collectionSlot } from '@/theme/collectionColor';
 import {
-  collectionSlot,
   MIN_SIDEBAR_WIDTH,
   MAX_SIDEBAR_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
-} from './todosHub/constants';
-import { useSyncedSet, useSyncedLayout, resolveAction } from '../data/settings';
-import { useHubViewConfig } from './todosHub/useHubViewConfig';
-import { useHubData } from './todosHub/useHubData';
-import { useCollectionDnD } from './todosHub/useCollectionDnD';
-import { useRowDnD } from './todosHub/useRowDnD';
-import { HubSidebar } from './todosHub/HubSidebar';
-import { HubToolbar, ToolbarMenuKey } from './todosHub/HubToolbar';
-import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
-import { isDone } from '../utils/todoStatus';
-import { TaskTable } from './todosHub/TaskTable';
-import { VARIANTS } from './todosHub/variant';
-import { TaskFinder } from './todosHub/TaskFinder';
-import { FieldsMenu } from './todosHub/FieldsMenu';
-import { FilterMenu } from './todosHub/FilterMenu';
-import { SortMenu } from './todosHub/SortMenu';
-import { SectionsMenu } from './todosHub/SectionsMenu';
-import { CollectionEditModal } from './todosHub/CollectionEditModal';
-import { CellEditorPopover } from './todosHub/CellEditorPopover';
-import { RowContextMenu } from './todosHub/RowContextMenu';
-import { DeleteCollectionModal } from './todosHub/DeleteCollectionModal';
-import { useStableCallback } from './todosHub/useStableCallback';
-import { flattenTree, orderFromFlat } from './todosHub/treeUtils';
-import { timeToPercentage } from '../utils/timeUtils';
+} from '@/features/planner/constants';
+import { useSyncedSet, useSyncedLayout, resolveAction } from '@/data/settings';
+import { useHubViewConfig } from '@/features/planner/hooks/useHubViewConfig';
+import { useHubData } from '@/features/planner/hooks/useHubData';
+import { useCollectionDnD } from '@/features/planner/hooks/useCollectionDnD';
+import { useRowDnD } from '@/features/planner/hooks/useRowDnD';
+import { HubSidebar } from '@/features/planner/sidebar/HubSidebar';
+import { HubToolbar, ToolbarMenuKey } from '@/features/planner/toolbar/HubToolbar';
+import { groupCreateSpec, buildFilterCreatePatch } from '@/features/planner/model/viewUtils';
+import { isDone } from '@/utils/todoStatus';
+import { TaskTable } from '@/features/planner/table/TaskTable';
+import { VARIANTS } from '@/features/planner/variant';
+import { TaskFinder } from '@/features/planner/task-finder';
+import { FieldsMenu } from '@/features/planner/toolbar/FieldsMenu';
+import { FilterMenu } from '@/features/planner/toolbar/FilterMenu';
+import { SortMenu } from '@/features/planner/toolbar/SortMenu';
+import { SectionsMenu } from '@/features/planner/toolbar/SectionsMenu';
+import { CollectionEditModal } from '@/features/planner/sidebar/CollectionEditModal';
+import { CellEditorPopover } from '@/features/planner/table/CellEditorPopover';
+import { RowContextMenu } from '@/features/planner/table/RowContextMenu';
+import { DeleteCollectionModal } from '@/features/planner/sidebar/DeleteCollectionModal';
+import { useStableCallback } from '@/common/hooks/useStableCallback';
+import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
+import { timeToPercentage } from '@/utils/timeUtils';
 
-interface TodosHubViewProps {
+interface PlannerViewProps {
   dayTodos: DayTodos[];
   // Collections available to assign (active-workspace scoped) + helpers.
   collectionOptions: CollectionOption[];
@@ -78,7 +78,7 @@ interface TodosHubViewProps {
   onOpenTask: (id: string) => void;
 }
 
-export const TodosHubView: React.FC<TodosHubViewProps> = ({
+export const PlannerView: React.FC<PlannerViewProps> = ({
   dayTodos,
   collectionOptions,
   onSetTaskCollection,

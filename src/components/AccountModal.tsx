@@ -7,9 +7,8 @@ import { authClient } from '../auth';
 import { buildBackup, parseBackup, mergeImportToDb } from '../data/import';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon.svg';
-import { ListSelect } from './todosHub/ListSelect';
+import { ListSelect, textInputCls } from '@/common/ui';
 import { Switch } from './Switch';
-import { textInputCls } from './todosHub/TextInput';
 import { modalPop, overlayBackdrop } from './modalMotion';
 
 type CountdownMode = 'off' | 'time' | 'percent';

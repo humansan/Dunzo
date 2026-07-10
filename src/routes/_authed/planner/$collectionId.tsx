@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PlannerScreen } from '../../../components/PlannerScreen';
+import { PlannerScreen } from '@/features/planner';
 import { ViewErrorFallback } from '../../../components/ViewErrorFallback';
 
 // /planner/$collectionId — the collection id is the selected view.

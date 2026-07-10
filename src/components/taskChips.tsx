@@ -13,7 +13,7 @@ import {
 import { CalendarInput } from './CalendarInput';
 import { TimeInput } from './TimeInput';
 import { XpSlider } from './XpSlider';
-import { TaskFinder } from './todosHub/TaskFinder';
+import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '../data/AppDataContext';
 import { btnGhost } from '../theme/buttons';
 

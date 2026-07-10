@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { OrganizerEntry } from '../../utils/todoFilters';
-import { flattenTree, orderFromFlat } from './treeUtils';
-import { useDragAutoScroll } from './useDragAutoScroll';
+import { OrganizerEntry } from '@/utils/todoFilters';
+import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
+import { useDragAutoScroll } from '@/common/hooks/useDragAutoScroll';
 
 // Native HTML5 drag-and-drop for the sidebar collection tree: drag a collection
 // over another to nest it (hover the middle), or between two to reorder it (hover

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
-import { ColDef, ColKey, FilterRule, FilterCondition, FILTER_CONDITIONS } from './types';
-import { btnGhost } from '../../theme/buttons';
-import { PopoverMenu } from './PopoverMenu';
-import { ListSelect } from './ListSelect';
+import { ColDef, ColKey, FilterRule, FilterCondition, FILTER_CONDITIONS } from '@/features/planner/types';
+import { btnGhost } from '@/theme/buttons';
+import { PopoverMenu } from '@/common/ui/PopoverMenu';
+import { ListSelect } from '@/common/ui/ListSelect';
 
 export const FilterMenu: React.FC<{
   anchor: { right: number; top: number };
