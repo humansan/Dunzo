@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { OrganizerEntry } from '@/utils/todoFilters';
+import { OrganizerEntry } from '@/features/tasks/model';
 import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
 import { useDragAutoScroll } from '@/common/hooks/useDragAutoScroll';
 

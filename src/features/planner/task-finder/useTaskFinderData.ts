@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry, collectionOf, collectionPath } from '@/utils/todoFilters';
+import { OrganizerEntry, collectionOf, collectionPath } from '@/features/tasks/model';
 import { flattenTree } from '@/features/planner/sidebar/treeUtils';
 import { COLUMNS, DEFAULT_SECTIONS_CONFIG } from '@/features/planner/types';
 import { TableModel } from '@/features/planner/table/TaskTable';

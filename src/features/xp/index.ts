@@ -1,5 +1,4 @@
-// XP, streaks and stars. Leaf feature: imports nothing from other features.
+// XP, streaks and stars. Reads the todo domain via '@/features/tasks/model'.
 export { XpProgressBar } from './XpProgressBar';
-export { XpSlider } from './XpSlider';
 export { StarStreak } from './StarStreak';
 export * from './model/xp';

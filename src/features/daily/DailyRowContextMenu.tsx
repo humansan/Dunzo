@@ -11,15 +11,15 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { CalendarInput } from './CalendarInput';
-import { TimeInput } from './TimeInput';
+import { CalendarInput } from '@/components/CalendarInput';
+import { TimeInput } from '@/components/TimeInput';
 import { TaskFinder } from '@/features/planner/task-finder';
-import { useAppData } from '../data/AppDataContext';
+import { useAppData } from '@/data/AppDataContext';
 
 // Right-click menu for a daily-list row — the counterpart to the Task Planner's
 // RowContextMenu. Date / time open the same CalendarInput + TimeInput panels the
 // quick-edit chips use, flown out beside the menu; "Set parent task" opens the
-// shared TaskFinder picker. All mutations are callbacks so ListView's parent owns
+// shared TaskFinder picker. All mutations are callbacks so DailyList's parent owns
 // the state.
 const itemCls =
   'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-fg-muted hover:bg-fill hover:text-fg transition-colors';

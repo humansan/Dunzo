@@ -13,25 +13,25 @@ import {
   Database,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { btnGhost } from '../theme/buttons';
-import { Switch } from './Switch';
-import { CollectionOption, hasDate } from '../utils/todoFilters';
-import { isDone } from '../utils/todoStatus';
+import { btnGhost } from '@/theme/buttons';
+import { Switch } from '@/components/Switch';
+import { CollectionOption, hasDate } from '@/features/tasks/model';
+import { isDone } from '@/features/tasks/model';
 import {
   CompletedToggle,
   OptionSelectField,
   patchFromTime,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
-} from './todoFields';
+} from '@/features/tasks/fields';
 import {
   DateChip,
   TimeChip,
   XpChip,
   ParentTaskButton,
   derivedCollectionId,
-} from './taskChips';
-import { CollectionPickerButton } from './CollectionPicker';
+} from '@/features/tasks/chips';
+import { CollectionPickerButton } from '@/features/tasks/collection-picker';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 
 interface TodoFullViewProps {

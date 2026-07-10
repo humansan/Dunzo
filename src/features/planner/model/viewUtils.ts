@@ -1,8 +1,8 @@
 import { format, parse, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
-import { OrganizerEntry, collectionOf, collectionPath } from '@/utils/todoFilters';
+import { OrganizerEntry, collectionOf, collectionPath } from '@/features/tasks/model';
 import { Todo, TodoStatus, TodoPriority } from '@shared/types';
 import { formatTime12h, formatMinutes } from '@/utils/timeUtils';
-import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/components/todoFields';
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/features/tasks/fields';
 import { ColKey, FilterRule, FlatNode, GroupRow } from '@/features/planner/types';
 
 // Returns a display-formatted string for a field — what the user sees in the

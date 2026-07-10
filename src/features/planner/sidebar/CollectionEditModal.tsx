@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, ChevronDown, Check } from 'lucide-react';
-import { OrganizerEntry, CollectionOption } from '@/utils/todoFilters';
+import { OrganizerEntry, CollectionOption } from '@/features/tasks/model';
 import { btnAccent, btnGhost, btnNeutral } from '@/theme/buttons';
-import { CollectionPickerButton } from '@/components/CollectionPicker';
+import { CollectionPickerButton } from '@/features/tasks/collection-picker';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 import { textInputCls } from '@/common/ui/TextInput';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';

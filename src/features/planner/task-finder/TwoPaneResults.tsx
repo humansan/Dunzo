@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '@/utils/todoFilters';
+import { OrganizerEntry } from '@/features/tasks/model';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskTable, TableInteraction, TableRowHandlers } from '@/features/planner/table/TaskTable';
 import { useTaskFinderData } from '@/features/planner/task-finder/useTaskFinderData';

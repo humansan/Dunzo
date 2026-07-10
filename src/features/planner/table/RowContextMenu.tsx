@@ -16,7 +16,7 @@ import {
   Pencil,
   GitBranch,
 } from 'lucide-react';
-import { OrganizerEntry } from '@/utils/todoFilters';
+import { OrganizerEntry } from '@/features/tasks/model';
 import { CalendarInput } from '@/components/CalendarInput';
 import { TimeInput } from '@/components/TimeInput';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';

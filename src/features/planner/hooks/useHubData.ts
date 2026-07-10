@@ -7,7 +7,7 @@ import {
   todoIndex,
   collectionOf,
   collectionPath,
-} from '@/utils/todoFilters';
+} from '@/features/tasks/model';
 import { ColKey, COLUMNS, GroupRow, FilterRule, SortRule, SectionsConfig } from '@/features/planner/types';
 import {
   getFieldDisplayValue,

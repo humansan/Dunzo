@@ -1,10 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Maximize2, CircleDot, Flag } from 'lucide-react';
-import { timeToPercentage } from '../utils/timeUtils';
-import { CollectionOption } from '../utils/todoFilters';
+import { timeToPercentage } from '@/utils/timeUtils';
+import { CollectionOption } from '@/features/tasks/model';
 import { TodoStatus, TodoPriority } from '@shared/types';
-import { btnAccent, btnNeutral } from '../theme/buttons';
-import { statusOption, priorityOption, STATUS_OPTIONS, PRIORITY_OPTIONS } from './todoFields';
+import { btnAccent, btnNeutral } from '@/theme/buttons';
+import { statusOption, priorityOption, STATUS_OPTIONS, PRIORITY_OPTIONS } from '@/features/tasks/fields';
 import {
   DateChip,
   TimeChip,
@@ -12,9 +12,9 @@ import {
   OptionChipButton,
   ParentTaskButton,
   derivedCollectionId,
-} from './taskChips';
-import { CollectionPickerButton } from './CollectionPicker';
-import { useAppData } from '../data/AppDataContext';
+} from '@/features/tasks/chips';
+import { CollectionPickerButton } from '@/features/tasks/collection-picker';
+import { useAppData } from '@/data/AppDataContext';
 
 export interface QuickEditValues {
   text: string;

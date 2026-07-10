@@ -16,7 +16,7 @@ const GOLD = '#ffc24b';
 const POP: [number, number, number, number] = [0.2, 0.9, 0.2, 1];
 
 // Memoised so unrelated parent re-renders (e.g. the once-a-second clock tick in
-// TodoView) can't re-pass fresh keyframe arrays mid-burst and restart the pop.
+// DailyScreen) can't re-pass fresh keyframe arrays mid-burst and restart the pop.
 const StarIcon = React.memo(({ active, burst }: { active: boolean; burst: boolean }) => (
   <div className="relative">
     <motion.div
@@ -144,5 +144,5 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
 };
 
 // dayTodos / date are stable between edits, so memoising keeps the widget from
-// re-rendering on TodoView's per-second clock tick — the source of the flutter.
+// re-rendering on DailyScreen's per-second clock tick — the source of the flutter.
 export const StarStreak = React.memo(StarStreakBase);

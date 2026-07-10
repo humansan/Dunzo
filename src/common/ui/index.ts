@@ -3,3 +3,4 @@
 export { ListSelect, type ListSelectOption } from './ListSelect';
 export { TextInput, textInputCls, inputBaseCls } from './TextInput';
 export { PopoverMenu } from './PopoverMenu';
+export { XpSlider } from './XpSlider';

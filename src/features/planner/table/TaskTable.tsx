@@ -1,6 +1,6 @@
 import React from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '@/utils/todoFilters';
+import { OrganizerEntry } from '@/features/tasks/model';
 import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig, COLUMNS, DEFAULT_SECTIONS_CONFIG } from '@/features/planner/types';
 import { flattenTree } from '@/features/planner/sidebar/treeUtils';
 import { BOTTOM_SPACER } from '@/features/planner/constants';

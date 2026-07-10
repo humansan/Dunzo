@@ -11,7 +11,7 @@ import {
   Sparkles,
   Flag,
 } from 'lucide-react';
-import CheckCircleCutout from '../assets/CheckCircleCutout';
+import CheckCircleCutout from '@/assets/CheckCircleCutout';
 import {
   DndContext,
   closestCorners,
@@ -32,14 +32,14 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Todo } from '@shared/types';
-import { CollectionOption } from '../utils/todoFilters';
-import { isDone } from '../utils/todoStatus';
-import { pill } from '../theme/pill';
-import { priorityOption } from './todoFields';
-import { TaskTimeChips, formatCountdown } from './TaskTimeChips';
-import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
-import { DailyRowContextMenu } from './DailyRowContextMenu';
-import { btnGhost } from '../theme/buttons';
+import { CollectionOption } from '@/features/tasks/model';
+import { isDone } from '@/features/tasks/model';
+import { pill } from '@/theme/pill';
+import { priorityOption } from '@/features/tasks/fields';
+import { TaskTimeChips, formatCountdown } from '@/features/tasks';
+import { QuickEditTodo, QuickEditValues } from '@/features/tasks';
+import { DailyRowContextMenu } from '@/features/daily/DailyRowContextMenu';
+import { btnGhost } from '@/theme/buttons';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -87,14 +87,14 @@ interface SortableItemProps {
   onCreateCollection: (name: string) => string;
 }
 
-export interface ListViewProps {
+export interface DailyListProps {
   todos: Todo[];
   date: string;
   /** 'compact' = current daily list style. 'expanded' = future mode with sections/hierarchy. */
   mode?: 'compact' | 'expanded';
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  /** Called when the user confirms an edit (save + close). ListView closes the panel after calling this. */
+  /** Called when the user confirms an edit (save + close). DailyList closes the panel after calling this. */
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   /** Called on unmount-flush without closing the panel. */
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
@@ -313,9 +313,9 @@ const SortableTodoItem: React.FC<SortableItemProps> = (props) => {
   );
 };
 
-// ── ListView ──────────────────────────────────────────────────────────────────
+// ── DailyList ──────────────────────────────────────────────────────────────────
 
-export const ListView: React.FC<ListViewProps> = ({
+export const DailyList: React.FC<DailyListProps> = ({
   todos,
   date,
   mode = 'compact',

@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
-import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '../utils/todoFilters';
-import { normalizeCompletion, toggledStatus } from '../utils/todoStatus';
+import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus } from '@/features/tasks/model';
 import { timeToPercentage } from '../utils/timeUtils';
 import { authClient } from '@/lib/auth';
 import { queryClient } from './queryClient';
-import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from './todos';
+import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from '@/features/tasks/api';
 import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from '@/features/trackers/api';
 import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './workspaces';
 import { useSettings, useUpdateSettings } from './settings';

@@ -5,7 +5,7 @@ import { DayTodos, Todo, Workspace } from '@shared/types';
 import {
   OrganizerEntry,
   CollectionOption,
-} from '@/utils/todoFilters';
+} from '@/features/tasks/model';
 import { ColKey, COLUMNS, EditState } from '@/features/planner/types';
 import { collectionSlot } from '@/theme/collectionColor';
 import {
@@ -21,7 +21,7 @@ import { useRowDnD } from '@/features/planner/hooks/useRowDnD';
 import { HubSidebar } from '@/features/planner/sidebar/HubSidebar';
 import { HubToolbar, ToolbarMenuKey } from '@/features/planner/toolbar/HubToolbar';
 import { groupCreateSpec, buildFilterCreatePatch } from '@/features/planner/model/viewUtils';
-import { isDone } from '@/utils/todoStatus';
+import { isDone } from '@/features/tasks/model';
 import { TaskTable } from '@/features/planner/table/TaskTable';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskFinder } from '@/features/planner/task-finder';

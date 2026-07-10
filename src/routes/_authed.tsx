@@ -4,7 +4,7 @@ import { StopwatchProvider } from '@/features/stopwatch';
 import { AppShell } from '../components/AppShell';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { authClient } from '@/lib/auth';
-import { todosQueryOptions } from '../data/todos';
+import { todosQueryOptions } from '@/features/tasks/api';
 import { trackersQueryOptions } from '@/features/trackers/api';
 import { workspacesQueryOptions } from '../data/workspaces';
 import { settingsQueryOptions } from '../data/settings';

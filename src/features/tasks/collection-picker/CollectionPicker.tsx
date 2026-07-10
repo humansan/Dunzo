@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, Shapes } from 'lucide-react';
-import { CollectionOption } from '../utils/todoFilters';
-import { CollectionBreadcrumb } from './todoFields';
-import { ChipPopover, rowBtn } from './taskChips';
+import { CollectionOption } from '@/features/tasks/model';
+import { CollectionBreadcrumb } from '@/features/tasks/fields';
+import { ChipPopover, rowBtn } from '@/features/tasks/chips';
 
 // ── Collection picker ────────────────────────────────────────────────────────
 // One panel — search box and results list in the same box, at a fixed width, so

@@ -1,4 +1,4 @@
-import { OrganizerEntry } from '@/utils/todoFilters';
+import { OrganizerEntry } from '@/features/tasks/model';
 import { FlatNode } from '@/features/planner/types';
 
 // ── Tree helpers ─────────────────────────────────────────────────────────────

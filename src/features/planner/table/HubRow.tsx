@@ -11,14 +11,14 @@ import {
   OptionChip,
   statusOption,
   priorityOption,
-} from '@/components/todoFields';
+} from '@/features/tasks/fields';
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from '@/features/planner/types';
 import { collectionColor } from '@/theme/collectionColor';
 import { INDENT, NAME_BASE_PAD, cellEditCls } from '@/features/planner/constants';
 import { pill } from '@/theme/pill';
 import { SectionHeader } from '@/features/planner/table/SectionHeader';
 import { useTableVariant } from '@/features/planner/variant';
-import { isDone } from '@/utils/todoStatus';
+import { isDone } from '@/features/tasks/model';
 
 // Where the dragged row will land relative to this row: a line before/after it
 // (reorder) or nested inside it. `depth` is the indent level to draw the line at.

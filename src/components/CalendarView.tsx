@@ -16,8 +16,8 @@ import {
 import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '../theme/buttons';
 import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
-import { isDone, toggledStatus } from '../utils/todoStatus';
-import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '../utils/todoFilters';
+import { isDone, toggledStatus } from '@/features/tasks/model';
+import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from './Calendar';
 import { Switch } from './Switch';

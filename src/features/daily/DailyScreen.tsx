@@ -15,21 +15,21 @@ import {
   ChevronRight,
   CalendarDays,
 } from 'lucide-react';
-import { btnNeutral, btnToggle } from '../theme/buttons';
+import { btnNeutral, btnToggle } from '@/theme/buttons';
 import { Todo, DayTodos, Tracker } from '@shared/types';
-import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '../utils/todoFilters';
-import { timeToPercentage } from '../utils/timeUtils';
+import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '@/features/tasks/model';
+import { timeToPercentage } from '@/utils/timeUtils';
 
 import { TrackerCard } from '@/features/trackers';
-import { CalendarView } from './CalendarView';
-import { QuickEditValues } from './QuickEditTodo';
+import { CalendarView } from '@/components/CalendarView';
+import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
 import { StarStreak } from '@/features/xp';
 import { computeXpStats, getWeeklyXp } from '@/features/xp';
-import { ListView } from './ListView';
-import { DatePickerPopover } from './DatePickerPopover';
+import { DailyList } from '@/features/daily/DailyList';
+import { DatePickerPopover } from '@/components/DatePickerPopover';
 
-interface TodoViewProps {
+interface DailyScreenProps {
   dayTodos: DayTodos[];
   onUpdateTodos: (date: string, todos: Todo[]) => void;
   onMoveTodo: (fromDate: string, toDate: string, updatedTodo: Todo) => void;
@@ -54,8 +54,8 @@ interface TodoViewProps {
   onCreateTask: (date: string, startTime: string, dueTime: string) => string;
 }
 
-// ─── TodoView ────────────────────────────────────────────────────────────────
-export const TodoView: React.FC<TodoViewProps> = ({
+// ─── DailyScreen ────────────────────────────────────────────────────────────────
+export const DailyScreen: React.FC<DailyScreenProps> = ({
   dayTodos,
   onUpdateTodos,
   onMoveTodo,
@@ -359,7 +359,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
         </div>
 
         {/* Todo List */}
-        <ListView
+        <DailyList
           todos={dailyTodos}
           date={selectedDate}
           onToggle={onToggleTodo}
@@ -379,7 +379,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
           collectionOptions={collOptions}
           onCreateCollection={onCreateCollection}
           onReorder={(newTodos) => {
-            // ListView only sees the daily-visible subset; keep the day's hidden
+            // DailyList only sees the daily-visible subset; keep the day's hidden
             // (dated planner) todos so handleUpdateTodos doesn't delete them.
             const hidden = (currentDayData.todos || []).filter(t => t && !showsOnDailyChecklist(t, selectedDate));
             onUpdateTodos(selectedDate, [...newTodos, ...hidden]);

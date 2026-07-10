@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '@/utils/todoFilters';
+import { OrganizerEntry } from '@/features/tasks/model';
 import { FlatNode, GroupRow, SectionsConfig } from '@/features/planner/types';
 import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
 import { groupAssignmentPatch, groupCreateSpec } from '@/features/planner/model/viewUtils';

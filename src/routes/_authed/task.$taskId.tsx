@@ -1,5 +1,5 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { TaskOverlay } from '../../components/TaskOverlay';
+import { TaskOverlay } from '@/features/tasks';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 
 // Standalone /task/$taskId route — only reached by a cold deep-link (reloading the

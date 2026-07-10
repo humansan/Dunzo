@@ -27,8 +27,8 @@ import {
   Download
 } from 'lucide-react';
 import { DayTodos, Todo } from '@shared/types';
-import { hasDate, showsOnDailyChecklist, todoIndex, collectionOf, collectionPath } from '@/utils/todoFilters';
-import { isDone } from '@/utils/todoStatus';
+import { hasDate, showsOnDailyChecklist, todoIndex, collectionOf, collectionPath } from '@/features/tasks/model';
+import { isDone } from '@/features/tasks/model';
 import { buildXpHistory, starsFor } from '@/features/xp';
 import { motion, AnimatePresence } from 'motion/react';
 import { pillBg, pillBorder } from '@/theme/pill';

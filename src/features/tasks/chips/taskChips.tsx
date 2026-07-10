@@ -2,20 +2,20 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Astroid, GitBranch } from 'lucide-react';
-import { formatTime12h } from '../utils/timeUtils';
-import { collectionOf } from '../utils/todoFilters';
+import { formatTime12h } from '@/utils/timeUtils';
+import { collectionOf } from '@/features/tasks/model';
 import { Todo } from '@shared/types';
 import {
   OptionSelectField,
   OptionChip,
   ChipOption,
-} from './todoFields';
-import { CalendarInput } from './CalendarInput';
-import { TimeInput } from './TimeInput';
-import { XpSlider } from '@/features/xp';
+} from '@/features/tasks/fields';
+import { CalendarInput } from '@/components/CalendarInput';
+import { TimeInput } from '@/components/TimeInput';
+import { XpSlider } from '@/common/ui';
 import { TaskFinder } from '@/features/planner/task-finder';
-import { useAppData } from '../data/AppDataContext';
-import { btnGhost } from '../theme/buttons';
+import { useAppData } from '@/data/AppDataContext';
+import { btnGhost } from '@/theme/buttons';
 
 // ── Shared chip recipes ──────────────────────────────────────────────────────
 // Tinted, fixed-height chips (date / time / xp) and the left-aligned hover-lit

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { TodoView } from '../../components/TodoView';
+import { DailyScreen } from '@/features/daily';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
 import { useOverlayNav } from '../../data/useOverlayNav';
@@ -23,7 +23,7 @@ function TodayRoute() {
   return (
     <main className="mx-auto px-2 h-screen py-0">
       <div>
-        <TodoView
+        <DailyScreen
           dayTodos={d.dayTodos}
           onUpdateTodos={d.handleUpdateTodos}
           onMoveTodo={d.handleMoveTodo}

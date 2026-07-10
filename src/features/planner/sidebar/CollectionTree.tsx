@@ -1,6 +1,6 @@
 import React from 'react';
 import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown } from 'lucide-react';
-import { OrganizerEntry } from '@/utils/todoFilters';
+import { OrganizerEntry } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { SIDEBAR_INDENT } from '@/features/planner/constants';
 import { btnGhost } from '@/theme/buttons';

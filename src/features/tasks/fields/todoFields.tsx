@@ -1,10 +1,10 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Circle, Check, ChevronRight } from 'lucide-react';
-import CheckCircleCutout from '../assets/CheckCircleCutout';
-import { percentageToTime, timeToPercentage } from '../utils/timeUtils';
+import CheckCircleCutout from '@/assets/CheckCircleCutout';
+import { percentageToTime, timeToPercentage } from '@/utils/timeUtils';
 import { TodoStatus, TodoPriority } from '@shared/types';
-import { pill } from '../theme/pill';
+import { pill } from '@/theme/pill';
 import { collectionColor } from '@/theme/collectionColor';
 
 // ── Shared todo field editors ────────────────────────────────────────────────

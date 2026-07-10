@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, CheckCircle2, Circle } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { isDone } from '../utils/todoStatus';
+import { isDone } from '@/features/tasks/model';
 import { differenceInSeconds, startOfDay } from 'date-fns';
-import { TaskTimeChips, formatCountdown, CountdownMode } from './TaskTimeChips';
+import { TaskTimeChips, formatCountdown, CountdownMode } from '@/features/tasks';
 import { EXPO_OUT } from '@/common/ui/motion';
-import { btnGhost } from '../theme/buttons';
+import { btnGhost } from '@/theme/buttons';
 
 interface ActiveTodoTrackerProps {
   todo: Todo;

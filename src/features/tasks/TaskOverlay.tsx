@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { TodoFullView } from './TodoFullView';
-import { useAppData } from '../data/AppDataContext';
+import { TodoFullView } from '@/features/tasks/TodoFullView';
+import { useAppData } from '@/data/AppDataContext';
 
 // Task full-view modal wired to app data. Rendered both by AppShell (when the
 // `task` search param is set — the in-app masked open) and by the /task/$taskId
