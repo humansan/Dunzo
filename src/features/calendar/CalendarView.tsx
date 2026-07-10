@@ -14,13 +14,13 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Todo, DayTodos } from '@shared/types';
-import { btnNeutral } from '../theme/buttons';
-import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
+import { btnNeutral } from '@/theme/buttons';
+import { timeToPercentage, formatTime12h } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
 import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
-import { Calendar } from './Calendar';
-import { Switch } from './Switch';
+import { Calendar } from '@/common/ui/Calendar';
+import { Switch } from '@/common/ui/Switch';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

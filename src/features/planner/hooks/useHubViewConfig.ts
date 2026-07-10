@@ -10,7 +10,7 @@ import {
   DEFAULT_SECTIONS_CONFIG,
 } from '@/features/planner/types';
 import { MIN_COL_WIDTH } from '@/features/planner/constants';
-import { useSyncedSetting } from '@/data/settings';
+import { useSyncedSetting } from '@/lib/query/settings';
 
 // Owns the table's per-view layout: column widths (persisted globally) and the
 // per-view config (field order/visibility, filters, sorts, section settings)

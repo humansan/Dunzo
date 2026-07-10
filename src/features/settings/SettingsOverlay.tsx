@@ -1,6 +1,6 @@
 import React from 'react';
 import { AccountModal } from '@/features/settings/AccountModal';
-import { useAppData } from '@/data/AppDataContext';
+import { useAppData } from '@/lib/app-data';
 
 // Settings modal wired to app data. Rendered both by AppShell (when the `settings`
 // search param is set — the in-app masked open) and by the /settings route (a cold

@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Maximize2, CircleDot, Flag } from 'lucide-react';
-import { timeToPercentage } from '@/utils/timeUtils';
+import { timeToPercentage } from '@/common/lib/time';
 import { CollectionOption } from '@/features/tasks/model';
 import { TodoStatus, TodoPriority } from '@shared/types';
 import { btnAccent, btnNeutral } from '@/theme/buttons';
@@ -14,7 +14,7 @@ import {
   derivedCollectionId,
 } from '@/features/tasks/chips';
 import { CollectionPickerButton } from '@/features/tasks/collection-picker';
-import { useAppData } from '@/data/AppDataContext';
+import { useAppData } from '@/lib/app-data';
 
 export interface QuickEditValues {
   text: string;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { timeToPercentage, percentageToTime, formatTime12h } from '../utils/timeUtils';
+import { timeToPercentage, percentageToTime, formatTime12h } from '@/common/lib/time';
 
 interface TimeInputProps {
   value?: string; // "HH:MM" (24h) or '' / undefined

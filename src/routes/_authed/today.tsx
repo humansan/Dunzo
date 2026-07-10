@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { DailyScreen } from '@/features/daily';
-import { ViewErrorFallback } from '../../components/ViewErrorFallback';
-import { useAppData } from '../../data/AppDataContext';
-import { useOverlayNav } from '../../data/useOverlayNav';
+import { ViewErrorFallback } from '@/app/ViewErrorFallback';
+import { useAppData } from '@/lib/app-data';
+import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

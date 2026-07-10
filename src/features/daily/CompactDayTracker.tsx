@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { calculateProgress } from '@/utils/timeUtils';
+import { calculateProgress } from '@/common/lib/time';
 import { format } from 'date-fns';
 
 export const CompactDayTracker: React.FC = () => {

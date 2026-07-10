@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Search, X, List, Columns2, CornerLeftUp } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { OrganizerEntry } from '@/features/tasks/model';
-import { useSyncedLayout } from '@/data/settings';
+import { useSyncedLayout } from '@/lib/query/settings';
 import { overlayBackdrop } from '@/common/ui/modalMotion';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from '@/features/planner/table/TaskTable';

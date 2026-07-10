@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { SettingsOverlay } from '@/features/settings';
-import { ViewErrorFallback } from '../../components/ViewErrorFallback';
+import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 
 // Standalone /settings route — only reached by a cold deep-link (reloading the
 // masked URL from the address bar). In-app opens render SettingsOverlay over the

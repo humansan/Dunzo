@@ -1,9 +1,9 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef } from 'react';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Theme } from '@shared/types';
-import { apiFetch } from './apiClient';
-import { queryKeys } from './keys';
-import { stripNulls } from './normalize';
+import { apiFetch } from '@/lib/query/apiClient';
+import { queryKeys } from '@/lib/query/keys';
+import { stripNulls } from '@/lib/query/normalize';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Per-user settings, synced to the DB (Phase 6). The `user_settings` row holds

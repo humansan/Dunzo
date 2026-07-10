@@ -17,8 +17,8 @@ import {
   GitBranch,
 } from 'lucide-react';
 import { OrganizerEntry } from '@/features/tasks/model';
-import { CalendarInput } from '@/components/CalendarInput';
-import { TimeInput } from '@/components/TimeInput';
+import { CalendarInput } from '@/common/ui';
+import { TimeInput } from '@/common/ui';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
 
 // Right-click / 3-dot row menu. Branches on whether the target row is a

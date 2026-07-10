@@ -1,9 +1,9 @@
 import React from 'react';
 import { COLUMNS } from '@/features/planner/types';
 import { SectionsConfig } from '@/features/planner/types';
-import { PopoverMenu } from '@/common/ui/PopoverMenu';
-import { ListSelect } from '@/common/ui/ListSelect';
-import { Switch } from '@/components/Switch';
+import { PopoverMenu } from '@/common/ui';
+import { ListSelect } from '@/common/ui';
+import { Switch } from '@/common/ui';
 
 
 // Three-way segmented control for showLeafTasks.

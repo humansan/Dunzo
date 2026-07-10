@@ -1,9 +1,9 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Todo, Workspace } from '@shared/types';
-import { apiFetch } from './apiClient';
-import { queryKeys } from './keys';
-import { useOptimisticListMutation } from './optimistic';
-import { stripNullsList } from './normalize';
+import { apiFetch } from '@/lib/query/apiClient';
+import { queryKeys } from '@/lib/query/keys';
+import { useOptimisticListMutation } from '@/lib/query/optimistic';
+import { stripNullsList } from '@/lib/query/normalize';
 
 export const workspacesQueryOptions = () =>
   queryOptions({

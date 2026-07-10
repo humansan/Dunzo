@@ -2,10 +2,10 @@ import React, { useRef, useState } from 'react';
 import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useRouterState } from '@tanstack/react-router';
-import backgroundUrl from '../assets/background.jpg';
-import logoSvg from '../assets/icon-balanced.svg';
-import { AccountMenu } from './AccountMenu';
-import { btnNeutral, btnToggle } from '../theme/buttons';
+import backgroundUrl from '@/assets/background.jpg';
+import logoSvg from '@/assets/icon-balanced.svg';
+import { AccountMenu } from '@/app/AccountMenu';
+import { btnNeutral, btnToggle } from '@/theme/buttons';
 
 interface SidebarProps {
   isVisible: boolean;

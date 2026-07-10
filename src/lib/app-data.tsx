@@ -1,16 +1,28 @@
+// The app-wide data/handler bridge. It is the one module that breaks the layering
+// rule in both directions: it imports the tasks/trackers query layers (upward),
+// while ~10 modules across features, routes and theme call useAppData() (downward).
+//
+// It can't be split into a low-level context + a high-level provider, because
+// `AppData` is `ReturnType<typeof useProvideAppData>` — the type is derived from
+// the provider's implementation. It sits in `lib/` rather than `app/providers/`
+// because that direction has 2 violating edges instead of ~10.
+//
+// The real fix is the decomposition this file already promises below: split it
+// into per-feature hooks, at which point the context shrinks to shell UI state
+// and each feature reads its own queries directly.
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '@/features/tasks/model';
 import { normalizeCompletion, toggledStatus } from '@/features/tasks/model';
-import { timeToPercentage } from '../utils/timeUtils';
+import { timeToPercentage } from '@/common/lib/time';
 import { authClient } from '@/lib/auth';
-import { queryClient } from './queryClient';
+import { queryClient } from '@/lib/query/queryClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from '@/features/tasks/api';
 import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from '@/features/trackers/api';
-import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './workspaces';
-import { useSettings, useUpdateSettings } from './settings';
-import { applyTheme, type ThemeMode } from '../theme/applyTheme';
-import { DEFAULT_THEME_ID } from '../theme/themes';
+import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from '@/lib/query/workspaces';
+import { useSettings, useUpdateSettings } from '@/lib/query/settings';
+import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
+import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
 
 

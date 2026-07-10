@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format, addDays, parseISO, isValid } from 'date-fns';
-import { Calendar } from './Calendar';
-import { Switch } from './Switch';
+import { Calendar } from '@/common/ui/Calendar';
+import { Switch } from '@/common/ui/Switch';
 
 interface CalendarInputProps {
   value: string;

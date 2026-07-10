@@ -3,7 +3,7 @@ import { format, parseISO } from 'date-fns';
 import { GripVertical, MoreHorizontal, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
-import { formatTime12h, formatMinutes } from '@/utils/timeUtils';
+import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import {
   CompletedToggle,
   PercentField,

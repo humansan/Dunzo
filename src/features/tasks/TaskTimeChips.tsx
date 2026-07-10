@@ -1,7 +1,7 @@
 import React from 'react';
 import { Clock } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { formatTime12h } from '@/utils/timeUtils';
+import { formatTime12h } from '@/common/lib/time';
 
 export type CountdownMode = 'off' | 'time' | 'percent';
 

@@ -5,7 +5,7 @@ import { format, parseISO, isValid } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '@shared/types';
 import { ListSelect, textInputCls } from '@/common/ui';
 import { btnAccent, btnGhost, btnNeutral, btnToggle } from '@/theme/buttons';
-import { DatePickerPopover } from '@/components/DatePickerPopover';
+import { DatePickerPopover } from '@/common/ui';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 
 // `yyyy-MM-dd` -> a friendly display, falling back to a placeholder when empty.

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
-import { Switch } from '@/components/Switch';
+import { Switch } from '@/common/ui';
 import { CollectionOption, hasDate } from '@/features/tasks/model';
 import { isDone } from '@/features/tasks/model';
 import {

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Astroid, GitBranch } from 'lucide-react';
-import { formatTime12h } from '@/utils/timeUtils';
+import { formatTime12h } from '@/common/lib/time';
 import { collectionOf } from '@/features/tasks/model';
 import { Todo } from '@shared/types';
 import {
@@ -10,11 +10,11 @@ import {
   OptionChip,
   ChipOption,
 } from '@/features/tasks/fields';
-import { CalendarInput } from '@/components/CalendarInput';
-import { TimeInput } from '@/components/TimeInput';
+import { CalendarInput } from '@/common/ui';
+import { TimeInput } from '@/common/ui';
 import { XpSlider } from '@/common/ui';
 import { TaskFinder } from '@/features/planner/task-finder';
-import { useAppData } from '@/data/AppDataContext';
+import { useAppData } from '@/lib/app-data';
 import { btnGhost } from '@/theme/buttons';
 
 // ── Shared chip recipes ──────────────────────────────────────────────────────

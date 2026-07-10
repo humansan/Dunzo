@@ -9,8 +9,8 @@ import {
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from '@/features/tasks/fields';
-import { CalendarInput } from '@/components/CalendarInput';
-import { TimeInput } from '@/components/TimeInput';
+import { CalendarInput } from '@/common/ui';
+import { TimeInput } from '@/common/ui';
 import { XpSlider } from '@/common/ui';
 import { CollectionPicker, COLLECTION_PANEL_WIDTH } from '@/features/tasks/collection-picker';
 import { EditState } from '@/features/planner/types';

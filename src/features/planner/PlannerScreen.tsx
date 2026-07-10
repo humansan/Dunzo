@@ -1,7 +1,7 @@
 import { useRouter } from '@tanstack/react-router';
 import { PlannerView } from './PlannerView';
-import { useAppData } from '@/data/AppDataContext';
-import { useOverlayNav } from '@/data/useOverlayNav';
+import { useAppData } from '@/lib/app-data';
+import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 
 // Shared planner surface for both /planner (bare = 'all') and /planner/$collectionId.
 // `selectedView` comes from the route; selecting a view navigates so the collection

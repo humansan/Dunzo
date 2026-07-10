@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { StatsView } from '@/features/stats';
-import { ViewErrorFallback } from '../../components/ViewErrorFallback';
-import { useAppData } from '../../data/AppDataContext';
+import { ViewErrorFallback } from '@/app/ViewErrorFallback';
+import { useAppData } from '@/lib/app-data';
 
 export const Route = createFileRoute('/_authed/stats')({
   component: StatsRoute,

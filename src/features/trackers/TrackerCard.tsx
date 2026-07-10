@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Tracker, TrackerDisplayMode } from '@shared/types';
-import { calculateProgress, getOrdinal } from '@/utils/timeUtils';
+import { calculateProgress, getOrdinal } from '@/common/lib/time';
 import { btnGhost } from '@/theme/buttons';
 import { Trash2, Settings2 } from 'lucide-react';
 import { EXPO_OUT } from '@/common/ui/motion';

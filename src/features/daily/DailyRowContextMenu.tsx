@@ -11,10 +11,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { CalendarInput } from '@/components/CalendarInput';
-import { TimeInput } from '@/components/TimeInput';
+import { CalendarInput } from '@/common/ui';
+import { TimeInput } from '@/common/ui';
 import { TaskFinder } from '@/features/planner/task-finder';
-import { useAppData } from '@/data/AppDataContext';
+import { useAppData } from '@/lib/app-data';
 
 // Right-click menu for a daily-list row — the counterpart to the Task Planner's
 // RowContextMenu. Date / time open the same CalendarInput + TimeInput panels the

@@ -1,13 +1,13 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { AppDataProvider } from '../data/AppDataContext';
+import { AppDataProvider } from '@/lib/app-data';
 import { StopwatchProvider } from '@/features/stopwatch';
-import { AppShell } from '../components/AppShell';
-import { LoadingScreen } from '../components/LoadingScreen';
+import { AppShell } from '@/app/AppShell';
+import { LoadingScreen } from '@/app/LoadingScreen';
 import { authClient } from '@/lib/auth';
 import { todosQueryOptions } from '@/features/tasks/api';
 import { trackersQueryOptions } from '@/features/trackers/api';
-import { workspacesQueryOptions } from '../data/workspaces';
-import { settingsQueryOptions } from '../data/settings';
+import { workspacesQueryOptions } from '@/lib/query/workspaces';
+import { settingsQueryOptions } from '@/lib/query/settings';
 
 // Pathless layout route. Mounts the data bridge once and renders the persistent
 // shell (which renders the routed <Outlet/>). The auth boundary lives here: a

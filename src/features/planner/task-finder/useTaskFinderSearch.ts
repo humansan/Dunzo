@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Todo } from '@shared/types';
 import { OrganizerEntry } from '@/features/tasks/model';
-import { fuzzyMatch } from '@/utils/fuzzyMatch';
+import { fuzzyMatch } from '@/common/lib/fuzzyMatch';
 import { COLUMNS } from '@/features/planner/types';
 import { getFieldDisplayValue } from '@/features/planner/model/viewUtils';
 

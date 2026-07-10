@@ -1,6 +1,6 @@
 import type { Todo, Tracker, Workspace } from '@shared/types';
-import type { UserSettings } from '@/data/settings';
-import { apiFetch } from '@/data/apiClient';
+import type { UserSettings } from '@/lib/query/settings';
+import { apiFetch } from '@/lib/query/apiClient';
 import type { TodoBatch } from '@/features/tasks/api';
 
 // ─────────────────────────────────────────────────────────────────────────────

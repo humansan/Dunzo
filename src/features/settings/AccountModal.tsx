@@ -8,7 +8,7 @@ import { buildBackup, parseBackup, mergeImportToDb } from '@/features/settings/b
 import backgroundUrl from '@/assets/background.jpg';
 import logoSvg from '@/assets/icon.svg';
 import { ListSelect, textInputCls } from '@/common/ui';
-import { Switch } from '@/components/Switch';
+import { Switch } from '@/common/ui';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 
 type CountdownMode = 'off' | 'time' | 'percent';

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GripVertical, Eye, EyeOff, Lock, WrapText } from 'lucide-react';
 import { ColDef, ColKey, NAME_COL_KEY } from '@/features/planner/types';
-import { PopoverMenu } from '@/common/ui/PopoverMenu';
+import { PopoverMenu } from '@/common/ui';
 
 // ── Fields menu ──────────────────────────────────────────────────────────────
 // Dropdown listing every column. Name is pinned first and locked; the rest can

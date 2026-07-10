@@ -18,16 +18,16 @@ import {
 import { btnNeutral, btnToggle } from '@/theme/buttons';
 import { Todo, DayTodos, Tracker } from '@shared/types';
 import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '@/features/tasks/model';
-import { timeToPercentage } from '@/utils/timeUtils';
+import { timeToPercentage } from '@/common/lib/time';
 
 import { TrackerCard } from '@/features/trackers';
-import { CalendarView } from '@/components/CalendarView';
+import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
 import { StarStreak } from '@/features/xp';
 import { computeXpStats, getWeeklyXp } from '@/features/xp';
 import { DailyList } from '@/features/daily/DailyList';
-import { DatePickerPopover } from '@/components/DatePickerPopover';
+import { DatePickerPopover } from '@/common/ui';
 
 interface DailyScreenProps {
   dayTodos: DayTodos[];

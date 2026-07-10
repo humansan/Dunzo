@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Astroid } from 'lucide-react';
 import { DayTodos } from '@shared/types';
 import { computeStarStreak } from '@/features/xp/model/xp';
-import { ParticleBurst } from '@/common/ui/ParticleBurst';
+import { ParticleBurst } from '@/common/ui';
 
 interface StarStreakProps {
   dayTodos: DayTodos[];

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useLayoutEffect, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { CalendarInput } from './CalendarInput';
+import { CalendarInput } from '@/common/ui/CalendarInput';
 
 interface DatePickerPopoverProps {
   /** Selected date as a `yyyy-MM-dd` string (empty string = no date). */

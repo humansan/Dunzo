@@ -5,7 +5,7 @@ import { OrganizerEntry, CollectionOption } from '@/features/tasks/model';
 import { btnAccent, btnGhost, btnNeutral } from '@/theme/buttons';
 import { CollectionPickerButton } from '@/features/tasks/collection-picker';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
-import { textInputCls } from '@/common/ui/TextInput';
+import { textInputCls } from '@/common/ui';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
 
 // ── Collection Edit modal ────────────────────────────────────────────────────

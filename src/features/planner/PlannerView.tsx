@@ -13,7 +13,7 @@ import {
   MAX_SIDEBAR_WIDTH,
   DEFAULT_SIDEBAR_WIDTH,
 } from '@/features/planner/constants';
-import { useSyncedSet, useSyncedLayout, resolveAction } from '@/data/settings';
+import { useSyncedSet, useSyncedLayout, resolveAction } from '@/lib/query/settings';
 import { useHubViewConfig } from '@/features/planner/hooks/useHubViewConfig';
 import { useHubData } from '@/features/planner/hooks/useHubData';
 import { useCollectionDnD } from '@/features/planner/hooks/useCollectionDnD';
@@ -35,7 +35,7 @@ import { RowContextMenu } from '@/features/planner/table/RowContextMenu';
 import { DeleteCollectionModal } from '@/features/planner/sidebar/DeleteCollectionModal';
 import { useStableCallback } from '@/common/hooks/useStableCallback';
 import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
-import { timeToPercentage } from '@/utils/timeUtils';
+import { timeToPercentage } from '@/common/lib/time';
 
 interface PlannerViewProps {
   dayTodos: DayTodos[];

@@ -3,16 +3,16 @@ import { Outlet, useRouter, useRouterState, useSearch } from '@tanstack/react-ro
 import { AnimatePresence, motion } from 'motion/react';
 import { Minimize2 } from 'lucide-react';
 import { AddTrackerModal } from '@/features/trackers';
-import { LoadingScreen } from './LoadingScreen';
-import { Sidebar } from './Sidebar';
+import { LoadingScreen } from '@/app/LoadingScreen';
+import { Sidebar } from '@/app/Sidebar';
 import { StopwatchWidget } from '@/features/stopwatch';
 import { ActiveTodoTracker } from '@/features/daily/widgets';
 import { StopwatchFullscreen } from '@/features/stopwatch';
 import { SettingsOverlay } from '@/features/settings';
 import { TaskOverlay } from '@/features/tasks';
 import { TaskFinder } from '@/features/planner/task-finder';
-import { useAppData } from '../data/AppDataContext';
-import { useOverlayNav } from '../data/useOverlayNav';
+import { useAppData } from '@/lib/app-data';
+import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 import { useStopwatch } from '@/features/stopwatch';
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
