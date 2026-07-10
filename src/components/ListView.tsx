@@ -7,7 +7,7 @@ import {
   Circle,
   CheckSquare,
   Maximize2,
-  CalendarPlus,
+  MoreHorizontal,
   Sparkles,
   Flag,
 } from 'lucide-react';
@@ -39,6 +39,7 @@ import { priorityOption } from './todoFields';
 import { TaskTimeChips, formatCountdown } from './TaskTimeChips';
 import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
 import { DailyRowContextMenu } from './DailyRowContextMenu';
+import { btnGhost } from '../theme/buttons';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -53,9 +54,9 @@ interface TodoItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onAddToCalendar?: (id: string) => void;
   onStartTracking: (id: string) => void;
-  onContextMenu?: (e: React.MouseEvent) => void;
+  /** Opens the row context menu at viewport coords (right-click or the ⋯ button). */
+  onOpenMenu?: (x: number, y: number) => void;
   isDragging?: boolean;
   style?: React.CSSProperties;
   attributes?: any;
@@ -78,9 +79,8 @@ interface SortableItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onAddToCalendar: (id: string) => void;
   onStartTracking: (id: string) => void;
-  onContextMenu?: (e: React.MouseEvent) => void;
+  onOpenMenu?: (x: number, y: number) => void;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
   collectionOptions: CollectionOption[];
@@ -99,7 +99,6 @@ export interface ListViewProps {
   /** Called on unmount-flush without closing the panel. */
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onAddToCalendar?: (id: string) => void;
   onStartTracking?: (id: string) => void;
   activeTodoId?: string | null;
   onAdd: (vals: QuickEditValues) => void;
@@ -132,9 +131,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
   onSaveEdit,
   onCommitEdit,
   onOpenFull,
-  onAddToCalendar,
   onStartTracking,
-  onContextMenu,
+  onOpenMenu,
   isDragging,
   style,
   attributes,
@@ -184,7 +182,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      onContextMenu={onContextMenu}
+      onContextMenu={(e) => { e.preventDefault(); onOpenMenu?.(e.clientX, e.clientY); }}
       className={`relative group flex items-start gap-2 py-1.5 border-b border-line-subtle ${isDragging ? 'opacity-0' : ''}`}
     >
       <button
@@ -212,7 +210,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
           <p className={`text-md leading-6 pt-0.5 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
             ? 'text-fg-ghost line-through translate-x-[3px]'
-            : 'text-fg group-hover/text:text-(--accent2)'
+            : 'text-fg group-hover/text:text-accent2 cursor-pointer'
           }`}>
             {todo.text}
           </p>
@@ -221,20 +219,23 @@ const TodoItem: React.FC<TodoItemProps> = ({
         <button
           onClick={(e) => { e.stopPropagation(); onOpenFull(todo.id); }}
           title="Open full view"
-          className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg-subtle hover:text-fg-muted hover:bg-fill-subtle rounded-md transition-all shrink-0"
+          className={`opacity-0 group-hover:opacity-100 w-6 h-6 flex self-center items-center justify-center ${btnGhost()} rounded-md transition-all shrink-0`}
         >
           <Maximize2 size={14} />
         </button>
 
-        {!todo.startTime && !todo.dueTime && onAddToCalendar && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddToCalendar(todo.id); }}
-            title="Add to calendar"
-            className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg-subtle hover:text-fg-muted hover:bg-fill-subtle rounded-md transition-all shrink-0"
-          >
-            <CalendarPlus size={14} />
-          </button>
-        )}
+        {/* Same menu as right-click, anchored under the button. */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const r = e.currentTarget.getBoundingClientRect();
+            onOpenMenu?.(r.left, r.bottom + 4);
+          }}
+          title="More actions"
+          className={`opacity-0 group-hover:opacity-100 w-6 h-6 flex self-center items-center justify-center ${btnGhost()} rounded-md transition-all shrink-0`}
+        >
+          <MoreHorizontal size={14} />
+        </button>
       </div>
 
       <div className="flex-1" />
@@ -320,7 +321,6 @@ export const ListView: React.FC<ListViewProps> = ({
   onSaveEdit,
   onCommitEdit,
   onOpenFull,
-  onAddToCalendar,
   onStartTracking = () => {},
   onAdd,
   onDuplicate,
@@ -458,12 +458,8 @@ export const ListView: React.FC<ListViewProps> = ({
                   onSaveEdit={handleSaveEdit}
                   onCommitEdit={onCommitEdit}
                   onOpenFull={onOpenFull}
-                  onAddToCalendar={onAddToCalendar || (() => {})}
                   onStartTracking={onStartTracking}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setMenu({ id: todo.id, x: e.clientX, y: e.clientY });
-                  }}
+                  onOpenMenu={(x, y) => setMenu({ id: todo.id, x, y })}
                   now={now}
                   countdownMode={countdownMode}
                   collectionOptions={collectionOptions}

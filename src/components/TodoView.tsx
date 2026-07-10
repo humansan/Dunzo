@@ -183,21 +183,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
     onUpdateTodos(selectedDate, newTodos);
   };
 
-  // Drop an untimed todo onto the calendar as a 30-minute block starting at the
-  // current hour, so the user can then drag it to whatever time they want.
-  const addToCalendar = (id: string) => {
-    const todo = (currentDayData.todos || []).find(t => t && t.id === id);
-    if (!todo) return;
-    const fmt = (m: number) =>
-      `${Math.floor(m / 60).toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
-    const startMins = new Date().getHours() * 60;
-    const endMins = Math.min(startMins + 30, 23 * 60 + 59);
-    const startTime = fmt(startMins);
-    const dueTime = fmt(endMins);
-    const updated: Todo = { ...todo, startTime, dueTime, duePercentage: timeToPercentage(dueTime) };
-    onUpdateTodos(selectedDate, currentDayData.todos.map(t => t && t.id === id ? updated : t));
-  };
-
   // Persist edits without closing the panel (used by Save and the unmount flush).
   const persistEdit = (id: string, vals: QuickEditValues) => {
     const todoToEdit = currentDayData.todos.find(t => t && t.id === id);
@@ -375,7 +360,6 @@ export const TodoView: React.FC<TodoViewProps> = ({
           onSaveEdit={persistEdit}
           onCommitEdit={persistEdit}
           onOpenFull={onOpenTask}
-          onAddToCalendar={addToCalendar}
           onStartTracking={onStartTracking}
           activeTodoId={activeTodoId}
           onAdd={handleAddTodo}
@@ -394,6 +378,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
             onUpdateTodos(selectedDate, [...newTodos, ...hidden]);
           }}
         />
+        <div className="h-22 shrink-0" />
       </div>
 
       {/* Right side: 1-Day Calendar */}

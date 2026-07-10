@@ -267,8 +267,9 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
   );
 
   const presets: { label: string; time: string }[] = [
-    { label: 'Noon', time: '12:00' },
-    { label: 'Midnight', time: '00:00' },
+    {label: 'Now', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })},
+    // { label: 'Noon', time: '12:00' },
+    { label: 'Midnight', time: '23:59' },
   ];
 
   return (
