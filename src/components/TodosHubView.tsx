@@ -34,6 +34,8 @@ import { CellEditorPopover } from './todosHub/CellEditorPopover';
 import { RowContextMenu } from './todosHub/RowContextMenu';
 import { DeleteCollectionModal } from './todosHub/DeleteCollectionModal';
 import { useStableCallback } from './todosHub/useStableCallback';
+import { flattenTree, orderFromFlat } from './todosHub/treeUtils';
+import { timeToPercentage } from '../utils/timeUtils';
 
 interface TodosHubViewProps {
   dayTodos: DayTodos[];
@@ -478,6 +480,72 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     setEditing({ id, col: 'title', rect: null });
   };
 
+  // Splice `id` in next to `anchorId` among its siblings and persist the whole
+  // tree order (same mechanism the row drag-and-drop commit uses). A freshly
+  // created task starts at the bottom, so this is what moves it into place.
+  const placeRelative = (
+    id: string,
+    anchorId: string,
+    pos: 'above' | 'below',
+    parentId: string | null,
+  ) => {
+    const full = flattenTree(processedEntries).map((n) => ({ id: n.id, parentId: n.parentId }));
+    const at = full.findIndex((n) => n.id === anchorId);
+    if (at === -1) return;
+    full.splice(pos === 'above' ? at : at + 1, 0, { id, parentId });
+    let order = orderFromFlat(full);
+    // In a collection view the collection node is hidden, so its direct children
+    // read as depth-0 (parentId null). Re-anchor them to the collection on save.
+    if (selectedCollectionId) order = order.map((n) => ({ id: n.id, parentId: n.parentId ?? selectedCollectionId }));
+    onReorder(order);
+  };
+
+  // Context-menu "Add task above/below": create a sibling of the target, seeded
+  // with the view's active filters so it stays visible, then edit its title.
+  const addTaskRelative = (anchorId: string, pos: 'above' | 'below') => {
+    const anchor = byId.get(anchorId);
+    if (!anchor) return;
+    const parentId = anchor.todo.parentId ?? null;
+    const id = onAddTodo({ parentId, patch: inheritedFilterPatch });
+    placeRelative(id, anchorId, pos, parentId);
+    closeMenu();
+    setEditing({ id, col: 'title', rect: null });
+  };
+
+  // Context-menu Duplicate: copy every field except identity and the stamps that
+  // belong to the original, and drop the copy directly below it.
+  const duplicateTask = (id: string) => {
+    const todo = menuEntry?.todo;
+    if (!todo) return;
+    const fields: Partial<Todo> = { ...todo };
+    delete fields.id;
+    delete fields.createdAt;
+    delete fields.hubOrder;
+    delete fields.completedAt;
+    delete fields.trackingStartedAt;
+    delete fields.deletedAt;
+    const parentId = todo.parentId ?? null;
+    const copyId = onAddTodo({ parentId, patch: fields });
+    placeRelative(copyId, id, 'below', parentId);
+    closeMenu();
+  };
+
+  // Context-menu Set date / Set time. Clearing the end time drops the derived
+  // percentage and the start time with it (a start with no end is meaningless).
+  const setTaskDate = (date: string) => {
+    if (!menuEntry) return;
+    onSaveTodo({ ...menuEntry.todo, dueDate: date || undefined });
+  };
+  const setTaskTime = (time: string) => {
+    if (!menuEntry) return;
+    onSaveTodo({
+      ...menuEntry.todo,
+      dueTime: time || undefined,
+      duePercentage: time ? timeToPercentage(time) : undefined,
+      startTime: time ? menuEntry.todo.startTime : undefined,
+    });
+  };
+
   // Context-menu Delete: a non-empty collection prompts cascade-vs-promote;
   // empty collections and plain tasks delete straight away.
   const requestDeleteFromMenu = (id: string) => {
@@ -713,6 +781,11 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { onOpenTask(id); closeMenu(); }}
+          onDuplicate={duplicateTask}
+          onSetDate={(_id, date) => setTaskDate(date)}
+          onSetTime={(_id, time) => setTaskTime(time)}
+          onAddTaskAbove={(id) => addTaskRelative(id, 'above')}
+          onAddTaskBelow={(id) => addTaskRelative(id, 'below')}
           onArchive={(id) => {
             if (menuEntry?.todo.archived) onSaveTodo({ ...menuEntry.todo, archived: false });
             else onArchiveTodo(id);

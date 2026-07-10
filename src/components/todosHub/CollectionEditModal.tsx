@@ -54,7 +54,7 @@ export const CollectionEditModal: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className="text-fg-faint hover:text-fg transition-colors"
+            className={btnGhost()}
           >
             <X size={18} />
           </button>
