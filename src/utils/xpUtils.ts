@@ -4,8 +4,8 @@ import {
   subDays,
   addDays
 } from 'date-fns';
-import { DayTodos } from '../types';
-import { hasDate } from './todoFilters';
+import { DayTodos, Todo } from '../types';
+import { hasDate, showsOnDailyChecklist } from './todoFilters';
 import { isDone } from './todoStatus';
 
 export interface XpStats {
@@ -16,6 +16,7 @@ export interface XpStats {
   yesterday: number;          // XP earned the day before the given date (same as target)
   bestLast7Days: number;      // highest single-day earned XP over the 7 days before the date
   avgLast7Days: number;       // average daily earned XP over the 7 days before the date
+  avgLast30Days: number;      // average daily earned XP over the 30 days before the date
   bestAllTime: number;        // highest single-day earned XP over every prior day
   totalAllTime: number;       // sum of every day's earned XP, all time (incl. the date)
   percent: number;            // earned / target, clamped to 0..100 for the bar fill
@@ -27,21 +28,81 @@ export interface XpStats {
 
 const dayKey = (d: Date) => format(d, 'yyyy-MM-dd');
 
-/** Sum of XP across completed todos on a given date. */
-export function getEarnedXp(dayTodos: DayTodos[], date: string): number {
-  const day = dayTodos.find(d => d.date === date);
-  if (!day) return 0;
-  return (day.todos || []).reduce(
-    (sum, t) => sum + (t && isDone(t) && t.xp ? t.xp : 0),
-    0
-  );
+// ── The XP ledger ───────────────────────────────────────────────────────────
+//
+// Only todos on the daily checklist feed the XP system. `dayTodos` buckets every
+// todo by dueDate, including Task Planner tasks that never render on the daily
+// list (showInDailyList !== true), so anything that reads a day's todos raw would
+// award XP and stars for tasks the user cannot see. Every count below therefore
+// goes through showsOnDailyChecklist — which also rejects the UNDATED bucket.
+
+/** Per-day rollups of the daily-checklist todos, keyed by 'yyyy-MM-dd'. */
+export interface XpHistory {
+  earnedByDate: Map<string, number>;
+  potentialByDate: Map<string, number>;
+  completedCountByDate: Map<string, number>;
+  completedTodosByDate: Map<string, Todo[]>;
+  totalTasksByDate: Map<string, number>;
+  earnedOf: (date: string) => number;
+  potentialOf: (date: string) => number;
+  completedOf: (date: string) => number;
 }
 
-/** Sum of XP across all todos on a given date, regardless of completion. */
-export function getPotentialXp(dayTodos: DayTodos[], date: string): number {
-  const day = dayTodos.find(d => d.date === date);
-  if (!day) return 0;
-  return (day.todos || []).reduce((sum, t) => sum + (t && t.xp ? t.xp : 0), 0);
+/**
+ * Roll every daily-checklist todo up per day, once. Callers that need XP, star
+ * or streak numbers should build this and share it — the lookups below are O(1),
+ * which is what keeps the all-time and streak walks linear.
+ */
+export function buildXpHistory(dayTodos: DayTodos[]): XpHistory {
+  const earnedByDate = new Map<string, number>();
+  const potentialByDate = new Map<string, number>();
+  const completedCountByDate = new Map<string, number>();
+  const completedTodosByDate = new Map<string, Todo[]>();
+  const totalTasksByDate = new Map<string, number>();
+
+  for (const day of dayTodos || []) {
+    if (!hasDate(day.date)) continue; // skip the undated Task Planner bucket
+    let earned = 0;
+    let potential = 0;
+    let completedCount = 0;
+    let total = 0;
+    const completedTodos: Todo[] = [];
+
+    for (const t of day.todos || []) {
+      if (!t || !showsOnDailyChecklist(t, day.date)) continue;
+      total++;
+      potential += t.xp || 0;
+      if (isDone(t)) {
+        completedCount++;
+        completedTodos.push(t);
+        earned += t.xp || 0;
+      }
+    }
+
+    earnedByDate.set(day.date, earned);
+    potentialByDate.set(day.date, potential);
+    completedCountByDate.set(day.date, completedCount);
+    completedTodosByDate.set(day.date, completedTodos);
+    totalTasksByDate.set(day.date, total);
+  }
+
+  return {
+    earnedByDate,
+    potentialByDate,
+    completedCountByDate,
+    completedTodosByDate,
+    totalTasksByDate,
+    earnedOf: (date) => earnedByDate.get(date) ?? 0,
+    potentialOf: (date) => potentialByDate.get(date) ?? 0,
+    completedOf: (date) => completedCountByDate.get(date) ?? 0
+  };
+}
+
+/** Mean earned XP over the `days` calendar days immediately before `parsed`. */
+export function avgPriorDays(history: XpHistory, parsed: Date, days: number): number {
+  let sum = 0;
+  for (let i = 1; i <= days; i++) sum += history.earnedOf(dayKey(subDays(parsed, i)));
+  return sum / days;
 }
 
 /**
@@ -57,49 +118,31 @@ export function computeXpStats(
   _weekStartsOn: number
 ): XpStats {
   const parsed = parseISO(date);
-
-  // Build O(1) lookup maps once so no inner loop calls getEarnedXp (which was
-  // O(n) via dayTodos.find), turning the all-time loop from O(n²) to O(n).
-  const earnedByDate = new Map<string, number>();
-  const potentialByDate = new Map<string, number>();
-  for (const day of dayTodos) {
-    let e = 0, p = 0;
-    for (const t of day.todos || []) {
-      if (t?.xp) p += t.xp;
-      if (t && isDone(t) && t.xp) e += t.xp;
-    }
-    earnedByDate.set(day.date, e);
-    potentialByDate.set(day.date, p);
-  }
-  const earnedOf = (d: string) => earnedByDate.get(d) ?? 0;
+  const history = buildXpHistory(dayTodos);
+  const earnedOf = history.earnedOf;
 
   const earned = earnedOf(date);
-  const potential = potentialByDate.get(date) ?? 0;
+  const potential = history.potentialOf(date);
   const upForGrabs = Math.max(0, potential - earned);
 
   const yesterday = earnedOf(dayKey(subDays(parsed, 1)));
   const target = yesterday;
 
-  // Best single day, and average daily earned, over the 7 calendar days
-  // immediately before `date`.
+  // Best single day over the 7 calendar days immediately before `date`.
   let bestLast7Days = 0;
-  let sumLast7Days = 0;
   for (let i = 1; i <= 7; i++) {
-    const dayEarned = earnedOf(dayKey(subDays(parsed, i)));
-    bestLast7Days = Math.max(bestLast7Days, dayEarned);
-    sumLast7Days += dayEarned;
+    bestLast7Days = Math.max(bestLast7Days, earnedOf(dayKey(subDays(parsed, i))));
   }
-  const avgLast7Days = Math.round(sumLast7Days / 7);
+  const avgLast7Days = Math.round(avgPriorDays(history, parsed, 7));
+  const avgLast30Days = Math.round(avgPriorDays(history, parsed, 30));
 
   // Best single day, and lifetime total, across every recorded day. Bests
   // exclude the current date so they remain a target; the total includes it.
   let bestAllTime = 0;
   let totalAllTime = 0;
-  for (const day of dayTodos) {
-    if (!hasDate(day.date)) continue; // skip the undated Task Planner bucket
-    const dayEarned = earnedOf(day.date); // O(1) map lookup
+  for (const [dStr, dayEarned] of history.earnedByDate) {
     totalAllTime += dayEarned;
-    if (day.date !== date) bestAllTime = Math.max(bestAllTime, dayEarned);
+    if (dStr !== date) bestAllTime = Math.max(bestAllTime, dayEarned);
   }
 
   const percent =
@@ -114,6 +157,7 @@ export function computeXpStats(
     yesterday,
     bestLast7Days,
     avgLast7Days,
+    avgLast30Days,
     bestAllTime,
     totalAllTime,
     percent,
@@ -131,106 +175,111 @@ export function computeXpStats(
  * days at a time — the same shape as the stats page "Week" chart.
  */
 export function getWeeklyXp(dayTodos: DayTodos[], weeks: number): number[] {
-  const earnedByDate = new Map<string, number>();
-  for (const day of dayTodos) {
-    let e = 0;
-    for (const t of day.todos || []) {
-      if (t && isDone(t) && t.xp) e += t.xp;
-    }
-    earnedByDate.set(day.date, e);
-  }
-
+  const { earnedOf } = buildXpHistory(dayTodos);
   const today = new Date();
   const result: number[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
     let sum = 0;
     const endDay = subDays(today, i * 7);
     for (let offset = 0; offset < 7; offset++) {
-      sum += earnedByDate.get(dayKey(subDays(endDay, offset))) ?? 0;
+      sum += earnedOf(dayKey(subDays(endDay, offset)));
     }
     result.push(sum);
   }
   return result;
 }
 
-export interface StarStreakStats {
-  stars: number;     // 0..3 earned on `date`
-  streak: number;    // consecutive streak as of `date` (live while it's today)
-  avg7: number;      // trailing 7-day average earned — the 2★ "hold" floor
-  yesterday: number; // previous day's earned — the 3★ "advance" bar
+// ── Stars ───────────────────────────────────────────────────────────────────
+
+/** The three independent star goals for a single day. */
+export interface StarFlags {
+  completedTask: boolean;  // completed at least one task
+  beatYesterday: boolean;  // earned ≥ yesterday's earned (and earned > 0)
+  beatAverage: boolean;    // earned ≥ the higher of the 7- and 30-day averages
+}
+
+export interface DayStars {
+  flags: StarFlags;
+  stars: number;     // 0..3 — how many of the flags are true
+  yesterday: number; // previous day's earned XP
+  avg7: number;      // trailing 7-day average earned
+  avg30: number;     // trailing 30-day average earned
+  avgTarget: number; // max(avg7, avg30) — the bar the third star measures against
 }
 
 /**
- * Stars and the streak counter, derived purely from history (no separate
- * persistence). Stars are tiered so they stay monotonic:
- *   1★  complete at least one task (low-hanging fruit)
- *   2★  earned ≥ your trailing 7-day average (hold your norm)
- *   3★  2★ AND earned ≥ yesterday's earned (improve on the previous day)
+ * The three star goals for `date`. They are independent — meeting them in any
+ * order lights the same stars — and each is gated on earning XP *today* rather
+ * than on the baseline being non-zero. So a day following an empty stretch still
+ * has to earn something to clear "beat yesterday" (0 ≥ 0 is not enough), but a
+ * single point is then enough to clear a baseline of zero.
  *
- * The streak walks every calendar day from the first record to `date`: 3★ pushes
- * it up, 2★ holds it, anything less resets it to 0 — so a skipped/empty day
- * breaks it. The current day is "live": it can only extend or hold the streak,
- * never reset it mid-day (the reset only lands once today rolls into the past).
+ *   ★ complete at least one task
+ *   ★ earn ≥ yesterday's XP
+ *   ★ earn ≥ your trailing 7- or 30-day average, whichever is higher
  */
-export function computeStarStreak(dayTodos: DayTodos[], date: string): StarStreakStats {
-  // Precompute per-day earned/completed so the day-walk stays cheap.
-  const earnedByDate = new Map<string, number>();
-  const completedByDate = new Map<string, number>();
-  for (const day of dayTodos) {
-    let e = 0;
-    let c = 0;
-    for (const t of day.todos || []) {
-      if (t && isDone(t)) {
-        c++;
-        if (t.xp) e += t.xp;
-      }
-    }
-    earnedByDate.set(day.date, e);
-    completedByDate.set(day.date, c);
-  }
-  const earnedOf = (s: string) => earnedByDate.get(s) ?? 0;
-  const completedOf = (s: string) => completedByDate.get(s) ?? 0;
-  const avg7Of = (parsed: Date) => {
-    let sum = 0;
-    for (let i = 1; i <= 7; i++) sum += earnedOf(dayKey(subDays(parsed, i)));
-    return sum / 7;
-  };
-  const starsOf = (dStr: string) => {
-    const parsed = parseISO(dStr);
-    const e = earnedOf(dStr);
-    const avg = avg7Of(parsed);
-    const prev = earnedOf(dayKey(subDays(parsed, 1)));
-    if (e > 0 && e >= avg && e >= prev) return 3;
-    if (e > 0 && e >= avg) return 2;
-    if (completedOf(dStr) >= 1) return 1;
-    return 0;
-  };
+export function starsFor(history: XpHistory, date: string): DayStars {
+  const parsed = parseISO(date);
+  const earned = history.earnedOf(date);
+  const yesterday = history.earnedOf(dayKey(subDays(parsed, 1)));
+  const avg7 = avgPriorDays(history, parsed, 7);
+  const avg30 = avgPriorDays(history, parsed, 30);
+  const avgTarget = Math.max(avg7, avg30);
 
-  const parsedDate = parseISO(date);
-  const stars = starsOf(date);
-  const avg7 = avg7Of(parsedDate);
-  const yesterday = earnedOf(dayKey(subDays(parsedDate, 1)));
+  const flags: StarFlags = {
+    completedTask: history.completedOf(date) >= 1,
+    beatYesterday: earned > 0 && earned >= yesterday,
+    beatAverage: earned > 0 && earned >= avgTarget
+  };
+  const stars =
+    (flags.completedTask ? 1 : 0) +
+    (flags.beatYesterday ? 1 : 0) +
+    (flags.beatAverage ? 1 : 0);
 
+  return { flags, stars, yesterday, avg7, avg30, avgTarget };
+}
+
+/**
+ * The streak as of `date`, walking every calendar day from the first record.
+ * 3★ pushes it up, 2★ holds it, anything less resets it to 0 — so a skipped or
+ * empty day breaks it. The current day is "live": it can only extend or hold the
+ * streak, never reset it mid-day (the reset lands once today rolls into the past).
+ */
+export function computeStreak(
+  history: XpHistory,
+  dayTodos: DayTodos[],
+  date: string
+): number {
   const recorded = dayTodos.map(d => d.date).filter(hasDate).sort();
-  let streak = 0;
-  if (recorded.length > 0) {
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const endStr = date < todayStr ? date : todayStr; // never walk into the future
-    let cursor = parseISO(recorded[0]);
-    const end = parseISO(endStr);
-    while (cursor <= end) {
-      const dStr = dayKey(cursor);
-      const s = starsOf(dStr);
-      if (dStr === todayStr) {
-        if (s >= 3) streak += 1; // live: extend; below 3★ just holds
-      } else if (s >= 3) {
-        streak += 1;
-      } else if (s < 2) {
-        streak = 0;
-      } // s === 2 holds
-      cursor = addDays(cursor, 1);
-    }
-  }
+  if (recorded.length === 0) return 0;
 
-  return { stars, streak, avg7, yesterday };
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const endStr = date < todayStr ? date : todayStr; // never walk into the future
+  let cursor = parseISO(recorded[0]);
+  const end = parseISO(endStr);
+  let streak = 0;
+
+  while (cursor <= end) {
+    const dStr = dayKey(cursor);
+    const s = starsFor(history, dStr).stars;
+    if (dStr === todayStr) {
+      if (s >= 3) streak += 1; // live: extend; below 3★ just holds
+    } else if (s >= 3) {
+      streak += 1;
+    } else if (s < 2) {
+      streak = 0;
+    } // s === 2 holds
+    cursor = addDays(cursor, 1);
+  }
+  return streak;
+}
+
+export interface StarStreakStats extends DayStars {
+  streak: number; // consecutive streak as of `date` (live while it's today)
+}
+
+/** Stars and the streak counter for `date`, derived purely from history. */
+export function computeStarStreak(dayTodos: DayTodos[], date: string): StarStreakStats {
+  const history = buildXpHistory(dayTodos);
+  return { ...starsFor(history, date), streak: computeStreak(history, dayTodos, date) };
 }
