@@ -8,7 +8,7 @@ import {
   isAfter,
   isBefore
 } from 'date-fns';
-import { Tracker, ProgressData } from '../types';
+import { Tracker, ProgressData } from '@shared/types';
 
 export function calculateProgress(tracker: Tracker, now: Date = new Date()): ProgressData {
   let start: Date;

@@ -1,5 +1,5 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Todo, Workspace } from '../types';
+import type { Todo, Workspace } from '@shared/types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { useOptimisticListMutation } from './optimistic';

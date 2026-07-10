@@ -12,7 +12,7 @@ import {
   Archive,
   Database,
 } from 'lucide-react';
-import { Todo } from '../types';
+import { Todo } from '@shared/types';
 import { btnGhost } from '../theme/buttons';
 import { Switch } from './Switch';
 import { CollectionOption, hasDate } from '../utils/todoFilters';

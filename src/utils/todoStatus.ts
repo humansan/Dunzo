@@ -1,4 +1,4 @@
-import { Todo, TodoStatus } from '../types';
+import { Todo, TodoStatus } from '@shared/types';
 
 // Single completion predicate — replaces every `todo.completed` read. Completion is
 // derived from status: only 'completed' counts as done (empty / todo / in_progress

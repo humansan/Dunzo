@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { fuzzyMatch } from '../../utils/fuzzyMatch';
 import { COLUMNS } from './types';

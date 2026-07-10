@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Astroid, GitBranch } from 'lucide-react';
 import { formatTime12h } from '../utils/timeUtils';
 import { collectionOf } from '../utils/todoFilters';
-import { Todo } from '../types';
+import { Todo } from '@shared/types';
 import {
   OptionSelectField,
   OptionChip,

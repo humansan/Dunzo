@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { OrganizerEntry, CollectionOption, collectionOf } from '../../utils/todoFilters';
 import {
   NotesField,

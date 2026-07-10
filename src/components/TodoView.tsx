@@ -16,7 +16,7 @@ import {
   CalendarDays,
 } from 'lucide-react';
 import { btnNeutral, btnToggle } from '../theme/buttons';
-import { Todo, DayTodos, Tracker } from '../types';
+import { Todo, DayTodos, Tracker } from '@shared/types';
 import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '../utils/todoFilters';
 import { timeToPercentage } from '../utils/timeUtils';
 

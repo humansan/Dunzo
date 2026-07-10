@@ -15,6 +15,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      // Order matters: '@shared' must precede '@' or the shorter prefix wins.
+      '@shared': path.resolve(__dirname, 'shared'),
       '@': path.resolve(__dirname, 'src'),
     },
   },

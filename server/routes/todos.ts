@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../db';
-import { todos, type NewTodoRow } from '../../src/db/schema';
+import { todos, type NewTodoRow } from '../../shared/db/schema';
 import {
   asyncHandler,
   enforceVisibility,

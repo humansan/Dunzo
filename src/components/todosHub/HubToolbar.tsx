@@ -10,7 +10,7 @@ import {
   Filter,
   ArrowUpDown,
 } from 'lucide-react';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { collectionPath } from '../../utils/todoFilters';
 import { btnGhost } from '../../theme/buttons';
 import { CollectionBreadcrumb } from '../todoFields';

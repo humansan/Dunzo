@@ -1,5 +1,5 @@
 import React from 'react';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { ColDef, ColKey, EditState, FlatNode, GroupRow, NAME_COL_KEY, SectionsConfig, COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';
 import { flattenTree } from './treeUtils';

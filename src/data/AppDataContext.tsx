@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { DayTodos, Todo, Tracker } from '../types';
+import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '../utils/todoFilters';
 import { normalizeCompletion, toggledStatus } from '../utils/todoStatus';
 import { timeToPercentage } from '../utils/timeUtils';

@@ -13,7 +13,7 @@ import {
   Circle,
   CheckCircle2,
 } from 'lucide-react';
-import { Todo, DayTodos } from '../types';
+import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '../theme/buttons';
 import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
 import { isDone, toggledStatus } from '../utils/todoStatus';

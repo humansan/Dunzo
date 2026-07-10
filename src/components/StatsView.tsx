@@ -26,7 +26,7 @@ import {
   Tag,
   Download
 } from 'lucide-react';
-import { DayTodos, Todo } from '../types';
+import { DayTodos, Todo } from '@shared/types';
 import { hasDate, showsOnDailyChecklist, todoIndex, collectionOf, collectionPath } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
 import { buildXpHistory, starsFor } from '../utils/xpUtils';

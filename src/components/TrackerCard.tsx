@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { Tracker, TrackerDisplayMode } from '../types';
+import { Tracker, TrackerDisplayMode } from '@shared/types';
 import { calculateProgress, getOrdinal } from '../utils/timeUtils';
 import { btnGhost } from '../theme/buttons';
 import { Trash2, Settings2 } from 'lucide-react';

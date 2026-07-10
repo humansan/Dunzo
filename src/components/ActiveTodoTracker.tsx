@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, CheckCircle2, Circle } from 'lucide-react';
-import { Todo } from '../types';
+import { Todo } from '@shared/types';
 import { isDone } from '../utils/todoStatus';
 import { differenceInSeconds, startOfDay } from 'date-fns';
 import { TaskTimeChips, formatCountdown, CountdownMode } from './TaskTimeChips';

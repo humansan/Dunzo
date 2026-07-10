@@ -1,7 +1,7 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from 'ws';
-import * as schema from '../src/db/schema';
+import * as schema from '../shared/db/schema';
 
 // Node needs a WebSocket implementation for the Neon serverless driver. The
 // WebSocket (Pool) driver supports transactions — needed later for batch

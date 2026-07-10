@@ -4,7 +4,7 @@ import {
   subDays,
   addDays
 } from 'date-fns';
-import { DayTodos, Todo } from '../types';
+import { DayTodos, Todo } from '@shared/types';
 import { hasDate, showsOnDailyChecklist } from './todoFilters';
 import { isDone } from './todoStatus';
 

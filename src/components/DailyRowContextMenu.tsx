@@ -10,7 +10,7 @@ import {
   GitBranch,
   Trash2,
 } from 'lucide-react';
-import { Todo } from '../types';
+import { Todo } from '@shared/types';
 import { CalendarInput } from './CalendarInput';
 import { TimeInput } from './TimeInput';
 import { TaskFinder } from './todosHub/TaskFinder';

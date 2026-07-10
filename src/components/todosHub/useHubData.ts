@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { DayTodos, Todo } from '../../types';
+import { DayTodos, Todo } from '@shared/types';
 import {
   getOrganizerTodos,
   getArchivedTodos,

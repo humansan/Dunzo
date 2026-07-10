@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Maximize2, CircleDot, Flag } from 'lucide-react';
 import { timeToPercentage } from '../utils/timeUtils';
 import { CollectionOption } from '../utils/todoFilters';
-import { TodoStatus, TodoPriority } from '../types';
+import { TodoStatus, TodoPriority } from '@shared/types';
 import { btnAccent, btnNeutral } from '../theme/buttons';
 import { statusOption, priorityOption, STATUS_OPTIONS, PRIORITY_OPTIONS } from './todoFields';
 import {

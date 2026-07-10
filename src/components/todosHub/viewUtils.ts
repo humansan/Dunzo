@@ -1,6 +1,6 @@
 import { format, parse, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
 import { OrganizerEntry, collectionOf, collectionPath } from '../../utils/todoFilters';
-import { Todo, TodoStatus, TodoPriority } from '../../types';
+import { Todo, TodoStatus, TodoPriority } from '@shared/types';
 import { formatTime12h, formatMinutes } from '../../utils/timeUtils';
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '../todoFields';
 import { ColKey, FilterRule, FlatNode, GroupRow } from './types';

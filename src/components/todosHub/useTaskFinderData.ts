@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { OrganizerEntry, collectionOf, collectionPath } from '../../utils/todoFilters';
 import { flattenTree } from './treeUtils';
 import { COLUMNS, DEFAULT_SECTIONS_CONFIG } from './types';

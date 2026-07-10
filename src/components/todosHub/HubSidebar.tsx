@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Plus, FolderPlus } from 'lucide-react';
-import { Workspace } from '../../types';
+import { Workspace } from '@shared/types';
 import { useCollectionDnD } from './useCollectionDnD';
 import { btnGhost } from '../../theme/buttons';
 import { CollectionTree, VisibleCollection } from './CollectionTree';

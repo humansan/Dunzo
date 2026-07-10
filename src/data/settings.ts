@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef } from 'react';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Theme } from '../types';
+import type { Theme } from '@shared/types';
 import { apiFetch } from './apiClient';
 import { queryKeys } from './keys';
 import { stripNulls } from './normalize';

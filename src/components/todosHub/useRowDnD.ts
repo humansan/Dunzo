@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { FlatNode, GroupRow, SectionsConfig } from './types';
 import { flattenTree, orderFromFlat } from './treeUtils';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { VARIANTS } from './variant';
 import { TaskTable, TableInteraction, TableRowHandlers } from './TaskTable';

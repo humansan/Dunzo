@@ -31,7 +31,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Todo } from '../types';
+import { Todo } from '@shared/types';
 import { CollectionOption } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
 import { pill } from '../theme/pill';

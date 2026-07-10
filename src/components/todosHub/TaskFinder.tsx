@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, X, List, Columns2, CornerLeftUp } from 'lucide-react';
-import { Todo } from '../../types';
+import { Todo } from '@shared/types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { useSyncedLayout } from '../../data/settings';
 import { overlayBackdrop } from '../modalMotion';

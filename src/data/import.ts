@@ -1,4 +1,4 @@
-import type { Todo, Tracker, Workspace } from '../types';
+import type { Todo, Tracker, Workspace } from '@shared/types';
 import type { UserSettings } from './settings';
 import { apiFetch } from './apiClient';
 import type { TodoBatch } from './todos';

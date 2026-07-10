@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
-import { DayTodos, Todo, Workspace } from '../types';
+import { DayTodos, Todo, Workspace } from '@shared/types';
 import {
   OrganizerEntry,
   CollectionOption,
