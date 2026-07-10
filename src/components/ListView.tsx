@@ -209,7 +209,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         </motion.div>
       </button>
 
-      <div className="flex items-start gap-1.5 min-w-0">
+      <div className="flex items-start min-w-0">
         <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
           <p className={`text-md leading-6 pt-0.5 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
             ? 'text-fg-ghost line-through translate-x-[3px]'
@@ -222,7 +222,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         <button
           onClick={(e) => { e.stopPropagation(); onOpenFull(todo.id); }}
           title="Open full view"
-          className={`opacity-0 group-hover:opacity-100 p-1 flex self-center items-center justify-center ${btnGhost()} rounded transition-all shrink-0`}
+          className={`ml-2 opacity-0 group-hover:opacity-100 p-1 flex self-center items-center justify-center ${btnGhost()} rounded transition-all shrink-0`}
         >
           <Maximize2 size={14} />
         </button>
@@ -273,7 +273,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
 
         <button
           onClick={() => onDelete(todo.id)}
-          className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg-faint hover:text-red-400 hover:bg-danger-tint rounded-lg transition-all"
+          className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg-faint hover:text-red-400 hover:bg-danger-tint rounded-lg transition-all cursor-pointer"
         >
           <Trash2 size={16} />
         </button>

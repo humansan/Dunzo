@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown } from 'lucide-react';
 import { NAME_BASE_PAD, INDENT } from './constants';
 import { pill as chipStyle } from '../../theme/pill';
 import { useTableVariant } from './variant';
+import { btnGhost } from '@/src/theme/buttons';
 
 // The single source of truth for how a section header looks in the Task Planner —
 // the collapse chevron, the colored name pill, the count badge, and (critically)
@@ -115,7 +116,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
-            className="shrink-0 p-0.5 flex items-center justify-center rounded text-fg-ghost hover:text-fg-subtle hover:bg-fill transition-colors"
+            className={"shrink-0 h-5 w-5 mr-0.5 flex items-center justify-center rounded transition-colors " + btnGhost()}
             title={isCollapsed ? toggleTitle?.expand : toggleTitle?.collapse}
           >
             {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}

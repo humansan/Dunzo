@@ -383,7 +383,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               col === lastColKey ? 'border-r border-line-subtle' : ''
             }`}
           >
-            <span className="truncate text-sm text-fg-subtle">
+            <span className="truncate text-sm text-fg">
               {format(new Date(todo.createdAt), 'MMM d, yyyy')}
             </span>
           </div>
@@ -421,10 +421,22 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className={`sticky left-0 z-20 flex items-start h-full overflow-hidden ${
-          variant.columns === 'all' ? 'border-r border-line-subtle bg-canvas group-hover/row:bg-canvas hover:bg-surface' : ''
+        className={`group/name sticky left-0 z-20 flex items-start h-full overflow-hidden ${
+          variant.columns === 'all' ? 'border-r border-line-subtle bg-canvas' : ''
         }`}
       >
+        {/* The frozen Name cell needs an opaque bg so scrolled cells don't show through
+            it — which also hides the row's translucent hover fill. These two overlays
+            replay it: one on row hover, one more on cell hover. Stacking the same 5%
+            fill twice is exactly what the scrolling cells do (transparent cell hover
+            fill over the row's), so the Name cell lands on the same two brightness
+            steps instead of its own ramp. */}
+        {variant.columns === 'all' && (
+          <>
+            <div className="pointer-events-none absolute inset-0 z-0 hidden group-hover/row:block bg-fill-subtle" />
+            <div className="pointer-events-none absolute inset-0 z-0 hidden group-hover/name:block bg-fill-subtle" />
+          </>
+        )}
         {/* Name band. Each leading control is a line-height box (`h-5`) that centers
             its icon, so they line up on the title's first text line.
             • Wrapped title: `items-start` so the controls (and the title's first line)
@@ -443,7 +455,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             */}
         <div
           style={{ paddingLeft: NAME_BASE_PAD + depth * INDENT }}
-          className={`flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
+          className={`relative z-10 flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
             isEditing('title') && !titleWrapped ? 'h-9' : 'py-[8px]'
           } ${isEditing('title') && "ring-1 ring-inset ring-[var(--accent2)]/60"}
           `}
@@ -454,7 +466,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
-              className="shrink-0 h-5 w-5 mr-0.5 flex items-center justify-center rounded text-fg-ghost hover:text-fg-subtle hover:bg-fill transition-colors"
+              className={"shrink-0 h-5 w-5 mr-0.5 flex items-center justify-center rounded transition-colors " + btnGhost()}
               title={isCollapsed ? 'Expand subtasks' : 'Collapse subtasks'}
             >
               {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
@@ -497,7 +509,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             <>
               <span
                 onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 min-w-0 pl-1 text-sm cursor-text ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg'}`}
+                className={`flex-1 min-w-0 pl-1 text-sm cursor-pointer ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg'}`}
               >
                 {todo.text || <span className="text-fg-faint">Untitled</span>}
               </span>
