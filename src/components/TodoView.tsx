@@ -230,8 +230,12 @@ export const TodoView: React.FC<TodoViewProps> = ({
     persistEdit(id, { ...valuesOf(todo), ...patch(todo) });
   };
 
+  // Clearing the date drops the task off the daily list entirely, so it's only
+  // allowed for tasks that also live in the planner (matching the Clear button's
+  // visibility in the menu's calendar panel).
   const setTodoDate = (id: string, date: string) => {
-    if (!date) return;
+    const todo = currentDayData.todos.find(t => t && t.id === id);
+    if (!todo || (!date && !todo.showInDatabase)) return;
     patchTodo(id, () => ({ date }));
   };
 

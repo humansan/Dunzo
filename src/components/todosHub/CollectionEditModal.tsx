@@ -49,12 +49,12 @@ export const CollectionEditModal: React.FC<{
         className="w-full max-w-md rounded-2xl border border-line bg-surface shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-line pl-5 pr-2.5 py-2.5">
           <h2 className="text-base font-bold text-fg">Edit</h2>
           <button
             type="button"
             onClick={onClose}
-            className={btnGhost()}
+            className={`p-1.5 rounded-md ${btnGhost()}`}
           >
             <X size={18} />
           </button>

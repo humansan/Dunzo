@@ -163,7 +163,10 @@ export const DailyRowContextMenu: React.FC<{
               <CalendarInput
                 value={date}
                 autoFocus
-                onChange={(val) => { if (val) onSetDate(todo.id, val); }}
+                // A daily-list-only task has nowhere to live once undated, so it
+                // can't clear its date; one that's also in the planner can.
+                showClear={!!todo.showInDatabase}
+                onChange={(val) => onSetDate(todo.id, val)}
               />
             ) : (
               <TimeInput
