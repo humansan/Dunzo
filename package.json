@@ -14,7 +14,7 @@
     "vercel-build": "npm run build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && node scripts/check-boundaries.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
     "db:generate": "drizzle-kit generate",
