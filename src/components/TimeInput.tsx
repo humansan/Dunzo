@@ -121,9 +121,13 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
   // of the "time | %" string the user touched.
   const lastLeft = useRef('');
   const lastRight = useRef('');
-  // While dragging the rail we preview locally and only commit on release, so a
-  // drag doesn't fire a save on every mouse-move.
+  // Local override of `value`. Held while dragging the rail (so a drag doesn't fire
+  // a save on every mouse-move) AND after a commit, until the parent echoes the new
+  // value back. The echo can be a tick late — react-query applies its optimistic
+  // cache write asynchronously — so releasing the override on commit paints one
+  // frame of the *old* time before the new one lands. '' means "cleared".
   const [preview, setPreview] = useState<string | null>(null);
+  const dragging = useRef(false);
 
   const setCanonical = (time: string) => {
     const { left, right } = partsFor(time);
@@ -132,8 +136,11 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
     setText(`${left} | ${right}`);
   };
 
+  // The parent has spoken: drop any local override and render what it gave us. Runs
+  // only when `value` actually changes, so a mid-drag preview is never disturbed.
   useEffect(() => {
-    if (preview !== null) return; // mid-drag: don't fight the live preview
+    if (dragging.current) return; // don't fight the live preview
+    setPreview(null);
     if (value) setCanonical(value);
     else {
       lastLeft.current = '';
@@ -151,31 +158,32 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
     }
   }, [autoFocus]);
 
-  const commit = (raw: string) => {
-    const result = parseInput(raw, lastLeft.current, lastRight.current);
-    if (result === '') {
-      onChange('');
+  // Commit a time ('' clears). The preview override is what keeps the rails from
+  // flashing the old value while the parent's echo is in flight; the effect above
+  // releases it once `value` lands.
+  const applyTime = (time: string) => {
+    setPreview(time);
+    onChange(time);
+    if (time) setCanonical(time);
+    else {
       lastLeft.current = '';
       lastRight.current = '';
       setText('');
-      return;
     }
+  };
+
+  const commit = (raw: string) => {
+    const result = parseInput(raw, lastLeft.current, lastRight.current);
     if (result == null) {
       // Unparseable — revert to the last good value.
       if (value) setCanonical(value);
       else setText('');
       return;
     }
-    onChange(result);
-    setCanonical(result);
+    applyTime(result);
   };
 
-  const applyTime = (time: string) => {
-    onChange(time);
-    setCanonical(time);
-  };
-
-  const displayTime = preview ?? (value || null);
+  const displayTime = preview !== null ? preview || null : value || null;
   const cur = displayTime ? toClockParts(displayTime) : null;
 
   // ── Stepped column pickers (hour / minute) ─────────────────────────────────
@@ -190,6 +198,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
     colRef: React.RefObject<HTMLDivElement | null>
   ) => {
     e.preventDefault();
+    dragging.current = true;
     const base = cur ?? { h12: 12, min: 0, pm: false };
     const timeFromY = (clientY: number): string | null => {
       const el = colRef.current;
@@ -210,9 +219,11 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
     const up = (ev: MouseEvent) => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseup', up);
+      dragging.current = false;
       const t = timeFromY(ev.clientY) ?? first;
-      setPreview(null);
+      // applyTime keeps the preview up until the parent echoes `t` back.
       if (t) applyTime(t);
+      else setPreview(null);
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
@@ -345,7 +356,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
 
       <button
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => { onChange(''); lastLeft.current = ''; lastRight.current = ''; setText(''); }}
+        onClick={() => applyTime('')}
         className="w-full mt-2 pt-2 border-t border-line text-xs font-bold text-fg-faint hover:text-fg transition-colors text-left"
       >
         Clear

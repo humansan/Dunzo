@@ -24,16 +24,31 @@ interface XpSliderProps {
  */
 export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, className }) => {
   const rowRef = useRef<HTMLDivElement>(null);
-  // While dragging we preview locally and only commit the value on each step so
-  // the row tracks the cursor without waiting for the parent to echo it back.
-  const [preview, setPreview] = useState<number | null>(null);
+  // Local override of `value`, held while dragging AND after the commit until the
+  // parent echoes the new value back. The echo can be a tick late — react-query
+  // applies its optimistic cache write asynchronously — so releasing the override
+  // on mouse-up paints one frame of the *old* XP before the new one lands. The
+  // wrapper object lets `{ value: undefined }` mean "cleared" rather than "no override".
+  const [preview, setPreview] = useState<{ value?: number } | null>(null);
+  const dragging = useRef(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (autoFocus) rootRef.current?.focus();
   }, [autoFocus]);
 
-  const current = preview ?? value;
+  // The parent has spoken: drop the override. Only fires when `value` truly changes,
+  // so a mid-drag preview is never disturbed.
+  useEffect(() => {
+    if (!dragging.current) setPreview(null);
+  }, [value]);
+
+  const commit = (v: number | undefined) => {
+    setPreview({ value: v });
+    onChange(v);
+  };
+
+  const current = preview ? preview.value : value;
   // How many icons paint filled: clamp legacy/out-of-range values to [0, 10] for
   // display only (the stored value isn't changed until the user interacts).
   const filled = current === undefined ? 0 : Math.max(0, Math.min(MAX, current));
@@ -49,15 +64,15 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
 
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
-    const first = valueFromX(e.clientX);
-    setPreview(first);
-    const move = (ev: MouseEvent) => setPreview(valueFromX(ev.clientX));
+    dragging.current = true;
+    setPreview({ value: valueFromX(e.clientX) });
+    const move = (ev: MouseEvent) => setPreview({ value: valueFromX(ev.clientX) });
     const up = (ev: MouseEvent) => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseup', up);
-      const v = valueFromX(ev.clientX);
-      setPreview(null);
-      onChange(v);
+      dragging.current = false;
+      // commit keeps the preview up until the parent echoes the new value back.
+      commit(valueFromX(ev.clientX));
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
@@ -72,7 +87,7 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
       <div className="flex items-center gap-1.5 px-0.5 mb-2 text-sm font-mono">
         <Astroid size={14} strokeWidth={2.5} style={{ color: filled > 0 ? GOLD : undefined }} className={filled > 0 ? '' : 'text-fg-subtle'} />
         <span className={filled > 0 ? 'text-fg' : 'text-fg-faint'}>
-          {value !== undefined ? `${value} XP` : 'Set XP'}
+          {current !== undefined ? `${current} XP` : 'Set XP'}
         </span>
       </div>
 
@@ -99,7 +114,7 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
       <button
         type="button"
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => onChange(undefined)}
+        onClick={() => commit(undefined)}
         className="w-full mt-2 pt-2 border-t border-line text-xs font-bold text-fg-faint hover:text-fg transition-colors text-left"
       >
         Clear
