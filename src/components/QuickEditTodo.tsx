@@ -10,10 +10,10 @@ import {
   TimeChip,
   XpChip,
   OptionChipButton,
-  CollectionButton,
   ParentTaskButton,
   derivedCollectionId,
 } from './taskChips';
+import { CollectionPickerButton } from './CollectionPicker';
 import { useAppData } from '../data/AppDataContext';
 
 export interface QuickEditValues {
@@ -251,7 +251,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
 
       {/* Collection · Set parent task */}
       <div className="flex items-stretch gap-1 mt-3 flex-wrap">
-        <CollectionButton
+        <CollectionPickerButton
           collectionId={collId}
           options={collectionOptions}
           onChange={setParentId}

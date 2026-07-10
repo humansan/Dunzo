@@ -28,10 +28,10 @@ import {
   DateChip,
   TimeChip,
   XpChip,
-  CollectionButton,
   ParentTaskButton,
   derivedCollectionId,
 } from './taskChips';
+import { CollectionPickerButton } from './CollectionPicker';
 import { modalPop, overlayBackdrop } from './modalMotion';
 
 interface TodoFullViewProps {
@@ -373,7 +373,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
         {/* ── Bottom bar: placement (left) + destructive actions (right) ────── */}
         <div className="shrink-0 flex items-center justify-between gap-4 px-5 py-3 border-t border-line-subtle">
           <div className="flex flex-col items-start gap-2 min-w-0">
-            <CollectionButton
+            <CollectionPickerButton
               collectionId={derivedCollectionId(draft.parentId ?? null, byId)}
               options={collectionOptions}
               onChange={(id) => update({ parentId: id })}

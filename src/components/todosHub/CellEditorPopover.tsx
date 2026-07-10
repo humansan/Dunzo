@@ -4,7 +4,6 @@ import { Todo } from '../../types';
 import { OrganizerEntry, CollectionOption, collectionOf } from '../../utils/todoFilters';
 import {
   NotesField,
-  CollectionSearchField,
   OptionSelectField,
   patchFromTime,
   STATUS_OPTIONS,
@@ -13,6 +12,7 @@ import {
 import { CalendarInput } from '../CalendarInput';
 import { TimeInput } from '../TimeInput';
 import { XpSlider } from '../XpSlider';
+import { CollectionPicker, COLLECTION_PANEL_WIDTH } from '../CollectionPicker';
 import { EditState } from './types';
 
 // The portaled inline-cell editor: a popover anchored to the cell being edited
@@ -26,7 +26,6 @@ export const CellEditorPopover: React.FC<{
   popoverPos: { top: number; left: number } | null;
   collectionOptions: CollectionOption[];
   todoById: Map<string, Todo>;
-  collPathFor: (todo: Todo) => { id: string; name: string; color?: string }[];
   onSaveTodo: (updatedTodo: Todo) => void;
   onSetTaskCollection: (taskId: string, collectionId: string | null) => void;
   onCreateCollection: (name: string) => string;
@@ -38,7 +37,6 @@ export const CellEditorPopover: React.FC<{
   popoverPos,
   collectionOptions,
   todoById,
-  collPathFor,
   onSaveTodo,
   onSetTaskCollection,
   onCreateCollection,
@@ -49,7 +47,7 @@ export const CellEditorPopover: React.FC<{
   const isDateOrTime = col === 'date' || col === 'startDate' || col === 'start' || col === 'end';
   // Panels that supply their own popover shell (bg/border/padding); the wrapper
   // stays chrome-less for these and just positions/sizes them.
-  const isPanel = isDateOrTime || col === 'xp';
+  const isPanel = isDateOrTime || col === 'xp' || col === 'collection';
   const save = (patch: Partial<Todo>) => onSaveTodo({ ...entry.todo, ...patch });
 
   return createPortal(
@@ -60,7 +58,7 @@ export const CellEditorPopover: React.FC<{
         left: popoverPos?.left ?? editing.rect.left,
         top: popoverPos?.top ?? editing.rect.bottom + 4,
         width: isPanel
-          ? 240
+          ? (col === 'collection' ? COLLECTION_PANEL_WIDTH : 240)
           : Math.max(editing.rect.width, col === 'status' || col === 'priority' ? 180 : 260),
       }}
       className={
@@ -80,13 +78,11 @@ export const CellEditorPopover: React.FC<{
           }}
         />
       ) : col === 'collection' ? (
-        <CollectionSearchField
+        <CollectionPicker
           value={collectionOf(entry.todo, todoById)}
-          currentPath={collPathFor(entry.todo)}
           options={collectionOptions}
           onChange={(id) => { onSetTaskCollection(entry.todo.id, id); onClose(); }}
           onCreate={onCreateCollection}
-          autoFocus
         />
       ) : col === 'xp' ? (
         <XpSlider

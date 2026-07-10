@@ -68,7 +68,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="relative group bg-surface p-4 rounded-2xl overflow-hidden flex flex-col"
+      className="relative group bg-surface-raised p-4 rounded-2xl overflow-hidden flex flex-col"
     >
       <div className="flex justify-between items-start mb-3">
         <div>

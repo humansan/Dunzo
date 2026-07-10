@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Astroid, Shapes, GitBranch } from 'lucide-react';
+import { Calendar, Clock, Astroid, GitBranch } from 'lucide-react';
 import { formatTime12h } from '../utils/timeUtils';
-import { CollectionOption, collectionOf } from '../utils/todoFilters';
+import { collectionOf } from '../utils/todoFilters';
 import { Todo } from '../types';
 import {
-  CollectionSearchField,
-  CollectionBreadcrumb,
   OptionSelectField,
   OptionChip,
   ChipOption,
@@ -28,7 +26,7 @@ export const chipText =
   'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
 export const rowBtn =
   'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden ' + btnGhost();
-// Shell for panels that don't bring their own (OptionSelectField, CollectionSearchField).
+// Shell for panels that don't bring their own (OptionSelectField).
 export const chipPopoverCls = 'rounded-xl border border-line bg-surface shadow-2xl p-2';
 
 const MARGIN = 8;
@@ -83,6 +81,18 @@ export const ChipPopover: React.FC<{
   // Measure once the panel is mounted so placement can account for its height.
   useLayoutEffect(() => {
     if (isOpen) updatePos();
+  }, [isOpen, updatePos]);
+
+  // A panel whose content shrinks (e.g. the collection list as the search
+  // narrows) would otherwise keep its measured `top`. Below the anchor that's
+  // fine, but a panel flipped ABOVE is bottom-aligned to the trigger, so its
+  // bottom edge would lift away and leave a gap. Re-place it on every resize.
+  useEffect(() => {
+    const el = popoverRef.current;
+    if (!isOpen || !el) return;
+    const ro = new ResizeObserver(() => updatePos());
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [isOpen, updatePos]);
 
   useEffect(() => {
@@ -261,43 +271,6 @@ export const OptionChipButton: React.FC<{
     )}
   </ChipPopover>
 );
-
-// ── Collection ───────────────────────────────────────────────────────────────
-export const CollectionButton: React.FC<{
-  collectionId: string | null;
-  options: CollectionOption[];
-  onChange: (id: string | null) => void;
-  onCreate: (name: string) => string;
-}> = ({ collectionId, options, onChange, onCreate }) => {
-  const current = collectionId ? options.find((o) => o.id === collectionId) ?? null : null;
-  return (
-    <ChipPopover
-      width={256}
-      className="min-w-0 max-w-full"
-      panel={(close) => (
-        <div className={`${chipPopoverCls} w-64`}>
-          <CollectionSearchField
-            value={collectionId}
-            currentPath={current?.path || []}
-            options={options}
-            onChange={(id) => { onChange(id); close(); }}
-            onCreate={onCreate}
-            autoFocus
-          />
-        </div>
-      )}
-    >
-      {({ open }) => (
-        <button type="button" onClick={open} className={rowBtn}>
-          <Shapes size={16} className="shrink-0 text-fg-subtle" />
-          {current
-            ? <CollectionBreadcrumb path={current.path} className="min-w-0" />
-            : <span className="text-fg-subtle">Collection</span>}
-        </button>
-      )}
-    </ChipPopover>
-  );
-};
 
 // ── Parent task ──────────────────────────────────────────────────────────────
 export const ParentTaskButton: React.FC<{

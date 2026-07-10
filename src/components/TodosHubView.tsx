@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
 import { DayTodos, Todo, Workspace } from '../types';
@@ -170,7 +170,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     selectedCollectionId,
     byId,
     todoById,
-    collPathFor,
     collPathById,
     hasCollectionAncestor,
     isDescendantOf,
@@ -268,7 +267,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     const onDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (popoverRef.current?.contains(target)) return;
-      if (target.closest('[data-tag-suggestions]')) return; // tag autocomplete renders in its own portal
       setEditing(null);
     };
     window.addEventListener('mousedown', onDown);
@@ -305,7 +303,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   }
 
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
-  useLayoutEffect(() => {
+  const placePopover = useCallback(() => {
     if (!editing || !editing.rect || !popoverRef.current) {
       setPopoverPos(null);
       return;
@@ -318,7 +316,22 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
         (h) => editing.rect!.top - h - 4,
       ),
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing?.id, editing?.col]);
+
+  useLayoutEffect(placePopover, [placePopover]);
+
+  // A panel whose content shrinks (the collection list, as the search narrows)
+  // keeps its measured `top`. Below the cell that's fine, but a panel flipped
+  // ABOVE is bottom-aligned to the cell, so its bottom edge would lift away and
+  // leave a gap. Re-place it whenever the panel's size changes.
+  useEffect(() => {
+    const el = popoverRef.current;
+    if (!popoverOpen || !el) return;
+    const ro = new ResizeObserver(() => placePopover());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [popoverOpen, placePopover]);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -756,7 +769,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           popoverPos={popoverPos}
           collectionOptions={collectionOptions}
           todoById={todoById}
-          collPathFor={collPathFor}
           onSaveTodo={onSaveTodo}
           onSetTaskCollection={onSetTaskCollection}
           onCreateCollection={onCreateCollection}
@@ -803,7 +815,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           <CollectionEditModal
             entry={entry}
             options={collectionOptions}
-            todoById={todoById}
             onCreateCollection={onCreateCollection}
             onClose={() => setEditCollId(null)}
             onSave={({ text, color, parentId }) => {
