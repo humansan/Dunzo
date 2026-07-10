@@ -3,7 +3,7 @@ import { ChevronRight, ChevronDown } from 'lucide-react';
 import { NAME_BASE_PAD, INDENT } from './constants';
 import { pill as chipStyle } from '../../theme/pill';
 import { useTableVariant } from './variant';
-import { btnGhost } from '@/src/theme/buttons';
+import { btnGhost } from '@/theme/buttons';
 
 // The single source of truth for how a section header looks in the Task Planner —
 // the collapse chevron, the colored name pill, the count badge, and (critically)
