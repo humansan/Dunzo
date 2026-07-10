@@ -122,7 +122,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
 
           {/* Last-4-weeks mini bars — a static, at-a-glance progress indicator.
               Native title tooltip needs hover, so re-enable pointer events here. */}
-          <div className="flex items-end gap-1.5 h-14 pb-2 ml-2 pointer-events-auto">
+          {/* <div className="flex items-end gap-1.5 h-14 pb-2 ml-2 pointer-events-auto">
             {(() => {
               const max = Math.max(...weeklyXp, 1);
               const MAX_H = 52;
@@ -144,7 +144,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
                 );
               });
             })()}
-          </div>
+          </div> */}
         </div>
       </div>
 
