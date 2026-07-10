@@ -171,7 +171,10 @@ const TodoItem: React.FC<TodoItemProps> = ({
           onCreateCollection={onCreateCollection}
           onSubmit={(vals) => onSaveEdit(todo.id, vals)}
           onCancel={onCancelEdit}
-          onOpenFull={() => onOpenFull(todo.id)}
+          // Maximizing hands the task off to the full view, so the panel behind it
+          // closes too. It closes uncommitted (not via QuickEditTodo's cancel), so
+          // the unmount flush still persists whatever was typed rather than dropping it.
+          onOpenFull={() => { onOpenFull(todo.id); onCancelEdit();}}
           onFlush={(vals) => onCommitEdit(todo.id, vals)}
         />
       </div>

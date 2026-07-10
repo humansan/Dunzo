@@ -239,7 +239,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
           <div className="w-px bg-fill-subtle shrink-0" />
 
           {/* Right pane: properties + actions */}
-          <div className="w-76 shrink-0 flex flex-col overflow-hidden">
+          <div className="w-80 shrink-0 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto px-5 py-2 no-scrollbar">
 
               <RightProp
