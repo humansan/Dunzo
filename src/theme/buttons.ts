@@ -30,8 +30,8 @@ export type Accent = 'accent1' | 'accent2';
 // Static (Tailwind-detectable) accent fills + matching glow, per accent. Text is
 // `text-canvas` (inverts with the page per theme) to match btnAccent.
 const accentFill: Record<Accent, string> = {
-  accent1: 'bg-[var(--accent1)] text-canvas shadow-lg shadow-[var(--accent1)]/20',
-  accent2: 'bg-[var(--accent2)] text-canvas shadow-lg shadow-[var(--accent2)]/20',
+  accent1: 'bg-[var(--accent1)] text-canvas',
+  accent2: 'bg-[var(--accent2)] text-canvas',
 };
 
 // 1 — Ghost: transparent until hover; `active` (toggled/open, e.g. a menu) = filled.

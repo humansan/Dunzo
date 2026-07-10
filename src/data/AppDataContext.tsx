@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '../types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '../utils/todoFilters';
-import { toggledStatus } from '../utils/todoStatus';
+import { normalizeCompletion, toggledStatus } from '../utils/todoStatus';
 import { authClient } from '../auth';
 import { queryClient } from './queryClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from './todos';
@@ -214,7 +214,7 @@ function useProvideAppData() {
     const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
     // Persist within-day position: the array order the daily/calendar view hands
     // back becomes each task's dailyOrder.
-    const upserts = todosForDate.map((t, i) => normalizeVisibility({ ...t, dueDate, dailyOrder: i }));
+    const upserts = todosForDate.map((t, i) => normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i })));
     batchTodos.mutate({ upserts, deletes });
     if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
   };
@@ -227,14 +227,18 @@ function useProvideAppData() {
     const maxDailyOrder = todos
       .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
       .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 }) });
+    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 })) });
   };
 
   const handleToggleTodo = (todoId: string) => {
     const todo = todos.find(t => t && t.id === todoId);
     if (!todo) return;
-    // Status is the source of truth; the server stamps completedAt.
-    updateTodo.mutate({ id: todoId, patch: { status: toggledStatus(todo) } });
+    // Status is the source of truth. The server stamps completedAt, but its reply
+    // never reaches the cache (mutations invalidate without refetching), so mirror
+    // the stamp client-side — otherwise completedAt stays undefined until the next
+    // natural refetch and the completion timestamp renders as absent.
+    const { status, completedAt } = normalizeCompletion({ ...todo, status: toggledStatus(todo) });
+    updateTodo.mutate({ id: todoId, patch: { status, completedAt } });
 
     // If we're toggling the active todo, close the tracker
     if (activeTodoId === todoId) {
@@ -266,7 +270,7 @@ function useProvideAppData() {
   // so callers can just set `dueDate` without worrying about the sentinel.
   const handleHubSaveTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
-    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeVisibility({ ...updatedTodo, dueDate }) });
+    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate })) });
   };
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
@@ -295,7 +299,7 @@ function useProvideAppData() {
       ...(opts?.patch ?? {}),
       ...(dueDate !== undefined ? { dueDate } : {}),
     };
-    createTodo.mutate(normalizeVisibility(newTodo));
+    createTodo.mutate(normalizeCompletion(normalizeVisibility(newTodo)));
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>

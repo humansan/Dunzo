@@ -219,7 +219,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         <button
           onClick={(e) => { e.stopPropagation(); onOpenFull(todo.id); }}
           title="Open full view"
-          className={`opacity-0 group-hover:opacity-100 w-6 h-6 flex self-center items-center justify-center ${btnGhost()} rounded-md transition-all shrink-0`}
+          className={`opacity-0 group-hover:opacity-100 p-1 flex self-center items-center justify-center ${btnGhost()} rounded transition-all shrink-0`}
         >
           <Maximize2 size={14} />
         </button>
@@ -232,7 +232,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
             onOpenMenu?.(r.left, r.bottom + 4);
           }}
           title="More actions"
-          className={`opacity-0 group-hover:opacity-100 w-6 h-6 flex self-center items-center justify-center ${btnGhost()} rounded-md transition-all shrink-0`}
+          className={`opacity-0 group-hover:opacity-100 p-1 flex self-center items-center justify-center ${btnGhost()} rounded transition-all shrink-0`}
         >
           <MoreHorizontal size={14} />
         </button>

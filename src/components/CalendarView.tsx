@@ -273,7 +273,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     onUpdateTodos(dateStr, newTodos);
   }, [dayTodos, onUpdateTodos]);
 
-  const gridRef = useRef<HTMLDivElement>(null);
+  // const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dayPickerRef = useRef<HTMLDivElement>(null);
 

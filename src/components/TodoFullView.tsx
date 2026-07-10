@@ -57,7 +57,7 @@ const RightProp: React.FC<{
 }> = ({ icon, label, children, noDivider, onClear, canClear }) => (
   <div className={`group/prop py-2.5 ${noDivider ? '' : 'border-b border-line-subtle'}`}>
     <div className="flex items-center justify-between mb-1.5">
-      <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider h-5">
+      <div className="flex items-center gap-1.5 text-xs text-fg-subtle font-medium h-5">
         {icon}
         {label}
       </div>
@@ -119,11 +119,16 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo.id]);
 
+  // Completion is stamped outside the draft — the checkbox toggles through app data,
+  // and the save handlers derive completedAt from status — so both fields have to
+  // come back from the prop or the Completed timestamp never appears.
   useEffect(() => {
     setDraft(prev =>
-      prev.status === todo.status ? prev : { ...prev, status: todo.status }
+      prev.status === todo.status && prev.completedAt === todo.completedAt
+        ? prev
+        : { ...prev, status: todo.status, completedAt: todo.completedAt }
     );
-  }, [todo.status]);
+  }, [todo.status, todo.completedAt]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -228,33 +233,6 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed"
               />
             </div>
-
-            {/* Timestamps — below a divider, aligned with the notes column. */}
-            <div className="mt-8 pl-[34px]">
-              <div className="border-t border-line-subtle pt-4 space-y-4">
-                <div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider mb-1.5">
-                    <Clock size={11} />
-                    Created
-                  </div>
-                  <span className="text-xs text-fg-faint font-mono">
-                    {format(new Date(draft.createdAt), "MMM d, yyyy '·' h:mm a")}
-                  </span>
-                </div>
-
-                {draft.completedAt && (
-                  <div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-fg-faint font-bold uppercase tracking-wider mb-1.5">
-                      <CircleDot size={11} />
-                      Completed
-                    </div>
-                    <span className="text-xs text-fg-faint font-mono">
-                      {format(new Date(draft.completedAt), "MMM d, yyyy '·' h:mm a")}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
           {/* Divider */}
@@ -296,7 +274,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 icon={<CalendarDays size={11} />}
                 label="Start"
                 onClear={() => update({ startDate: undefined, startTime: undefined })}
-                canClear={!!draft.startDate || !!draft.startTime}
+                canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
                   <DateChip
@@ -313,9 +291,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
               <RightProp
                 icon={<Clock size={11} />}
-                label="Due / End time"
+                label="Due"
                 onClear={() => update({ dueTime: undefined, duePercentage: undefined })}
-                canClear={draft.dueTime !== undefined}
+                canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
                   <DateChip value={dateStr} placeholder="Date" onChange={handleDateChange} />
@@ -362,6 +340,30 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                   </div>
                 </div>
               </RightProp>
+
+              <div className="border-t border-line-subtle py-3 space-y-3 ">
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs text-fg-subtle font-medium">
+                    <Clock size={11} />
+                    Created
+                  </div>
+                  <span className="text-[11px] text-fg-faint font-mono">
+                    {format(new Date(draft.createdAt), "MMM d, yyyy '·' h:mm a")}
+                  </span>
+                </div>
+
+                {draft.completedAt && (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs text-fg-subtle font-medium">
+                      <CircleDot size={11} />
+                      Completed
+                    </div>
+                    <span className="text-[11px] text-fg-faint font-mono">
+                      {format(new Date(draft.completedAt), "MMM d, yyyy '·' h:mm a")}
+                    </span>
+                  </div>
+                )}
+              </div>
 
             </div>
           </div>
