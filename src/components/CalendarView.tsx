@@ -17,7 +17,8 @@ import { Todo, DayTodos } from '../types';
 import { btnNeutral } from '../theme/buttons';
 import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
 import { isDone, toggledStatus } from '../utils/todoStatus';
-import { showsInOrganizer, showsOnDailyChecklist } from '../utils/todoFilters';
+import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '../utils/todoFilters';
+import { collectionColor } from './todosHub/constants';
 import { Calendar } from './Calendar';
 import { Switch } from './Switch';
 
@@ -81,11 +82,13 @@ const EventCard: React.FC<{
   todo: Todo;
   startMin: number;
   endMin: number;
+  // CSS color driving the card's fill, spine and dot — see accentForTodo.
+  accent: string;
   onMouseDown?: (e: React.MouseEvent) => void;
   onResizeStart?: (e: React.MouseEvent, edge: 'top' | 'bottom') => void;
   isDragging?: boolean;
   onToggle?: (e: React.MouseEvent) => void;
-}> = ({ todo, startMin, endMin, onMouseDown, onResizeStart, isDragging, onToggle }) => {
+}> = ({ todo, startMin, endMin, accent, onMouseDown, onResizeStart, isDragging, onToggle }) => {
   const [isHovered, setIsHovered] = useState(false);
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
@@ -104,18 +107,20 @@ const EventCard: React.FC<{
       onMouseLeave={() => setIsHovered(false)}
       className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
-        } ${isDragging ? 'z-50 ring-1 ring-[var(--accent1)]' : 'z-10 ring-1 ring-canvas'}
+        } ${isDragging ? 'z-50' : 'z-10 ring-1 ring-canvas'}
       `}
       style={{
         top: `${top}px`,
         height: `${height}px`,
         paddingTop: isSmall ? '0' : '5px',
+        // The drag/resize ghost is outlined in the task's own accent.
+        ...(isDragging ? { boxShadow: `0 0 0 1px ${accent}` } : {}),
         // paddingBottom: isSmall ? '0' : '3.5px',
         backgroundColor: isDone(todo)
           ? ((isHovered || isDragging) ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)')
           : ((isHovered || isDragging)
-            ? 'color-mix(in srgb, var(--accent1) 40%, canvas 60%)'
-            : 'color-mix(in srgb, var(--accent1) 30%, canvas 70%)'),
+            ? `color-mix(in srgb, ${accent} 40%, canvas 60%)`
+            : `color-mix(in srgb, ${accent} 30%, canvas 70%)`),
         // border: isDone(todo)
         //   ? '1px solid rgba(255,255,255,0.05)'
         //   : '1px solid color-mix(in srgb, var(--accent1), transparent 70%)',
@@ -139,15 +144,15 @@ const EventCard: React.FC<{
               <motion.div
                 initial={{ scale: 0.4, opacity: 0 }}
                 animate={{ scale: 0.8, opacity: 1 }}
-                className={'text-[var(--accent1)]'}
+                style={{ color: accent }}
               >
                 {isDone(todo) ? <CheckCircle2 size={15} strokeWidth={2.5} /> : <Circle size={15} strokeWidth={2.5} />}
               </motion.div>
             </div>
           ) : (
             <div
-              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone(todo) ? 'bg-fill-stronger' : 'bg-[var(--accent1)]'
-                }`}
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone(todo) ? 'bg-fill-stronger' : ''}`}
+              style={isDone(todo) ? undefined : { backgroundColor: accent }}
             />
           )}
         </div>
@@ -172,7 +177,7 @@ const EventCard: React.FC<{
         </div>
       )}
       {!isDone(todo) && (
-        <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent1)]" />
+        <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: accent }} />
       )}
       {/* Resize handles */}
       {!isDone(todo) && onResizeStart && (
@@ -254,6 +259,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     currentStartMins: number;
     currentEndMins: number;
   } | null>(null);
+
+  const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
+
+  // Daily-only tasks wear the app accent. A Task Planner task wears its collection's
+  // color instead, so the calendar reads like the Planner; an uncategorized one is grey.
+  const accentForTodo = useCallback(
+    (todo: Todo): string => {
+      if (todo.showInDatabase !== true) return 'var(--accent1)';
+      const collId = collectionOf(todo, byId);
+      if (!collId) return 'var(--color-status-todo)';
+      return collectionColor(byId.get(collId)?.color);
+    },
+    [byId]
+  );
 
   const handleToggleTodo = useCallback((dateStr: string, todoId: string) => {
     const dayData = dayTodos.find(d => d.date === dateStr);
@@ -822,6 +841,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           todo={todo}
                           startMin={startMin}
                           endMin={endMin}
+                          accent={accentForTodo(todo)}
                           onMouseDown={(e) => handleEventMouseDown(e, todo, dateStr, startMin, endMin)}
                           onResizeStart={(e, edge) => handleEventResizeStart(e, todo, dateStr, edge, startMin, endMin)}
                           onToggle={() => handleToggleTodo(dateStr, todo.id)}
@@ -834,6 +854,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {draggingEvent && draggingEvent.currentDateStr === dateStr && (
                     <EventCard
                       todo={draggingEvent.todo}
+                      accent={accentForTodo(draggingEvent.todo)}
                       startMin={draggingEvent.currentMins}
                       endMin={draggingEvent.currentMins + (draggingEvent.origEndMins - draggingEvent.origStartMins)}
                       isDragging={true}
@@ -844,6 +865,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {resizingEvent && resizingEvent.dateStr === dateStr && (
                     <EventCard
                       todo={resizingEvent.todo}
+                      accent={accentForTodo(resizingEvent.todo)}
                       startMin={resizingEvent.currentStartMins}
                       endMin={resizingEvent.currentEndMins}
                       isDragging={true} // reuse styling for visual feedback

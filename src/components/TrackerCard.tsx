@@ -94,7 +94,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
           </button>
           <button
             onClick={() => onDelete(tracker.id)}
-            className="p-1.5 hover:bg-red-500/10 rounded-lg text-fg-faint hover:text-red-400 transition-colors"
+            className="p-1.5 hover:bg-red-500/10 rounded-lg text-fg-faint hover:text-red-400 transition-colors cursor-pointer"
           >
             <Trash2 size={12} />
           </button>
