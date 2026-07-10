@@ -1,6 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Archive, ArchiveRestore, Trash2, Maximize2, CornerDownRight, FolderPlus, Palette, Pencil, MoveRight } from 'lucide-react';
+import { Archive, ArchiveRestore, Trash2, Maximize2, CornerDownRight, FolderPlus, Palette, Pencil, GitBranch } from 'lucide-react';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './constants';
 
@@ -67,7 +67,7 @@ export const RowContextMenu: React.FC<{
               <CornerDownRight size={14} /> Create task inside
             </button>
             <button onClick={() => onCreateNestedCollection(menu.id)} className={itemCls}>
-              <FolderPlus size={14} /> Create nested collection
+              <FolderPlus size={14} /> Create collection inside
             </button>
             <button onClick={onToggleColorPicker} className={itemCls}>
               <Palette size={14} /> Change color
@@ -94,16 +94,16 @@ export const RowContextMenu: React.FC<{
         ) : (
           <>
             <button onClick={() => onExpand(menu.id)} className={itemCls}>
-              <Maximize2 size={14} /> Show full view
+              <Maximize2 size={14} /> Show in full view
             </button>
             <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
               <CornerDownRight size={14} /> Create task inside
             </button>
             <button onClick={() => onMoveTo(menu.id)} className={itemCls}>
-              <MoveRight size={14} /> Move to…
+              <GitBranch size={14} /> Set parent task
             </button>
             <button onClick={() => entry && onMakeCollection(entry)} className={itemCls}>
-              <FolderPlus size={14} /> Create collection
+              <FolderPlus size={14} /> Make collection
             </button>
           </>
         )}

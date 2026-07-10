@@ -38,6 +38,7 @@ import { pill } from '../theme/pill';
 import { priorityOption } from './todoFields';
 import { TaskTimeChips, formatCountdown } from './TaskTimeChips';
 import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
+import { DailyRowContextMenu } from './DailyRowContextMenu';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,7 @@ interface TodoItemProps {
   onOpenFull: (id: string) => void;
   onAddToCalendar?: (id: string) => void;
   onStartTracking: (id: string) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   isDragging?: boolean;
   style?: React.CSSProperties;
   attributes?: any;
@@ -78,6 +80,7 @@ interface SortableItemProps {
   onOpenFull: (id: string) => void;
   onAddToCalendar: (id: string) => void;
   onStartTracking: (id: string) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
   collectionOptions: CollectionOption[];
@@ -100,6 +103,16 @@ export interface ListViewProps {
   onStartTracking?: (id: string) => void;
   activeTodoId?: string | null;
   onAdd: (vals: QuickEditValues) => void;
+  /** Row context menu — copy a task in place, just below the original. */
+  onDuplicate?: (id: string) => void;
+  /** Row context menu — reschedule to another day (YYYY-MM-DD). */
+  onSetDate?: (id: string, date: string) => void;
+  /** Row context menu — set the due/end time ('' clears it). */
+  onSetTime?: (id: string, time: string) => void;
+  /** Row context menu — nest the task under another task (null = top level). */
+  onSetParent?: (id: string, parentId: string | null) => void;
+  /** Row context menu — insert a new task directly above/below `anchorId`. */
+  onAddAt?: (vals: QuickEditValues, anchorId: string, pos: 'above' | 'below') => void;
   countdownMode?: 'off' | 'time' | 'percent';
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
@@ -121,6 +134,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
   onOpenFull,
   onAddToCalendar,
   onStartTracking,
+  onContextMenu,
   isDragging,
   style,
   attributes,
@@ -170,6 +184,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      onContextMenu={onContextMenu}
       className={`relative group flex items-start gap-2 py-1.5 border-b border-line-subtle ${isDragging ? 'opacity-0' : ''}`}
     >
       <button
@@ -308,6 +323,11 @@ export const ListView: React.FC<ListViewProps> = ({
   onAddToCalendar,
   onStartTracking = () => {},
   onAdd,
+  onDuplicate,
+  onSetDate,
+  onSetTime,
+  onSetParent,
+  onAddAt,
   countdownMode = 'off',
   collectionOptions = [],
   onCreateCollection,
@@ -317,6 +337,11 @@ export const ListView: React.FC<ListViewProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
+  // Right-click menu target (row id + cursor position).
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  // "Add task above/below": an inline add panel anchored to a row. The task is
+  // only created on submit, so cancelling leaves no empty row behind.
+  const [insertAt, setInsertAt] = useState<{ anchorId: string; pos: 'above' | 'below' } | null>(null);
   // Buffer to keep the reordered IDs locally so that the list never flashes
   // the old order during the render tick before React Query catches up
   // (setTimeout(0) scheduling in notifyManager, see notifyManager.ts:63).
@@ -332,8 +357,14 @@ export const ListView: React.FC<ListViewProps> = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const openAddPanel = () => { setEditingId(null); setIsAdding(true); };
-  const openEditPanel = (id: string) => { setIsAdding(false); setEditingId(id); };
+  // Only one panel is ever open: opening any of them closes the others.
+  const openAddPanel = () => { setEditingId(null); setInsertAt(null); setIsAdding(true); };
+  const openEditPanel = (id: string) => { setIsAdding(false); setInsertAt(null); setEditingId(id); };
+  const openInsertPanel = (anchorId: string, pos: 'above' | 'below') => {
+    setIsAdding(false);
+    setEditingId(null);
+    setInsertAt({ anchorId, pos });
+  };
 
   const handleSaveEdit = (id: string, vals: QuickEditValues) => {
     onSaveEdit(id, vals);
@@ -382,6 +413,22 @@ export const ListView: React.FC<ListViewProps> = ({
     [todos, activeId]
   );
 
+  const menuTodo = useMemo(
+    () => (menu ? todos.find((t) => t && t.id === menu.id) ?? null : null),
+    [todos, menu]
+  );
+
+  const insertPanel = insertAt && onAddAt && (
+    <QuickEditTodo
+      mode="add"
+      initialDate={date}
+      collectionOptions={collectionOptions}
+      onCreateCollection={onCreateCollection}
+      onSubmit={(vals) => { onAddAt(vals, insertAt.anchorId, insertAt.pos); setInsertAt(null); }}
+      onCancel={() => setInsertAt(null)}
+    />
+  );
+
   return (
     <div className="space-y-0">
       <DndContext
@@ -396,26 +443,34 @@ export const ListView: React.FC<ListViewProps> = ({
         >
           {(visibleTodos || []).map((todo) => {
             if (!todo || !todo.id) return null;
+            const anchored = insertAt?.anchorId === todo.id;
             return (
-              <SortableTodoItem
-                key={todo.id}
-                todo={todo}
-                date={date}
-                onToggle={onToggle}
-                onDelete={onDelete}
-                onEdit={(t) => openEditPanel(t.id)}
-                isEditing={editingId === todo.id}
-                onCancelEdit={() => setEditingId(null)}
-                onSaveEdit={handleSaveEdit}
-                onCommitEdit={onCommitEdit}
-                onOpenFull={onOpenFull}
-                onAddToCalendar={onAddToCalendar || (() => {})}
-                onStartTracking={onStartTracking}
-                now={now}
-                countdownMode={countdownMode}
-                collectionOptions={collectionOptions}
-                onCreateCollection={onCreateCollection || (() => '')}
-              />
+              <React.Fragment key={todo.id}>
+                {anchored && insertAt!.pos === 'above' && insertPanel}
+                <SortableTodoItem
+                  todo={todo}
+                  date={date}
+                  onToggle={onToggle}
+                  onDelete={onDelete}
+                  onEdit={(t) => openEditPanel(t.id)}
+                  isEditing={editingId === todo.id}
+                  onCancelEdit={() => setEditingId(null)}
+                  onSaveEdit={handleSaveEdit}
+                  onCommitEdit={onCommitEdit}
+                  onOpenFull={onOpenFull}
+                  onAddToCalendar={onAddToCalendar || (() => {})}
+                  onStartTracking={onStartTracking}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setMenu({ id: todo.id, x: e.clientX, y: e.clientY });
+                  }}
+                  now={now}
+                  countdownMode={countdownMode}
+                  collectionOptions={collectionOptions}
+                  onCreateCollection={onCreateCollection || (() => '')}
+                />
+                {anchored && insertAt!.pos === 'below' && insertPanel}
+              </React.Fragment>
             );
           })}
         </SortableContext>
@@ -459,6 +514,24 @@ export const ListView: React.FC<ListViewProps> = ({
           onCreateCollection={onCreateCollection}
           onSubmit={onAdd}
           onCancel={() => setIsAdding(false)}
+        />
+      )}
+
+      {menu && menuTodo && (
+        <DailyRowContextMenu
+          todo={menuTodo}
+          date={date}
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          onOpenFull={onOpenFull}
+          onDuplicate={(id) => onDuplicate?.(id)}
+          onSetDate={(id, d) => onSetDate?.(id, d)}
+          onSetTime={(id, t) => onSetTime?.(id, t)}
+          onSetParent={(id, parentId) => onSetParent?.(id, parentId)}
+          onAddAbove={(id) => openInsertPanel(id, 'above')}
+          onAddBelow={(id) => openInsertPanel(id, 'below')}
+          onDelete={onDelete}
         />
       )}
 

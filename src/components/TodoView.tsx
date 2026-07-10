@@ -109,24 +109,27 @@ export const TodoView: React.FC<TodoViewProps> = ({
     });
   }, [selectedDate, weekStartsOn]);
 
+  const newTodoId = () => Math.random().toString(36).substr(2, 9);
+
+  const buildTodo = (vals: QuickEditValues): Todo => ({
+    id: newTodoId(),
+    text: vals.text,
+    showInDailyList: true,
+    notes: vals.notes || undefined,
+    startTime: vals.startTime,
+    dueTime: vals.dueTime,
+    duePercentage: vals.duePercentage,
+    xp: vals.xp,
+    status: vals.status ?? "todo",
+    priority: vals.priority,
+    parentId: vals.parentId ?? undefined,
+    createdAt: Date.now(),
+  });
+
   const handleAddTodo = (vals: QuickEditValues) => {
     if (!vals.text.trim()) return;
 
-    const newTodo: Todo = {
-      id: Math.random().toString(36).substr(2, 9),
-      text: vals.text,
-      showInDailyList: true,
-      notes: vals.notes || undefined,
-      startTime: vals.startTime,
-      dueTime: vals.dueTime,
-      duePercentage: vals.duePercentage,
-      xp: vals.xp,
-      status: vals.status ?? "todo",
-      priority: vals.priority,
-      parentId: vals.parentId ?? undefined,
-      createdAt: Date.now(),
-    };
-
+    const newTodo = buildTodo(vals);
     const target = vals.date;
     if (target === selectedDate) {
       onUpdateTodos(selectedDate, [...currentDayData.todos, newTodo]);
@@ -135,6 +138,44 @@ export const TodoView: React.FC<TodoViewProps> = ({
       onUpdateTodos(target, [...targetDayData.todos, newTodo]);
     }
     // Panel stays open (QuickEditTodo resets itself) for rapid entry.
+  };
+
+  // "Add task above/below": land the new task next to its anchor in the day's
+  // array, which handleUpdateTodos turns back into dailyOrder. A task dated to
+  // another day can't be positioned here, so it just joins that day's bucket.
+  const addTodoAt = (vals: QuickEditValues, anchorId: string, pos: 'above' | 'below') => {
+    if (!vals.text.trim()) return;
+    if (vals.date !== selectedDate) {
+      handleAddTodo(vals);
+      return;
+    }
+    const all = currentDayData.todos || [];
+    const idx = all.findIndex(t => t && t.id === anchorId);
+    if (idx === -1) {
+      handleAddTodo(vals);
+      return;
+    }
+    const next = [...all];
+    next.splice(pos === 'above' ? idx : idx + 1, 0, buildTodo(vals));
+    onUpdateTodos(selectedDate, next);
+  };
+
+  // Copy a task's fields under a fresh id, placed directly below the original.
+  // Completion/tracking stamps belong to the original, so they aren't carried.
+  const duplicateTodo = (id: string) => {
+    const all = currentDayData.todos || [];
+    const idx = all.findIndex(t => t && t.id === id);
+    if (idx === -1) return;
+    const copy: Todo = {
+      ...all[idx],
+      id: newTodoId(),
+      createdAt: Date.now(),
+      completedAt: undefined,
+      trackingStartedAt: undefined,
+    };
+    const next = [...all];
+    next.splice(idx + 1, 0, copy);
+    onUpdateTodos(selectedDate, next);
   };
 
   const deleteTodo = (id: string) => {
@@ -182,6 +223,42 @@ export const TodoView: React.FC<TodoViewProps> = ({
       onUpdateTodos(selectedDate, newTodos);
     }
   };
+
+  // The context menu edits one field at a time; round-tripping the row through
+  // persistEdit keeps every write on the same path as the quick-edit panel.
+  const valuesOf = (todo: Todo): QuickEditValues => ({
+    text: todo.text,
+    notes: todo.notes || '',
+    date: selectedDate,
+    startTime: todo.startTime,
+    dueTime: todo.dueTime,
+    duePercentage: todo.duePercentage,
+    xp: todo.xp,
+    status: todo.status,
+    priority: todo.priority,
+    parentId: todo.parentId ?? null,
+  });
+
+  const patchTodo = (id: string, patch: (todo: Todo) => Partial<QuickEditValues>) => {
+    const todo = currentDayData.todos.find(t => t && t.id === id);
+    if (!todo) return;
+    persistEdit(id, { ...valuesOf(todo), ...patch(todo) });
+  };
+
+  const setTodoDate = (id: string, date: string) => {
+    if (!date) return;
+    patchTodo(id, () => ({ date }));
+  };
+
+  // Clearing the end time drops the derived percentage and the start time with
+  // it, mirroring the quick editor (a start with no end is meaningless).
+  const setTodoTime = (id: string, time: string) =>
+    patchTodo(id, (todo) => time
+      ? { dueTime: time, duePercentage: timeToPercentage(time), startTime: todo.startTime }
+      : { dueTime: undefined, duePercentage: undefined, startTime: undefined });
+
+  const setTodoParent = (id: string, parentId: string | null) =>
+    patchTodo(id, () => ({ parentId }));
 
   // Collection index + options for the quick-edit pickers.
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
@@ -302,6 +379,11 @@ export const TodoView: React.FC<TodoViewProps> = ({
           onStartTracking={onStartTracking}
           activeTodoId={activeTodoId}
           onAdd={handleAddTodo}
+          onAddAt={addTodoAt}
+          onDuplicate={duplicateTodo}
+          onSetDate={setTodoDate}
+          onSetTime={setTodoTime}
+          onSetParent={setTodoParent}
           countdownMode={countdownMode}
           collectionOptions={collOptions}
           onCreateCollection={onCreateCollection}
