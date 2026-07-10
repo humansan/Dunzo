@@ -5,8 +5,8 @@ import {
   addDays
 } from 'date-fns';
 import { DayTodos, Todo } from '@shared/types';
-import { hasDate, showsOnDailyChecklist } from './todoFilters';
-import { isDone } from './todoStatus';
+import { hasDate, showsOnDailyChecklist } from '@/utils/todoFilters';
+import { isDone } from '@/utils/todoStatus';
 
 export interface XpStats {
   earned: number;             // XP from completed todos on the given date

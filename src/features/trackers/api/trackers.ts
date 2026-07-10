@@ -1,9 +1,9 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Tracker } from '@shared/types';
-import { apiFetch } from './apiClient';
-import { queryKeys } from './keys';
-import { useOptimisticListMutation } from './optimistic';
-import { stripNullsList } from './normalize';
+import { apiFetch } from '@/data/apiClient';
+import { queryKeys } from '@/data/keys';
+import { useOptimisticListMutation } from '@/data/optimistic';
+import { stripNullsList } from '@/data/normalize';
 
 export const trackersQueryOptions = () =>
   queryOptions({

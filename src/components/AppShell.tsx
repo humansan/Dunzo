@@ -2,18 +2,18 @@ import { useEffect } from 'react';
 import { Outlet, useRouter, useRouterState, useSearch } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { Minimize2 } from 'lucide-react';
-import { AddTrackerModal } from './AddTrackerModal';
+import { AddTrackerModal } from '@/features/trackers';
 import { LoadingScreen } from './LoadingScreen';
 import { Sidebar } from './Sidebar';
-import { StopwatchWidget } from './StopwatchWidget';
+import { StopwatchWidget } from '@/features/stopwatch';
 import { ActiveTodoTracker } from './ActiveTodoTracker';
-import { StopwatchFullscreen } from './StopwatchFullscreen';
-import { SettingsOverlay } from './SettingsOverlay';
+import { StopwatchFullscreen } from '@/features/stopwatch';
+import { SettingsOverlay } from '@/features/settings';
 import { TaskOverlay } from './TaskOverlay';
 import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '../data/AppDataContext';
 import { useOverlayNav } from '../data/useOverlayNav';
-import { useStopwatch } from '../data/StopwatchContext';
+import { useStopwatch } from '@/features/stopwatch';
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
 // once and only the routed <Outlet/> changes, so sibling views never remount. Also

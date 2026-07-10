@@ -20,12 +20,12 @@ import { Todo, DayTodos, Tracker } from '@shared/types';
 import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '../utils/todoFilters';
 import { timeToPercentage } from '../utils/timeUtils';
 
-import { TrackerCard } from './TrackerCard';
+import { TrackerCard } from '@/features/trackers';
 import { CalendarView } from './CalendarView';
 import { QuickEditValues } from './QuickEditTodo';
-import { XpProgressBar } from './XpProgressBar';
-import { StarStreak } from './StarStreak';
-import { computeXpStats, getWeeklyXp } from '../utils/xpUtils';
+import { XpProgressBar } from '@/features/xp';
+import { StarStreak } from '@/features/xp';
+import { computeXpStats, getWeeklyXp } from '@/features/xp';
 import { ListView } from './ListView';
 import { DatePickerPopover } from './DatePickerPopover';
 

@@ -32,7 +32,7 @@ import {
   derivedCollectionId,
 } from './taskChips';
 import { CollectionPickerButton } from './CollectionPicker';
-import { modalPop, overlayBackdrop } from './modalMotion';
+import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 
 interface TodoFullViewProps {
   todo: Todo;

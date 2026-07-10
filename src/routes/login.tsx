@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { AuthModal } from '../components/AuthModal';
-import { authClient } from '../auth';
+import { AuthModal } from '@/features/auth';
+import { authClient } from '@/lib/auth';
 
 // Public route (sibling of _authed, not guarded): the sign-in / sign-up /
 // password-reset screen. Rendering AuthModal as its own durable route is what

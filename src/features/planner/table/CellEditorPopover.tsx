@@ -11,7 +11,7 @@ import {
 } from '@/components/todoFields';
 import { CalendarInput } from '@/components/CalendarInput';
 import { TimeInput } from '@/components/TimeInput';
-import { XpSlider } from '@/components/XpSlider';
+import { XpSlider } from '@/features/xp';
 import { CollectionPicker, COLLECTION_PANEL_WIDTH } from '@/components/CollectionPicker';
 import { EditState } from '@/features/planner/types';
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Maximize2, X } from 'lucide-react';
-import { StopwatchTime } from '../data/StopwatchContext';
+import { StopwatchTime } from '@/features/stopwatch/StopwatchContext';
 
 export type TimerState = 'idle' | 'running' | 'paused';
 

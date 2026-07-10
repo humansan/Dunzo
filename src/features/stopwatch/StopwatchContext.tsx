@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { TimerState } from '../components/StopwatchWidget';
+import type { TimerState } from '@/features/stopwatch/StopwatchWidget';
 
 // The stopwatch lives in its own context, separate from the big AppData object.
 // Crucially, `elapsed` is NOT stored here — it's derived on demand by `useElapsed()`

@@ -1,7 +1,7 @@
 import type { Todo, Tracker, Workspace } from '@shared/types';
-import type { UserSettings } from './settings';
-import { apiFetch } from './apiClient';
-import type { TodoBatch } from './todos';
+import type { UserSettings } from '@/data/settings';
+import { apiFetch } from '@/data/apiClient';
+import type { TodoBatch } from '@/data/todos';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Manual backup export / import (the Account panel's Export/Import buttons).

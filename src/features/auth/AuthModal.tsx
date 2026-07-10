@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
-import { authClient } from '../auth';
-import { applyTheme } from '../theme/applyTheme';
-import { btnAccent } from '../theme/buttons';
-import { DEFAULT_THEME_ID } from '../theme/themes';
-import backgroundUrl from '../assets/background.jpg';
-import logoUrl from '../assets/icon.svg';
+import { authClient } from '@/lib/auth';
+import { applyTheme } from '@/theme/applyTheme';
+import { btnAccent } from '@/theme/buttons';
+import { DEFAULT_THEME_ID } from '@/theme/themes';
+import backgroundUrl from '@/assets/background.jpg';
+import logoUrl from '@/assets/icon.svg';
 
 interface AuthModalProps {
   isOpen: boolean;

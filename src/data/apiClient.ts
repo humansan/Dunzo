@@ -1,4 +1,4 @@
-import { authClient } from '../auth';
+import { authClient } from '@/lib/auth';
 
 // Single seam for all backend calls. Pulls a fresh session token from Neon Auth
 // and attaches it as a Bearer token. Phase 3/4 data functions build on this.

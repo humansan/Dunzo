@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Astroid } from 'lucide-react';
 import { DayTodos } from '@shared/types';
-import { computeStarStreak } from '../utils/xpUtils';
-import { ParticleBurst } from './ParticleBurst';
+import { computeStarStreak } from '@/features/xp/model/xp';
+import { ParticleBurst } from '@/common/ui/ParticleBurst';
 
 interface StarStreakProps {
   dayTodos: DayTodos[];

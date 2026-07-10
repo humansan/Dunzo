@@ -1,11 +1,11 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { AppDataProvider } from '../data/AppDataContext';
-import { StopwatchProvider } from '../data/StopwatchContext';
+import { StopwatchProvider } from '@/features/stopwatch';
 import { AppShell } from '../components/AppShell';
 import { LoadingScreen } from '../components/LoadingScreen';
-import { authClient } from '../auth';
+import { authClient } from '@/lib/auth';
 import { todosQueryOptions } from '../data/todos';
-import { trackersQueryOptions } from '../data/trackers';
+import { trackersQueryOptions } from '@/features/trackers/api';
 import { workspacesQueryOptions } from '../data/workspaces';
 import { settingsQueryOptions } from '../data/settings';
 

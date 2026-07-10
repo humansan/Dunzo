@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Minimize2, X, Image as ImageIcon, Sun } from 'lucide-react';
-import { TimerState } from './StopwatchWidget';
-import { StopwatchTime } from '../data/StopwatchContext';
+import { TimerState } from '@/features/stopwatch/StopwatchWidget';
+import { StopwatchTime } from '@/features/stopwatch/StopwatchContext';
 
 interface StopwatchFullscreenProps {
   timerState: TimerState;

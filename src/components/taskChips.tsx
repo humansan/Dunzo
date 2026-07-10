@@ -12,7 +12,7 @@ import {
 } from './todoFields';
 import { CalendarInput } from './CalendarInput';
 import { TimeInput } from './TimeInput';
-import { XpSlider } from './XpSlider';
+import { XpSlider } from '@/features/xp';
 import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '../data/AppDataContext';
 import { btnGhost } from '../theme/buttons';

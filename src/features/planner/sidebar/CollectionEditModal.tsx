@@ -4,7 +4,7 @@ import { X, ChevronDown, Check } from 'lucide-react';
 import { OrganizerEntry, CollectionOption } from '@/utils/todoFilters';
 import { btnAccent, btnGhost, btnNeutral } from '@/theme/buttons';
 import { CollectionPickerButton } from '@/components/CollectionPicker';
-import { modalPop, overlayBackdrop } from '@/components/modalMotion';
+import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 import { textInputCls } from '@/common/ui/TextInput';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Tracker, TrackerDisplayMode } from '@shared/types';
-import { calculateProgress, getOrdinal } from '../utils/timeUtils';
-import { btnGhost } from '../theme/buttons';
+import { calculateProgress, getOrdinal } from '@/utils/timeUtils';
+import { btnGhost } from '@/theme/buttons';
 import { Trash2, Settings2 } from 'lucide-react';
-import { EXPO_OUT } from './XpProgressBar';
+import { EXPO_OUT } from '@/common/ui/motion';
 
 interface TrackerCardProps {
   tracker: Tracker;
@@ -12,7 +12,6 @@ interface TrackerCardProps {
   onEdit: (tracker: Tracker) => void;
 }
 
-// const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onEdit }) => {
   const [now, setNow] = useState(new Date());

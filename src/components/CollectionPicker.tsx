@@ -127,7 +127,7 @@ export const CollectionPicker: React.FC<{
   };
 
   return (
-    <div className="w-64 bg-surface border border-line rounded-xl shadow-2xl overflow-hidden">
+    <div className="w-84 bg-surface border border-line rounded-xl shadow-2xl overflow-hidden">
       <div className="p-2">
         <input
           autoFocus

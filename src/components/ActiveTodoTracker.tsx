@@ -5,7 +5,7 @@ import { Todo } from '@shared/types';
 import { isDone } from '../utils/todoStatus';
 import { differenceInSeconds, startOfDay } from 'date-fns';
 import { TaskTimeChips, formatCountdown, CountdownMode } from './TaskTimeChips';
-import { EXPO_OUT } from './XpProgressBar';
+import { EXPO_OUT } from '@/common/ui/motion';
 import { btnGhost } from '../theme/buttons';
 
 interface ActiveTodoTrackerProps {

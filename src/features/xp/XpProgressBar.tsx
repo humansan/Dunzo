@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
-import { XpStats } from '../utils/xpUtils';
-import { useThemeColor } from '../theme/useThemeColor';
+import { XpStats } from '@/features/xp/model/xp';
+import { useThemeColor } from '@/theme/useThemeColor';
+import { EXPO_OUT } from '@/common/ui/motion';
 
 interface XpProgressBarProps {
   stats: XpStats;
@@ -9,8 +10,6 @@ interface XpProgressBarProps {
   weeklyXp: number[];
 }
 
-// Exponential ease-out: snappy start, soft landing.
-export const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp }) => {
   // XP indicator keeps its fixed signature colors across all themes (gold → purple,

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { StatsView } from '../../components/StatsView';
+import { StatsView } from '@/features/stats';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
 

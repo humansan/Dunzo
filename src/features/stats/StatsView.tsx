@@ -27,13 +27,13 @@ import {
   Download
 } from 'lucide-react';
 import { DayTodos, Todo } from '@shared/types';
-import { hasDate, showsOnDailyChecklist, todoIndex, collectionOf, collectionPath } from '../utils/todoFilters';
-import { isDone } from '../utils/todoStatus';
-import { buildXpHistory, starsFor } from '../utils/xpUtils';
+import { hasDate, showsOnDailyChecklist, todoIndex, collectionOf, collectionPath } from '@/utils/todoFilters';
+import { isDone } from '@/utils/todoStatus';
+import { buildXpHistory, starsFor } from '@/features/xp';
 import { motion, AnimatePresence } from 'motion/react';
-import { pillBg, pillBorder } from '../theme/pill';
+import { pillBg, pillBorder } from '@/theme/pill';
 import { collectionColor } from '@/theme/collectionColor';
-import { useThemeColor } from '../theme/useThemeColor';
+import { useThemeColor } from '@/theme/useThemeColor';
 
 interface StatsViewProps {
   dayTodos: DayTodos[];

@@ -4,7 +4,7 @@ import { Search, X, List, Columns2, CornerLeftUp } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { OrganizerEntry } from '@/utils/todoFilters';
 import { useSyncedLayout } from '@/data/settings';
-import { overlayBackdrop } from '@/components/modalMotion';
+import { overlayBackdrop } from '@/common/ui/modalMotion';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from '@/features/planner/table/TaskTable';
 import { useTaskFinderSearch } from '@/features/planner/task-finder/useTaskFinderSearch';
