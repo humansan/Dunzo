@@ -342,7 +342,7 @@ export const ParentTaskButton: React.FC<{
           title="Set parent task"
           placeholder="Search for a task to nest under…"
           isDisabled={isDisabled}
-          rootOption={{ label: 'No parent (top level)', onSelect: () => { onChange(null); setPickerOpen(false); } }}
+          rootOption={{ label: 'Set no parent', onSelect: () => { onChange(null); setPickerOpen(false); } }}
           onPick={(id) => { onChange(id); setPickerOpen(false); }}
           onClose={() => setPickerOpen(false)}
         />

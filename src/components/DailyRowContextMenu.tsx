@@ -189,7 +189,7 @@ export const DailyRowContextMenu: React.FC<{
           placeholder="Search for a task to nest under…"
           isDisabled={isDisabled}
           rootOption={{
-            label: 'No parent (top level)',
+            label: 'Set no parent',
             onSelect: () => { onSetParent(todo.id, null); onClose(); },
           }}
           onPick={(id) => { onSetParent(todo.id, id); onClose(); }}

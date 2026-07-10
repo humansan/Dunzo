@@ -51,7 +51,7 @@ export const CollectionTree: React.FC<{
   return (
     <div className="group/pane flex-1 min-h-0 flex flex-col">
       {/* Fixed header: title + the two pseudo-views as separate rows */}
-      <div className="shrink-0 p-2 pb-1 space-y-0.5">
+      <div className="shrink-0 p-2 pb-0 space-y-0.5">
         <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
           Collections
         </div>
@@ -73,6 +73,8 @@ export const CollectionTree: React.FC<{
           </button>
         )}
       </div>
+
+      <div className="my-2 mx-3 border-t border-line"></div>
 
       {/* Scrollable list of collections — nested tree, indented by depth. The drop is
           handled on the container (not per-row) so releases in the gaps still commit. */}

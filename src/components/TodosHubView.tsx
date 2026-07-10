@@ -843,7 +843,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           title={`Move “${reparentTarget.text || 'Untitled'}” to…`}
           placeholder="Search for a task to nest under…"
           isDisabled={reparentDisabled}
-          rootOption={{ label: 'Move to top level', onSelect: () => { onSaveTodo({ ...reparentTarget, parentId: null }); setReparentId(null); } }}
+          rootOption={{ label: 'Set no parent', onSelect: () => { onSaveTodo({ ...reparentTarget, parentId: null }); setReparentId(null); } }}
           onPick={(newParentId) => { onSaveTodo({ ...reparentTarget, parentId: newParentId }); setReparentId(null); }}
           onClose={() => setReparentId(null)}
         />
