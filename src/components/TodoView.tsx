@@ -50,6 +50,8 @@ interface TodoViewProps {
   onSelectDate: (date: string) => void;
   // Opening a task navigates to /task/$taskId (the shared full-view route).
   onOpenTask: (id: string) => void;
+  // Drawing a block on the embedded calendar creates a timed task; returns its id.
+  onCreateTask: (date: string, startTime: string, dueTime: string) => string;
 }
 
 // ─── TodoView ────────────────────────────────────────────────────────────────
@@ -72,6 +74,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
   selectedDate,
   onSelectDate,
   onOpenTask,
+  onCreateTask,
 }) => {
   const orderedTrackers = useMemo(() => {
     const dayTracker = trackers.find(t => t.type === 'day');
@@ -395,6 +398,8 @@ export const TodoView: React.FC<TodoViewProps> = ({
             initialDays={1}
             hideHeader={true}
             hideMiniCalendar={true}
+            onCreateTask={onCreateTask}
+            onOpenTask={onOpenTask}
           />
         </div>
       </div>

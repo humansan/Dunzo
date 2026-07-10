@@ -85,7 +85,7 @@ export const ActiveTodoTracker: React.FC<ActiveTodoTrackerProps> = ({
 
         <div className="flex-1 min-w-0">
           <h3 className={`font-medium text-wrap transition-all ${isDone(todo) ? 'text-fg-ghost line-through' : 'text-fg'}`}>
-            {todo.text}
+            {todo.text || 'Untitled'}
           </h3>
         </div>
 

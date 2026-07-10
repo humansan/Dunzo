@@ -216,7 +216,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 onChange={(e) => update({ text: e.target.value })}
                 onInput={resizeTitle}
                 rows={1}
-                placeholder="Task name"
+                placeholder="Untitled"
                 className={`flex-1 bg-transparent resize-none overflow-hidden text-xl font-bold focus:outline-none leading-snug pt-0.5 placeholder:text-fg-ghost ${
                   isDone(draft) ? 'text-fg-ghost line-through' : 'text-fg'
                 }`}

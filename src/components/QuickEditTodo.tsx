@@ -203,7 +203,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Task name"
+        placeholder="Untitled"
         className="w-full bg-transparent text-fg text-base font-medium placeholder:text-fg-ghost focus:outline-none"
       />
 

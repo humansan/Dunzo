@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { CalendarView } from '../../components/CalendarView';
 import { ViewErrorFallback } from '../../components/ViewErrorFallback';
 import { useAppData } from '../../data/AppDataContext';
+import { useOverlayNav } from '../../data/useOverlayNav';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -15,6 +16,7 @@ export const Route = createFileRoute('/_authed/calendar')({
 function CalendarRoute() {
   const d = useAppData();
   const navigate = Route.useNavigate();
+  const { openTask } = useOverlayNav();
   const { date } = Route.useSearch();
   return (
     <main className="mx-auto px-2 h-screen py-0">
@@ -24,6 +26,8 @@ function CalendarRoute() {
           onUpdateTodos={d.handleUpdateTodos}
           initialDate={date}
           onFocusDateChange={(next) => navigate({ search: { date: next } })}
+          onCreateTask={d.handleCalendarAddTodo}
+          onOpenTask={openTask}
         />
       </div>
     </main>

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { DayTodos, Todo, Tracker } from '../types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '../utils/todoFilters';
 import { normalizeCompletion, toggledStatus } from '../utils/todoStatus';
+import { timeToPercentage } from '../utils/timeUtils';
 import { authClient } from '../auth';
 import { queryClient } from './queryClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from './todos';
@@ -306,6 +307,21 @@ function useProvideAppData() {
     addHubTodo(opts?.parentId ?? null, opts);
   const handleAddSubtask = (parentId: string): string => addHubTodo(parentId);
 
+  // A block drawn on the calendar is a dated, timed task on that day's checklist —
+  // same defaults as a task typed into the daily list, not a Planner entry.
+  const handleCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
+    addHubTodo(null, {
+      date,
+      patch: {
+        startTime,
+        startPercentage: timeToPercentage(startTime),
+        dueTime,
+        duePercentage: timeToPercentage(dueTime),
+        showInDatabase: false,
+        showInDailyList: true,
+      },
+    });
+
   // Create a collection with the given name (workspace-scoped), nested under
   // parentId when given, and return its id. Lives in the UNDATED bucket like
   // other database nodes.
@@ -449,6 +465,7 @@ function useProvideAppData() {
     handleStartTracking,
     handleHubSaveTodo,
     handleHubAddTodo,
+    handleCalendarAddTodo,
     handleAddSubtask,
     createCollection,
     addHubCollection,
