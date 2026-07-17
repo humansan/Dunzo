@@ -12,4 +12,5 @@ docs/
 server/app.bundle.js
 .codegraph/
 .tanstack/
-scripts/
+# One-off theming codemods; build/lint scripts in scripts/ are tracked
+scripts/theming/
