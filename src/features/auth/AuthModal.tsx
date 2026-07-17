@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth';
 import { applyTheme } from '@/theme/applyTheme';
 import { btnAccent } from '@/theme/buttons';
@@ -14,21 +14,95 @@ interface AuthModalProps {
 }
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
+type SignupStep = 'email' | 'details';
 
 function getResetToken(): string | null {
   return new URLSearchParams(window.location.search).get('token');
 }
 
-// A light draft (email + mode) persisted so a remount / hard refresh doesn't wipe
-// typed input on the login screen. Passwords are deliberately never persisted.
+// Password policy: ≥8 chars with an uppercase, lowercase, and number. Returns an
+// error string if invalid, else null. Enforced client-side on signup + reset so
+// the user gets clear feedback before the Neon Auth round-trip.
+function validatePassword(pw: string): string | null {
+  if (pw.length < 8) return 'Password must be at least 8 characters.';
+  if (!/[a-z]/.test(pw)) return 'Password must include a lowercase letter.';
+  if (!/[A-Z]/.test(pw)) return 'Password must include an uppercase letter.';
+  if (!/[0-9]/.test(pw)) return 'Password must include a number.';
+  return null;
+}
+
+// A light draft (email + mode + signup step) persisted so a remount / hard refresh
+// doesn't wipe typed input on the login screen. Passwords are deliberately never persisted.
 const AUTH_DRAFT_KEY = 'dun-auth-draft';
-function readAuthDraft(): { email?: string; mode?: AuthMode } {
+function readAuthDraft(): { email?: string; mode?: AuthMode; signupStep?: SignupStep } {
   try {
     return JSON.parse(sessionStorage.getItem(AUTH_DRAFT_KEY) || '{}');
   } catch {
     return {};
   }
 }
+
+// ─── Small in-file controls (no shared primitives for these yet) ─────────────
+
+const RememberCheckbox: React.FC<{ checked: boolean; onChange: (v: boolean) => void }> = ({
+  checked,
+  onChange,
+}) => (
+  <button
+    type="button"
+    role="checkbox"
+    aria-checked={checked}
+    onClick={() => onChange(!checked)}
+    className="flex items-center gap-2 cursor-pointer group"
+  >
+    <span
+      className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+        checked
+          ? 'bg-[var(--accent2)] border-[var(--accent2)] text-canvas'
+          : 'border-line group-hover:border-line-strong'
+      }`}
+    >
+      {checked && <Check size={12} strokeWidth={3} />}
+    </span>
+    <span className="text-sm text-fg-muted">Remember me</span>
+  </button>
+);
+
+const OrDivider: React.FC = () => (
+  <div className="flex items-center gap-3 my-4">
+    <div className="h-px flex-1 bg-line" />
+    <span className="text-xs text-fg-faint">OR</span>
+    <div className="h-px flex-1 bg-line" />
+  </div>
+);
+
+const GoogleButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full h-9 rounded-lg border border-line bg-surface hover:bg-fill-subtle transition-colors flex items-center justify-center gap-2.5 text-sm font-medium text-fg cursor-pointer"
+  >
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden>
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
+    Continue with Google
+  </button>
+);
 
 // ─── Signed-out view (full-screen login gate) ────────────────────────────────
 
@@ -52,9 +126,14 @@ const LoginScreen: React.FC<{
   const [mode, setMode] = useState<AuthMode>(
     resetToken ? 'reset' : draft.mode === 'signup' ? 'signup' : 'login'
   );
+  const [signupStep, setSignupStep] = useState<SignupStep>(
+    draft.mode === 'signup' && draft.signupStep === 'details' ? 'details' : 'email'
+  );
   const [email, setEmail] = useState(draft.email ?? '');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,25 +141,31 @@ const LoginScreen: React.FC<{
   const [forgotSent, setForgotSent] = useState(false);
   const [resetDone, setResetDone] = useState(false);
 
-  // Keep the draft in sync (email + mode only; never passwords).
+  // Keep the draft in sync (email + mode + step only; never passwords).
   useEffect(() => {
-    sessionStorage.setItem(AUTH_DRAFT_KEY, JSON.stringify({ email, mode }));
-  }, [email, mode]);
+    sessionStorage.setItem(AUTH_DRAFT_KEY, JSON.stringify({ email, mode, signupStep }));
+  }, [email, mode, signupStep]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === 'signup') {
+      const pwError = validatePassword(password);
+      if (pwError) {
+        setError(pwError);
+        return;
+      }
+    }
     setSubmitting(true);
     setError(null);
     try {
       const { error } =
         mode === 'login'
-          ? await authClient.signIn.email({ email, password })
+          ? await authClient.signIn.email({ email, password, rememberMe })
           : await authClient.signUp.email({
               email,
               password,
-              // Neon Auth requires a name; derive it from the email local-part
-              // since we no longer collect a username.
-              name: email.split('@')[0],
+              // Fall back to the email local-part only if a name somehow wasn't collected.
+              name: name.trim() || email.split('@')[0],
             });
       if (error) throw new Error(error.message || 'Authentication failed');
       sessionStorage.removeItem(AUTH_DRAFT_KEY);
@@ -89,6 +174,20 @@ const LoginScreen: React.FC<{
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async () => {
+    setError(null);
+    try {
+      // Full-page OAuth redirect; the /login route's beforeLoad handles the
+      // post-OAuth landing via getSession(), so onAuthenticated isn't called here.
+      await (authClient as any).signIn.social({
+        provider: 'google',
+        callbackURL: window.location.origin + '/today',
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed');
     }
   };
 
@@ -114,6 +213,11 @@ const LoginScreen: React.FC<{
 
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setError(pwError);
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -139,6 +243,9 @@ const LoginScreen: React.FC<{
 
   const switchMode = (m: AuthMode) => {
     setMode(m);
+    setSignupStep('email');
+    setName('');
+    setPassword('');
     setError(null);
     setForgotSent(false);
     setResetDone(false);
@@ -260,6 +367,9 @@ const LoginScreen: React.FC<{
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              <p className="text-xs text-fg-faint mt-1.5">
+                At least 8 characters, with an uppercase, lowercase, and number.
+              </p>
             </div>
             <div>
               <label className={`${fieldLabel} mb-1.5`}>Confirm password</label>
@@ -298,76 +408,157 @@ const LoginScreen: React.FC<{
     }
 
     // ── Login / Signup ───────────────────────────────────────────────────────
+    // Signup step 1 collects email only; the OR-divider + Google option appear on
+    // login and the signup email step, but not on signup step 2 (name + password).
+    const isSignup = mode === 'signup';
+    const showEmailField = mode === 'login' || signupStep === 'email';
+    const showCredentialFields = mode === 'login' || signupStep === 'details';
+    const showGoogle = mode === 'login' || (isSignup && signupStep === 'email');
+
+    const submitLabel = submitting
+      ? 'Please wait…'
+      : mode === 'login'
+        ? 'Log In'
+        : signupStep === 'email'
+          ? 'Continue'
+          : 'Create Account';
+
+    // Signup email step just advances to the details step; no auth call yet.
+    const onFormSubmit =
+      isSignup && signupStep === 'email'
+        ? (e: React.FormEvent) => {
+            e.preventDefault();
+            setError(null);
+            setSignupStep('details');
+          }
+        : handleSubmit;
+
     return (
       <>
-        <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-6">
-          {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          <div>
-            <label className={`${fieldLabel} mb-1.5`}>Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={fieldClass}
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className={`${fieldLabel}`}>Password</label>
-              {mode === 'login' && (
+        <div className="mb-6">
+          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-1.5">
+            {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
+          </h2>
+          <p className="text-sm text-fg-muted">
+            {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
+            <button
+              type="button"
+              onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
+              className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
+            >
+              {mode === 'login' ? 'Create an account' : 'Log in'}
+            </button>
+          </p>
+        </div>
+
+        {/* Back to email on signup step 2 */}
+        {isSignup && signupStep === 'details' && (
+          <button
+            type="button"
+            onClick={() => {
+              setSignupStep('email');
+              setError(null);
+            }}
+            className="flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition-colors mb-4 cursor-pointer"
+          >
+            <ArrowLeft size={15} />
+            {email}
+          </button>
+        )}
+
+        <form onSubmit={onFormSubmit} className="space-y-3.5">
+          {showEmailField && (
+            <div>
+              <label className={`${fieldLabel} mb-1.5`}>Email</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={fieldClass}
+                placeholder="you@example.com"
+                autoFocus={showEmailField}
+              />
+            </div>
+          )}
+
+          {isSignup && signupStep === 'details' && (
+            <div>
+              <label className={`${fieldLabel} mb-1.5`}>Name</label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={fieldClass}
+                placeholder="Your name"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {showCredentialFields && (
+            <div>
+              <label className={`${fieldLabel} mb-1.5`}>Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`${fieldClass} pr-11`}
+                  placeholder="••••••••"
+                />
                 <button
                   type="button"
-                  className="text-sm font-medium text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
-                  onClick={() => switchMode('forgot')}
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  Forgot password?
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
+              </div>
+              {isSignup && (
+                <p className="text-xs text-fg-faint mt-1.5">
+                  At least 8 characters, with an uppercase, lowercase, and number.
+                </p>
               )}
             </div>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={`${fieldClass} pr-11`}
-                placeholder="••••••••"
-              />
+          )}
+
+          {/* Remember me + Forgot password (login only) */}
+          {mode === 'login' && (
+            <div className="flex items-center justify-between">
+              <RememberCheckbox checked={rememberMe} onChange={setRememberMe} />
               <button
                 type="button"
-                onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                onClick={() => switchMode('forgot')}
+                className="text-sm text-fg-muted hover:text-fg underline transition-colors cursor-pointer"
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                Forgot password?
               </button>
             </div>
-          </div>
+          )}
+
           {error && (
             <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>
           )}
+
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[var(--accent1)] hover:opacity-90 text-canvas font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className={`w-full h-9 rounded-lg cursor-pointer disabled:cursor-not-allowed ${btnAccent()}`}
           >
-            {submitting ? 'Please wait…' : mode === 'login' ? 'Log In' : 'Create Account'}
+            {submitLabel}
           </button>
         </form>
-        <p className="text-sm text-fg-muted mt-5">
-          {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
-          <button
-            type="button"
-            onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-            className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
-          >
-            {mode === 'login' ? 'Create an account' : 'Log in'}
-          </button>
-        </p>
+
+        {showGoogle && (
+          <>
+            <OrDivider />
+            <GoogleButton onClick={handleGoogle} />
+          </>
+        )}
       </>
     );
   };
