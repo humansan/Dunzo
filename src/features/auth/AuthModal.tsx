@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth';
+import { apiFetch } from '@/lib/query/apiClient';
 import { applyTheme } from '@/theme/applyTheme';
 import { btnAccent } from '@/theme/buttons';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
@@ -137,6 +138,7 @@ const LoginScreen: React.FC<{
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailTaken, setEmailTaken] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [resetDone, setResetDone] = useState(false);
@@ -172,6 +174,31 @@ const LoginScreen: React.FC<{
       onAuthenticated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Signup step 1 → step 2. Before collecting name/password, check the email
+  // isn't already registered so we can steer existing users to log in.
+  const handleEmailContinue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setEmailTaken(false);
+    setSubmitting(true);
+    try {
+      const { exists } = await apiFetch<{ exists: boolean }>(
+        `/auth/email-exists?email=${encodeURIComponent(email.trim())}`
+      );
+      if (exists) {
+        setEmailTaken(true);
+        setError('An account with this email already exists.');
+        return;
+      }
+      setSignupStep('details');
+    } catch {
+      // Fail open — never block signup because the check itself failed.
+      setSignupStep('details');
     } finally {
       setSubmitting(false);
     }
@@ -247,6 +274,7 @@ const LoginScreen: React.FC<{
     setName('');
     setPassword('');
     setError(null);
+    setEmailTaken(false);
     setForgotSent(false);
     setResetDone(false);
   };
@@ -423,15 +451,9 @@ const LoginScreen: React.FC<{
           ? 'Continue'
           : 'Create Account';
 
-    // Signup email step just advances to the details step; no auth call yet.
+    // Signup email step checks the email isn't taken, then advances; no auth call yet.
     const onFormSubmit =
-      isSignup && signupStep === 'email'
-        ? (e: React.FormEvent) => {
-            e.preventDefault();
-            setError(null);
-            setSignupStep('details');
-          }
-        : handleSubmit;
+      isSignup && signupStep === 'email' ? handleEmailContinue : handleSubmit;
 
     return (
       <>
@@ -474,7 +496,14 @@ const LoginScreen: React.FC<{
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // Editing the email invalidates a prior "already taken" result.
+                  if (emailTaken) {
+                    setEmailTaken(false);
+                    setError(null);
+                  }
+                }}
                 className={fieldClass}
                 placeholder="you@example.com"
                 autoFocus={showEmailField}
@@ -541,7 +570,21 @@ const LoginScreen: React.FC<{
           )}
 
           {error && (
-            <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>
+            <div className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">
+              {error}
+              {emailTaken && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    onClick={() => switchMode('login')}
+                    className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] underline transition-colors cursor-pointer"
+                  >
+                    Log in instead
+                  </button>
+                </>
+              )}
+            </div>
           )}
 
           <button
