@@ -42,6 +42,10 @@ export const DatePickerPopover: React.FC<DatePickerPopoverProps> = ({
     const anchor = anchorRef.current;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
+    // A detached / not-yet-laid-out anchor reports an all-zero rect; measuring off
+    // it clamps the panel to a viewport edge (the "snap to the side"). Skip such a
+    // frame and keep the last good position.
+    if (rect.width === 0 && rect.height === 0) return;
     const popH = popoverRef.current?.offsetHeight ?? 0;
 
     let left = Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - MARGIN);
@@ -55,15 +59,23 @@ export const DatePickerPopover: React.FC<DatePickerPopoverProps> = ({
     setPos({ top, left });
   }, []);
 
-  const open = useCallback(() => {
-    setPos(null); // re-measure on each open
-    setIsOpen(true);
-  }, []);
+  // The trigger toggles. The outside-click handler ignores targets inside the
+  // anchor, so a click on the trigger never reaches it — the trigger has to close
+  // the popover itself, or it can only ever be dismissed by clicking elsewhere.
+  const open = useCallback(() => setIsOpen((v) => !v), []);
 
-  // Measure once the panel is mounted so placement can account for its height.
+  // Measure while open until a position lands. Gating on `pos === null` (rather than
+  // only the open→true edge) means a re-open always re-measures even if `isOpen`
+  // never flipped off, so the panel can't get stuck hidden — visibility keys off `pos`.
   useLayoutEffect(() => {
-    if (isOpen) updatePos();
-  }, [isOpen, updatePos]);
+    if (isOpen && pos === null) updatePos();
+  }, [isOpen, pos, updatePos]);
+
+  // Drop the measured position on close so the next open re-measures from scratch
+  // instead of flashing at the previous (possibly stale / edge-clamped) spot.
+  useEffect(() => {
+    if (!isOpen) setPos(null);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
