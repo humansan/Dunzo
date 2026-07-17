@@ -260,6 +260,25 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     currentEndMins: number;
   } | null>(null);
 
+  // Post-drop "settling" ghost. onUpdateTodos writes the new time through react-query's
+  // optimistic cache, but the echo back into our `dayTodos` prop lands a tick later
+  // (the parent re-renders on the query notification, a microtask after the drop). If
+  // we simply cleared the drag state on drop, the original card would un-hide at its
+  // OLD position for that one frame before the prop catches up — the "flash back, then
+  // flash forward". So we keep drawing the card at its dropped spot (and keep the
+  // original hidden) until the prop reports the committed time, then release. Same
+  // preview-until-echo trick TimeInput uses for its rails.
+  const [settling, setSettling] = useState<{
+    id: string;
+    dateStr: string;
+    startMins: number;
+    endMins: number;
+    // The exact HH:MM we committed; the ghost lifts once the prop echoes both back.
+    expectStart: string;
+    expectEnd: string;
+    accent: string;
+  } | null>(null);
+
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
 
   // Daily-only tasks wear the app accent. A Task Planner task wears its collection's
@@ -432,6 +451,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const startOffsetPx = e.clientY - rect.top;
 
+    setSettling(null); // a fresh grab supersedes any in-flight settle
     setDraggingEvent({
       todo,
       initialDateStr: dateStr,
@@ -527,6 +547,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         onUpdateTodos(currentDateStr, [...(targetData?.todos || []), updatedTodo]);
       }
 
+      // Keep the card painted at its dropped spot until the prop echoes the new time
+      // (see `settling`), then hand off to the real card without a flash.
+      setSettling({
+        id: todo.id,
+        dateStr: currentDateStr,
+        startMins: currentMins,
+        endMins: currentMins + duration,
+        expectStart: newStartTime,
+        expectEnd: newEndTime,
+        accent: accentForTodo(todo),
+      });
       setDraggingEvent(null);
     };
 
@@ -543,6 +574,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     if (e.button !== 0) return;
     e.stopPropagation();
 
+    setSettling(null); // a fresh resize supersedes any in-flight settle
     setResizingEvent({
       todo,
       dateStr,
@@ -600,6 +632,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const newTodos = (dayData?.todos || []).map(t => t.id === todo.id ? updatedTodo : t);
       onUpdateTodos(dateStr, newTodos);
 
+      // Hold the resized card at its new bounds until the prop echoes back (see
+      // `settling` / the move handler) so it doesn't flash to the old size first.
+      setSettling({
+        id: todo.id,
+        dateStr,
+        startMins: currentStartMins,
+        endMins: currentEndMins,
+        expectStart: newStartTime,
+        expectEnd: newEndTime,
+        accent: accentForTodo(todo),
+      });
       setResizingEvent(null);
     };
 
@@ -610,6 +653,28 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [resizingEvent, dayTodos, onUpdateTodos]);
+
+  // Release the settling ghost once the prop reports the time we committed. Until
+  // then the ghost covers the gap where the un-hidden original would show its old
+  // position. applyTodoBatch always yields a fresh dayTodos, so this re-runs on the
+  // echo even for a no-op drop.
+  useEffect(() => {
+    if (!settling) return;
+    const day = dayTodos.find(d => d.date === settling.dateStr);
+    const t = day?.todos.find(x => x?.id === settling.id);
+    if (t && t.startTime === settling.expectStart && t.dueTime === settling.expectEnd) {
+      setSettling(null);
+    }
+  }, [dayTodos, settling]);
+
+  // Safety net: never let a ghost wedge if the echo somehow never matches (e.g. a
+  // rejected mutation rolls the cache back). The real echo lands within a tick, well
+  // inside this window, so it clears via the effect above first in the normal path.
+  useEffect(() => {
+    if (!settling) return;
+    const id = window.setTimeout(() => setSettling(null), 600);
+    return () => window.clearTimeout(id);
+  }, [settling]);
 
   return (
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} max-w-[1400px] mx-auto select-none w-full`}>
@@ -830,12 +895,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                     const isDraggingThis = draggingEvent?.todo.id === todo.id;
                     const isResizingThis = resizingEvent?.todo.id === todo.id;
+                    // Stay hidden through the settle window too, so the settling ghost
+                    // (not this card at its stale position) is what's on screen.
+                    const isSettlingThis = settling?.id === todo.id;
 
                     return (
                       <div
                         key={todo.id}
                         data-event-card
-                        className={isDraggingThis || isResizingThis ? 'hidden' : ''} // hide original while dragging
+                        className={isDraggingThis || isResizingThis || isSettlingThis ? 'hidden' : ''} // hide original while dragging / settling
                       >
                         <EventCard
                           todo={todo}
@@ -869,6 +937,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       startMin={resizingEvent.currentStartMins}
                       endMin={resizingEvent.currentEndMins}
                       isDragging={true} // reuse styling for visual feedback
+                    />
+                  )}
+
+                  {/* Settling ghost: covers the drop until the prop echoes the new
+                      time. Rendered in the resting (non-drag) style so the handoff to
+                      the real card is invisible. */}
+                  {settling && settling.dateStr === dateStr && byId.get(settling.id) && (
+                    <EventCard
+                      todo={byId.get(settling.id)!}
+                      accent={settling.accent}
+                      startMin={settling.startMins}
+                      endMin={settling.endMins}
                     />
                   )}
 
