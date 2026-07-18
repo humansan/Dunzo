@@ -72,6 +72,7 @@ export const todos = pgTable(
     estimatedTime: integer('estimated_time'),
     countCompletion: integer('count_completion'),
     repeatInterval: integer('repeat_interval'),
+    autoMoveDate: boolean('auto_move_date'),
     notes: text('notes'),
     xp: integer('xp'),
     color: text('color'),
@@ -135,6 +136,9 @@ export const userSettings = pgTable('user_settings', {
   // default). Only apply at creation time.
   plannerTasksInDailyList: boolean('planner_tasks_in_daily_list'),
   dailyTasksInPlanner: boolean('daily_tasks_in_planner'),
+  // Default auto-move-date flag for new DAILY-LIST tasks (null ⇒ false). Planner
+  // tasks default off regardless. Only applied at creation time.
+  defaultAutoMoveDate: boolean('default_auto_move_date'),
   activeWorkspaceId: text('active_workspace_id'),
   hubViews: jsonb('hub_views'), // dun-hub-views: per-view field order/visibility/filters/sorts/sections
   hubColWidths: jsonb('hub_col_widths'), // dun-hub-col-widths

@@ -37,6 +37,7 @@ export interface UserSettings {
   // Cross-surface default for new tasks (undefined ⇒ true). See app-data.tsx.
   plannerTasksInDailyList?: boolean; // planner-created tasks also show on daily list
   dailyTasksInPlanner?: boolean;     // daily-created tasks also show in Task Planner
+  defaultAutoMoveDate?: boolean;     // new daily-list tasks auto-move overdue → today (undefined ⇒ false)
   activeWorkspaceId?: string;
   hubViews?: Record<string, any>; // per `workspace:view` field config
   hubColWidths?: Record<string, number>;
