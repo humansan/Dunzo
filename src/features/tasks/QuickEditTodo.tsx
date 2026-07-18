@@ -27,6 +27,7 @@ export interface QuickEditValues {
   status?: TodoStatus;
   priority?: TodoPriority;
   parentId?: string | null; // immediate parent (a task or a collection)
+  autoMoveDate?: boolean;    // roll an overdue, incomplete task forward to today
 }
 
 interface QuickEditTodoProps {
@@ -42,6 +43,7 @@ interface QuickEditTodoProps {
   initialStatus?: TodoStatus;
   initialPriority?: TodoPriority;
   initialParentId?: string | null;
+  initialAutoMoveDate?: boolean;
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
   onSubmit: (vals: QuickEditValues) => void;
@@ -63,6 +65,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   initialStatus,
   initialPriority,
   initialParentId,
+  initialAutoMoveDate,
   collectionOptions = [],
   onCreateCollection,
   onSubmit,
@@ -72,7 +75,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
 }) => {
   // Used to resolve the immediate parent into the collection breadcrumb, plus the
   // XP-chip visibility toggle and the default XP seeded onto new daily tasks.
-  const { todoById, showXpChips, defaultDailyXp } = useAppData();
+  const { todoById, showXpChips, defaultDailyXp, defaultAutoMoveDate } = useAppData();
 
   // New daily tasks (add mode, no explicit XP) start at the user's default XP
   // (0/None ⇒ unset). Editing an existing task keeps its own value.
@@ -80,6 +83,13 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     mode === 'add' && initialXp === undefined
       ? (defaultDailyXp > 0 ? defaultDailyXp : undefined)
       : initialXp;
+
+  // New daily tasks start at the user's default auto-move setting; edits keep the
+  // task's own flag.
+  const seededAutoMove =
+    mode === 'add' && initialAutoMoveDate === undefined
+      ? defaultAutoMoveDate
+      : (initialAutoMoveDate ?? false);
 
   const [text, setText] = useState(initialText || '');
   const [notes, setNotes] = useState(initialNotes || '');
@@ -93,6 +103,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const [status, setStatus] = useState<TodoStatus | undefined>(initialStatus);
   const [priority, setPriority] = useState<TodoPriority | undefined>(initialPriority);
   const [parentId, setParentId] = useState<string | null>(initialParentId ?? null);
+  const [autoMoveDate, setAutoMoveDate] = useState<boolean>(seededAutoMove);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -128,6 +139,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     status,
     priority,
     parentId,
+    autoMoveDate,
   });
 
   // Keep the latest snapshot fresh for the unmount flush.
@@ -145,8 +157,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setStatus(initialStatus);
     setPriority(initialPriority);
     setParentId(initialParentId ?? null);
+    setAutoMoveDate(seededAutoMove);
     committedRef.current = false;
-  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, seededXp, initialStatus, initialPriority, initialParentId]);
+  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, seededXp, initialStatus, initialPriority, initialParentId, seededAutoMove]);
 
   // On unmount, if an edit panel is force-closed (not via Save/Cancel), persist
   // its current values so switching panels doesn't lose changes.
@@ -184,6 +197,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       setStatus(undefined);
       setPriority(undefined);
       setParentId(null);
+      setAutoMoveDate(seededAutoMove);
       setDate(initialDate);
       committedRef.current = false;
       requestAnimationFrame(() => nameRef.current?.focus());
@@ -227,7 +241,13 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
 
       {/* Chips — Date · Time+% · XP · Status · Priority */}
       <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-        <DateChip value={date} onChange={setDate} placeholder="Due date" />
+        <DateChip
+          value={date}
+          onChange={setDate}
+          placeholder="Due date"
+          autoMoveDate={autoMoveDate}
+          onAutoMoveDateChange={setAutoMoveDate}
+        />
         <TimeChip
           value={time}
           percent={percentStr === '' ? undefined : parseFloat(percentStr)}

@@ -304,7 +304,13 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <DateChip value={dateStr} placeholder="Date" onChange={handleDateChange} />
+                  <DateChip
+                    value={dateStr}
+                    placeholder="Date"
+                    onChange={handleDateChange}
+                    autoMoveDate={draft.autoMoveDate ?? false}
+                    onAutoMoveDateChange={(val) => update({ autoMoveDate: val })}
+                  />
                   <TimeChip
                     value={draft.dueTime}
                     percent={draft.duePercentage}

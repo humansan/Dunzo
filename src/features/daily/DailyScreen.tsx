@@ -133,6 +133,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     status: vals.status ?? "todo",
     priority: vals.priority,
     parentId: vals.parentId ?? undefined,
+    autoMoveDate: vals.autoMoveDate,
     createdAt: Date.now(),
   });
 
@@ -208,7 +209,8 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       xp: vals.xp,
       status: vals.status,
       priority: vals.priority,
-      parentId: vals.parentId ?? undefined
+      parentId: vals.parentId ?? undefined,
+      autoMoveDate: vals.autoMoveDate,
     };
 
     if (vals.date !== selectedDate) {
@@ -232,6 +234,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     status: todo.status,
     priority: todo.priority,
     parentId: todo.parentId ?? null,
+    autoMoveDate: todo.autoMoveDate,
   });
 
   const patchTodo = (id: string, patch: (todo: Todo) => Partial<QuickEditValues>) => {

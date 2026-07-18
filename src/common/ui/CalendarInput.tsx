@@ -12,6 +12,9 @@ interface CalendarInputProps {
   showClear?: boolean;
   showInDailyList?: boolean;
   onShowInDailyListChange?: (val: boolean) => void;
+  /** Auto-move-date toggle. Rendered only when the change handler is provided. */
+  autoMoveDate?: boolean;
+  onAutoMoveDateChange?: (val: boolean) => void;
 }
 
 function toIso(d: Date): string {
@@ -36,6 +39,8 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   showClear = true,
   showInDailyList = false,
   onShowInDailyListChange,
+  autoMoveDate = false,
+  onAutoMoveDateChange,
 }) => {
   const [text, setText] = useState(() => {
     if (!value) return '';
@@ -164,6 +169,15 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
             )}
           </span>
           <Switch checked={showInDailyList} onChange={onShowInDailyListChange} />
+        </div>
+      )}
+      {onAutoMoveDateChange && (
+        <div className="flex items-center justify-between mt-2 px-0.5">
+          <span className="flex flex-col">
+            <span className="text-[11px] text-fg-subtle">Auto-move if overdue</span>
+            <span className="text-[10px] text-fg-faint">Rolls forward to today until done</span>
+          </span>
+          <Switch checked={autoMoveDate} onChange={onAutoMoveDateChange} />
         </div>
       )}
       <div className="mt-2">

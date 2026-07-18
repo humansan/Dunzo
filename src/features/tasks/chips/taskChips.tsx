@@ -163,7 +163,9 @@ export const DateChip: React.FC<{
   placeholder?: string;
   showInDailyList?: boolean;
   onShowInDailyListChange?: (val: boolean) => void;
-}> = ({ value, onChange, placeholder = 'Date', showInDailyList, onShowInDailyListChange }) => (
+  autoMoveDate?: boolean;
+  onAutoMoveDateChange?: (val: boolean) => void;
+}> = ({ value, onChange, placeholder = 'Date', showInDailyList, onShowInDailyListChange, autoMoveDate, onAutoMoveDateChange }) => (
   <ChipPopover
     panel={() => (
       <CalendarInput
@@ -172,6 +174,8 @@ export const DateChip: React.FC<{
         onChange={onChange}
         showInDailyList={showInDailyList}
         onShowInDailyListChange={onShowInDailyListChange}
+        autoMoveDate={autoMoveDate}
+        onAutoMoveDateChange={onAutoMoveDateChange}
       />
     )}
   >

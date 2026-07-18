@@ -170,6 +170,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialStatus={todo.status}
           initialPriority={todo.priority}
           initialParentId={todo.parentId}
+          initialAutoMoveDate={todo.autoMoveDate}
           collectionOptions={collectionOptions}
           onCreateCollection={onCreateCollection}
           onSubmit={(vals) => onSaveEdit(todo.id, vals)}
