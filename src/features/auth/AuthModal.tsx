@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth';
 import { apiFetch } from '@/lib/query/apiClient';
+import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { applyTheme } from '@/theme/applyTheme';
 import { btnAccent } from '@/theme/buttons';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
@@ -19,17 +20,6 @@ type SignupStep = 'email' | 'details';
 
 function getResetToken(): string | null {
   return new URLSearchParams(window.location.search).get('token');
-}
-
-// Password policy: ≥8 chars with an uppercase, lowercase, and number. Returns an
-// error string if invalid, else null. Enforced client-side on signup + reset so
-// the user gets clear feedback before the Neon Auth round-trip.
-function validatePassword(pw: string): string | null {
-  if (pw.length < 8) return 'Password must be at least 8 characters.';
-  if (!/[a-z]/.test(pw)) return 'Password must include a lowercase letter.';
-  if (!/[A-Z]/.test(pw)) return 'Password must include an uppercase letter.';
-  if (!/[0-9]/.test(pw)) return 'Password must include a number.';
-  return null;
 }
 
 // A light draft (email + mode + signup step) persisted so a remount / hard refresh
@@ -395,9 +385,7 @@ const LoginScreen: React.FC<{
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              <p className="text-xs text-fg-faint mt-1.5">
-                At least 8 characters, with an uppercase, lowercase, and number.
-              </p>
+              <p className="text-xs text-fg-faint mt-1.5">{PASSWORD_HINT}</p>
             </div>
             <div>
               <label className={`${fieldLabel} mb-1.5`}>Confirm password</label>

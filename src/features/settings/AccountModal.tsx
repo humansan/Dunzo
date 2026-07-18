@@ -10,6 +10,7 @@ import logoSvg from '@/assets/icon.svg';
 import { ListSelect, textInputCls } from '@/common/ui';
 import { Switch } from '@/common/ui';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
+import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 
 type CountdownMode = 'off' | 'time' | 'percent';
 type Section = 'profile' | 'settings' | 'data';
@@ -117,6 +118,11 @@ const ProfilePane: React.FC<{
   const handlePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwMsg(null);
+    const pwError = validatePassword(newPassword);
+    if (pwError) {
+      setPwMsg({ kind: 'err', text: pwError });
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPwMsg({ kind: 'err', text: 'New passwords do not match.' });
       return;
@@ -198,6 +204,7 @@ const ProfilePane: React.FC<{
               className={fieldInput}
               placeholder="••••••••"
             />
+            <p className="text-[11px] text-fg-faint mt-1">{PASSWORD_HINT}</p>
           </div>
           <div>
             <label className={fieldLabel}>Confirm new password</label>
