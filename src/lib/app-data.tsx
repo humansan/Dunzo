@@ -116,6 +116,12 @@ function useProvideAppData() {
   const setCountdownMode = (v: 'off' | 'time' | 'percent') => updateSettings({ countdownMode: v });
   const xpEnabled = settings?.xpEnabled ?? true;
   const setXpEnabled = (v: boolean) => updateSettings({ xpEnabled: v });
+  // Per-task XP chip visibility (independent of the XP bar/streaks above).
+  const showXpChips = settings?.showXpChips ?? true;
+  const setShowXpChips = (v: boolean) => updateSettings({ showXpChips: v });
+  // Default XP seeded onto new daily-list tasks: undefined ⇒ 1, 0 ⇒ None, 1–5 ⇒ value.
+  const defaultDailyXp = settings?.defaultDailyXp ?? 1;
+  const setDefaultDailyXp = (v: number) => updateSettings({ defaultDailyXp: v });
   // Cross-surface default for new tasks (undefined ⇒ true, the legacy both-on
   // behavior). Applied only at creation time in addHubTodo / DailyScreen.buildTodo.
   const plannerTasksInDailyList = settings?.plannerTasksInDailyList ?? true;
@@ -472,6 +478,8 @@ function useProvideAppData() {
     weekStartsOn, setWeekStartsOn,
     countdownMode, setCountdownMode,
     xpEnabled, setXpEnabled,
+    showXpChips, setShowXpChips,
+    defaultDailyXp, setDefaultDailyXp,
     plannerTasksInDailyList, setPlannerTasksInDailyList,
     dailyTasksInPlanner, setDailyTasksInPlanner,
     activeWorkspaceId, setActiveWorkspaceId,
