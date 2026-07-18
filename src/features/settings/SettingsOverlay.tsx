@@ -28,6 +28,8 @@ export const SettingsOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) 
       onUpdatePlannerTasksInDailyList={d.setPlannerTasksInDailyList}
       dailyTasksInPlanner={d.dailyTasksInPlanner}
       onUpdateDailyTasksInPlanner={d.setDailyTasksInPlanner}
+      defaultAutoMoveDate={d.defaultAutoMoveDate}
+      onUpdateDefaultAutoMoveDate={d.setDefaultAutoMoveDate}
       mode={d.mode}
       onUpdateMode={d.setMode}
     />

@@ -35,6 +35,8 @@ interface AccountModalProps {
   onUpdatePlannerTasksInDailyList: (val: boolean) => void;
   dailyTasksInPlanner: boolean;
   onUpdateDailyTasksInPlanner: (val: boolean) => void;
+  defaultAutoMoveDate: boolean;
+  onUpdateDefaultAutoMoveDate: (val: boolean) => void;
   mode: ThemeMode;
   onUpdateMode: (mode: ThemeMode) => void;
 }
@@ -267,6 +269,8 @@ const SettingsPane: React.FC<{
   onUpdatePlannerTasksInDailyList: (val: boolean) => void;
   dailyTasksInPlanner: boolean;
   onUpdateDailyTasksInPlanner: (val: boolean) => void;
+  defaultAutoMoveDate: boolean;
+  onUpdateDefaultAutoMoveDate: (val: boolean) => void;
   mode: ThemeMode;
   onUpdateMode: (mode: ThemeMode) => void;
 }> = ({
@@ -284,6 +288,8 @@ const SettingsPane: React.FC<{
   onUpdatePlannerTasksInDailyList,
   dailyTasksInPlanner,
   onUpdateDailyTasksInPlanner,
+  defaultAutoMoveDate,
+  onUpdateDefaultAutoMoveDate,
   mode,
   onUpdateMode,
 }) => {
@@ -371,6 +377,14 @@ const SettingsPane: React.FC<{
             <p className="text-[11px] text-fg-ghost mt-0.5">Also show new daily tasks in the Task Planner</p>
           </div>
           <Switch checked={dailyTasksInPlanner} onChange={onUpdateDailyTasksInPlanner} />
+        </div>
+
+        <div className={rowCls}>
+          <div>
+            <p className={labelCls}>Auto-move overdue daily tasks</p>
+            <p className="text-[11px] text-fg-ghost mt-0.5">New daily tasks roll forward to today until completed</p>
+          </div>
+          <Switch checked={defaultAutoMoveDate} onChange={onUpdateDefaultAutoMoveDate} />
         </div>
       </div>
 
@@ -508,6 +522,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onUpdatePlannerTasksInDailyList,
   dailyTasksInPlanner,
   onUpdateDailyTasksInPlanner,
+  defaultAutoMoveDate,
+  onUpdateDefaultAutoMoveDate,
   mode,
   onUpdateMode,
 }) => {
@@ -626,6 +642,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   onUpdatePlannerTasksInDailyList={onUpdatePlannerTasksInDailyList}
                   dailyTasksInPlanner={dailyTasksInPlanner}
                   onUpdateDailyTasksInPlanner={onUpdateDailyTasksInPlanner}
+                  defaultAutoMoveDate={defaultAutoMoveDate}
+                  onUpdateDefaultAutoMoveDate={onUpdateDefaultAutoMoveDate}
                   mode={mode}
                   onUpdateMode={onUpdateMode}
                 />
