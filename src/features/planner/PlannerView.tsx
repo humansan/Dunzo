@@ -186,6 +186,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     collectionCount,
     allCount,
     uncategorizedCount,
+    categorizedCount,
+    inDailyListCount,
     archivedCount,
     currentCount,
     viewLabel,
@@ -646,6 +648,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           allCount={allCount}
           uncategorizedCount={uncategorizedCount}
           archivedCount={archivedCount}
+          inDailyListCount={inDailyListCount}
+          categorizedCount={categorizedCount}
           visibleCollections={visibleCollections}
           collectionCount={collectionCount}
           collapsedColls={collapsedColls}
