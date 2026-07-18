@@ -163,7 +163,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
       {onShowInDailyListChange && (
         <div className="flex items-center justify-between mt-2 px-0.5">
           <span className="flex flex-col">
-            <span className="text-[11px] text-fg-subtle">Send to daily list</span>
+            <span className="text-[11px] text-fg-subtle">Show in daily list</span>
             {showInDailyList && !value && (
               <span className="text-[10px] text-fg-faint">Applies once a date is set</span>
             )}
@@ -174,8 +174,8 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
       {onAutoMoveDateChange && (
         <div className="flex items-center justify-between mt-2 px-0.5">
           <span className="flex flex-col">
-            <span className="text-[11px] text-fg-subtle">Auto-move if overdue</span>
-            <span className="text-[10px] text-fg-faint">Rolls forward to today until done</span>
+            <span className="text-[11px] text-fg-subtle">Move forward if overdue</span>
+            {/* <span className="text-[10px] text-fg-faint">Rolls forward to today until done</span> */}
           </span>
           <Switch checked={autoMoveDate} onChange={onAutoMoveDateChange} />
         </div>

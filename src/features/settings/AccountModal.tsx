@@ -382,7 +382,7 @@ const SettingsPane: React.FC<{
         <div className={rowCls}>
           <div>
             <p className={labelCls}>Auto-move overdue daily tasks</p>
-            <p className="text-[11px] text-fg-ghost mt-0.5">New daily tasks roll forward to today until completed</p>
+            <p className="text-[11px] text-fg-ghost mt-0.5">New daily tasks roll forward to the next day until completed</p>
           </div>
           <Switch checked={defaultAutoMoveDate} onChange={onUpdateDefaultAutoMoveDate} />
         </div>

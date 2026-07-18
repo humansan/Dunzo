@@ -27,7 +27,7 @@ const StarIcon = React.memo(
           filter: active ? `drop-shadow(0 0 5px ${gold}cc)` : 'none'
         }}
       >
-        <Astroid size={28} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
+        <Astroid size={30} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>
       <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
     </div>
@@ -118,9 +118,9 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
             )} */}
           </AnimatePresence>
           <motion.div
-            className="relative flex items-center justify-center min-w-10 h-10 rounded-full px-3"
+            className="relative flex items-center justify-center min-w-12 h-12 rounded-full pl-4 pr-1.5"
             animate={{
-              backgroundColor: maxed ? GOLD : 'rgba(255,194,75,0.14)',
+              backgroundColor: maxed ? GOLD : useThemeColor('warning-tint'),
               scale: pulsing ? [1, 1.22, 0.97, 1] : 1
             }}
             transition={{
@@ -130,13 +130,13 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
           >
             <motion.span
               key={streak}
-              className="text-xl font-bold leading-none"
+              className="text-2xl font-bold leading-none"
               style={{ fontVariantNumeric: 'tabular-nums' }}
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1, color: maxed ? '#000000' : GOLD }}
               transition={{ scale: { duration: 0.45, ease: POP }, color: { duration: 0.4 } }}
             >
-              {streak}
+              {streak}🔥
             </motion.span>
           </motion.div>
         </div>

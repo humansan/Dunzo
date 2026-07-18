@@ -46,8 +46,9 @@ const UNCATEGORIZED: CollChip = { id: '__uncategorized__', name: 'Uncategorized'
 export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   // XP stars/streak keep their fixed signature colors (gold/purple) across themes; the
   // chart grid/axis follow the theme (resolved to concrete colors for recharts SVG).
-  const GOLD = '#ffc24b';
-  const VIOLET = '#a78bfa';
+  const GOLD = useThemeColor('xp-tier1');
+  const CORAL = useThemeColor('xp-bar');
+  const VIOLET = useThemeColor('xp-tier2');
   const FG = useThemeColor('fg');
   const AXIS = useThemeColor('fg-muted');
   const [chartInterval, setChartInterval] = useState<'day' | 'fourDays' | 'week' | 'month'>(() => {
@@ -456,20 +457,20 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
         <div className="flex flex-col sm:flex-row items-center gap-8 text-center sm:text-left">
           {/* Filled Circle badge */}
           <div 
-            className="w-24 h-24 rounded-full flex items-center justify-center shrink-0 text-black text-4xl font-extrabold font-mono"
+            className="min-w-24 h-24 pl-9 pr-5 rounded-full flex items-center justify-center shrink-0 text-black text-4xl font-extrabold font-mono tracking-tighter"
             style={{
               backgroundColor: GOLD,
               boxShadow: `0 0 25px color-mix(in srgb, ${GOLD} 31%, transparent)`,
             }}
           >
-            {streakInfo.current}
+            {streakInfo.current}🔥
           </div>
           
           {/* Records Text Block */}
           <div className="flex flex-col text-left font-sans">
             <div className="text-fg-muted text-sm tracking-wide">
               Best Streak:{' '}
-              <span className="font-bold text-lg font-mono" style={{ color: GOLD }}>
+              <span className="font-bold text-lg font-mono" style={{ color: CORAL }}>
                 {streakInfo.best} d
               </span>{' '}
             </div>
