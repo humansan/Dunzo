@@ -82,7 +82,7 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
     <div
       ref={rootRef}
       tabIndex={-1}
-      className={`bg-surface border border-line rounded-xl p-2.5 w-60 focus:outline-none ${className ?? ''}`}
+      className={`bg-surface border border-line rounded-xl p-2.5 w-40 focus:outline-none ${className ?? ''}`}
     >
       <div className="flex items-center gap-1.5 px-0.5 mb-2 text-sm font-mono">
         <Astroid size={14} strokeWidth={2.5} style={{ color: filled > 0 ? GOLD : undefined }} className={filled > 0 ? '' : 'text-fg-subtle'} />
