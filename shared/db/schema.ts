@@ -53,6 +53,9 @@ export const todos = pgTable(
       onDelete: 'cascade',
     }),
     isCollection: boolean('is_collection').notNull().default(false),
+    // Membership in the built-in "Daily Tasks" system collection (no row of its
+    // own). Organizational only — does not affect visibility. See Todo.inDailyCollection.
+    inDailyCollection: boolean('in_daily_collection'),
     text: text('text').notNull().default(''),
     // `status` is the single source of truth for completion (nullable/clearable;
     // defaults to 'todo' on insert). See src/utils/todoStatus.ts.
