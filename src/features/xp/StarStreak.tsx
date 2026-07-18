@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Astroid } from 'lucide-react';
 import { DayTodos } from '@shared/types';
 import { computeStarStreak } from '@/features/xp/model/xp';
+import { useThemeColor } from '@/theme/useThemeColor';
 import { ParticleBurst } from '@/common/ui';
 
 interface StarStreakProps {
@@ -10,31 +11,32 @@ interface StarStreakProps {
   date: string;
 }
 
-const GOLD = '#ffc24b';
-
 // Snappy-then-soft, used for the celebratory pops.
 const POP: [number, number, number, number] = [0.2, 0.9, 0.2, 1];
 
 // Memoised so unrelated parent re-renders (e.g. the once-a-second clock tick in
 // DailyScreen) can't re-pass fresh keyframe arrays mid-burst and restart the pop.
-const StarIcon = React.memo(({ active, burst }: { active: boolean; burst: boolean }) => (
-  <div className="relative">
-    <motion.div
-      animate={burst ? { scale: [0.5, 1.4, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
-      transition={{ duration: 0.45, ease: POP }}
-      style={{
-        color: active ? GOLD : 'rgba(255,255,255,0.18)',
-        filter: active ? `drop-shadow(0 0 5px ${GOLD}cc)` : 'none'
-      }}
-    >
-      <Astroid size={28} strokeWidth={2.5} fill={active ? GOLD : 'transparent'} />
-    </motion.div>
-    <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
-  </div>
-));
+const StarIcon = React.memo(
+  ({ active, burst, gold }: { active: boolean; burst: boolean; gold: string }) => (
+    <div className="relative">
+      <motion.div
+        animate={burst ? { scale: [0.5, 1.4, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
+        transition={{ duration: 0.45, ease: POP }}
+        style={{
+          color: active ? gold : 'rgba(255,255,255,0.18)',
+          filter: active ? `drop-shadow(0 0 5px ${gold}cc)` : 'none'
+        }}
+      >
+        <Astroid size={28} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
+      </motion.div>
+      <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
+    </div>
+  )
+);
 StarIcon.displayName = 'StarIcon';
 
 const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
+  const GOLD = useThemeColor('xp-tier1');
   const { stars, flags, streak } = useMemo(() => computeStarStreak(dayTodos, date), [dayTodos, date]);
 
   // The three goals are independent, so each slot tracks its own goal rather
@@ -96,7 +98,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
       >
         <div className="flex items-center gap-2">
           {lit.map((active, i) => (
-            <StarIcon key={i} active={active} burst={bursting.includes(i)} />
+            <StarIcon key={i} active={active} burst={bursting.includes(i)} gold={GOLD} />
           ))}
         </div>
 
