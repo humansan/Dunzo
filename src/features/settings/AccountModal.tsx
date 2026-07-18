@@ -27,6 +27,10 @@ interface AccountModalProps {
   onUpdateCountdownMode: (val: CountdownMode) => void;
   xpEnabled: boolean;
   onUpdateXpEnabled: (val: boolean) => void;
+  showXpChips: boolean;
+  onUpdateShowXpChips: (val: boolean) => void;
+  defaultDailyXp: number;
+  onUpdateDefaultDailyXp: (val: number) => void;
   plannerTasksInDailyList: boolean;
   onUpdatePlannerTasksInDailyList: (val: boolean) => void;
   dailyTasksInPlanner: boolean;
@@ -255,6 +259,10 @@ const SettingsPane: React.FC<{
   onUpdateCountdownMode: (val: CountdownMode) => void;
   xpEnabled: boolean;
   onUpdateXpEnabled: (val: boolean) => void;
+  showXpChips: boolean;
+  onUpdateShowXpChips: (val: boolean) => void;
+  defaultDailyXp: number;
+  onUpdateDefaultDailyXp: (val: number) => void;
   plannerTasksInDailyList: boolean;
   onUpdatePlannerTasksInDailyList: (val: boolean) => void;
   dailyTasksInPlanner: boolean;
@@ -268,6 +276,10 @@ const SettingsPane: React.FC<{
   onUpdateCountdownMode,
   xpEnabled,
   onUpdateXpEnabled,
+  showXpChips,
+  onUpdateShowXpChips,
+  defaultDailyXp,
+  onUpdateDefaultDailyXp,
   plannerTasksInDailyList,
   onUpdatePlannerTasksInDailyList,
   dailyTasksInPlanner,
@@ -310,10 +322,34 @@ const SettingsPane: React.FC<{
 
         <div className={rowCls}>
           <div>
-            <p className={labelCls}>XP &amp; streaks</p>
-            <p className="text-[11px] text-fg-ghost mt-0.5">Show XP, progress bar and streak stars</p>
+            <p className={labelCls}>Show XP bar and streaks</p>
+            <p className="text-[11px] text-fg-ghost mt-0.5">Show the XP progress bar and streak stars</p>
           </div>
           <Switch checked={xpEnabled} onChange={onUpdateXpEnabled} />
+        </div>
+
+        <div className={rowCls}>
+          <div>
+            <p className={labelCls}>Show XP chips</p>
+            <p className="text-[11px] text-fg-ghost mt-0.5">Show per-task XP on the daily list, quick edit and full view</p>
+          </div>
+          <Switch checked={showXpChips} onChange={onUpdateShowXpChips} />
+        </div>
+
+        <div className="space-y-1.5">
+          <span className={labelCls}>Default XP on new daily tasks</span>
+          <Segment
+            options={[
+              { value: 0, label: 'None' },
+              { value: 1, label: '1' },
+              { value: 2, label: '2' },
+              { value: 3, label: '3' },
+              { value: 4, label: '4' },
+              { value: 5, label: '5' },
+            ]}
+            value={defaultDailyXp}
+            onChange={onUpdateDefaultDailyXp}
+          />
         </div>
       </div>
 
@@ -464,6 +500,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onUpdateCountdownMode,
   xpEnabled,
   onUpdateXpEnabled,
+  showXpChips,
+  onUpdateShowXpChips,
+  defaultDailyXp,
+  onUpdateDefaultDailyXp,
   plannerTasksInDailyList,
   onUpdatePlannerTasksInDailyList,
   dailyTasksInPlanner,
@@ -578,6 +618,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                   onUpdateCountdownMode={onUpdateCountdownMode}
                   xpEnabled={xpEnabled}
                   onUpdateXpEnabled={onUpdateXpEnabled}
+                  showXpChips={showXpChips}
+                  onUpdateShowXpChips={onUpdateShowXpChips}
+                  defaultDailyXp={defaultDailyXp}
+                  onUpdateDefaultDailyXp={onUpdateDefaultDailyXp}
                   plannerTasksInDailyList={plannerTasksInDailyList}
                   onUpdatePlannerTasksInDailyList={onUpdatePlannerTasksInDailyList}
                   dailyTasksInPlanner={dailyTasksInPlanner}

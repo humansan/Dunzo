@@ -70,8 +70,16 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   onOpenFull,
   onFlush,
 }) => {
-  // Used to resolve the immediate parent into the collection breadcrumb.
-  const { todoById } = useAppData();
+  // Used to resolve the immediate parent into the collection breadcrumb, plus the
+  // XP-chip visibility toggle and the default XP seeded onto new daily tasks.
+  const { todoById, showXpChips, defaultDailyXp } = useAppData();
+
+  // New daily tasks (add mode, no explicit XP) start at the user's default XP
+  // (0/None ⇒ unset). Editing an existing task keeps its own value.
+  const seededXp =
+    mode === 'add' && initialXp === undefined
+      ? (defaultDailyXp > 0 ? defaultDailyXp : undefined)
+      : initialXp;
 
   const [text, setText] = useState(initialText || '');
   const [notes, setNotes] = useState(initialNotes || '');
@@ -81,7 +89,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const [startTime, setStartTime] = useState(initialStartTime || '');
   const [time, setTime] = useState(initialTime || '');    // due time
   const [percentStr, setPercentStr] = useState(initialPercent?.toString() ?? '');
-  const [xpStr, setXpStr] = useState(initialXp?.toString() ?? '');
+  const [xpStr, setXpStr] = useState(seededXp?.toString() ?? '');
   const [status, setStatus] = useState<TodoStatus | undefined>(initialStatus);
   const [priority, setPriority] = useState<TodoPriority | undefined>(initialPriority);
   const [parentId, setParentId] = useState<string | null>(initialParentId ?? null);
@@ -133,12 +141,12 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setStartTime(initialStartTime || '');
     setTime(initialTime || '');
     setPercentStr(initialPercent?.toString() ?? '');
-    setXpStr(initialXp?.toString() ?? '');
+    setXpStr(seededXp?.toString() ?? '');
     setStatus(initialStatus);
     setPriority(initialPriority);
     setParentId(initialParentId ?? null);
     committedRef.current = false;
-  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, initialXp, initialStatus, initialPriority, initialParentId]);
+  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, seededXp, initialStatus, initialPriority, initialParentId]);
 
   // On unmount, if an edit panel is force-closed (not via Save/Cancel), persist
   // its current values so switching panels doesn't lose changes.
@@ -172,7 +180,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       setStartTime('');
       setTime('');
       setPercentStr('');
-      setXpStr('');
+      setXpStr(seededXp?.toString() ?? '');
       setStatus(undefined);
       setPriority(undefined);
       setParentId(null);
@@ -225,10 +233,12 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           percent={percentStr === '' ? undefined : parseFloat(percentStr)}
           onChange={handleTimeChange}
         />
-        <XpChip
-          value={xpStr === '' ? undefined : Math.max(0, parseInt(xpStr) || 0)}
-          onChange={(v) => setXpStr(v == null ? '' : String(v))}
-        />
+        {showXpChips && (
+          <XpChip
+            value={xpStr === '' ? undefined : Math.max(0, parseInt(xpStr) || 0)}
+            onChange={(v) => setXpStr(v == null ? '' : String(v))}
+          />
+        )}
         <div className="flex">
           <OptionChipButton
             icon={<CircleDot size={16} className="shrink-0 text-fg-subtle" />}

@@ -20,6 +20,10 @@ export const SettingsOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) 
       onUpdateCountdownMode={d.setCountdownMode}
       xpEnabled={d.xpEnabled}
       onUpdateXpEnabled={d.setXpEnabled}
+      showXpChips={d.showXpChips}
+      onUpdateShowXpChips={d.setShowXpChips}
+      defaultDailyXp={d.defaultDailyXp}
+      onUpdateDefaultDailyXp={d.setDefaultDailyXp}
       plannerTasksInDailyList={d.plannerTasksInDailyList}
       onUpdatePlannerTasksInDailyList={d.setPlannerTasksInDailyList}
       dailyTasksInPlanner={d.dailyTasksInPlanner}

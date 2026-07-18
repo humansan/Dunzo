@@ -44,6 +44,7 @@ interface TodoFullViewProps {
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  showXpChips: boolean; // hide the XP property when the settings toggle is off
 }
 
 // Vertical property block for the right pane: label row on top, control below.
@@ -87,6 +88,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onSave,
   onToggle,
   onDelete,
+  showXpChips,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -306,14 +308,16 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 </div>
               </RightProp>
 
-              <RightProp
-                icon={<Astroid size={11} />}
-                label="XP"
-                onClear={() => update({ xp: undefined })}
-                canClear={draft.xp !== undefined}
-              >
-                <XpChip value={draft.xp} onChange={(val) => update({ xp: val })} />
-              </RightProp>
+              {showXpChips && (
+                <RightProp
+                  icon={<Astroid size={11} />}
+                  label="XP"
+                  onClear={() => update({ xp: undefined })}
+                  canClear={draft.xp !== undefined}
+                >
+                  <XpChip value={draft.xp} onChange={(val) => update({ xp: val })} />
+                </RightProp>
+              )}
 
               {/* Where the task surfaces. Daily needs a date; at least one must stay on. */}
               <RightProp icon={<Database size={11} />} label="Show in">
