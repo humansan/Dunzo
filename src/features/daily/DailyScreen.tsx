@@ -44,6 +44,9 @@ interface DailyScreenProps {
   countdownMode: 'off' | 'time' | 'percent';
   onUpdateCountdownMode: (val: 'off' | 'time' | 'percent') => void;
   xpEnabled: boolean;
+  // Default for new daily-list tasks: whether they also show in the Task Planner
+  // (showInDatabase). Undefined-safe upstream (defaults to true). Creation-time only.
+  dailyTasksInPlanner: boolean;
   onCreateCollection: (name: string) => string;
   // The focused day (YYYY-MM-DD) is URL-driven (?date); the route owns it.
   selectedDate: string;
@@ -70,6 +73,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   countdownMode,
   onUpdateCountdownMode,
   xpEnabled,
+  dailyTasksInPlanner,
   onCreateCollection,
   selectedDate,
   onSelectDate,
@@ -117,9 +121,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   const buildTodo = (vals: QuickEditValues): Todo => ({
     id: newTodoId(),
     text: vals.text,
-    // New tasks default to both surfaces regardless of where they're created; a
-    // daily-list task also lands in the Task Planner.
-    showInDatabase: true,
+    // A daily-list task always shows on the daily list; whether it ALSO lands in
+    // the Task Planner is the user's "Default Visibility" setting (default true).
+    showInDatabase: dailyTasksInPlanner,
     showInDailyList: true,
     notes: vals.notes || undefined,
     startTime: vals.startTime,

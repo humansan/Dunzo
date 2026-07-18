@@ -116,6 +116,12 @@ function useProvideAppData() {
   const setCountdownMode = (v: 'off' | 'time' | 'percent') => updateSettings({ countdownMode: v });
   const xpEnabled = settings?.xpEnabled ?? true;
   const setXpEnabled = (v: boolean) => updateSettings({ xpEnabled: v });
+  // Cross-surface default for new tasks (undefined ⇒ true, the legacy both-on
+  // behavior). Applied only at creation time in addHubTodo / DailyScreen.buildTodo.
+  const plannerTasksInDailyList = settings?.plannerTasksInDailyList ?? true;
+  const setPlannerTasksInDailyList = (v: boolean) => updateSettings({ plannerTasksInDailyList: v });
+  const dailyTasksInPlanner = settings?.dailyTasksInPlanner ?? true;
+  const setDailyTasksInPlanner = (v: boolean) => updateSettings({ dailyTasksInPlanner: v });
   // Color theme + dark/light mode (DB-synced; applied to CSS vars by the effect below).
   const themeId = settings?.themeId ?? DEFAULT_THEME_ID;
   const setThemeId = (id: string) => updateSettings({ themeId: id });
@@ -303,7 +309,7 @@ function useProvideAppData() {
       id,
       text: '',
       showInDatabase: true,
-      showInDailyList: true,
+      showInDailyList: plannerTasksInDailyList,
       workspaceId: activeWorkspaceId,
       ...(parentId ? { parentId } : {}),
       hubOrder: maxOrder + 1,
@@ -466,6 +472,8 @@ function useProvideAppData() {
     weekStartsOn, setWeekStartsOn,
     countdownMode, setCountdownMode,
     xpEnabled, setXpEnabled,
+    plannerTasksInDailyList, setPlannerTasksInDailyList,
+    dailyTasksInPlanner, setDailyTasksInPlanner,
     activeWorkspaceId, setActiveWorkspaceId,
     addWorkspace, renameWorkspace,
     // active todo tracker

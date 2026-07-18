@@ -38,6 +38,7 @@ function TodayRoute() {
           countdownMode={d.countdownMode}
           onUpdateCountdownMode={d.setCountdownMode}
           xpEnabled={d.xpEnabled}
+          dailyTasksInPlanner={d.dailyTasksInPlanner}
           onCreateCollection={d.createCollection}
           selectedDate={selectedDate}
           onSelectDate={(next) => navigate({ search: { date: next } })}
