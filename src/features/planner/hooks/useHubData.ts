@@ -208,9 +208,12 @@ export function useHubData(params: {
     if (selectedView === 'categorized')
       return entries.filter((e) => !e.todo.isCollection && hasCollectionAncestor(e));
     // Special tab: the only view keyed off the daily-list flag (still scoped to the
-    // organizer set, so daily-only tasks aren't surfaced here).
+    // organizer set, so daily-only tasks aren't surfaced here). Requires a dueDate
+    // too, since a task with no date never lands on any daily list.
     if (selectedView === 'in-daily-list')
-      return entries.filter((e) => !e.todo.isCollection && e.todo.showInDailyList === true);
+      return entries.filter(
+        (e) => !e.todo.isCollection && e.todo.showInDailyList === true && !!e.todo.dueDate
+      );
     if (selectedView === 'archived') return archivedTreeEntries;
     return entries.filter((e) => isDescendantOf(e, selectedView));
   }, [entries, archivedTreeEntries, selectedView, byId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -336,7 +339,7 @@ export function useHubData(params: {
     (e) => !e.todo.isCollection && hasCollectionAncestor(e)
   ).length;
   const inDailyListCount = entries.filter(
-    (e) => !e.todo.isCollection && e.todo.showInDailyList === true
+    (e) => !e.todo.isCollection && e.todo.showInDailyList === true && !!e.todo.dueDate
   ).length;
   const archivedCount = archivedEntries.filter((e) => !e.todo.isCollection).length;
   // Task-descendant count per collection (every non-collection descendant,
