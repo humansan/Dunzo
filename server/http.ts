@@ -106,6 +106,8 @@ export const SETTINGS_FIELDS = [
   'weekStartsOn',
   'countdownMode',
   'xpEnabled',
+  'showXpChips',
+  'defaultDailyXp',
   'plannerTasksInDailyList',
   'dailyTasksInPlanner',
   'activeWorkspaceId',

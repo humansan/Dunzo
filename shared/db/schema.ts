@@ -124,7 +124,11 @@ export const userSettings = pgTable('user_settings', {
   mode: text('mode').$type<'dark' | 'light' | 'system'>(), // dark/light/system (default 'dark')
   weekStartsOn: integer('week_starts_on'),
   countdownMode: text('countdown_mode'),
-  xpEnabled: boolean('xp_enabled'),
+  xpEnabled: boolean('xp_enabled'), // show the XP bar + streaks (default true)
+  showXpChips: boolean('show_xp_chips'), // show per-task XP chips (null ⇒ true)
+  // Default XP for new daily-list tasks. Null ⇒ 1 (never configured); 0 ⇒ None
+  // (no XP); 1–5 ⇒ that value. Only seeds the daily quick-add.
+  defaultDailyXp: integer('default_daily_xp'),
   // Cross-surface default for new tasks: whether a task created in the Task
   // Planner also shows on the daily list, and whether a task created in the daily
   // list also shows in the Task Planner. Null ⇒ true (both surfaces, the legacy
