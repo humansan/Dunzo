@@ -110,7 +110,8 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   const handleClear = () => {
     onChange('');
     setText('');
-    if (showInDailyList) onShowInDailyListChange?.(false);
+    // Keep the showInDailyList flag: an undated task never reaches a daily list,
+    // and re-adding a date later sends it straight back without re-toggling.
   };
 
   const focusDate = value && isValid(parseISO(value)) ? parseISO(value) : new Date();
@@ -155,13 +156,14 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
         </button>
       </div>
       {onShowInDailyListChange && (
-        <div className={`flex items-center justify-between mt-2 px-0.5 ${!value ? 'opacity-40' : ''}`}>
-          <span className="text-[11px] text-fg-subtle">Send to daily list</span>
-          <Switch
-            checked={showInDailyList && !!value}
-            disabled={!value}
-            onChange={onShowInDailyListChange}
-          />
+        <div className="flex items-center justify-between mt-2 px-0.5">
+          <span className="flex flex-col">
+            <span className="text-[11px] text-fg-subtle">Send to daily list</span>
+            {showInDailyList && !value && (
+              <span className="text-[10px] text-fg-faint">Applies once a date is set</span>
+            )}
+          </span>
+          <Switch checked={showInDailyList} onChange={onShowInDailyListChange} />
         </div>
       )}
       <div className="mt-2">
