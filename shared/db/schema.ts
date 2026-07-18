@@ -123,6 +123,12 @@ export const userSettings = pgTable('user_settings', {
   weekStartsOn: integer('week_starts_on'),
   countdownMode: text('countdown_mode'),
   xpEnabled: boolean('xp_enabled'),
+  // Cross-surface default for new tasks: whether a task created in the Task
+  // Planner also shows on the daily list, and whether a task created in the daily
+  // list also shows in the Task Planner. Null ⇒ true (both surfaces, the legacy
+  // default). Only apply at creation time.
+  plannerTasksInDailyList: boolean('planner_tasks_in_daily_list'),
+  dailyTasksInPlanner: boolean('daily_tasks_in_planner'),
   activeWorkspaceId: text('active_workspace_id'),
   hubViews: jsonb('hub_views'), // dun-hub-views: per-view field order/visibility/filters/sorts/sections
   hubColWidths: jsonb('hub_col_widths'), // dun-hub-col-widths

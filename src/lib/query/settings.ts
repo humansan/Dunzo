@@ -32,6 +32,9 @@ export interface UserSettings {
   weekStartsOn?: number;
   countdownMode?: 'off' | 'time' | 'percent';
   xpEnabled?: boolean;
+  // Cross-surface default for new tasks (undefined ⇒ true). See app-data.tsx.
+  plannerTasksInDailyList?: boolean; // planner-created tasks also show on daily list
+  dailyTasksInPlanner?: boolean;     // daily-created tasks also show in Task Planner
   activeWorkspaceId?: string;
   hubViews?: Record<string, any>; // per `workspace:view` field config
   hubColWidths?: Record<string, number>;

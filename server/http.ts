@@ -104,6 +104,8 @@ export const SETTINGS_FIELDS = [
   'weekStartsOn',
   'countdownMode',
   'xpEnabled',
+  'plannerTasksInDailyList',
+  'dailyTasksInPlanner',
   'activeWorkspaceId',
   'hubViews',
   'hubColWidths',
