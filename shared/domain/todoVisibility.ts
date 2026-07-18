@@ -12,10 +12,13 @@ import { Todo } from '../types';
 //   • showInDatabase — show in Task Planner
 //   • showInDailyList — show in the daily checklist for the date it is filed under
 //
-// Tasks created in the Task Planner default to showInDatabase=true, showInDailyList=false.
-// Tasks created in the daily list default to showInDailyList=true (no showInDatabase).
-// To show a Task Planner task on a specific day, assign a date and enable the
-// "Send to daily list" toggle in the date picker (sets showInDailyList=true).
+// Every new task defaults to BOTH flags true, regardless of where it is created
+// (Task Planner, daily list, or a calendar block) — so it shows in the Planner and,
+// once it has a due date, on that day's daily checklist. The two toggles are then an
+// opt-OUT to hide a task from one surface (the invariant below keeps at least one on).
+// Collections are the exception: they are database-only (showInDatabase=true, no daily
+// flag). A Planner task with no date carries showInDailyList=true harmlessly — it only
+// reaches the daily checklist once a date is assigned (see showsOnDailyChecklist).
 //
 //   showInDatabase | showInDailyList | has date | Daily checklist | Task Planner
 //   ---------------|-----------------|----------|-----------------|-----------

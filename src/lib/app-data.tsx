@@ -303,7 +303,7 @@ function useProvideAppData() {
       id,
       text: '',
       showInDatabase: true,
-      showInDailyList: false,
+      showInDailyList: true,
       workspaceId: activeWorkspaceId,
       ...(parentId ? { parentId } : {}),
       hubOrder: maxOrder + 1,
@@ -319,8 +319,9 @@ function useProvideAppData() {
     addHubTodo(opts?.parentId ?? null, opts);
   const handleAddSubtask = (parentId: string): string => addHubTodo(parentId);
 
-  // A block drawn on the calendar is a dated, timed task on that day's checklist —
-  // same defaults as a task typed into the daily list, not a Planner entry.
+  // A block drawn on the calendar is a dated, timed task. Like every other new
+  // task it defaults to both surfaces (Planner + that day's daily checklist); the
+  // only thing special here is the drawn start/due time.
   const handleCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
     addHubTodo(null, {
       date,
@@ -329,7 +330,7 @@ function useProvideAppData() {
         startPercentage: timeToPercentage(startTime),
         dueTime,
         duePercentage: timeToPercentage(dueTime),
-        showInDatabase: false,
+        showInDatabase: true,
         showInDailyList: true,
       },
     });

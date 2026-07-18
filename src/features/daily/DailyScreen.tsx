@@ -117,6 +117,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   const buildTodo = (vals: QuickEditValues): Todo => ({
     id: newTodoId(),
     text: vals.text,
+    // New tasks default to both surfaces regardless of where they're created; a
+    // daily-list task also lands in the Task Planner.
+    showInDatabase: true,
     showInDailyList: true,
     notes: vals.notes || undefined,
     startTime: vals.startTime,
