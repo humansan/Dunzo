@@ -8,7 +8,7 @@ import {
   collectionOf,
   collectionPath,
 } from '@/features/tasks/model';
-import { ColKey, COLUMNS, GroupRow, FilterRule, SortRule, SectionsConfig } from '@/features/planner/types';
+import { ColKey, COLUMNS, GroupRow, FilterRule, SortRule, SectionsConfig, PSEUDO_VIEWS } from '@/features/planner/types';
 import {
   getFieldDisplayValue,
   getFieldRawValue,
@@ -78,11 +78,8 @@ export function useHubData(params: {
     [dayTodos, activeWorkspaceId]
   );
 
-  // A real collection is selected (vs. the 'all' / 'uncategorized' / 'archived' pseudo-views).
-  const selectedCollectionId =
-    selectedView !== 'all' && selectedView !== 'uncategorized' && selectedView !== 'archived'
-      ? selectedView
-      : null;
+  // A real collection is selected (vs. one of the sidebar pseudo-views).
+  const selectedCollectionId = PSEUDO_VIEWS.has(selectedView) ? null : selectedView;
 
   // Ancestry helpers over the current entry set.
   const byId = useMemo(() => new Map(entries.map((e) => [e.todo.id, e])), [entries]);
@@ -208,6 +205,12 @@ export function useHubData(params: {
     if (selectedView === 'all') return entries;
     if (selectedView === 'uncategorized')
       return entries.filter((e) => !e.todo.isCollection && !hasCollectionAncestor(e));
+    if (selectedView === 'categorized')
+      return entries.filter((e) => !e.todo.isCollection && hasCollectionAncestor(e));
+    // Special tab: the only view keyed off the daily-list flag (still scoped to the
+    // organizer set, so daily-only tasks aren't surfaced here).
+    if (selectedView === 'in-daily-list')
+      return entries.filter((e) => !e.todo.isCollection && e.todo.showInDailyList === true);
     if (selectedView === 'archived') return archivedTreeEntries;
     return entries.filter((e) => isDescendantOf(e, selectedView));
   }, [entries, archivedTreeEntries, selectedView, byId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -329,6 +332,12 @@ export function useHubData(params: {
   const uncategorizedCount = entries.filter(
     (e) => !e.todo.isCollection && !hasCollectionAncestor(e)
   ).length;
+  const categorizedCount = entries.filter(
+    (e) => !e.todo.isCollection && hasCollectionAncestor(e)
+  ).length;
+  const inDailyListCount = entries.filter(
+    (e) => !e.todo.isCollection && e.todo.showInDailyList === true
+  ).length;
   const archivedCount = archivedEntries.filter((e) => !e.todo.isCollection).length;
   // Task-descendant count per collection (every non-collection descendant,
   // ignoring filters), precomputed in one ancestor walk instead of re-filtering
@@ -354,17 +363,25 @@ export function useHubData(params: {
     ? collectionCount(selectedCollectionId)
     : selectedView === 'uncategorized'
       ? uncategorizedCount
-      : selectedView === 'archived'
-        ? archivedCount
-        : allCount;
+      : selectedView === 'categorized'
+        ? categorizedCount
+        : selectedView === 'in-daily-list'
+          ? inDailyListCount
+          : selectedView === 'archived'
+            ? archivedCount
+            : allCount;
   const selectedCollectionEntry = selectedCollectionId ? byId.get(selectedCollectionId) || null : null;
   const viewLabel = selectedCollectionId
     ? selectedCollectionEntry?.todo.text || 'Untitled collection'
     : selectedView === 'uncategorized'
       ? 'Uncategorized'
-      : selectedView === 'archived'
-        ? 'Archived'
-        : 'All Tasks';
+      : selectedView === 'categorized'
+        ? 'Categorized'
+        : selectedView === 'in-daily-list'
+          ? 'In Daily List'
+          : selectedView === 'archived'
+            ? 'Archived'
+            : 'All Tasks';
 
   return {
     entries,
@@ -390,6 +407,8 @@ export function useHubData(params: {
     collectionCount,
     allCount,
     uncategorizedCount,
+    categorizedCount,
+    inDailyListCount,
     archivedCount,
     currentCount,
     viewLabel,
