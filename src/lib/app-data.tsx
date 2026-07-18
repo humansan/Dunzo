@@ -13,7 +13,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '@/features/tasks/model';
-import { normalizeCompletion, toggledStatus } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus, isDone } from '@/features/tasks/model';
+import { format } from 'date-fns';
 import { timeToPercentage } from '@/common/lib/time';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
@@ -128,6 +129,10 @@ function useProvideAppData() {
   const setPlannerTasksInDailyList = (v: boolean) => updateSettings({ plannerTasksInDailyList: v });
   const dailyTasksInPlanner = settings?.dailyTasksInPlanner ?? true;
   const setDailyTasksInPlanner = (v: boolean) => updateSettings({ dailyTasksInPlanner: v });
+  // Default auto-move-date flag seeded onto NEW daily-list tasks (undefined ⇒ false).
+  // Planner-created tasks default off regardless of this setting.
+  const defaultAutoMoveDate = settings?.defaultAutoMoveDate ?? false;
+  const setDefaultAutoMoveDate = (v: boolean) => updateSettings({ defaultAutoMoveDate: v });
   // Color theme + dark/light mode (DB-synced; applied to CSS vars by the effect below).
   const themeId = settings?.themeId ?? DEFAULT_THEME_ID;
   const setThemeId = (id: string) => updateSettings({ themeId: id });
@@ -254,6 +259,41 @@ function useProvideAppData() {
       .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
     updateTodo.mutate({ id: updatedTodo.id, patch: normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 })) });
   };
+
+  // Auto-move-date sweep: reschedule any incomplete task whose dueDate has passed
+  // and that carries the autoMoveDate flag onto today, so it keeps rolling forward
+  // until completed. Runs at most once per local calendar day per mount (the ref
+  // guard); swept tasks land on today and stop matching, so it converges. "Today"
+  // is the user's LOCAL date — the reason this lives client-side rather than a cron.
+  const sweptDateRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isDataReady) return;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (sweptDateRef.current === today) return;
+
+    const overdue = todos.filter(
+      (t) =>
+        t &&
+        t.autoMoveDate === true &&
+        !isDone(t) &&
+        !!t.dueDate &&
+        t.dueDate !== UNDATED &&
+        t.dueDate < today
+    );
+    // Record the pass even when empty — we've checked for today.
+    sweptDateRef.current = today;
+    if (overdue.length === 0) return;
+
+    // Land the moved tasks at the bottom of today's list, preserving their order.
+    const overdueIds = new Set(overdue.map((t) => t.id));
+    let nextOrder =
+      todos
+        .filter((t) => t && bucketKeyOf(t) === today && !overdueIds.has(t.id))
+        .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1) + 1;
+    const patches = overdue.map((t) => ({ id: t.id, dueDate: today, dailyOrder: nextOrder++ }));
+    batchTodos.mutate({ patches });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDataReady, todos]);
 
   const handleToggleTodo = (todoId: string) => {
     const todo = todos.find(t => t && t.id === todoId);
@@ -482,6 +522,7 @@ function useProvideAppData() {
     defaultDailyXp, setDefaultDailyXp,
     plannerTasksInDailyList, setPlannerTasksInDailyList,
     dailyTasksInPlanner, setDailyTasksInPlanner,
+    defaultAutoMoveDate, setDefaultAutoMoveDate,
     activeWorkspaceId, setActiveWorkspaceId,
     addWorkspace, renameWorkspace,
     // active todo tracker
