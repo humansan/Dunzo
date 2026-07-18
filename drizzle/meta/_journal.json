@@ -15,6 +15,13 @@
       "when": 1784383745371,
       "tag": "0001_condemned_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784385084472,
+      "tag": "0002_left_magik",
+      "breakpoints": true
     }
   ]
 }

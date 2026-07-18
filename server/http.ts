@@ -101,6 +101,8 @@ export const TRACKER_UPDATE_FIELDS = TRACKER_FIELDS.filter(
 
 export const SETTINGS_FIELDS = [
   'theme',
+  'themeId',
+  'mode',
   'weekStartsOn',
   'countdownMode',
   'xpEnabled',

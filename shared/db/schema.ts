@@ -120,6 +120,8 @@ export const trackers = pgTable(
 export const userSettings = pgTable('user_settings', {
   userId: text('user_id').primaryKey(),
   theme: jsonb('theme').$type<Theme>(),
+  themeId: text('theme_id'), // selected color theme id (src/theme/themes.ts; default 'classic')
+  mode: text('mode').$type<'dark' | 'light' | 'system'>(), // dark/light/system (default 'dark')
   weekStartsOn: integer('week_starts_on'),
   countdownMode: text('countdown_mode'),
   xpEnabled: boolean('xp_enabled'),
