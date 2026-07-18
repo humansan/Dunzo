@@ -48,7 +48,6 @@ export const TODO_FIELDS = [
   'workspaceId',
   'parentId',
   'isCollection',
-  'inDailyCollection',
   'text',
   'status',
   'priority',

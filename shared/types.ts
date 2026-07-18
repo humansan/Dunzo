@@ -74,14 +74,6 @@ export interface Todo {
   parentId?: string | null;   // Task Planner nesting: id of the parent todo, or
                               // null/undefined for a top-level todo. Subtasks can
                               // nest to any depth.
-  inDailyCollection?: boolean; // When true, this task belongs to the built-in
-                              // "Daily Tasks" system collection — the default
-                              // organization bucket for tasks created from the
-                              // daily list view. Purely organizational: it groups
-                              // them in their own Planner tab and does NOT affect
-                              // visibility (that's showInDatabase/showInDailyList).
-                              // A real user collection (parentId) takes precedence,
-                              // so this is ignored once the task is filed elsewhere.
   isCollection?: boolean;     // When true, this node is a Task Planner "collection"
                               // — a top-level section that groups child tasks. It
                               // renders as a colored pill header and ignores the
