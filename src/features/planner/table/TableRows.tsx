@@ -167,9 +167,13 @@ export const TableRows: React.FC<TableRowsProps> = ({
             ? 'No tasks in this collection yet. Click “New” to add one.'
             : selectedView === 'uncategorized'
               ? 'No uncategorized tasks.'
-              : selectedView === 'archived'
-                ? 'No archived tasks.'
-                : <>No todos in this collection. Click “+ New”.</>}
+              : selectedView === 'categorized'
+                ? 'No tasks in any collection yet.'
+                : selectedView === 'in-daily-list'
+                  ? 'No tasks in your daily list yet.'
+                  : selectedView === 'archived'
+                    ? 'No archived tasks.'
+                    : <>No todos yet. Click “+ New”.</>}
         </div>
       )}
     </>

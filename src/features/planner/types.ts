@@ -1,16 +1,7 @@
 import { OrganizerEntry } from '@/features/tasks/model';
 
-// ── Sidebar pseudo-views ─────────────────────────────────────────────────────
-// Non-collection sidebar tabs. Any `selectedView` NOT in this set is treated as a
-// real collection id. 'in-daily-list' and 'categorized' filter the same organizer
-// (showInDatabase) entry set as the others - see useHubData.
-export const PSEUDO_VIEWS = new Set<string>([
-  'all',
-  'uncategorized',
-  'archived',
-  'in-daily-list',
-  'categorized',
-]);
+// The sidebar pseudo-view registry (which tasks each tab shows, how it scaffolds
+// collections, its label/counts) lives in `@/features/planner/views`.
 
 // ── Column model ─────────────────────────────────────────────────────────────
 export type ColKey =

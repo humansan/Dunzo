@@ -10,6 +10,7 @@ import {
   DEFAULT_SECTIONS_CONFIG,
 } from '@/features/planner/types';
 import { MIN_COL_WIDTH } from '@/features/planner/constants';
+import { resolveView } from '@/features/planner/views';
 import { useSyncedSetting } from '@/lib/query/settings';
 
 // Owns the table's per-view layout: column widths (persisted globally) and the
@@ -55,9 +56,10 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       )
     );
     const raw_sections = raw.sections ?? {};
-    // The In Daily List tab is a daily-tasks lens, so it defaults to date grouping.
-    // A persisted per-view override still wins (stored under workspaceId:viewId).
-    const defaultGroupBy = selectedView === 'in-daily-list' ? 'date' : DEFAULT_SECTIONS_CONFIG.groupBy;
+    // A view may declare its own default grouping (e.g. In Daily List is a daily
+    // lens, so it defaults to date grouping). A persisted per-view override still
+    // wins (stored under workspaceId:viewId).
+    const defaultGroupBy = resolveView(selectedView).defaultGroupBy ?? DEFAULT_SECTIONS_CONFIG.groupBy;
     const sections: SectionsConfig = {
       autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
       showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
