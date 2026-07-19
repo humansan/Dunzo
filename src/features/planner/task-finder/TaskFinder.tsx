@@ -92,6 +92,14 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   // Which tasks match - VSCode-style fuzzy on the name + all-fields haystack (§hook).
   const matches = useTaskFinderSearch(candidateEntries, todoById, query, RESULT_LIMIT);
 
+  // The two-pane (Collections) view is a browsable table: with no query it shows the
+  // full table so the user can explore collections/tabs before searching, then the
+  // search filters it once they type. (The flat view stays empty until a query.)
+  const twoPaneMatches = useMemo(
+    () => (q ? matches : candidateEntries.filter((e) => !e.todo.isCollection)),
+    [q, matches, candidateEntries]
+  );
+
   // Pull in each match's subtask subtree so a matched task keeps its children - the
   // tree flatten renders them collapsibly (interim list; Phase 5 replaces this).
   const entrySet = useMemo(() => {
@@ -197,21 +205,23 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           </button>
         )}
 
-        {/* Results - hint / empty message, else the Flat or Two-pane view. */}
+        {/* Results. The two-pane view is always browsable (full table with no query,
+            filtered once a query is typed). The flat view stays empty until the user
+            types, then shows matches / a no-match message. */}
         <div className="flex-1 min-h-0 flex flex-col">
-          {!q ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by name or notes.</div>
-          ) : matches.length === 0 ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
-          ) : finderView === 'twoPane' ? (
+          {finderView === 'twoPane' ? (
             <TwoPaneResults
               entries={candidateEntries}
               todoById={todoById}
-              matches={matches}
+              matches={twoPaneMatches}
               onPick={onPick}
               onSaveTodo={onSaveTodo}
               onToggleTodo={onToggleTodo}
             />
+          ) : !q ? (
+            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by name or notes.</div>
+          ) : matches.length === 0 ? (
+            <div className="px-4 py-6 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
           ) : (
             <TaskTable
               variant={VARIANTS.search}
