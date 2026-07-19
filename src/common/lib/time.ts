@@ -25,7 +25,7 @@ export function calculateProgress(tracker: Tracker, now: Date = new Date()): Pro
     case 'week':
       start = startOfWeek(now);
       end = endOfWeek(now);
-      subLabel = `${format(start, 'MMM d')} — ${format(end, 'MMM d')}`;
+      subLabel = `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`;
       break;
     case 'month':
       start = startOfMonth(now);
@@ -40,7 +40,7 @@ export function calculateProgress(tracker: Tracker, now: Date = new Date()): Pro
     case 'custom':
       start = tracker.startDate ? new Date(tracker.startDate) : startOfDay(now);
       end = tracker.endDate ? new Date(tracker.endDate) : endOfDay(now);
-      subLabel = `${format(start, 'MMM d, yyyy')} — ${format(end, 'MMM d, yyyy')}`;
+      subLabel = `${format(start, 'MMM d, yyyy')} - ${format(end, 'MMM d, yyyy')}`;
       break;
     default:
       start = startOfDay(now);

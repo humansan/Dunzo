@@ -4,7 +4,7 @@
 // stores a slot id ('collection-1'..'collection-8') going forward. Legacy rows
 // stored a raw hex from the old fixed palette; collectionSlot()/collectionColor()
 // map those to the nearest slot at render time, so there's no destructive DB
-// migration — old collections just start following the theme.
+// migration - old collections just start following the theme.
 //
 // This lives in `theme/` rather than with the Task Planner: it resolves to theme
 // role vars, and the calendar, stats, and daily-list field renderers all colour
@@ -37,7 +37,7 @@ export function collectionSlot(stored?: string | null): string {
   return LEGACY_HEX_TO_SLOT[stored.toLowerCase()] ?? DEFAULT_COLLECTION_SLOT;
 }
 
-// The themed CSS color for a stored Todo.color — a role var usable in pill()/style.
+// The themed CSS color for a stored Todo.color - a role var usable in pill()/style.
 // Idempotent: passing an already-resolved var returns the same var.
 export const collectionColor = (stored?: string | null): string =>
   `var(--color-${collectionSlot(stored)})`;

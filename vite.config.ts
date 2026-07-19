@@ -7,7 +7,7 @@ import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
   plugins: [
-    // Must run before react() — it generates src/routeTree.gen.ts from src/routes.
+    // Must run before react() - it generates src/routeTree.gen.ts from src/routes.
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
     tailwindcss(),

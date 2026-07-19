@@ -8,8 +8,8 @@ import { SectionHeader } from '@/features/planner/table/SectionHeader';
 type GroupHeader = Extract<GroupRow, { type: 'header' }>;
 
 // Section header for attribute groupings (Date / Status / Priority). Renders
-// through the shared SectionHeader shell so its chrome and spacing — including the
-// list-view variant — stay identical to collection headers; only the
+// through the shared SectionHeader shell so its chrome and spacing - including the
+// list-view variant - stay identical to collection headers; only the
 // attribute-specific behavior (static label pill, quick-add seeded with the
 // section value, drop-at-top indicator) lives here.
 export const GroupHeaderRow: React.FC<{
@@ -47,7 +47,7 @@ export const GroupHeaderRow: React.FC<{
         </button>
       ) : undefined}
       dropDecorations={isDropTarget ? (
-        // Drop line under the header — task lands at the top of this section.
+        // Drop line under the header - task lands at the top of this section.
         <div
           className="pointer-events-none absolute left-0 right-0 bottom-[-1px] z-30 h-0.5 rounded-full bg-[var(--accent2)]"
           style={{ marginLeft: NAME_BASE_PAD + INDENT }}

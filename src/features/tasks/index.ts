@@ -1,5 +1,5 @@
 // The todo domain. Sub-entries are published separately, because the planner
-// consumes the model/fields/picker while the app shell consumes the overlays —
+// consumes the model/fields/picker while the app shell consumes the overlays -
 // routing both through one barrel would put a lazily-chunked route entry inside
 // an import cycle (see features/planner/task-finder for the same reasoning):
 //

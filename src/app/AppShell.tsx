@@ -83,8 +83,8 @@ export const AppShell: React.FC = () => {
   };
 
   // Auth is a route boundary now (`_authed` beforeLoad). A *confirmed* sign-out
-  // while inside the app — logout or a mid-session token expiry surfaced by the
-  // window-focus revalidation — routes back to /login. This replaces the old
+  // while inside the app - logout or a mid-session token expiry surfaced by the
+  // window-focus revalidation - routes back to /login. This replaces the old
   // `!isAuthenticated → AuthModal` render gate that used to live here.
   useEffect(() => {
     if (!sessionPending && !isAuthenticated) router.history.push('/login');
@@ -99,7 +99,7 @@ export const AppShell: React.FC = () => {
     return <LoadingScreen message="Loading…" />;
   }
   // Data pending/error is owned by the `_authed` route loader now
-  // (pendingComponent / errorComponent) — no render-time data gate here.
+  // (pendingComponent / errorComponent) - no render-time data gate here.
 
   // /today, /planner and /calendar are full-height scroll-locked surfaces; the rest
   // (/trackers, /stats) scroll the page. Derived from the route (was `activeView`).
@@ -160,12 +160,12 @@ export const AppShell: React.FC = () => {
         />
       )}
 
-      {/* Overlays layered above the persistent page <Outlet/> — driven by search
+      {/* Overlays layered above the persistent page <Outlet/> - driven by search
           params so the page underneath never unmounts while they're open. */}
       {settingsOverlayOpen && <SettingsOverlay onClose={closeOverlay} />}
       {taskOverlayId && <TaskOverlay taskId={taskOverlayId} onClose={closeOverlay} />}
 
-      {/* Bottom overlay slot — the stopwatch widget and the active-task tracker
+      {/* Bottom overlay slot - the stopwatch widget and the active-task tracker
           occupy the same spot, so at most one of them renders at a time. */}
       <AnimatePresence mode="wait">
         {isStopwatchVisible ? (

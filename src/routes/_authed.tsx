@@ -13,7 +13,7 @@ import { settingsQueryOptions } from '@/lib/query/settings';
 // shell (which renders the routed <Outlet/>). The auth boundary lives here: a
 // confirmed-null session redirects to /login. Because beforeLoad runs on
 // navigation (not on window focus), a background session revalidation on refocus
-// no longer remounts the login form — the old focus-flash / form-wipe bug.
+// no longer remounts the login form - the old focus-flash / form-wipe bug.
 export const Route = createFileRoute('/_authed')({
   // Overlays (settings / task full-view) are modeled as search-param state on the
   // *current* page rather than sibling routes, so the page under AppShell's

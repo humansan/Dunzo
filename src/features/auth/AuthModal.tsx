@@ -187,7 +187,7 @@ const LoginScreen: React.FC<{
       }
       setSignupStep('details');
     } catch {
-      // Fail open — never block signup because the check itself failed.
+      // Fail open - never block signup because the check itself failed.
       setSignupStep('details');
     } finally {
       setSubmitting(false);

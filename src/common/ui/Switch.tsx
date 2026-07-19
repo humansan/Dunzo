@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Shared on/off switch (role="switch"). Replaces the four near-identical inline toggles
-// that used to live in AccountModal, SectionsMenu, TodoFullView and CalendarInput — one
+// that used to live in AccountModal, SectionsMenu, TodoFullView and CalendarInput - one
 // component now, so the style stays in sync. Track fills with accent2 when on; the knob
 // slides. Pass `disabled` for a non-interactive (dimmed) state.
 interface SwitchProps {

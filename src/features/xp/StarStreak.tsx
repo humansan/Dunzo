@@ -46,7 +46,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
     [flags.completedTask, flags.beatYesterday, flags.beatAverage]
   );
 
-  // Fire animations only on a genuine increase — never on first mount or when
+  // Fire animations only on a genuine increase - never on first mount or when
   // the viewed date changes (navigating between days shouldn't celebrate).
   const prevLit = useRef(lit);
   const prevStreak = useRef(streak);
@@ -146,5 +146,5 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
 };
 
 // dayTodos / date are stable between edits, so memoising keeps the widget from
-// re-rendering on DailyScreen's per-second clock tick — the source of the flutter.
+// re-rendering on DailyScreen's per-second clock tick - the source of the flutter.
 export const StarStreak = React.memo(StarStreakBase);

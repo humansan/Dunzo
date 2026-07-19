@@ -8,7 +8,7 @@ import { RowDnD, TableModel, TableInteraction, TableRowHandlers } from '@/featur
 
 // The reusable row-list region shared by every chrome: the width anchor (full-grid
 // only), the task/section rows (collection-tree or attribute-grouped), the add-row,
-// the empty state, and the bottom spacer. Chrome-agnostic — `TableSurface` wraps
+// the empty state, and the bottom spacer. Chrome-agnostic - `TableSurface` wraps
 // this in whichever container the variant calls for. Drag handlers come from the
 // optional `dnd` bundle; omit it and rows render without drag affordances.
 interface TableRowsProps {
@@ -48,7 +48,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
   const nameOnly = variant.columns === 'name';
   const isEmpty = sectionsConfig.groupBy === 'collection' ? flattened.length === 0 : groupedRows.length === 0;
 
-  // Rows — collection-tree mode (default) or flat grouped mode. Native HTML5 DnD:
+  // Rows - collection-tree mode (default) or flat grouped mode. Native HTML5 DnD:
   // a drop indicator shows where the row will land; nothing shifts until release.
   const rows =
     sectionsConfig.groupBy === 'collection' ? (
@@ -144,7 +144,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
 
       {rows}
 
-      {/* Add row — editable surfaces only. A read-only surface (search) omits
+      {/* Add row - editable surfaces only. A read-only surface (search) omits
           onNewInView, dropping both the add-row and its collection empty state. */}
       {onNewInView && (
         <button

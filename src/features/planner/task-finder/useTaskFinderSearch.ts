@@ -7,7 +7,7 @@ import { getFieldDisplayValue } from '@/features/planner/model/viewUtils';
 
 // The Task Finder's search core. A task is a hit when the query fuzzy-matches its
 // name (VSCode-style, §fuzzyMatch) OR when every query token appears in its all-fields
-// haystack — the joined *display* values of the other columns (status/priority labels,
+// haystack - the joined *display* values of the other columns (status/priority labels,
 // formatted dates, notes, the collection breadcrumb, …) via getFieldDisplayValue, so
 // searching e.g. a collection name or "high" surfaces the right tasks. Collections are
 // never hits. Returns the matching tasks in natural (input) order, capped; score-based

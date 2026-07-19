@@ -72,7 +72,7 @@ interface PlannerViewProps {
   // The selected collection/view is URL-driven (/planner/$collectionId, bare = 'all').
   selectedView: string;
   onSelectView: (view: string) => void;
-  // Whether `dayTodos` has finished loading — see useHubData.
+  // Whether `dayTodos` has finished loading - see useHubData.
   dataReady: boolean;
   // Opening a task navigates to /task/$taskId (the shared full-view route).
   onOpenTask: (id: string) => void;
@@ -143,7 +143,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
 
   // Per-view layout + column widths (field order/visibility, filters, sorts,
-  // section settings, resizable columns) — keyed by workspace + view.
+  // section settings, resizable columns) - keyed by workspace + view.
   const {
     fieldOrder,
     hiddenFields,
@@ -219,7 +219,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   };
 
   // Toggle a toolbar menu open below its button: close every menu first (so only
-  // one is ever open), then — unless this one was already open (toggle off) —
+  // one is ever open), then - unless this one was already open (toggle off) -
   // anchor it to the button's bottom-right.
   const toggleToolbarMenu = (
     e: React.MouseEvent,
@@ -631,7 +631,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
   return (
     <div className="h-full flex">
-      {/* Left pane — full-height collection picker (resizable) */}
+      {/* Left pane - full-height collection picker (resizable) */}
       {!sidebarHidden && (
         <HubSidebar
           sidebarWidth={sidebarWidth}
@@ -660,7 +660,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         />
       )}
 
-      {/* Right pane — header + task table */}
+      {/* Right pane - header + task table */}
       <div className="flex-1 min-w-0 flex flex-col">
         <HubToolbar
           sidebarHidden={sidebarHidden}
@@ -677,7 +677,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onToggleMenu={onToggleMenu}
         />
 
-        {/* Body — the single shared table/list surface selected by the variant. */}
+        {/* Body - the single shared table/list surface selected by the variant. */}
         <TaskTable
             variant={variant}
             model={{
@@ -712,7 +712,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           />
       </div>
 
-      {/* Sections menu — view-level settings */}
+      {/* Sections menu - view-level settings */}
       {sectionsMenu && createPortal(
         <SectionsMenu
           anchor={sectionsMenu}
@@ -723,7 +723,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         document.body
       )}
 
-      {/* Fields menu — reorder (drag) + show/hide the table's columns */}
+      {/* Fields menu - reorder (drag) + show/hide the table's columns */}
       {fieldsMenu && createPortal(
         <FieldsMenu
           anchor={fieldsMenu}
@@ -848,7 +848,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
       })()}
 
 
-      {/* Reparent picker — pick a task to nest the target under, or move to top level. */}
+      {/* Reparent picker - pick a task to nest the target under, or move to top level. */}
       {reparentTarget && (
         <TaskFinder
           entries={entries}

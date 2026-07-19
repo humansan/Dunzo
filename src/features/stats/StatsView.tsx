@@ -92,7 +92,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
 
   // 1. Build Pre-Aggregated Data Maps for Speed
   const { history, xpMap, completedMap, totalTasksMap, completedTodosMap, allTimeBestDay, totalXp } = useMemo(() => {
-    // Shared with the stars/streak below — only daily-checklist todos count.
+    // Shared with the stars/streak below - only daily-checklist todos count.
     const hist = buildXpHistory(dayTodos);
     const xpM = hist.earnedByDate;
     const compM = hist.completedCountByDate;
@@ -296,7 +296,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     return list;
   }, [chartInterval, xpMap, completedMap]);
 
-  // 6. Collection Calculations — each completed task's XP rolls up to every
+  // 6. Collection Calculations - each completed task's XP rolls up to every
   // collection along its path (so ancestors accumulate their descendants' XP);
   // tasks with no collection fall under "Uncategorized".
   const categoryData = useMemo(() => {
@@ -709,7 +709,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                       </td>
                       <td className="py-2.5 px-4 whitespace-nowrap">
                         {row.colls.length === 0 ? (
-                          <span className="text-fg-ghost italic text-xs">—</span>
+                          <span className="text-fg-ghost italic text-xs">-</span>
                         ) : (
                           <span className="font-medium" style={{ color: row.colls[row.colls.length - 1].color }}>
                             {row.colls.map(c => c.name).join(' › ')}
@@ -726,7 +726,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
               <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-line-subtle">
                 <span className="text-xs text-fg-ghost">
                   {rawRows.length > 50
-                    ? `Showing 50 most recent of ${rawRows.length} entries — export for all`
+                    ? `Showing 50 most recent of ${rawRows.length} entries - export for all`
                     : `${rawRows.length} ${rawRows.length === 1 ? 'entry' : 'entries'}`}
                 </span>
                 <button

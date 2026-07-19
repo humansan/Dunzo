@@ -25,7 +25,7 @@ import { Switch } from '@/common/ui/Switch';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 const HOUR_HEIGHT = 60; // px per hour
-const GUTTER_WIDTH = 64; // px — width of the left time-label gutter (the day grid + current-time line start here)
+const GUTTER_WIDTH = 64; // px - width of the left time-label gutter (the day grid + current-time line start here)
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_OPTIONS = [1, 3, 5, 7];
 
@@ -82,7 +82,7 @@ const EventCard: React.FC<{
   todo: Todo;
   startMin: number;
   endMin: number;
-  // CSS color driving the card's fill, spine and dot — see accentForTodo.
+  // CSS color driving the card's fill, spine and dot - see accentForTodo.
   accent: string;
   onMouseDown?: (e: React.MouseEvent) => void;
   onResizeStart?: (e: React.MouseEvent, edge: 'top' | 'bottom') => void;
@@ -93,7 +93,7 @@ const EventCard: React.FC<{
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
-  // Only show a time that's actually set — never fabricate the missing side.
+  // Only show a time that's actually set - never fabricate the missing side.
   const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
   const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
   const timeRange = `${startLabel} – ${endLabel}`.trim();
@@ -264,7 +264,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // optimistic cache, but the echo back into our `dayTodos` prop lands a tick later
   // (the parent re-renders on the query notification, a microtask after the drop). If
   // we simply cleared the drag state on drop, the original card would un-hide at its
-  // OLD position for that one frame before the prop catches up — the "flash back, then
+  // OLD position for that one frame before the prop catches up - the "flash back, then
   // flash forward". So we keep drawing the card at its dropped spot (and keep the
   // original hidden) until the prop reports the committed time, then release. Same
   // preview-until-echo trick TimeInput uses for its rails.
@@ -427,7 +427,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const startTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
       const dueTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
-      // The drawn block *is* the task — create it with those times and hand the
+      // The drawn block *is* the task - create it with those times and hand the
       // user straight to the full view to name it and fill in the rest.
       const id = onCreateTask(dragSelection.dateStr, startTime, dueTime);
       onOpenTask(id);
@@ -506,7 +506,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
       const dist = Math.abs(e.clientX - draggingEvent.startX) + Math.abs(e.clientY - draggingEvent.startY);
       if (dist < 5) {
-        // It's a click, not a drag — open the task in the full view.
+        // It's a click, not a drag - open the task in the full view.
         onOpenTask(draggingEvent.todo.id);
         setDraggingEvent(null);
         return;
@@ -830,7 +830,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 className="absolute left-0 right-0 z-30 pointer-events-none"
                 style={{ top: `${minutesToPx(nowMinutes)}px` }}
               >
-                {/* Global Thin Line — starts at the gutter edge so it spans the full day grid */}
+                {/* Global Thin Line - starts at the gutter edge so it spans the full day grid */}
                 <div className="absolute right-0 h-[1px] bg-danger opacity-30" style={{ left: GUTTER_WIDTH }} />
 
                 {/* Badge Container */}
@@ -973,7 +973,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             })}
           </div>
 
-          {/* Ending line marking the bottom of the day — mirrors the top header border */}
+          {/* Ending line marking the bottom of the day - mirrors the top header border */}
           <div className="border-t border-line-subtle" />
           {/* Breathing room so the final hours scroll clear of the fixed XP progress bar */}
           <div className="h-24 shrink-0" />

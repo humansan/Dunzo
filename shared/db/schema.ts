@@ -147,7 +147,7 @@ export const userSettings = pgTable('user_settings', {
   updatedAt: bigint('updated_at', { mode: 'number' }),
 });
 
-// Inferred row types — usable across backend (and later, type-only, the frontend).
+// Inferred row types - usable across backend (and later, type-only, the frontend).
 export type WorkspaceRow = typeof workspaces.$inferSelect;
 export type NewWorkspaceRow = typeof workspaces.$inferInsert;
 export type TodoRow = typeof todos.$inferSelect;

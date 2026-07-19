@@ -117,14 +117,14 @@ const MINUTES = [55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0];
 
 export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className, autoFocus }) => {
   const [text, setText] = useState(() => (value ? canonical(value) : ''));
-  // The exact left/right substrings last rendered — lets a commit tell which side
+  // The exact left/right substrings last rendered - lets a commit tell which side
   // of the "time | %" string the user touched.
   const lastLeft = useRef('');
   const lastRight = useRef('');
   // Local override of `value`. Held while dragging the rail (so a drag doesn't fire
   // a save on every mouse-move) AND after a commit, until the parent echoes the new
-  // value back. The echo can be a tick late — react-query applies its optimistic
-  // cache write asynchronously — so releasing the override on commit paints one
+  // value back. The echo can be a tick late - react-query applies its optimistic
+  // cache write asynchronously - so releasing the override on commit paints one
   // frame of the *old* time before the new one lands. '' means "cleared".
   const [preview, setPreview] = useState<string | null>(null);
   const dragging = useRef(false);
@@ -175,7 +175,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
   const commit = (raw: string) => {
     const result = parseInput(raw, lastLeft.current, lastRight.current);
     if (result == null) {
-      // Unparseable — revert to the last good value.
+      // Unparseable - revert to the last good value.
       if (value) setCanonical(value);
       else setText('');
       return;

@@ -39,7 +39,7 @@ interface TaskTimeChipsProps {
   todo: Todo;
   /** Pre-formatted countdown text (see formatCountdown); null/undefined hides the chip. */
   countdown?: string | null;
-  /** 'inverted' = solid accent fill with inverted text — used by the active tracker. */
+  /** 'inverted' = solid accent fill with inverted text - used by the active tracker. */
   variant?: 'default' | 'inverted';
   done?: boolean;
   /** When provided the time chip becomes clickable (starts tracking). */

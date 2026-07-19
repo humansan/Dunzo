@@ -14,7 +14,7 @@ import {
 
 export const todosRouter = Router();
 
-// GET /api/todos — all of the user's todos (client groups by workspace/date).
+// GET /api/todos - all of the user's todos (client groups by workspace/date).
 todosRouter.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -23,7 +23,7 @@ todosRouter.get(
   })
 );
 
-// POST /api/todos/batch — transactional apply of { upserts, patches, deletes }.
+// POST /api/todos/batch - transactional apply of { upserts, patches, deletes }.
 // Defined before '/:id' routes (distinct path, but kept first for clarity).
 todosRouter.post(
   '/batch',
@@ -51,7 +51,7 @@ todosRouter.post(
         } as NewTodoRow;
         stampCompletion(insertRow as { status?: string | null; completedAt?: number | null });
         // Upserts carry the client's full intended state, so the insert row is the
-        // merged truth — enforce the invariant on it and mirror any fix to setData.
+        // merged truth - enforce the invariant on it and mirror any fix to setData.
         enforceVisibility(insertRow as Record<string, unknown>);
 
         const setData = pick<Partial<NewTodoRow>>(u, TODO_UPDATE_FIELDS);
@@ -110,7 +110,7 @@ todosRouter.post(
   })
 );
 
-// POST /api/todos — create one (client-generated id).
+// POST /api/todos - create one (client-generated id).
 todosRouter.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -131,7 +131,7 @@ todosRouter.post(
   })
 );
 
-// PATCH /api/todos/:id — partial update.
+// PATCH /api/todos/:id - partial update.
 todosRouter.patch(
   '/:id',
   asyncHandler(async (req, res) => {
@@ -174,7 +174,7 @@ todosRouter.patch(
   })
 );
 
-// DELETE /api/todos/:id — hard delete (FK cascade removes the subtree).
+// DELETE /api/todos/:id - hard delete (FK cascade removes the subtree).
 todosRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {

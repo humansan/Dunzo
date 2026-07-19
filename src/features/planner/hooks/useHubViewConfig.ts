@@ -24,7 +24,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
   const [storedWidths, setWidths] = useSyncedSetting('hubColWidths', {} as Record<string, number>);
   const widths = { ...defaultWidths, ...storedWidths };
 
-  // ── Per-view config (field order, visibility, filters, sorts) — DB-synced ────
+  // ── Per-view config (field order, visibility, filters, sorts) - DB-synced ────
   const [viewsConfig, setViewsConfig] = useSyncedSetting('hubViews', {} as Record<string, any>);
 
   // The config key for the currently-visible view.

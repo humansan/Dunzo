@@ -3,21 +3,21 @@ import { Todo } from '../types';
 // ── Task Planner (organizer) vs. Daily checklist routing ────────────────────────
 //
 // There are two surfaces a todo can show up on:
-//   • The daily checklist — a temporary, per-day board for everything you need
+//   • The daily checklist - a temporary, per-day board for everything you need
 //     to do that day (important *and* throwaway: "take out the trash", "lunch").
-//   • The Task Planner — a database-style organizer for important things you plan
+//   • The Task Planner - a database-style organizer for important things you plan
 //     ahead of time.
 //
 // Two independent booleans control visibility:
-//   • showInDatabase — show in Task Planner
-//   • showInDailyList — show in the daily checklist for the date it is filed under
+//   • showInDatabase - show in Task Planner
+//   • showInDailyList - show in the daily checklist for the date it is filed under
 //
 // Every new task defaults to BOTH flags true, regardless of where it is created
-// (Task Planner, daily list, or a calendar block) — so it shows in the Planner and,
+// (Task Planner, daily list, or a calendar block) - so it shows in the Planner and,
 // once it has a due date, on that day's daily checklist. The two toggles are then an
 // opt-OUT to hide a task from one surface (the invariant below keeps at least one on).
 // Collections are the exception: they are database-only (showInDatabase=true, no daily
-// flag). A Planner task with no date carries showInDailyList=true harmlessly — it only
+// flag). A Planner task with no date carries showInDailyList=true harmlessly - it only
 // reaches the daily checklist once a date is assigned (see showsOnDailyChecklist).
 //
 //   showInDatabase | showInDailyList | has date | Daily checklist | Task Planner
@@ -26,11 +26,11 @@ import { Todo } from '../types';
 //        true      |     true        |   yes    |      yes        |    yes
 //        false     |     true        |   yes    |      yes        |    no
 //
-// A missing flag reads as false — every todo carries explicit flags now (the old
+// A missing flag reads as false - every todo carries explicit flags now (the old
 // localStorage data has been migrated). Invariant: a todo must be reachable on at
 // least one surface (the "both false" / daily-only-without-a-date orphan is
 // illegal). It is enforced at the write boundary by normalizeVisibility below on
-// the client and again by enforceVisibility (server/http.ts) on the server — which
+// the client and again by enforceVisibility (server/http.ts) on the server - which
 // is why these rules live in `shared/` rather than in either tree.
 //
 // Dates live on the `DayTodos` wrapper, not the todo itself. A todo with "no
@@ -40,7 +40,7 @@ import { Todo } from '../types';
 
 // Sentinel date key for todos that have no calendar date assigned. These live
 // in the same dayTodos array as dated todos but never appear on the daily
-// checklist — only in the Task Planner.
+// checklist - only in the Task Planner.
 export const UNDATED = '__undated__';
 
 // True when the given DayTodos key represents a real calendar date (as opposed
@@ -54,7 +54,7 @@ export function showsOnDailyChecklist(todo: Todo, date: string): boolean {
 }
 
 // Whether a todo should appear in the Task Planner (organizer). Only todos
-// explicitly flagged showInDatabase qualify — dated or not — and not archived.
+// explicitly flagged showInDatabase qualify - dated or not - and not archived.
 export function showsInOrganizer(todo: Todo): boolean {
   return todo.showInDatabase === true && todo.archived !== true;
 }
@@ -62,7 +62,7 @@ export function showsInOrganizer(todo: Todo): boolean {
 // Enforce the visibility invariant on a todo about to be persisted: every todo
 // must be reachable on at least one surface. The two flags are otherwise free to
 // combine (planner-only, daily-only, both), and the date dependency is left
-// intact — this only rescues the one illegal outcome, a todo that would render
+// intact - this only rescues the one illegal outcome, a todo that would render
 // nowhere. It deliberately does NOT fabricate flags on todos that are already
 // visible somewhere.
 export function normalizeVisibility(todo: Todo): Todo {
@@ -70,11 +70,11 @@ export function normalizeVisibility(todo: Todo): Todo {
   if (todo.isCollection) {
     return todo.showInDatabase === true ? todo : { ...todo, showInDatabase: true };
   }
-  // A database todo is always reachable — in the Planner, or the archived view.
+  // A database todo is always reachable - in the Planner, or the archived view.
   if (todo.showInDatabase === true) return todo;
   // Otherwise it must earn its place on the daily checklist, which needs a date.
   if (showsOnDailyChecklist(todo, todo.dueDate ?? '')) return todo;
-  // Would vanish everywhere (e.g. a daily-only todo whose date was cleared) —
+  // Would vanish everywhere (e.g. a daily-only todo whose date was cleared) -
   // surface it in the Task Planner so it stays reachable.
   return { ...todo, showInDatabase: true };
 }

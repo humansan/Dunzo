@@ -60,13 +60,13 @@ export const DatePickerPopover: React.FC<DatePickerPopoverProps> = ({
   }, []);
 
   // The trigger toggles. The outside-click handler ignores targets inside the
-  // anchor, so a click on the trigger never reaches it — the trigger has to close
+  // anchor, so a click on the trigger never reaches it - the trigger has to close
   // the popover itself, or it can only ever be dismissed by clicking elsewhere.
   const open = useCallback(() => setIsOpen((v) => !v), []);
 
   // Measure while open until a position lands. Gating on `pos === null` (rather than
   // only the open→true edge) means a re-open always re-measures even if `isOpen`
-  // never flipped off, so the panel can't get stuck hidden — visibility keys off `pos`.
+  // never flipped off, so the panel can't get stuck hidden - visibility keys off `pos`.
   useLayoutEffect(() => {
     if (isOpen && pos === null) updatePos();
   }, [isOpen, pos, updatePos]);

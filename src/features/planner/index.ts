@@ -1,5 +1,5 @@
 // Public surface of the Task Planner feature. Everything else under
-// features/planner/ is internal — import from here, not from a nested path.
+// features/planner/ is internal - import from here, not from a nested path.
 //
 // Exception: the ⌘K TaskFinder overlay is published at
 // '@/features/planner/task-finder' instead. See that file for why.

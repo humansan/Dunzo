@@ -19,7 +19,7 @@ import { useAppData } from '@/lib/app-data';
 export interface QuickEditValues {
   text: string;
   notes: string;
-  date: string;            // YYYY-MM-DD — the due date (drives the daily-list day)
+  date: string;            // YYYY-MM-DD - the due date (drives the daily-list day)
   startTime?: string;      // HH:MM (carried through; cleared alongside the end time)
   dueTime?: string;        // HH:MM
   duePercentage?: number;
@@ -239,7 +239,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         className="w-full bg-transparent resize-none text-fg-muted text-sm leading-relaxed placeholder:text-fg-ghost focus:outline-none mt-2 overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fill-stronger"
       />
 
-      {/* Chips — Date · Time+% · XP · Status · Priority */}
+      {/* Chips - Date · Time+% · XP · Status · Priority */}
       <div className="flex items-center gap-1.5 mt-3 flex-wrap">
         <DateChip
           value={date}

@@ -5,9 +5,9 @@ import { TableVariant } from '@/features/planner/variant';
 import { RowDnD, TableModel } from '@/features/planner/table/TaskTable';
 
 // The scroll container + chrome for one table surface, chosen by `variant.chrome`:
-//   • title  — a single centered Name column with a project-style heading (List).
-//   • header — the full spreadsheet's sticky, resizable column-header bar (Table).
-//   • none   — bare rows, no header/title, for an embedded column/search pane
+//   • title  - a single centered Name column with a project-style heading (List).
+//   • header - the full spreadsheet's sticky, resizable column-header bar (Table).
+//   • none   - bare rows, no header/title, for an embedded column/search pane
 //              whose width + padding are owned by the surrounding view.
 // It hosts the chrome-agnostic row region (`children`) in the right slot and owns
 // the scroll ref + the fallback container drop.
@@ -54,7 +54,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
     >
       {titleChrome ? (
         <div className="max-w-3xl mx-auto w-full text-fg">
-          {/* Project-style title — the selected collection's name, else the view label. */}
+          {/* Project-style title - the selected collection's name, else the view label. */}
           <div className="pt-3 mb-1">
             <h1 className="text-3xl font-bold text-fg truncate">
               {model.selectedCollectionId ? (model.todoById.get(model.selectedCollectionId)?.text || 'Untitled') : model.viewLabel}
@@ -65,7 +65,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
         </div>
       ) : headerChrome ? (
         <>
-          {/* Header row — full-bleed bar: its background + bottom border span the
+          {/* Header row - full-bleed bar: its background + bottom border span the
               whole width (no left/right gaps), but it carries the same TABLE_PAD
               padding and w-max width as the rows below, so the padding sits outside
               the grid tracks and the column borders line up with the body. */}
@@ -100,7 +100,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
           </div>
         </>
       ) : (
-        // 'none' chrome — bare rows; the embedding view owns width + padding.
+        // 'none' chrome - bare rows; the embedding view owns width + padding.
         <div className="w-full text-fg">{children}</div>
       )}
     </div>

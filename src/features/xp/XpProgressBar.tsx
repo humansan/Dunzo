@@ -74,7 +74,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
     <>
       {/* ── Bottom-left: XP info ─────────────────────────────────────────── */}
       <div className="fixed left-18 bottom-7 z-30 select-none pointer-events-none font-mono">
-        {/* The whole text block glows in the goal colour once a target is hit —
+        {/* The whole text block glows in the goal colour once a target is hit -
             a text-shadow on the text itself, no background and no box-shadow. */}
         <div
           className="relative flex items-end gap-3.5 transition-all duration-300"
@@ -96,7 +96,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
           </div>
 
           <div className="relative flex flex-col gap-1 pb-2">
-            {/* Status — the header. Accent by default; lights up gold, then violet. */}
+            {/* Status - the header. Accent by default; lights up gold, then violet. */}
             <span
               className="text-sm font-medium leading-tight tracking-wide transition-colors duration-300"
               style={{ color: lit ?? 'var(--accent1)' }}
@@ -126,7 +126,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
             </span>
           </div>
 
-          {/* Last-4-weeks mini bars — a static, at-a-glance progress indicator.
+          {/* Last-4-weeks mini bars - a static, at-a-glance progress indicator.
               Native title tooltip needs hover, so re-enable pointer events here. */}
           {/* <div className="flex items-end gap-1.5 h-14 pb-2 ml-2 pointer-events-auto">
             {(() => {

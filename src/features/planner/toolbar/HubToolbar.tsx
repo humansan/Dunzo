@@ -57,7 +57,7 @@ export const HubToolbar: React.FC<{
 
   return (
     <>
-      {/* Page header — tight, Notion-like */}
+      {/* Page header - tight, Notion-like */}
       <div className="shrink-0 flex items-center gap-2.5 px-4 pt-4 pb-2">
         <button
           type="button"
@@ -85,7 +85,7 @@ export const HubToolbar: React.FC<{
 
       {/* View toolbar */}
       <div className="shrink-0 flex items-center justify-between gap-3 px-4 pb-4">
-        {/* View tabs — Table/List switch the view; Timeline is not built yet. */}
+        {/* View tabs - Table/List switch the view; Timeline is not built yet. */}
         <div className="flex items-center gap-1">
           {([
             { key: 'table', label: 'Table', icon: Table, disabled: false },
@@ -111,7 +111,7 @@ export const HubToolbar: React.FC<{
           })}
         </div>
 
-        {/* Right-side actions — Sections / Fields / Filter / Sort */}
+        {/* Right-side actions - Sections / Fields / Filter / Sort */}
         <div className="flex items-center gap-1">
           {actions.map(({ key, label, icon: Icon, count }) => (
             <button

@@ -11,17 +11,17 @@ const classicRoles: Record<RoleName, RoleValue> = {
   overlay: 'overlay',
   scrim: 'black',
   fg: 'fg',
-  // Text emphasis ramp — translucent fg (collapses the old text-fg/NN zoo)
+  // Text emphasis ramp - translucent fg (collapses the old text-fg/NN zoo)
   'fg-muted': ['fg', 80],
   'fg-subtle': ['fg', 65],
   'fg-faint': ['fg', 50],
   'fg-ghost': ['fg', 35],
-  // Hairlines — translucent fg
+  // Hairlines - translucent fg
   'line-subtle': ['fg', 6],
   line: ['fg', 10],
   'line-strong': ['fg', 20],
   'line-stronger': ['fg', 40],
-  // Neutral fills — translucent fg
+  // Neutral fills - translucent fg
   'fill-subtle': ['fg', 5],
   fill: ['fg', 10],
   'fill-strong': ['fg', 15],
@@ -32,7 +32,7 @@ const classicRoles: Record<RoleName, RoleValue> = {
   warning: 'amber',
   success: 'emerald',
   info: 'blue',
-  // Feedback tint backgrounds — translucent hue
+  // Feedback tint backgrounds - translucent hue
   'danger-tint': ['red', 12],
   'warning-tint': ['gold', 10],
   'success-tint': ['emerald', 12],
@@ -131,8 +131,8 @@ const classicLight: Record<string, string> = {
   fg: '#000000',       // near-black primary text (softer than pure #000)
   muted: '#3f4652',   // (legacy solid; text ramp now uses translucent fg)
   subtle: '#5b6472',  // still used by status-todo / priority-low chips
-  accent1: '#7a9c00', // olive-gold — balances readable-as-text vs black-text-on-accent-bg
-  accent2: '#6c8c83', // medium green — same balance
+  accent1: '#7a9c00', // olive-gold - balances readable-as-text vs black-text-on-accent-bg
+  accent2: '#6c8c83', // medium green - same balance
   red: '#d42d33',
   gold: '#d58d11',    // XP signature gold, deepened to read on white
   amber: '#a86616',

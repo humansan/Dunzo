@@ -97,7 +97,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
         <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
       )}
 
-      {/* Header row — sits in normal flow at the top so the timer below it reads as
+      {/* Header row - sits in normal flow at the top so the timer below it reads as
           vertically centered (mirrors Tick's layout) */}
       <div className="relative z-10 flex items-center justify-between px-5 pt-5">
         {/* Left: image + settings controls */}
@@ -146,7 +146,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
         </div>
       </div>
 
-      {/* Settings dropdown — floats below the header without affecting layout */}
+      {/* Settings dropdown - floats below the header without affecting layout */}
       {showSettings && bgImage && (
         <div className="absolute top-20 left-5 z-20 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/10 shadow-2xl">
           <p className="text-white text-sm font-semibold mb-2">Background Dimness</p>
@@ -156,7 +156,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
         </div>
       )}
 
-      {/* Timer — flex-1 region below the header, centers the time + controls */}
+      {/* Timer - flex-1 region below the header, centers the time + controls */}
       <div className="relative z-[5] flex-1 flex flex-col items-center justify-center px-6">
         <div className="text-white font-bold font-mono tracking-tight leading-none text-center text-[clamp(4rem,18vw,11rem)] font-[">
           <StopwatchTime />

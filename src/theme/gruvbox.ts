@@ -5,7 +5,7 @@ import { Theme, RoleValue } from './themes';
 // Roles reference Gruvbox's own color names (bg0, aqua, …). Dark values are the
 // canonical Gruvbox Material Dark palette; light values are Gruvbox Material Light
 // (medium background), tunable. Translucent tokens are `[colorName, alpha%]` (see
-// RoleValue) — same alphas as Classic so the two themes stay structurally aligned.
+// RoleValue) - same alphas as Classic so the two themes stay structurally aligned.
 
 const gruvboxRoles: Record<RoleName, RoleValue> = {
   canvas: 'bg0',
@@ -14,17 +14,17 @@ const gruvboxRoles: Record<RoleName, RoleValue> = {
   overlay: 'bg2',
   scrim: 'black',
   fg: 'fg0',
-  // Text emphasis ramp — translucent fg
+  // Text emphasis ramp - translucent fg
   'fg-muted': ['fg0', 75],
   'fg-subtle': ['fg0', 55],
   'fg-faint': ['fg0', 40],
   'fg-ghost': ['fg0', 25],
-  // Hairlines — translucent fg
+  // Hairlines - translucent fg
   'line-subtle': ['fg0', 6],
   line: ['fg0', 10],
   'line-strong': ['fg0', 20],
   'line-stronger': ['fg0', 40],
-  // Neutral fills — translucent fg
+  // Neutral fills - translucent fg
   'fill-subtle': ['fg0', 5],
   fill: ['fg0', 10],
   'fill-strong': ['fg0', 15],
@@ -35,7 +35,7 @@ const gruvboxRoles: Record<RoleName, RoleValue> = {
   warning: 'yellow',
   success: 'green',
   info: 'blue',
-  // Feedback tint backgrounds — translucent hue
+  // Feedback tint backgrounds - translucent hue
   'danger-tint': ['red', 12],
   'warning-tint': ['yellow', 10],
   'success-tint': ['green', 12],
@@ -108,7 +108,7 @@ const gruvboxDark: Record<string, string> = {
 };
 
 const gruvboxLight: Record<string, string> = {
-  // Authentic Gruvbox Material Light (medium) — values from docs/gruvbox-material-light.json.
+  // Authentic Gruvbox Material Light (medium) - values from docs/gruvbox-material-light.json.
   // Cards sit a step darker than the cream page (matches the app's light-mode direction);
   // depth comes from the warm border + shadow.
   bg0: '#fbf1c7', // page (editor.background)
@@ -117,8 +117,8 @@ const gruvboxLight: Record<string, string> = {
   bg3: '#e8dcae', // raised / inputs
   black: '#000000',
   fg0: '#654735', // dark-brown text
-  grey1: '#928374', // subtle (tertiary — descriptionForeground)
-  grey2: '#7c6f64', // muted (secondary — darker, statusBar fg)
+  grey1: '#928374', // subtle (tertiary - descriptionForeground)
+  grey2: '#7c6f64', // muted (secondary - darker, statusBar fg)
   red: '#c14a4a',
   orange: '#c35e0a',
   yellow: '#b47109',

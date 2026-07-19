@@ -5,7 +5,7 @@ import { ChevronDown, Check } from 'lucide-react';
 // ── General single-select dropdown ───────────────────────────────────────────
 // A themed drop-in replacement for the browser's <select>: a trigger styled like
 // the toolbar inputs plus a body-portaled option list (so it escapes any
-// overflow-clipping/scroll container — toolbar popovers, modals, table cells).
+// overflow-clipping/scroll container - toolbar popovers, modals, table cells).
 // Unlike OptionSelectField (status/priority), options are plain text rows, not
 // tinted pills, so it works for arbitrary option sets.
 

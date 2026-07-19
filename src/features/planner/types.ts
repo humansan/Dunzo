@@ -3,7 +3,7 @@ import { OrganizerEntry } from '@/features/tasks/model';
 // ── Sidebar pseudo-views ─────────────────────────────────────────────────────
 // Non-collection sidebar tabs. Any `selectedView` NOT in this set is treated as a
 // real collection id. 'in-daily-list' and 'categorized' filter the same organizer
-// (showInDatabase) entry set as the others — see useHubData.
+// (showInDatabase) entry set as the others - see useHubData.
 export const PSEUDO_VIEWS = new Set<string>([
   'all',
   'uncategorized',
@@ -54,7 +54,7 @@ export const COLUMNS: ColDef[] = [
   { key: 'completedAt', label: 'Completed At', defaultWidth: 150 },
 ];
 
-// The Name column is pinned first and can never be hidden — every other field
+// The Name column is pinned first and can never be hidden - every other field
 // can be reordered and toggled via the Fields menu.
 export const NAME_COL_KEY: ColKey = 'title';
 
@@ -114,7 +114,7 @@ export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
 };
 
 // A single row in the grouped-mode table (either a virtual group header or a task).
-// `value` is the raw, assignable group key (what dropping a task here means — e.g.
+// `value` is the raw, assignable group key (what dropping a task here means - e.g.
 // the priority/status value, or a date-bucket id); `label` is its display text.
 export type GroupRow =
   | { type: 'header'; id: string; value: string; label: string; color: string; count: number; isCollapsed: boolean }

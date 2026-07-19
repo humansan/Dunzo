@@ -8,7 +8,7 @@ import { workspacesRouter } from './routes/workspaces';
 import { trackersRouter } from './routes/trackers';
 import { settingsRouter } from './routes/settings';
 
-// The configured Express app, with no `listen` — so it can be used both by the
+// The configured Express app, with no `listen` - so it can be used both by the
 // local dev server (server/index.ts) and as a Vercel Function (api/index.ts).
 const app = express();
 app.use(express.json({ limit: '5mb' }));
@@ -39,7 +39,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 
 // Public: does an account already exist for this email? Used by the email-first
 // signup step to steer existing users to log in instead of creating a duplicate.
-// Reads Neon Auth's (Better Auth) `neon_auth."user"` table — `user` is a reserved
+// Reads Neon Auth's (Better Auth) `neon_auth."user"` table - `user` is a reserved
 // word so it must be quoted. Fail-open: if the table/query is unavailable, report
 // `exists: false` so signup is never wrongly blocked (Better Auth still rejects a
 // true duplicate at signUp time).
@@ -64,7 +64,7 @@ app.get(
   })
 );
 
-// Data API — all scoped by the authenticated user_id.
+// Data API - all scoped by the authenticated user_id.
 app.use('/api/todos', requireAuth, todosRouter);
 app.use('/api/workspaces', requireAuth, workspacesRouter);
 app.use('/api/trackers', requireAuth, trackersRouter);

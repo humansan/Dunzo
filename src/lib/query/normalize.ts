@@ -1,6 +1,6 @@
 // Postgres returns `null` for empty/unset columns, but the app was written
 // against the localStorage-era contract where empty optional fields are
-// `undefined` — every empty-field guard in the UI checks `!== undefined`, so a
+// `undefined` - every empty-field guard in the UI checks `!== undefined`, so a
 // `null` slips past it and renders as "null", "null%", "0m", an empty pill, etc.
 // Normalize at the fetch boundary (the only place `null` enters the cache; the
 // optimistic mutation layer only ever merges client-built, `undefined`-based
@@ -29,7 +29,7 @@ export function stripNullsList<T>(rows: T[]): T[] {
 // `JSON.stringify` silently drops `undefined`-valued keys, the server reads the
 // absent key as "leave unchanged", and the cleared value resurfaces on refetch.
 //
-// Apply ONLY to the serialized request body — never to the optimistic cache
+// Apply ONLY to the serialized request body - never to the optimistic cache
 // merge, which must keep `undefined` so cleared cells render empty rather than
 // the literal "null" (the very thing `stripNulls` exists to prevent). Shallow,
 // matching `stripNulls`: every Todo field is a flat scalar.

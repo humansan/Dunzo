@@ -104,7 +104,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     el.style.height = `${el.scrollHeight}px`;
   };
 
-  // Grow to fit content with no upper cap — the pane scrolls instead of capping the textarea.
+  // Grow to fit content with no upper cap - the pane scrolls instead of capping the textarea.
   const resizeNotes = () => {
     const el = notesRef.current;
     if (!el) return;
@@ -121,8 +121,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo.id]);
 
-  // Completion is stamped outside the draft — the checkbox toggles through app data,
-  // and the save handlers derive completedAt from status — so both fields have to
+  // Completion is stamped outside the draft - the checkbox toggles through app data,
+  // and the save handlers derive completedAt from status - so both fields have to
   // come back from the prop or the Completed timestamp never appears.
   useEffect(() => {
     setDraft(prev =>
@@ -148,7 +148,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
   const handleDateChange = (val: string) => {
     setDateStr(val);
-    // Clearing the date keeps the showInDailyList flag intact — an undated task
+    // Clearing the date keeps the showInDailyList flag intact - an undated task
     // simply never reaches any daily list (showsOnDailyChecklist gates on the date),
     // and re-adding a date later sends it straight back. We only ensure it stays
     // reachable in the Planner (mirrors normalizeVisibility).
@@ -163,7 +163,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
   // "Show in" invariants: the daily flag can be set even without a date (it just
   // stays pending until one is added), but the task must stay reachable on at least
-  // one surface — so a switch that is the sole *effective* surface can't be turned
+  // one surface - so a switch that is the sole *effective* surface can't be turned
   // off. A daily-flagged task only counts as reachable there once it has a date.
   const dated = hasDate(dateStr);
   const plannerOn = draft.showInDatabase === true;

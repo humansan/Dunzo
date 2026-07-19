@@ -31,7 +31,7 @@ export function useCollectionDnD(params: {
 
   const onCollDragOver = (e: React.DragEvent, targetId: string) => {
     if (!dragCollId) return;
-    // preventDefault unconditionally so the cursor stays "move" — even over the
+    // preventDefault unconditionally so the cursor stays "move" - even over the
     // dragged item or its own subtree (where there's no valid drop), which would
     // otherwise flicker the no-drop icon.
     e.preventDefault();
@@ -68,7 +68,7 @@ export function useCollectionDnD(params: {
   };
 
   // Commit using the live dropInfo (what the highlight/line shows), not the DOM
-  // element the drop happened to land on — the "after" line sits in the gap
+  // element the drop happened to land on - the "after" line sits in the gap
   // between rows, so the release often lands off the intended row.
   const onCollDrop = () => {
     if (dragCollId && dropInfo && !inDraggedSubtree(dropInfo.id)) {

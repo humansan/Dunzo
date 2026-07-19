@@ -10,12 +10,12 @@ import { VisibleCollection } from '@/features/planner/sidebar/CollectionTree';
 const pathCells = (nearest: string | null, todoById: Map<string, Todo>) =>
   collectionPath(nearest, todoById).map((c) => ({ id: c.id, name: c.text || 'Untitled', color: c.color }));
 
-// The decoupled data layer for the Task Finder's two-pane view — reuses the pure
+// The decoupled data layer for the Task Finder's two-pane view - reuses the pure
 // tree/collection utilities (no per-view column config, no DnD, no DB-synced hub
 // state). Given the search matches, it derives: the collection tree filtered to
 // collections that actually contain a match (both panes hide empties), per-view
 // match counts, and a ready-to-render TABLE model for the right pane scoped to the
-// selected view. The right pane is tasks-only — sub-collection structure lives in
+// selected view. The right pane is tasks-only - sub-collection structure lives in
 // the sidebar, so it needs no collection headers.
 export function useTaskFinderData(params: {
   entries: OrganizerEntry[];
@@ -50,7 +50,7 @@ export function useTaskFinderData(params: {
     [matches, todoById]
   );
 
-  // Sidebar tree — only collections that contain a match, grouped by parent and
+  // Sidebar tree - only collections that contain a match, grouped by parent and
   // walked in hub order, honoring the sidebar collapse set.
   const visibleCollections = useMemo<VisibleCollection[]>(() => {
     const colls = entries
@@ -74,7 +74,7 @@ export function useTaskFinderData(params: {
     return out;
   }, [entries, withMatches, collapsedColls]);
 
-  // Right pane — the matching tasks for the selected view (nearest collection ===
+  // Right pane - the matching tasks for the selected view (nearest collection ===
   // the selected one; sub-collections are navigated via the sidebar), plus each
   // match's subtask subtree so children stay reachable.
   const bodyEntries = useMemo(() => {

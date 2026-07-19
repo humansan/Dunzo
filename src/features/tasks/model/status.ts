@@ -1,6 +1,6 @@
 import { Todo, TodoStatus } from '@shared/types';
 
-// Single completion predicate — replaces every `todo.completed` read. Completion is
+// Single completion predicate - replaces every `todo.completed` read. Completion is
 // derived from status: only 'completed' counts as done (empty / todo / in_progress
 // all read as not done).
 export const isDone = (t: Pick<Todo, 'status'>): boolean => t.status === 'completed';

@@ -26,7 +26,7 @@ export const FilterMenu: React.FC<{
       filters.map((f) => {
         if (f.id !== id) return f;
         const next = { ...f, ...patch };
-        // Reset value when the field changes — old value won't be in the new list
+        // Reset value when the field changes - old value won't be in the new list
         if (patch.field && patch.field !== f.field) next.value = '';
         return next;
       })
@@ -63,13 +63,13 @@ export const FilterMenu: React.FC<{
                     options={FILTER_CONDITIONS.map((c) => ({ value: c.value, label: c.label }))}
                   />
 
-                  {/* Value — dropdown of unique existing values for the field */}
+                  {/* Value - dropdown of unique existing values for the field */}
                   <ListSelect
                     ariaLabel="Filter value"
                     className="flex-1 min-w-0"
                     value={f.value}
                     onChange={(v) => update(f.id, { value: v })}
-                    options={[{ value: '', label: '—' }, ...vals.map((v) => ({ value: v, label: v }))]}
+                    options={[{ value: '', label: '-' }, ...vals.map((v) => ({ value: v, label: v }))]}
                   />
 
                   {/* Remove */}

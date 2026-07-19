@@ -2,7 +2,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { SettingsOverlay } from '@/features/settings';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 
-// Standalone /settings route — only reached by a cold deep-link (reloading the
+// Standalone /settings route - only reached by a cold deep-link (reloading the
 // masked URL from the address bar). In-app opens render SettingsOverlay over the
 // current page via a search param instead (see useOverlayNav), so the page never
 // unmounts. Both paths render the same SettingsOverlay.

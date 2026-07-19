@@ -30,17 +30,17 @@
   --color-overlay: #2a2a2a;
   --color-scrim: #000000;
   --color-fg: #ffffff;
-  /* Text emphasis ramp — translucent fg (Classic-dark seeds; see theme/token-map.md) */
+  /* Text emphasis ramp - translucent fg (Classic-dark seeds; see theme/token-map.md) */
   --color-fg-muted: color-mix(in srgb, var(--color-fg) 75%, transparent);
   --color-fg-subtle: color-mix(in srgb, var(--color-fg) 55%, transparent);
   --color-fg-faint: color-mix(in srgb, var(--color-fg) 40%, transparent);
   --color-fg-ghost: color-mix(in srgb, var(--color-fg) 25%, transparent);
-  /* Hairlines — translucent fg */
+  /* Hairlines - translucent fg */
   --color-line-subtle: color-mix(in srgb, var(--color-fg) 6%, transparent);
   --color-line: color-mix(in srgb, var(--color-fg) 10%, transparent);
   --color-line-strong: color-mix(in srgb, var(--color-fg) 20%, transparent);
   --color-line-stronger: color-mix(in srgb, var(--color-fg) 40%, transparent);
-  /* Neutral fills — translucent fg */
+  /* Neutral fills - translucent fg */
   --color-fill-subtle: color-mix(in srgb, var(--color-fg) 5%, transparent);
   --color-fill: color-mix(in srgb, var(--color-fg) 10%, transparent);
   --color-fill-strong: color-mix(in srgb, var(--color-fg) 15%, transparent);
@@ -51,7 +51,7 @@
   --color-warning: #ffba44;
   --color-success: #22c55e;
   --color-info: #3b82f6;
-  /* Feedback tint backgrounds — translucent hue */
+  /* Feedback tint backgrounds - translucent hue */
   --color-danger-tint: color-mix(in srgb, var(--color-danger) 12%, transparent);
   --color-warning-tint: color-mix(in srgb, var(--color-warning) 10%, transparent);
   --color-success-tint: color-mix(in srgb, var(--color-success) 12%, transparent);
@@ -84,7 +84,7 @@
 
 /* Default accent theme. AppDataProvider overrides these per-user via an inline
    style on <html> (which wins over this rule), but that provider only mounts
-   under the _authed routes — so these defaults are what the public /login screen
+   under the _authed routes - so these defaults are what the public /login screen
    uses. Without them, var(--accent1/2) is undefined there and the accented
    buttons/links render as black. */
 :root {
@@ -139,7 +139,7 @@ body {
 }
 
 /* Section-pill inline edit: the inset ring grows in on mount. A CSS transition
-   can't do this — the input mounts already ringed, so there's no state change to
+   can't do this - the input mounts already ringed, so there's no state change to
    animate; a keyframe runs on mount. `currentColor` matches the pill's text hue. */
 @keyframes ring-grow {
   from { box-shadow: 0 0 0 0; }

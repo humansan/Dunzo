@@ -1,6 +1,6 @@
 // A "smart" fuzzy subsequence matcher in the spirit of VSCode / Sublime quick-open.
 // The query must appear as a subsequence of the target (case-insensitive); the match
-// is then scored — rewarding consecutive matches, matches at word/camelCase
+// is then scored - rewarding consecutive matches, matches at word/camelCase
 // boundaries and the first letter, and penalizing gaps and a late first match.
 // Returns the best score (for ranking) and the matched character positions (for
 // highlighting), or null when the query is not a subsequence of the target.
@@ -54,7 +54,7 @@ export function fuzzyMatch(query: string, target: string): FuzzyResult | null {
   const M: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m).fill(NEG));
   const back: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m).fill(-1));
 
-  // Row 1 — the first query char, with the first-letter bonus / leading penalty.
+  // Row 1 - the first query char, with the first-letter bonus / leading penalty.
   for (let j = 0; j < m; j++) {
     if (t[j] !== q[0]) continue;
     const first = j === 0 ? START_BONUS : boundaryBonus(target, j);
@@ -62,9 +62,9 @@ export function fuzzyMatch(query: string, target: string): FuzzyResult | null {
     M[1][j] = first + lead;
   }
 
-  // Rows 2..n — each char lands strictly after the previous match.
+  // Rows 2..n - each char lands strictly after the previous match.
   for (let i = 2; i <= n; i++) {
-    // Running prefix-max of (M[i-1][j'] - GAP_PENALTY*j') over j' ≤ j-2 — the
+    // Running prefix-max of (M[i-1][j'] - GAP_PENALTY*j') over j' ≤ j-2 - the
     // linearized non-consecutive predecessor (gap penalty folded in when used).
     let prefBest = NEG;
     let prefIdx = -1;
