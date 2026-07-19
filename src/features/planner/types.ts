@@ -97,7 +97,7 @@ export interface SectionsConfig {
 
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
   autoArchive: false,
-  showLeafTasks: 'none',
+  showLeafTasks: 'top',
   hideEmptyCollections: false,
   hideSubcollections: false,
   groupBy: 'collection',
