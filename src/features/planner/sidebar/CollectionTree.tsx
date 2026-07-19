@@ -146,7 +146,7 @@ export const CollectionTree: React.FC<{
           // (unlike nav mode) - just a filled icon, font-medium and a muted (vs subtle) text.
           const checked = checkMode && checkedColls?.has(c.todo.id);
           const rowCls = checkMode
-            ? `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${
+            ? `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm hover:bg-fill-subtle ${
                 checked ? 'text-fg-muted font-medium' : 'text-fg-subtle hover:text-fg-muted'
               }`
             : itemCls(c.todo.id);

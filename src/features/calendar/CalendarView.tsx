@@ -70,7 +70,7 @@ const SurfaceCheck: React.FC<{
   onChange: (v: boolean) => void;
 }> = ({ label, checked, onChange }) => (
   <Checkbox checked={checked} onChange={onChange} className="w-full py-1.5" aria-label={label}>
-    <span className="flex-1 truncate text-sm font-medium text-fg-muted">{label}</span>
+    <span className="truncate text-xs text-fg-subtle">{label}</span>
   </Checkbox>
 );
 
@@ -725,10 +725,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto select-none w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-56 flex-shrink-0 pr-2 pt-2 hidden lg:flex lg:flex-col min-h-0">
+        <div className="w-56 flex-shrink-0 pt-2 hidden lg:flex lg:flex-col min-h-0">
           {/* Calendar is h-full; without a content-height wrapper it eats the whole
               screen-height column and pushes the toggles below the fold. */}
-          <div className="shrink-0">
+          <div className="shrink-0 px-2">
             <Calendar
               currentMonth={miniCalMonth}
               onMonthChange={setMiniCalMonth}
@@ -739,27 +739,23 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           {/* Which surfaces' tasks get blocked out on the grid. Sits flush under the mini
               calendar; row rhythm (space-y-0.5) matches the collection rows below. */}
-          <div className="shrink-0 mt-3 px-2">
+          <div className="shrink-0 mt-3 px-2.5">
             <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
             <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
             <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
           </div>
 
-          {/* When the planner surface is on, pick which collections' tasks appear. The
-              tree renders in checkbox mode; nothing shows until a collection is checked. */}
-          {showPlanner && (
-            <>
-              <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
-              <CollectionTree
-                visibleCollections={coll.visibleCollections}
-                collectionCount={coll.collectionCount}
-                collapsedColls={coll.collapsedColls}
-                toggleCollColl={coll.toggleCollColl}
-                checkedColls={checkedColls}
-                onToggleChecked={toggleChecked}
-              />
-            </>
-          )}
+          {/* Pick which collections' tasks appear. The tree renders in checkbox mode;
+              nothing shows until a collection is checked. */}
+          <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
+          <CollectionTree
+            visibleCollections={coll.visibleCollections}
+            collectionCount={coll.collectionCount}
+            collapsedColls={coll.collapsedColls}
+            toggleCollColl={coll.toggleCollColl}
+            checkedColls={checkedColls}
+            onToggleChecked={toggleChecked}
+          />
         </div>
       )}
 
