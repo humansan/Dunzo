@@ -162,12 +162,13 @@ export const CollectionTree: React.FC<{
           const indent = depth * SIDEBAR_INDENT;
           const drop = dnd?.dropInfo?.id === c.todo.id ? dnd.dropInfo.pos : null;
           // In check mode the Shapes glyph is the checkbox: filled colored glyph when
-          // checked, colored outline when not. Selected rows don't get a fill background
-          // (unlike nav mode) - just a filled icon, font-medium and a muted (vs subtle) text.
+          // checked, colored outline when not. No fill background (unlike nav mode); the
+          // text stays fg-subtle to match the rest of the sidebar, and unselected rows dim
+          // to 60% opacity - so the filled icon + full opacity is what reads as "selected".
           const checked = checkMode && checkedColls?.has(c.todo.id);
           const rowCls = checkMode
             ? `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm hover:bg-fill-subtle ${
-                checked ? 'text-fg-muted font-medium' : 'text-fg-subtle hover:text-fg-muted'
+                checked ? 'text-fg-muted' : 'text-fg-subtle opacity-60 hover:text-fg-muted'
               }`
             : itemCls(c.todo.id);
           const onRowClick = () => {

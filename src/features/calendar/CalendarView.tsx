@@ -70,7 +70,7 @@ const SurfaceCheck: React.FC<{
   onChange: (v: boolean) => void;
 }> = ({ label, checked, onChange }) => (
   <Checkbox checked={checked} onChange={onChange} className="w-full py-1.5" aria-label={label}>
-    <span className="truncate text-xs text-fg-subtle">{label}</span>
+    <span className="truncate text-xs text-fg-muted">{label}</span>
   </Checkbox>
 );
 
