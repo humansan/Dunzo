@@ -19,7 +19,8 @@ export const CollectionTree: React.FC<{
   selectedView?: string;
   onSelectView?: (v: string) => void;
   allCount?: number;
-  uncategorizedCount: number;
+  // Rendered only in nav mode (the calendar's checkbox mode drops the Uncategorized row).
+  uncategorizedCount?: number;
   // Omit to hide the "Archived" pseudo-view (the Task Finder's picker doesn't
   // support it - its data layer only knows 'all' / 'uncategorized' / a collection id).
   archivedCount?: number;
@@ -89,42 +90,36 @@ export const CollectionTree: React.FC<{
         </div>
       )}
 
+      {/* Section 2: In Daily List · Uncategorized · Categorized (nav mode only - in the
+          calendar's checkbox mode these pseudo-views live outside the tree). */}
+      {!checkMode && (
+        <>
+          <div className="my-2 mx-3 border-t border-line"></div>
+          <div className="shrink-0 px-2 space-y-0.5">
+            {inDailyListCount !== undefined && (
+              <button type="button" onClick={() => onSelectView?.('in-daily-list')} className={itemCls('in-daily-list')} title="Also In Daily List">
+                <CalendarCheck size={15} className="shrink-0 text-fg-subtle" />
+                <span className="flex-1 truncate">Also In Daily List</span>
+                <span className="text-xs text-fg-faint font-mono mr-1.5">{inDailyListCount}</span>
+              </button>
+            )}
+            <button type="button" onClick={() => onSelectView?.('uncategorized')} className={itemCls('uncategorized')} title="Uncategorized">
+              <Inbox size={15} className="shrink-0 text-fg-subtle" />
+              <span className="flex-1 truncate">Uncategorized</span>
+              <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
+            </button>
+            {categorizedCount !== undefined && (
+              <button type="button" onClick={() => onSelectView?.('categorized')} className={itemCls('categorized')} title="Categorized">
+                <FolderCheck size={15} className="shrink-0 text-fg-subtle" />
+                <span className="flex-1 truncate">Categorized</span>
+                <span className="text-xs text-fg-faint font-mono mr-1.5">{categorizedCount}</span>
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
       {!checkMode && <div className="my-2 mx-3 border-t border-line"></div>}
-
-      {/* Section 2: In Daily List · Uncategorized · Categorized. In check mode this
-          collapses to just the Uncategorized checkbox row. */}
-      <div className={`shrink-0 px-2 space-y-0.5 ${checkMode ? 'pt-2' : ''}`}>
-        {!checkMode && inDailyListCount !== undefined && (
-          <button type="button" onClick={() => onSelectView?.('in-daily-list')} className={itemCls('in-daily-list')} title="Also In Daily List">
-            <CalendarCheck size={15} className="shrink-0 text-fg-subtle" />
-            <span className="flex-1 truncate">Also In Daily List</span>
-            <span className="text-xs text-fg-faint font-mono mr-1.5">{inDailyListCount}</span>
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => (checkMode ? onToggleChecked?.('uncategorized') : onSelectView?.('uncategorized'))}
-          className={itemCls('uncategorized')}
-          title="Uncategorized"
-        >
-          <Inbox
-            size={15}
-            className="shrink-0 text-fg-subtle"
-            {...(checkMode ? { fill: checkedColls?.has('uncategorized') ? 'currentColor' : 'none' } : {})}
-          />
-          <span className="flex-1 truncate">Uncategorized</span>
-          <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
-        </button>
-        {!checkMode && categorizedCount !== undefined && (
-          <button type="button" onClick={() => onSelectView?.('categorized')} className={itemCls('categorized')} title="Categorized">
-            <FolderCheck size={15} className="shrink-0 text-fg-subtle" />
-            <span className="flex-1 truncate">Categorized</span>
-            <span className="text-xs text-fg-faint font-mono mr-1.5">{categorizedCount}</span>
-          </button>
-        )}
-      </div>
-
-      <div className="my-2 mx-3 border-t border-line"></div>
 
       {/* Section 3: user collections */}
       <div className="shrink-0 px-2 pb-0">
@@ -147,15 +142,21 @@ export const CollectionTree: React.FC<{
           const indent = depth * SIDEBAR_INDENT;
           const drop = dnd?.dropInfo?.id === c.todo.id ? dnd.dropInfo.pos : null;
           // In check mode the Shapes glyph is the checkbox: filled colored glyph when
-          // checked, colored outline when not.
+          // checked, colored outline when not. Selected rows don't get a fill background
+          // (unlike nav mode) - just a filled icon, font-medium and a muted (vs subtle) text.
           const checked = checkMode && checkedColls?.has(c.todo.id);
+          const rowCls = checkMode
+            ? `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${
+                checked ? 'text-fg-muted font-medium' : 'text-fg-subtle hover:text-fg-muted'
+              }`
+            : itemCls(c.todo.id);
           const button = (
             <button
               type="button"
               onClick={() => (checkMode ? onToggleChecked?.(c.todo.id) : onSelectView?.(c.todo.id))}
               onContextMenu={onOpenMenu ? (e) => { e.preventDefault(); onOpenMenu(c.todo.id, e.clientX, e.clientY); } : undefined}
               style={{ paddingLeft: 6 + indent }}
-              className={`${itemCls(c.todo.id)} ${dnd?.dragCollId === c.todo.id ? 'opacity-40' : ''} ${
+              className={`${rowCls} ${dnd?.dragCollId === c.todo.id ? 'opacity-40' : ''} ${
                 drop === 'inside' ? 'ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/10' : ''
               }`}
               title={c.todo.text || 'Untitled collection'}
