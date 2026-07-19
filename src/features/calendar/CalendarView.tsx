@@ -762,7 +762,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto select-none w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-58 flex-shrink-0 pt-2 hidden lg:flex lg:flex-col min-h-0">
+        <div className="w-60 flex-shrink-0 pt-2 pr-2 hidden lg:flex lg:flex-col min-h-0 border-r border-line">
           {/* Calendar is h-full; without a content-height wrapper it eats the whole
               screen-height column and pushes the toggles below the fold. */}
           <div className="shrink-0 px-2">
@@ -800,7 +800,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       )}
 
       {/* Main calendar area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 pl-4">
         {/* Header */}
         {!hideHeader && (
           <div className="flex items-center justify-between px-2 py-3 flex-shrink-0">
