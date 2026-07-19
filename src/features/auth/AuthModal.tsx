@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth';
+import { Checkbox } from '@/common/ui/Checkbox';
 import { apiFetch } from '@/lib/query/apiClient';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { applyTheme } from '@/theme/applyTheme';
@@ -39,24 +40,9 @@ const RememberCheckbox: React.FC<{ checked: boolean; onChange: (v: boolean) => v
   checked,
   onChange,
 }) => (
-  <button
-    type="button"
-    role="checkbox"
-    aria-checked={checked}
-    onClick={() => onChange(!checked)}
-    className="flex items-center gap-2 cursor-pointer group"
-  >
-    <span
-      className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-        checked
-          ? 'bg-[var(--accent2)] border-[var(--accent2)] text-canvas'
-          : 'border-line group-hover:border-line-strong'
-      }`}
-    >
-      {checked && <Check size={12} strokeWidth={3} />}
-    </span>
+  <Checkbox checked={checked} onChange={onChange}>
     <span className="text-sm text-fg-muted">Remember me</span>
-  </button>
+  </Checkbox>
 );
 
 const OrDivider: React.FC = () => (
