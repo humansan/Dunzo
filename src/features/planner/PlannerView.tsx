@@ -618,13 +618,15 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     clearInteraction: () => { setEditing(null); setMenu(null); },
   });
 
-  // Auto-archive: when a task is being completed and the setting is on, archive
-  // it immediately instead of just toggling the checkbox.
+  // Auto-archive: when a task is being completed and the setting is on, mark it
+  // complete first (so the checkbox visibly fills) and archive it a beat later, so it
+  // doesn't vanish before the completion even registers.
   const handleToggleTodo = useStableCallback((id: string) => {
     if (sectionsConfig.autoArchive) {
       const entry = entries.find((e) => e.todo.id === id);
       if (entry && !isDone(entry.todo)) {
-        onArchiveTodo(id);
+        onToggleTodo(id);
+        setTimeout(() => onArchiveTodo(id), 500);
         return;
       }
     }
