@@ -29,7 +29,6 @@ const neonAuthUrl = process.env.NEON_AUTH_URL;
 if (!neonAuthUrl) {
   throw new Error('NEON_AUTH_URL is not set (used as the Neon Auth proxy target)');
 }
-const isProd = process.env.NODE_ENV === 'production';
 app.use(
   '/api/neon-auth',
   createProxyMiddleware({
@@ -37,23 +36,13 @@ app.use(
     changeOrigin: true, // rewrite Host to Neon's vhost; keeps the browser Origin header intact
     // Strip the `Domain=…neon.tech` attribute so Set-Cookie binds to our origin
     // (a cross-domain Domain would be rejected by the browser). Host-only = first-party.
+    // We deliberately DON'T touch `Secure`: Neon runs on HTTPS, so Better Auth names
+    // the session cookie with the `__Secure-` prefix, and a `__Secure-`/`__Host-`
+    // cookie without the Secure attribute is rejected by the browser. Browsers accept
+    // Secure cookies on http://localhost (localhost is a secure context), so keeping
+    // Secure works in dev on Chrome/Firefox/Edge. For Safari-on-localhost, run dev
+    // over HTTPS (`npm run dev:web -- --experimental-https`), which mirrors prod.
     cookieDomainRewrite: '',
-    on: {
-      proxyRes: (proxyRes) => {
-        // Over http://localhost a `Secure` cookie is browser-dependent; drop Secure
-        // and pin SameSite=Lax in dev so sessions persist locally. Untouched in prod
-        // (HTTPS), where Neon's own Secure/SameSite values are correct first-party.
-        if (isProd) return;
-        const setCookie = proxyRes.headers['set-cookie'];
-        if (Array.isArray(setCookie)) {
-          proxyRes.headers['set-cookie'] = setCookie.map((c) =>
-            c
-              .replace(/;\s*Secure/gi, '')
-              .replace(/;\s*SameSite=None/gi, '; SameSite=Lax')
-          );
-        }
-      },
-    },
   })
 );
 
