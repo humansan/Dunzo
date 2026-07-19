@@ -12,6 +12,8 @@ import {
   ChevronDown,
   Circle,
   CheckCircle2,
+  Square,
+  SquareCheck,
 } from 'lucide-react';
 import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
@@ -20,7 +22,8 @@ import { isDone, toggledStatus } from '@/features/tasks/model';
 import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
-import { Switch } from '@/common/ui/Switch';
+import { CollectionTree } from '@/features/planner/sidebar/CollectionTree';
+import { useCollectionTree, taskCollectionAncestors } from './useCollectionTree';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -58,6 +61,32 @@ function formatDuration(startMin: number, endMin: number): string {
 
   return parts.length > 0 ? parts.join(' ') : '0 minutes';
 }
+
+// A labelled checkbox row for the calendar's surface toggles (daily / planner). No
+// shared Checkbox primitive exists, so this stays local; the square lucide glyph fills
+// when on and the label brightens, matching the collection checkbox rows below it.
+const SurfaceCheck: React.FC<{
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}> = ({ label, checked, onChange }) => (
+  <button
+    type="button"
+    role="checkbox"
+    aria-checked={checked}
+    onClick={() => onChange(!checked)}
+    className={`w-full flex items-center gap-2 rounded-lg pl-2.5 pr-1.5 py-1.5 text-left text-sm transition-colors ${
+      checked ? 'text-fg font-medium' : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
+    }`}
+  >
+    {checked ? (
+      <SquareCheck size={15} className="shrink-0 text-[var(--accent2)]" />
+    ) : (
+      <Square size={15} className="shrink-0 text-fg-subtle" />
+    )}
+    <span className="flex-1 truncate">{label}</span>
+  </button>
+);
 
 // ─── Interfaces ─────────────────────────────────────────────────────────────
 
@@ -216,6 +245,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Which surfaces' tasks get a block. A task on both surfaces shows if either is on.
   const [showDaily, setShowDaily] = useState(true);
   const [showPlanner, setShowPlanner] = useState(true);
+  // The collections whose planner tasks are shown (explicit include-set - a planner task
+  // needs its collection checked to appear). `'uncategorized'` is the sentinel for tasks
+  // with no collection. Ephemeral, like the surface toggles above.
+  const [checkedColls, setCheckedColls] = useState<Set<string>>(new Set());
+  const toggleChecked = useCallback((id: string) => {
+    setCheckedColls((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+  const coll = useCollectionTree(dayTodos);
 
   // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard
   // against the write-back round-trip: skip when it already matches focusDate, so our
@@ -361,6 +402,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   // Get todos for a specific date
+  // A planner task shows only when its collection is checked (explicit include-set):
+  // an uncategorized task needs the 'uncategorized' row checked; otherwise any of its
+  // collection ancestors (nearest or higher) must be checked so a checked parent pulls
+  // in its whole subtree.
+  const plannerOk = useCallback(
+    (t: Todo): boolean => {
+      if (!showPlanner || !showsInOrganizer(t)) return false;
+      if (collectionOf(t, byId) === null) return checkedColls.has('uncategorized');
+      for (const id of taskCollectionAncestors(t, byId)) if (checkedColls.has(id)) return true;
+      return false;
+    },
+    [showPlanner, checkedColls, byId]
+  );
+
   const getTodosForDate = useCallback(
     (dateStr: string): Todo[] => {
       const dayData = dayTodos.find((d) => d.date === dateStr);
@@ -371,11 +426,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         (t) =>
           t &&
           (t.startTime || t.dueTime) &&
-          // A task living on both surfaces shows while either toggle is on.
-          ((showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && showsInOrganizer(t)))
+          // A task living on both surfaces shows while either surface accepts it.
+          ((showDaily && showsOnDailyChecklist(t, dateStr)) || plannerOk(t))
       );
     },
-    [dayTodos, showDaily, showPlanner]
+    [dayTodos, showDaily, plannerOk]
   );
 
   // --- Drag Selection for Creation --- //
@@ -677,10 +732,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [settling]);
 
   return (
-    <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} max-w-[1400px] mx-auto select-none w-full`}>
+    <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto select-none w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-56 flex-shrink-0 pr-4 pt-2 hidden lg:block">
+        <div className="w-56 flex-shrink-0 pr-4 pt-2 hidden lg:flex lg:flex-col min-h-0">
           {/* Calendar is h-full; without a content-height wrapper it eats the whole
               screen-height column and pushes the toggles below the fold. */}
           <div className="shrink-0">
@@ -693,16 +748,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
 
           {/* Which surfaces' tasks get blocked out on the grid. */}
-          <div className="mt-5 px-1 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-fg-faint">Show daily tasks</span>
-              <Switch checked={showDaily} onChange={setShowDaily} aria-label="Show daily tasks" />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-fg-faint">Show task planner tasks</span>
-              <Switch checked={showPlanner} onChange={setShowPlanner} aria-label="Show task planner tasks" />
-            </div>
+          <div className="shrink-0 mt-5 px-1 space-y-0.5">
+            <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
+            <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
           </div>
+
+          {/* When the planner surface is on, pick which collections' tasks appear. The
+              tree renders in checkbox mode; nothing shows until a collection is checked. */}
+          {showPlanner && (
+            <>
+              <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
+              <CollectionTree
+                uncategorizedCount={coll.uncategorizedCount}
+                visibleCollections={coll.visibleCollections}
+                collectionCount={coll.collectionCount}
+                collapsedColls={coll.collapsedColls}
+                toggleCollColl={coll.toggleCollColl}
+                checkedColls={checkedColls}
+                onToggleChecked={toggleChecked}
+              />
+            </>
+          )}
         </div>
       )}
 

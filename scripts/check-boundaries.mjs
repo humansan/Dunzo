@@ -76,6 +76,10 @@ const EXCEPTIONS = {
     allow: ['features/planner'],
     why: 'the parent-task chip opens the planner\'s TaskFinder overlay. tasks and planner are mutually dependent.',
   },
+  'features/calendar/CalendarView.tsx': {
+    allow: ['features/planner'],
+    why: 'reuses the planner\'s CollectionTree collections navigator for the calendar\'s collection filter. Fix: promote CollectionTree to a shared home if a third external consumer appears.',
+  },
 };
 
 // ── Walk ─────────────────────────────────────────────────────────────────────
