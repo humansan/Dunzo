@@ -17,6 +17,8 @@ export function useCollectionTree(dayTodos: DayTodos[]): {
   visibleCollections: VisibleCollection[];
   collectionCount: (id: string) => number;
   uncategorizedCount: number;
+  allCollectionIds: string[];
+  descendantCollIds: (id: string) => string[];
   collapsedColls: Set<string>;
   toggleCollColl: (id: string) => void;
 } {
@@ -93,7 +95,38 @@ export function useCollectionTree(dayTodos: DayTodos[]): {
     return n;
   }, [byId]);
 
-  return { byId, visibleCollections, collectionCount, uncategorizedCount, collapsedColls, toggleCollColl };
+  // Every collection id (for select-all + default seeding).
+  const allCollectionIds = useMemo(
+    () => [...byId.values()].filter((t) => t.isCollection).map((t) => t.id),
+    [byId]
+  );
+
+  // All descendant collection ids of `id` (sub-collections, recursively) - used by the
+  // "also apply to subcollections" prompt.
+  const descendantCollIds = useCallback(
+    (id: string): string[] => {
+      const out: string[] = [];
+      const stack = [...(collChildren.get(id) ?? [])];
+      while (stack.length) {
+        const c = stack.pop()!;
+        out.push(c.id);
+        for (const k of collChildren.get(c.id) ?? []) stack.push(k);
+      }
+      return out;
+    },
+    [collChildren]
+  );
+
+  return {
+    byId,
+    visibleCollections,
+    collectionCount,
+    uncategorizedCount,
+    allCollectionIds,
+    descendantCollIds,
+    collapsedColls,
+    toggleCollColl,
+  };
 }
 
 // The set of collection ids `todo` belongs to - every isCollection ancestor along the

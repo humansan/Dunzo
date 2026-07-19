@@ -234,9 +234,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // Uncategorized planner tasks (no collection) are their own surface toggle, alongside
   // daily/planner - independent of the collection tree below.
   const [showUncategorized, setShowUncategorized] = useState(true);
-  // The collections whose planner tasks are shown (explicit include-set - a categorized
-  // planner task needs one of its collection ancestors checked to appear). Ephemeral,
-  // like the surface toggles above.
+  // The collections whose planner tasks are shown (a categorized planner task needs one
+  // of its collection ancestors checked to appear). Ephemeral, like the surface toggles
+  // above. Defaults to all collections enabled once the data first loads (seed below).
   const [checkedColls, setCheckedColls] = useState<Set<string>>(new Set());
   const toggleChecked = useCallback((id: string) => {
     setCheckedColls((prev) => {
@@ -246,6 +246,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   }, []);
   const coll = useCollectionTree(dayTodos);
+
+  // Seed all collections as enabled the first time collection data arrives (dayTodos
+  // loads a tick after mount). Guarded so it fires once and never overrides later edits.
+  const seededColls = useRef(false);
+  useEffect(() => {
+    if (seededColls.current || coll.allCollectionIds.length === 0) return;
+    seededColls.current = true;
+    setCheckedColls(new Set(coll.allCollectionIds));
+  }, [coll.allCollectionIds]);
+
+  // Select-all / deselect-all for the collection tree header.
+  const allCollsChecked =
+    coll.allCollectionIds.length > 0 && coll.allCollectionIds.every((id) => checkedColls.has(id));
+  const toggleAllColls = useCallback(() => {
+    setCheckedColls(allCollsChecked ? new Set() : new Set(coll.allCollectionIds));
+  }, [allCollsChecked, coll.allCollectionIds]);
+
+  // Apply a checked state to all descendant collections (the subtree prompt's action).
+  const applyDescendantColls = useCallback(
+    (id: string, checked: boolean) => {
+      setCheckedColls((prev) => {
+        const next = new Set(prev);
+        for (const cid of coll.descendantCollIds(id)) checked ? next.add(cid) : next.delete(cid);
+        return next;
+      });
+    },
+    [coll.descendantCollIds]
+  );
 
   // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard
   // against the write-back round-trip: skip when it already matches focusDate, so our
@@ -725,7 +753,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto select-none w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-56 flex-shrink-0 pt-2 hidden lg:flex lg:flex-col min-h-0">
+        <div className="w-58 flex-shrink-0 pt-2 hidden lg:flex lg:flex-col min-h-0">
           {/* Calendar is h-full; without a content-height wrapper it eats the whole
               screen-height column and pushes the toggles below the fold. */}
           <div className="shrink-0 px-2">
@@ -739,7 +767,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           {/* Which surfaces' tasks get blocked out on the grid. Sits flush under the mini
               calendar; row rhythm (space-y-0.5) matches the collection rows below. */}
-          <div className="shrink-0 mt-3 px-2.5">
+          <div className="shrink-0 mt-4 px-2.5">
             <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
             <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
             <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
@@ -755,6 +783,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             toggleCollColl={coll.toggleCollColl}
             checkedColls={checkedColls}
             onToggleChecked={toggleChecked}
+            allChecked={allCollsChecked}
+            onToggleAll={toggleAllColls}
+            onToggleSubtree={applyDescendantColls}
           />
         </div>
       )}

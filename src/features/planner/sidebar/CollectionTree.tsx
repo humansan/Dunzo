@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown, CalendarCheck, FolderCheck } from 'lucide-react';
 import { OrganizerEntry } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { SIDEBAR_INDENT } from '@/features/planner/constants';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnNeutral } from '@/theme/buttons';
 import { useCollectionDnD } from '@/features/planner/hooks/useCollectionDnD';
 
 export type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: boolean };
@@ -43,6 +43,12 @@ export const CollectionTree: React.FC<{
   // sentinel id for the Uncategorized row.
   checkedColls?: Set<string>;
   onToggleChecked?: (id: string) => void;
+  // Check-mode header "Select all"/"Deselect all" toggle.
+  allChecked?: boolean;
+  onToggleAll?: () => void;
+  // Set a collection's whole subtree (all descendant collections) to `checked`. When
+  // provided, toggling a collection that has sub-collections shows a small confirm prompt.
+  onToggleSubtree?: (id: string, checked: boolean) => void;
 }> = ({
   selectedView,
   onSelectView,
@@ -59,8 +65,13 @@ export const CollectionTree: React.FC<{
   onOpenMenu,
   checkedColls,
   onToggleChecked,
+  allChecked,
+  onToggleAll,
+  onToggleSubtree,
 }) => {
   const checkMode = !!onToggleChecked;
+  // Which collection's "apply to subcollections?" prompt is currently open (check mode).
+  const [subtreePrompt, setSubtreePrompt] = useState<{ id: string; checked: boolean } | null>(null);
   // In nav mode the active look keys off the selected view; in check mode it keys off
   // whether the row's id is in `checkedColls`.
   const itemCls = (id: string) =>
@@ -123,8 +134,17 @@ export const CollectionTree: React.FC<{
 
       {/* Section 3: user collections */}
       <div className="shrink-0 px-2 pb-0">
-        <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
-          Collections
+        <div className="px-2.5 pt-1 pb-1.5 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-fg-ghost">Collections</span>
+          {checkMode && onToggleAll && (
+            <button
+              type="button"
+              onClick={onToggleAll}
+              className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${btnNeutral}`}
+            >
+              {allChecked ? 'Hide all' : 'Show all'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -150,10 +170,17 @@ export const CollectionTree: React.FC<{
                 checked ? 'text-fg-muted font-medium' : 'text-fg-subtle hover:text-fg-muted'
               }`
             : itemCls(c.todo.id);
+          const onRowClick = () => {
+            if (!checkMode) return onSelectView?.(c.todo.id);
+            const nowChecked = !checkedColls?.has(c.todo.id);
+            onToggleChecked?.(c.todo.id);
+            // Toggling a collection with sub-collections offers to cascade to them.
+            setSubtreePrompt(hasChildren && onToggleSubtree ? { id: c.todo.id, checked: nowChecked } : null);
+          };
           const button = (
             <button
               type="button"
-              onClick={() => (checkMode ? onToggleChecked?.(c.todo.id) : onSelectView?.(c.todo.id))}
+              onClick={onRowClick}
               onContextMenu={onOpenMenu ? (e) => { e.preventDefault(); onOpenMenu(c.todo.id, e.clientX, e.clientY); } : undefined}
               style={{ paddingLeft: 6 + indent }}
               className={`${rowCls} ${dnd?.dragCollId === c.todo.id ? 'opacity-40' : ''} ${
@@ -183,7 +210,31 @@ export const CollectionTree: React.FC<{
             </button>
           );
 
-          if (!dnd) return <div key={c.todo.id} className="relative">{button}</div>;
+          // Inline "apply to subcollections?" prompt, shown below the just-toggled row.
+          const promptEl = subtreePrompt?.id === c.todo.id && (
+            <div
+              style={{ marginLeft: 6 + indent }}
+              className="my-1 flex items-center rounded-md bg-fill-subtle px-2 py-1 text-[11px] text-fg-muted"
+            >
+              <span className="flex-1">{subtreePrompt.checked ? 'Show' : 'Hide'} subcollections too?</span>
+              <button
+                type="button"
+                onClick={() => { onToggleSubtree?.(subtreePrompt.id, subtreePrompt.checked); setSubtreePrompt(null); }}
+                className={`shrink-0 rounded px-1.5 py-0.5 font-semibold ${btnGhost()}`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubtreePrompt(null)}
+                className={`shrink-0 rounded px-1.5 py-0.5 font-semibold ${btnGhost()}`}
+              >
+                No
+              </button>
+            </div>
+          );
+
+          if (!dnd) return <div key={c.todo.id} className="relative">{button}{promptEl}</div>;
           return (
             <div
               key={c.todo.id}
