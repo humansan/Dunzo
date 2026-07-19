@@ -348,13 +348,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
 
-  // Daily-only tasks wear the app accent. A Task Planner task wears its collection's
-  // color instead, so the calendar reads like the Planner; an uncategorized one is grey.
+  // A task wears its collection's color so the calendar reads like the Planner. Any
+  // task without a collection - whether daily-only or an uncategorized planner task -
+  // is grey.
   const accentForTodo = useCallback(
     (todo: Todo): string => {
-      if (todo.showInDatabase !== true) return 'var(--accent1)';
       const collId = collectionOf(todo, byId);
-      if (!collId) return 'var(--color-status-todo)';
+      if (!collId) return 'var(--color-collection-1)';
       return collectionColor(byId.get(collId)?.color);
     },
     [byId]
@@ -762,7 +762,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto select-none w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-60 flex-shrink-0 pt-2 pr-2 hidden lg:flex lg:flex-col min-h-0 border-r border-line">
+        <div className="w-60 flex-shrink-0 pt-2 pr-2 hidden lg:flex lg:flex-col min-h-0 border-r border-line mr-4">
           {/* Calendar is h-full; without a content-height wrapper it eats the whole
               screen-height column and pushes the toggles below the fold. */}
           <div className="shrink-0 px-2">
@@ -800,7 +800,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       )}
 
       {/* Main calendar area */}
-      <div className="flex-1 flex flex-col min-w-0 pl-4">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         {!hideHeader && (
           <div className="flex items-center justify-between px-2 py-3 flex-shrink-0">
@@ -1048,13 +1048,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {/* Active Drag Selection / Creation Preview */}
                   {dragSelection && dragSelection.dateStr === dateStr && (
                     <div
-                      className="absolute left-1 right-1 rounded-lg bg-[var(--accent1)]/20 border border-[var(--accent1)]/40 pointer-events-none z-10"
+                      className="absolute left-1 right-1 rounded-lg bg-collection-1/30 border border-collection-1/60 pointer-events-none z-10"
                       style={{
                         top: `${minutesToPx(dragSelection.startMins)}px`,
                         height: `${minutesToPx(dragSelection.endMins - dragSelection.startMins)}px`,
                       }}
                     >
-                      <div className="p-1 px-2 text-[10px] font-bold text-[var(--accent1)]">
+                      <div className="p-1 px-2 text-[10px] font-bold text-collection-1">
                         {`${Math.floor(dragSelection.startMins / 60).toString().padStart(2, '0')}:${(dragSelection.startMins % 60).toString().padStart(2, '0')}`}
                         {' – '}
                         {`${Math.floor(dragSelection.endMins / 60).toString().padStart(2, '0')}:${(dragSelection.endMins % 60).toString().padStart(2, '0')}`}
