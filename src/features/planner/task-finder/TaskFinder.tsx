@@ -24,7 +24,13 @@ const RESULT_LIMIT = 50;
 const NOOP = () => {};
 
 export interface TaskFinderProps {
+  // The task universe searched by the two-pane (Collections) view and the pickers.
+  // Global search passes its Planner-scoped organizer set here.
   entries: OrganizerEntry[];
+  // Optional broader universe for the flat (list) view - global search passes every
+  // unarchived task (Planner + daily-list-only) so daily-only tasks are findable.
+  // Omitted by pickers, which fall back to `entries` in both views.
+  flatEntries?: OrganizerEntry[];
   todoById: Map<string, Todo>;
   // Choosing a task: search opens its full view; a picker returns it to the caller.
   onPick: (id: string) => void;
@@ -43,6 +49,7 @@ export interface TaskFinderProps {
 
 export const TaskFinder: React.FC<TaskFinderProps> = ({
   entries,
+  flatEntries,
   todoById,
   onPick,
   onClose,
@@ -67,13 +74,19 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       return n;
     });
 
+  // The flat (list) view searches the broader `flatEntries` universe when provided
+  // (global search: every unarchived task, so daily-list-only tasks are findable);
+  // the two-pane (Collections) view stays scoped to `entries` (the organizer set it
+  // groups by collection). Pickers pass no `flatEntries`, so both views use `entries`.
+  const activeEntries = finderView === 'flat' ? (flatEntries ?? entries) : entries;
+
   // A picker excludes candidates it can't accept - reparent → the moved task + its
   // whole subtree (a cycle guard). Removing them from the candidate universe up front
   // keeps them out of matches AND out of the subtree expansion below (an excluded
   // task can be nested under a non-excluded match). Collections stay (structure).
   const candidateEntries = useMemo(
-    () => (isDisabled ? entries.filter((e) => e.todo.isCollection || !isDisabled(e.todo.id)) : entries),
-    [entries, isDisabled]
+    () => (isDisabled ? activeEntries.filter((e) => e.todo.isCollection || !isDisabled(e.todo.id)) : activeEntries),
+    [activeEntries, isDisabled]
   );
 
   // Which tasks match - VSCode-style fuzzy on the name + all-fields haystack (§hook).

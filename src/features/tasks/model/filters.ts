@@ -70,6 +70,15 @@ export function getOrganizerTodos(dayTodos: DayTodos[]): OrganizerEntry[] {
   return collectOrganizer(dayTodos, showsInOrganizer);
 }
 
+// Every unarchived todo across all days, regardless of which surface(s) it shows
+// on (Task Planner, daily checklist, or both). This is the universe the global
+// search palette's flat list searches - a daily-list-only task (showInDatabase
+// false) is still findable. Collections are included so subtree/ancestry walks
+// keep working; the search core never treats them as hits.
+export function getSearchableTodos(dayTodos: DayTodos[]): OrganizerEntry[] {
+  return collectOrganizer(dayTodos, (todo) => todo.archived !== true);
+}
+
 // Every database todo that has been archived (for the future archived view).
 export function getArchivedTodos(dayTodos: DayTodos[]): OrganizerEntry[] {
   return collectOrganizer(
