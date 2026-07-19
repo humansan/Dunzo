@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
-import { ColDef, ColKey, FilterRule, FilterCondition, FILTER_CONDITIONS } from '@/features/planner/types';
+import { ColDef, ColKey, FilterRule, FilterCondition, FilterMatch, FILTER_CONDITIONS } from '@/features/planner/types';
 import { btnGhost } from '@/theme/buttons';
 import { PopoverMenu } from '@/common/ui';
 import { ListSelect } from '@/common/ui';
@@ -8,11 +8,14 @@ import { ListSelect } from '@/common/ui';
 export const FilterMenu: React.FC<{
   anchor: { right: number; top: number };
   filters: FilterRule[];
+  // How the rules combine (a single per-view choice, shown as the conjunction cell).
+  match: FilterMatch;
   allColumns: ColDef[];
   uniqueValues: Map<ColKey, string[]>;
   onChange: (filters: FilterRule[]) => void;
+  onChangeMatch: (match: FilterMatch) => void;
   onClose: () => void;
-}> = ({ anchor, filters, allColumns, uniqueValues, onChange, onClose }) => {
+}> = ({ anchor, filters, match, allColumns, uniqueValues, onChange, onChangeMatch, onClose }) => {
   const addFilter = () => {
     const defaultField = allColumns[0]?.key ?? 'status';
     onChange([
@@ -36,15 +39,32 @@ export const FilterMenu: React.FC<{
   const remove = (id: string) => onChange(filters.filter((f) => f.id !== id));
 
   return (
-    <PopoverMenu anchor={anchor} title="Filters" onClose={onClose} className="w-[440px] p-2">
+    <PopoverMenu anchor={anchor} title="Filters" onClose={onClose} className="w-[500px] p-2">
         {filters.length === 0 ? (
           <p className="px-2 py-2.5 text-[13px] text-fg-ghost text-center">No filters applied</p>
         ) : (
           <div className="space-y-1.5 mb-1 px-0.5">
-            {filters.map((f) => {
+            {filters.map((f, i) => {
               const vals = uniqueValues.get(f.field) ?? [];
               return (
                 <div key={f.id} className="flex items-center gap-1.5">
+                  {/* Conjunction: the first row is a static "Where"; every later row picks
+                      And/Or. It's one per-view choice, so changing any row flips them all. */}
+                  {i === 0 ? (
+                    <span className="w-[62px] shrink-0 px-2 text-[13px] text-fg-faint">Where</span>
+                  ) : (
+                    <ListSelect
+                      ariaLabel="Match"
+                      className="w-[62px] shrink-0"
+                      value={match}
+                      onChange={(v) => onChangeMatch(v as FilterMatch)}
+                      options={[
+                        { value: 'and', label: 'And' },
+                        { value: 'or', label: 'Or' },
+                      ]}
+                    />
+                  )}
+
                   {/* Field */}
                   <ListSelect
                     ariaLabel="Filter field"

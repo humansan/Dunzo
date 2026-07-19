@@ -5,6 +5,7 @@ import {
   COLUMNS,
   NAME_COL_KEY,
   FilterRule,
+  FilterMatch,
   SortRule,
   SectionsConfig,
   DEFAULT_SECTIONS_CONFIG,
@@ -73,12 +74,13 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       hiddenFields,
       wrappedFields,
       filters: (Array.isArray(raw.filters) ? raw.filters : []) as FilterRule[],
+      filterMatch: (raw.filterMatch === 'or' ? 'or' : 'and') as FilterMatch,
       sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
       sections,
     };
   }, [viewsConfig, viewConfigKey, selectedView]);
 
-  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
+  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, filterMatch, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
 
   // Persist any view-state update (partial merge).
   const updateViewState = (patch: {
@@ -86,6 +88,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     hiddenFields?: Set<ColKey>;
     wrappedFields?: Set<ColKey>;
     filters?: FilterRule[];
+    filterMatch?: FilterMatch;
     sorts?: SortRule[];
     sections?: SectionsConfig;
   }) => {
@@ -96,6 +99,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
         hiddenFields:  [...(patch.hiddenFields  ?? hiddenFields)],
         wrappedFields: [...(patch.wrappedFields ?? wrappedFields)],
         filters:       patch.filters       ?? activeFilters,
+        filterMatch:   patch.filterMatch   ?? filterMatch,
         sorts:         patch.sorts         ?? activeSorts,
         sections:      patch.sections      ?? sectionsConfig,
       },
@@ -159,6 +163,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     hiddenFields,
     wrappedFields,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     updateViewState,

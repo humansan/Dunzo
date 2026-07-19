@@ -150,6 +150,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     hiddenFields,
     wrappedFields,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     updateViewState,
@@ -201,6 +202,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     collapsed,
     collapsedColls,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     showNesting: variant.showNesting,
@@ -763,9 +765,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         <FilterMenu
           anchor={filterMenu}
           filters={activeFilters}
+          match={filterMatch}
           allColumns={COLUMNS}
           uniqueValues={uniqueValues}
           onChange={(f) => updateViewState({ filters: f })}
+          onChangeMatch={(m) => updateViewState({ filterMatch: m })}
           onClose={() => setFilterMenu(null)}
         />,
         document.body
