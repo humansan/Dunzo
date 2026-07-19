@@ -21,6 +21,7 @@ import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
 import { Checkbox } from '@/common/ui/Checkbox';
+import { useSyncedCalendarFilter } from '@/lib/query/settings';
 import { CollectionTree } from '@/features/planner/sidebar/CollectionTree';
 import { useCollectionTree, taskCollectionAncestors } from './useCollectionTree';
 
@@ -224,55 +225,63 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onCreateTask,
   onOpenTask,
 }) => {
-  const [dayCount, setDayCount] = useState(initialDays || 3);
   const [focusDate, setFocusDate] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [miniCalMonth, setMiniCalMonth] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [showDayPicker, setShowDayPicker] = useState(false);
-  // Which surfaces' tasks get a block. A task on both surfaces shows if either is on.
-  const [showDaily, setShowDaily] = useState(true);
-  const [showPlanner, setShowPlanner] = useState(true);
-  // Uncategorized planner tasks (no collection) are their own surface toggle, alongside
-  // daily/planner - independent of the collection tree below.
-  const [showUncategorized, setShowUncategorized] = useState(true);
-  // The collections whose planner tasks are shown (a categorized planner task needs one
-  // of its collection ancestors checked to appear). Ephemeral, like the surface toggles
-  // above. Defaults to all collections enabled once the data first loads (seed below).
-  const [checkedColls, setCheckedColls] = useState<Set<string>>(new Set());
-  const toggleChecked = useCallback((id: string) => {
-    setCheckedColls((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }, []);
   const coll = useCollectionTree(dayTodos);
 
-  // Seed all collections as enabled the first time collection data arrives (dayTodos
-  // loads a tick after mount). Guarded so it fires once and never overrides later edits.
-  const seededColls = useRef(false);
-  useEffect(() => {
-    if (seededColls.current || coll.allCollectionIds.length === 0) return;
-    seededColls.current = true;
-    setCheckedColls(new Set(coll.allCollectionIds));
-  }, [coll.allCollectionIds]);
+  // The calendar sidebar filter, persisted to user_settings (surfaces + checked
+  // collections). Surfaces default on; an undefined `checkedCollections` means "all
+  // collections" until the user first customizes it (so a freshly-added collection is
+  // included by default). Writes are debounced/optimistic via the settings pipeline.
+  const [filter, patchFilter] = useSyncedCalendarFilter();
+  const showDaily = filter.showDaily ?? true;
+  const showPlanner = filter.showPlanner ?? true;
+  const showUncategorized = filter.showUncategorized ?? true;
+  const setShowDaily = useCallback((v: boolean) => patchFilter(() => ({ showDaily: v })), [patchFilter]);
+  const setShowPlanner = useCallback((v: boolean) => patchFilter(() => ({ showPlanner: v })), [patchFilter]);
+  const setShowUncategorized = useCallback((v: boolean) => patchFilter(() => ({ showUncategorized: v })), [patchFilter]);
+
+  // Days shown in the grid. `initialDays` (embedded contexts, e.g. the daily page) is a
+  // fixed override and isn't persisted; the main calendar reads/writes the saved value.
+  const dayCount = initialDays ?? filter.dayCount ?? 3;
+  const setDayCount = useCallback((n: number) => patchFilter(() => ({ dayCount: n })), [patchFilter]);
+
+  // The checked-collection set. Undefined (never configured) resolves to every current
+  // collection, so the default is "all enabled" without a seed write.
+  const checkedColls = useMemo(
+    () =>
+      filter.checkedCollections === undefined
+        ? new Set(coll.allCollectionIds)
+        : new Set(filter.checkedCollections),
+    [filter.checkedCollections, coll.allCollectionIds]
+  );
+  // Every mutation reads the resolved set (materializing the undefined⇒all default) and
+  // writes back a concrete array.
+  const toggleChecked = useCallback(
+    (id: string) => {
+      const next = new Set(checkedColls);
+      next.has(id) ? next.delete(id) : next.add(id);
+      patchFilter(() => ({ checkedCollections: [...next] }));
+    },
+    [checkedColls, patchFilter]
+  );
 
   // Select-all / deselect-all for the collection tree header.
   const allCollsChecked =
     coll.allCollectionIds.length > 0 && coll.allCollectionIds.every((id) => checkedColls.has(id));
   const toggleAllColls = useCallback(() => {
-    setCheckedColls(allCollsChecked ? new Set() : new Set(coll.allCollectionIds));
-  }, [allCollsChecked, coll.allCollectionIds]);
+    patchFilter(() => ({ checkedCollections: allCollsChecked ? [] : [...coll.allCollectionIds] }));
+  }, [allCollsChecked, coll.allCollectionIds, patchFilter]);
 
   // Apply a checked state to all descendant collections (the subtree prompt's action).
   const applyDescendantColls = useCallback(
     (id: string, checked: boolean) => {
-      setCheckedColls((prev) => {
-        const next = new Set(prev);
-        for (const cid of coll.descendantCollIds(id)) checked ? next.add(cid) : next.delete(cid);
-        return next;
-      });
+      const next = new Set(checkedColls);
+      for (const cid of coll.descendantCollIds(id)) checked ? next.add(cid) : next.delete(cid);
+      patchFilter(() => ({ checkedCollections: [...next] }));
     },
-    [coll.descendantCollIds]
+    [checkedColls, coll.descendantCollIds, patchFilter]
   );
 
   // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard

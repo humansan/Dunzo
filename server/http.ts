@@ -117,6 +117,7 @@ export const SETTINGS_FIELDS = [
   'hubColWidths',
   'hubCollapsed',
   'hubLayout',
+  'calendarFilter',
 ] as const;
 
 // Fields whose value can change which surface a todo renders on (or remove it

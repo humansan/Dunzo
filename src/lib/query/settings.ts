@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef } from 'react';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Theme } from '@shared/types';
+import type { Theme, CalendarFilter } from '@shared/types';
 import { apiFetch } from '@/lib/query/apiClient';
 import { queryKeys } from '@/lib/query/keys';
 import { stripNulls } from '@/lib/query/normalize';
@@ -43,6 +43,7 @@ export interface UserSettings {
   hubColWidths?: Record<string, number>;
   hubCollapsed?: string[]; // table-row collapse state (todo ids)
   hubLayout?: HubLayout;
+  calendarFilter?: CalendarFilter; // calendar sidebar surface + collection filter
   updatedAt?: number;
 }
 
@@ -160,4 +161,27 @@ export function useSyncedLayout(): [HubLayout, (fn: (prev: HubLayout) => Partial
   );
 
   return [layout, patch];
+}
+
+// The calendar sidebar's filter blob as `[filter, patch]`, where `patch` merges a
+// partial computed from the *current* filter (read fresh from cache). Same shape as
+// useSyncedLayout - one jsonb column, per-field merge, debounced/optimistic writes.
+export function useSyncedCalendarFilter(): [
+  CalendarFilter,
+  (fn: (prev: CalendarFilter) => Partial<CalendarFilter>) => void
+] {
+  const qc = useQueryClient();
+  const { data } = useSettings(false);
+  const update = useUpdateSettings();
+  const filter = (data?.calendarFilter ?? {}) as CalendarFilter;
+
+  const patch = useCallback(
+    (fn: (prev: CalendarFilter) => Partial<CalendarFilter>) => {
+      const current = (qc.getQueryData<UserSettings>(queryKeys.settings)?.calendarFilter ?? {}) as CalendarFilter;
+      update({ calendarFilter: { ...current, ...fn(current) } });
+    },
+    [qc, update]
+  );
+
+  return [filter, patch];
 }
