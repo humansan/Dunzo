@@ -50,7 +50,7 @@ export interface ViewDef {
 export const PLANNER_VIEWS: Record<string, ViewDef> = {
   all: {
     id: 'all',
-    label: 'All Tasks',
+    label: 'All Planner Tasks',
     source: 'organizer',
     scaffold: 'tree',
     leaf: () => true,
