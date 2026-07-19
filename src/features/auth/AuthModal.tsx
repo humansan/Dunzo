@@ -620,16 +620,16 @@ const LoginScreen: React.FC<{
         </div>
 
         {/* ── Form panel ── */}
-        <div className="w-full md:w-[50%] flex items-center px-16">
+        <div className="w-full md:w-[50%] flex items-center justify-center md:justify-start px-[5%]">
           {/* Visual block: full-height, hugs the right edge with a 4px gap */}
           <motion.div
             // initial={{ opacity: 0, y: 16 }}
             // animate={{ opacity: 1, y: 0 }}
             // transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="w-full bg-surface rounded-3xl flex items-center justify-center p-7 md:w-130 md:h-140"
+            className="w-full max-w-105 bg-surface rounded-3xl flex items-center justify-center p-8 mb-8"
           >
             {/* Content block: constrained + centered inside the visual block */}
-            <div className="w-full md:w-90 md:px-8 md:py-10">
+            <div className="w-full md:px-8 md:py-6">
               {renderForm()}
             </div>
           </motion.div>
