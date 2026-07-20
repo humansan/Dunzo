@@ -155,15 +155,24 @@ const EventCard: React.FC<{
   // Overlap cascade: indent right by a per-level % of the column (capped), and
   // raise z with the level so a later start sits on top. Hover lifts a buried card
   // to the front so it can be read/clicked. Transient (drag) cards keep z-50.
+  // A completed task keeps its indent but drops back to the base z, so incomplete
+  // tasks always stack above the done ones.
   const level = Math.min(indentLevel, MAX_LEVELS);
   const indentLeft = level > 0 ? `${level * INDENT_STEP_PCT}%` : undefined;
-  const restingZ = isHovered ? Z_EVENT_HOVER : Z_EVENT_BASE + level;
-  // Only show a time that's actually set - never fabricate the missing side.
+  const restingZ = isHovered ? Z_EVENT_HOVER : Z_EVENT_BASE + (isDone(todo) ? 0 : level);
+  // Only show a time that's actually set - never fabricate the missing side. When both
+  // sides share a meridiem, drop the AM/PM from the start so it reads "9:00 – 10:30 AM".
+  // A one-sided task shows just that time (no dash, no fabricated duration).
   const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
   const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
-  const timeRange = `${startLabel} – ${endLabel}`.trim();
-  const durationStr = `(${formatDuration(startMin, endMin)})`;
-  const fullTimeDisplay = `${timeRange} ${durationStr}`;
+  const bothTimes = !!todo.startTime && !!todo.dueTime;
+  const sameMeridiem =
+    bothTimes && (timeToMinutes(todo.startTime!) >= 720) === (timeToMinutes(todo.dueTime!) >= 720);
+  const timeRange = bothTimes
+    ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} – ${endLabel}`
+    : startLabel || endLabel;
+  const durationStr = bothTimes ? `(${formatDuration(startMin, endMin)})` : '';
+  const fullTimeDisplay = durationStr ? `${timeRange} ${durationStr}` : timeRange;
 
   return (
     <div
@@ -241,9 +250,7 @@ const EventCard: React.FC<{
       {!isSmall && (
         <div className={`text-[10px] truncate pl-4 ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
           }`}>
-          {timeRange}
-          {' '}
-          {durationStr}
+          {fullTimeDisplay}
         </div>
       )}
       {!isDone(todo) && (
