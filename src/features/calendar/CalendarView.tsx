@@ -833,7 +833,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [settling]);
 
   return (
-    <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto select-none w-full`}>
+    <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
         <div className="w-60 flex-shrink-0 pt-2 pr-2 hidden lg:flex lg:flex-col min-h-0 border-r border-line mr-4">
@@ -975,7 +975,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         {/* Scrollable time grid */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden calendar-scroll"
+          className="flex-1 overflow-y-auto overflow-x-hidden calendar-scroll select-none"
         >
           <div className="flex relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
             {/* Time labels gutter */}

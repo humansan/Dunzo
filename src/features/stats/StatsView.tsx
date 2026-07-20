@@ -59,8 +59,9 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   const [expandedDates, setExpandedDates] = useState<Record<string, boolean>>({});
 
   const [tableMode, setTableMode] = useState<'log' | 'raw'>(() => {
-    const saved = localStorage.getItem('chronos-stats-table-mode');
-    return (saved as any) || 'log';
+    // const saved = localStorage.getItem('chronos-stats-table-mode');
+    // return (saved as any) || 'log';
+    return 'raw';
   });
 
   const handleSetTableMode = (mode: 'log' | 'raw') => {
@@ -353,7 +354,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
         }
       });
     });
-    return rows.sort((a, b) => a.date.localeCompare(b.date));
+    return rows.sort((a, b) => b.date.localeCompare(a.date));
   }, [dayTodos]);
 
   // Most recent 50 for display (full set is available via CSV export)
@@ -441,7 +442,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   };
 
   return (
-    <div className="py-8 max-w-5xl mx-auto px-4 select-none">
+    <div className="py-8 max-w-5xl mx-auto px-4">
       {/* Page Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent1)] text-canvas shadow-lg shadow-[var(--accent1)]/10">
@@ -572,7 +573,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
           </div>
         </div>
 
-        <div className="h-96 w-full mt-2">
+        <div className="h-96 w-full mt-2 **:outline-none">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
               <CartesianGrid stroke={FG} strokeOpacity={0.06} vertical={false} strokeDasharray="3 3" />
@@ -657,11 +658,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
       <div className="bg-surface p-5 rounded-2xl border border-line-subtle shadow-xl flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-fg font-bold text-sm tracking-wide">
-            {tableMode === 'log' ? 'Daily Activity Log' : 'Raw Entries'}
+            {tableMode === 'log' ? 'Daily Activity Log' : 'Logged Entries'}
           </h3>
 
           {/* Table Mode Toggle */}
-          <div className="flex bg-surface rounded-lg p-1 text-xs">
+          {/* <div className="flex bg-surface rounded-lg p-1 text-xs">
             {(['log', 'raw'] as const).map(mode => (
               <button
                 key={mode}
@@ -675,7 +676,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 {mode === 'log' ? 'Log' : 'Raw'}
               </button>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {tableMode === 'raw' ? (
