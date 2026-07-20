@@ -28,9 +28,6 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
     avgLast7Days,
     avgLast30Days,
     bestAllTime,
-    percent,
-    remaining,
-    reachedTarget,
     reachedWeekBest,
     reachedAllTimeBest
   } = stats;
@@ -45,11 +42,13 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
 
   const reachTarget = target >= avgValue ? target : avgValue;
   const reachText = target >= avgValue ? 'yesterday' : avgLabel;
-  const actualRemaining = reachTarget - earned;
+  const remaining = reachTarget - earned;
+  const reachedTarget = earned >= reachTarget;
+  const percent = Math.min(100, (earned / reachTarget) * 100);
 
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
-  const lit = reachedWeekBest ? VIOLET : reachedTarget ? GOLD : null;
+  const lit = reachedWeekBest ? VIOLET : earned >= reachTarget ? GOLD : null;
 
   // let targets: { label: string; value: number }[] = [
   //   { label: 'yesterday', value: target },
@@ -60,7 +59,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   let status: string;
 
   if (!reachedTarget) {
-    status = reachTarget === 0 ? `Any XP beats ${reachText}` : `${actualRemaining} XP to reach ${reachText}`;
+    status = reachTarget === 0 ? `Any XP beats ${reachText}` : `${remaining} XP to reach ${reachText}`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
     status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} XP to 7-day best`;
@@ -83,7 +82,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const count = useMotionValue(earned);
   const display = useTransform(count, v => Math.round(v));
   useEffect(() => {
-    const controls = animate(count, earned, { duration: 1.0, ease: EXPO_OUT });
+    const controls = animate(count, earned, { duration: 0.6, ease: EXPO_OUT });
     return () => controls.stop();
   }, [count, earned]);
 

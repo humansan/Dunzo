@@ -1,25 +1,28 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Astroid } from 'lucide-react';
-import { DayTodos } from '@shared/types';
-import { computeStarStreak } from '@/features/xp/model/xp';
 import { useThemeColor } from '@/theme/useThemeColor';
 import { ParticleBurst } from '@/common/ui';
 
 interface StarStreakProps {
-  dayTodos: DayTodos[];
-  date: string;
-  // When true (default) the widget pins itself to the bottom-right corner. Pass
-  // false to render it in-flow so a parent (e.g. the centered celebration popup)
-  // can position it.
+  // The three goal flags in slot order: completed a task, beat yesterday, beat the
+  // average. Callers compute these (see computeStarStreak) - this component doesn't.
+  lit: boolean[];
+  streak: number;
+  // Per-slot burst + streak pulse. Driven ONLY by the celebration popup; the pinned
+  // corner instance omits them and so renders statically (no animation, just state).
+  bursting?: boolean[];
+  streakPulse?: boolean;
+  // True (default) pins to the bottom-right corner; false renders in-flow so the
+  // popup can center it.
   pinned?: boolean;
 }
 
 // Snappy-then-soft, used for the celebratory pops.
 const POP: [number, number, number, number] = [0.2, 0.9, 0.2, 1];
 
-// Memoised so unrelated parent re-renders (e.g. the once-a-second clock tick in
-// DailyScreen) can't re-pass fresh keyframe arrays mid-burst and restart the pop.
+// Memoised so unrelated parent re-renders can't re-pass fresh keyframe arrays
+// mid-burst and restart the pop.
 const StarIcon = React.memo(
   ({ active, burst, gold }: { active: boolean; burst: boolean; gold: string }) => (
     <div className="relative">
@@ -28,7 +31,7 @@ const StarIcon = React.memo(
         transition={{ duration: 0.9, ease: POP }}
         className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
       >
-        <Astroid size={32} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
+        <Astroid size={30} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>
       <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
     </div>
@@ -36,104 +39,50 @@ const StarIcon = React.memo(
 );
 StarIcon.displayName = 'StarIcon';
 
-const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date, pinned = true }) => {
+// Pure presentational star/streak readout. Task calculation (which flags are lit, the
+// streak count) lives in DailyScreen; animation orchestration lives in StarStreakPopup.
+// This component only renders what it's told, so the corner instance reflects state
+// with zero animation while the popup instance plays the full celebration.
+const StarStreakBase: React.FC<StarStreakProps> = ({
+  lit,
+  streak,
+  bursting,
+  streakPulse = false,
+  pinned = true,
+}) => {
   const GOLD = useThemeColor('xp-tier1');
   const GOLD_BG = useThemeColor('warning-tint');
   const GOLD_TEXT = useThemeColor('warning');
-  const { stars, flags, streak } = useMemo(() => computeStarStreak(dayTodos, date), [dayTodos, date]);
-
-  // The three goals are independent, so each slot tracks its own goal rather
-  // than a left-to-right fill: task completed, beat yesterday, beat the average.
-  const lit = useMemo(
-    () => [flags.completedTask, flags.beatYesterday, flags.beatAverage],
-    [flags.completedTask, flags.beatYesterday, flags.beatAverage]
-  );
-
-  // Fire animations only on a genuine increase - never on first mount or when
-  // the viewed date changes (navigating between days shouldn't celebrate).
-  const prevLit = useRef(lit);
-  const prevStreak = useRef(streak);
-  const prevDate = useRef(date);
-  const [bursting, setBursting] = useState<number[]>([]);
-  const [streakPulse, setStreakPulse] = useState(0);
-
-  useEffect(() => {
-    if (prevDate.current !== date) {
-      prevDate.current = date;
-      prevLit.current = lit;
-      prevStreak.current = streak;
-      return;
-    }
-    // Burst exactly the stars that just turned on, whichever goals they are.
-    const newly = lit.reduce<number[]>(
-      (acc, on, i) => (on && !prevLit.current[i] ? [...acc, i] : acc),
-      []
-    );
-    if (newly.length > 0) {
-      setBursting(b => [...b, ...newly]);
-      newly.forEach(i =>
-        setTimeout(() => setBursting(b => b.filter(x => x !== i)), 750)
-      );
-    }
-    if (streak > prevStreak.current) {
-      setStreakPulse(p => p + 1);
-    }
-    prevLit.current = lit;
-    prevStreak.current = streak;
-  }, [lit, streak, date]);
-
-  const pulsing = streakPulse > 0;
-  useEffect(() => {
-    if (!pulsing) return;
-    const t = setTimeout(() => setStreakPulse(0), 900);
-    return () => clearTimeout(t);
-  }, [streakPulse, pulsing]);
 
   // At 3★ the streak badge inverts: solid gold fill with black digits.
-  const maxed = stars >= 3;
+  const maxed = lit.filter(Boolean).length >= 3;
 
   return (
     <div className={`${pinned ? 'fixed right-4 bottom-5 z-30' : ''} pointer-events-none select-none font-mono`}>
       {/* pr matches py so the badge has equal gap to the right edge as top/bottom. */}
-      <div
-        className="relative flex items-center gap-2.5 rounded-lg pl-5 pr-2 py-2"
-        // style={{ borderColor: GOLD, backgroundColor: 'rgba(20,16,8,0.85)' }}
-      >
+      <div className="relative flex items-center gap-2.5 rounded-lg pl-5 pr-2 py-2">
         <div className="flex items-center gap-2">
           {lit.map((active, i) => (
-            <StarIcon key={i} active={active} burst={bursting.includes(i)} gold={GOLD} />
+            <StarIcon key={i} active={active} burst={bursting?.[i] ?? false} gold={GOLD} />
           ))}
         </div>
 
         {/* Streak badge */}
         <div className="relative flex items-center justify-center">
-          <AnimatePresence>
-            {/* {pulsing && (
-              <motion.span
-                key={streakPulse}
-                className="absolute rounded-full border-2"
-                style={{ borderColor: GOLD }}
-                initial={{ width: 44, height: 44, opacity: 0.85 }}
-                animate={{ width: 78, height: 78, opacity: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-              />
-            )} */}
-          </AnimatePresence>
           <motion.div
-            className="relative flex items-center justify-center min-w-12 h-14 rounded-full pl-5 pr-2.5"
+            className="relative flex items-center justify-center min-w-12 h-13 rounded-full pl-4 pr-1.5"
             animate={{
               backgroundColor: maxed ? GOLD : GOLD_BG,
-              scale: pulsing ? [1, 1.33, 0.9, 1] : 1
+              scale: streakPulse ? [1, 1.25, 0.9, 1] : 1,
             }}
             transition={{
               backgroundColor: { duration: 0.4 },
-              scale: { duration: 0.9, ease: POP }
+              scale: { duration: 0.9, ease: POP },
             }}
           >
             <motion.span
               key={streak}
-              className="text-3xl font-bold leading-none"
+              className="text-2xl font-bold leading-none"
               style={{ fontVariantNumeric: 'tabular-nums' }}
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1, color: maxed ? '#000000' : GOLD_TEXT }}
@@ -148,6 +97,4 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date, pinned = tr
   );
 };
 
-// dayTodos / date are stable between edits, so memoising keeps the widget from
-// re-rendering on DailyScreen's per-second clock tick - the source of the flutter.
 export const StarStreak = React.memo(StarStreakBase);

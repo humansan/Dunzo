@@ -24,8 +24,8 @@ import { TrackerCard } from '@/features/trackers';
 import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
-import { StarStreak, StarStreakPopup } from '@/features/xp';
-import { computeXpStats, getWeeklyXp } from '@/features/xp';
+import { StarStreak, StarStreakPopup, STAR_CELEBRATE_DELAY_MS } from '@/features/xp';
+import { computeXpStats, getWeeklyXp, computeStarStreak } from '@/features/xp';
 import { useDelayedValue } from '@/common/hooks/useDelayedValue';
 import { DailyList } from '@/features/daily/DailyList';
 import { DatePickerPopover } from '@/common/ui';
@@ -109,10 +109,22 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
 
   const weeklyXp = useMemo(() => getWeeklyXp(dayTodos, 4), [dayTodos]);
 
-  // The corner star/streak widget lags the live data so its animation runs AFTER
-  // the XP count-up lands (1300ms = XP 1000 + a 300ms lead). The popup does its own
-  // staged delaying off the live dayTodos (see StarStreakPopup).
-  // const starDayTodos = useDelayedValue(dayTodos, 1300);
+  // Star/streak flags are computed here and passed in - the widgets don't touch task
+  // state. The popup gets the LIVE flags (it snapshots + animates them itself); the
+  // corner gets a lagged copy so - with no animation of its own - it silently settles
+  // to the new total right as the popup lights up.
+  const starStreak = useMemo(() => computeStarStreak(dayTodos, selectedDate), [dayTodos, selectedDate]);
+  const lit = useMemo(
+    () => [starStreak.flags.completedTask, starStreak.flags.beatYesterday, starStreak.flags.beatAverage],
+    [starStreak]
+  );
+
+  const cornerTodos = useDelayedValue(dayTodos, STAR_CELEBRATE_DELAY_MS);
+  const cornerStreak = useMemo(() => computeStarStreak(cornerTodos, selectedDate), [cornerTodos, selectedDate]);
+  const cornerLit = useMemo(
+    () => [cornerStreak.flags.completedTask, cornerStreak.flags.beatYesterday, cornerStreak.flags.beatAverage],
+    [cornerStreak]
+  );
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: weekStartsOn as 0 | 1 | 2 | 3 | 4 | 5 | 6 });
@@ -424,8 +436,8 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       {xpEnabled && (
         <>
           <XpProgressBar stats={xpStats} weeklyXp={weeklyXp} />
-          <StarStreak dayTodos={dayTodos} date={selectedDate} />
-          <StarStreakPopup dayTodos={dayTodos} date={selectedDate} />
+          <StarStreak lit={cornerLit} streak={cornerStreak.streak} />
+          <StarStreakPopup lit={lit} streak={starStreak.streak} date={selectedDate} />
         </>
       )}
 
