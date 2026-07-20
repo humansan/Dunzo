@@ -15,4 +15,4 @@ export const modalPop = {
 // view, ⌘K search, tracker form, collection modals) so they all look the same.
 // Compose with per-overlay positioning, e.g.:
 //   className={`fixed inset-0 flex items-center justify-center ${overlayBackdrop}`}
-export const overlayBackdrop = 'bg-black/60 backdrop-blur-sm';
+export const overlayBackdrop = 'bg-black/60 backdrop-blur';

@@ -25,7 +25,7 @@ const StarIcon = React.memo(
     <div className="relative">
       <motion.div
         animate={burst ? { scale: [1, 1.4, 0.8, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
-        transition={{ duration: 0.75, ease: POP }}
+        transition={{ duration: 0.9, ease: POP }}
         style={{
           color: active ? gold : 'rgba(255,255,255,0.18)',
           filter: active ? `drop-shadow(0 0 5px ${gold}cc)` : 'none'
@@ -131,7 +131,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date, pinned = tr
             }}
             transition={{
               backgroundColor: { duration: 0.4 },
-              scale: { duration: 0.75, ease: POP }
+              scale: { duration: 0.9, ease: POP }
             }}
           >
             <motion.span
@@ -140,7 +140,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date, pinned = tr
               style={{ fontVariantNumeric: 'tabular-nums' }}
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1, color: maxed ? '#000000' : GOLD_TEXT }}
-              transition={{ scale: { duration: 0.75, ease: POP }, color: { duration: 0.4 } }}
+              transition={{ scale: { duration: 0.9, ease: POP }, color: { duration: 0.4 } }}
             >
               {streak}🔥
             </motion.span>

@@ -112,7 +112,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   // The corner star/streak widget lags the live data so its animation runs AFTER
   // the XP count-up lands (1300ms = XP 1000 + a 300ms lead). The popup does its own
   // staged delaying off the live dayTodos (see StarStreakPopup).
-  const starDayTodos = useDelayedValue(dayTodos, 1300);
+  // const starDayTodos = useDelayedValue(dayTodos, 1300);
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: weekStartsOn as 0 | 1 | 2 | 3 | 4 | 5 | 6 });
@@ -424,7 +424,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       {xpEnabled && (
         <>
           <XpProgressBar stats={xpStats} weeklyXp={weeklyXp} />
-          <StarStreak dayTodos={starDayTodos} date={selectedDate} />
+          <StarStreak dayTodos={dayTodos} date={selectedDate} />
           <StarStreakPopup dayTodos={dayTodos} date={selectedDate} />
         </>
       )}
