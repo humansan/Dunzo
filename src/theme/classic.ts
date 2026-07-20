@@ -87,7 +87,7 @@ const classicLightRoles: Record<RoleName, RoleValue> = {
   'fill-stronger': ['fg', 15],
   // Feedback tints
   'danger-tint': ['red', 10],
-  'warning-tint': ['gold', 9],
+  'warning-tint': ['gold', 12],
   'success-tint': ['emerald', 10],
   'info-tint': ['blue', 10],
 };
@@ -131,18 +131,18 @@ const classicLight: Record<string, string> = {
   fg: '#000000',       // near-black primary text (softer than pure #000)
   muted: '#3f4652',   // (legacy solid; text ramp now uses translucent fg)
   subtle: '#5b6472',  // still used by status-todo / priority-low chips
-  accent1: '#7a9c00', // olive-gold - balances readable-as-text vs black-text-on-accent-bg
+  accent1: '#6e9000', // olive-gold - balances readable-as-text vs black-text-on-accent-bg
   accent2: '#6c8c83', // medium green - same balance
   red: '#d42d33',
-  gold: '#d58d11',    // XP signature gold, deepened to read on white
-  amber: '#a86616',
+  gold: '#f7ac33',    // XP signature gold, deepened to read on white
+  amber: '#d89700',
   emerald: '#0f8a4c',
   blue: '#2563eb',
   violet: '#7c3aed',
   sky: '#0369a1',
   orange: '#c2570a',
   slate: '#475569',
-  coral: '#d1490f',
+  coral: '#ff7745',
   // Collection swatches, saturated enough to read on white
   coll1: '#6b7280', coll2: '#dc2626', coll3: '#ea580c', coll4: '#ca8a04',
   coll5: '#16a34a', coll6: '#0d9488', coll7: '#2563eb', coll8: '#9333ea',

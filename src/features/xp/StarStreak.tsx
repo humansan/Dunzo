@@ -37,7 +37,8 @@ StarIcon.displayName = 'StarIcon';
 
 const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
   const GOLD = useThemeColor('xp-tier1');
-  const WARNING_TINT = useThemeColor('warning-tint');
+  const GOLD_BG = useThemeColor('warning-tint');
+  const GOLD_TEXT = useThemeColor('warning');
   const { stars, flags, streak } = useMemo(() => computeStarStreak(dayTodos, date), [dayTodos, date]);
 
   // The three goals are independent, so each slot tracks its own goal rather
@@ -121,7 +122,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
           <motion.div
             className="relative flex items-center justify-center min-w-12 h-12 rounded-full pl-4 pr-1.5"
             animate={{
-              backgroundColor: maxed ? GOLD : WARNING_TINT,
+              backgroundColor: maxed ? GOLD : GOLD_BG,
               scale: pulsing ? [1, 1.22, 0.97, 1] : 1
             }}
             transition={{
@@ -134,7 +135,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
               className="text-2xl font-bold leading-none"
               style={{ fontVariantNumeric: 'tabular-nums' }}
               initial={{ scale: 0.4, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1, color: maxed ? '#000000' : GOLD }}
+              animate={{ scale: 1, opacity: 1, color: maxed ? '#000000' : GOLD_TEXT }}
               transition={{ scale: { duration: 0.45, ease: POP }, color: { duration: 0.4 } }}
             >
               {streak}🔥
