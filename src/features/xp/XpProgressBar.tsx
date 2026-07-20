@@ -40,27 +40,40 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const avgIs30 = avgLast30Days > avgLast7Days;
   const avgValue = avgIs30 ? avgLast30Days : avgLast7Days;
   const avgLabel = avgIs30 ? 'avg 30d' : 'avg 7d';
+  const bestValue = reachedWeekBest ? bestAllTime : bestLast7Days;
+  const bestLabel = reachedWeekBest ? 'best all time' : 'best 7d';
 
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
   const lit = reachedWeekBest ? VIOLET : reachedTarget ? GOLD : null;
 
+  // let targets: { label: string; value: number }[] = [
+  //   { label: 'yesterday', value: target },
+  //   { label: '7-day best', value: bestLast7Days },
+  //   { label: 'beat all-time best', value: bestAllTime }
+  // ];
+
   let status: string;
+
   if (!reachedTarget) {
-    status = target === 0 ? 'Any XP beats yesterday' : `${remaining} XP to beat yesterday`;
+    status = target === 0 ? 'Any XP beats yesterday' : `${remaining} XP to reach yesterday`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
-    status = `Ahead of yesterday ⬩ ${bestLast7Days - earned} XP to 7-day best`;
+    status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} XP to 7-day best`;
   } else if (!reachedAllTimeBest) {
     // 7-day best cleared (violet). Point at the all-time best.
-    status = `${bestAllTime - earned} XP to beat all-time best`;
+    status = `🎊On a roll!! ⬩ ${bestAllTime - earned} XP to all-time best`;
   } else {
     const over = earned - bestAllTime;
-    status = over > 0 ? `New all-time best ⬩ +${over} XP` : 'All-time best matched';
+    status = over > 0 ? `🥳New all-time best!!! ⬩ +${over} XP` : 'All-time best matched!!';
   }
 
   const pctLabel = `${Math.round(percent)}%`;
-  const barColor = reachedWeekBest ? VIOLET : CORAL;
+  const barColor = (() => {
+    if (!reachedTarget) return CORAL;
+    if (!reachedWeekBest) return GOLD;
+    return VIOLET;
+  })();
 
   // Count-up: smoothly tick the displayed number toward the real earned total.
   const count = useMotionValue(earned);
@@ -121,7 +134,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
               <span className='text-fg-muted'>
               <span className=""> {avgLast7Days} </span> {'avg 7d'} ⬩
               <span className=""> {avgLast30Days} </span> {'avg 30d'} ⬩
-              <span className=""> {bestAllTime} </span> best all-time
+              <span className=""> {bestValue} </span> {bestLabel}
               </span>
             </span>
           </div>

@@ -12,10 +12,10 @@ const classicRoles: Record<RoleName, RoleValue> = {
   scrim: 'black',
   fg: 'fg',
   // Text emphasis ramp - translucent fg (collapses the old text-fg/NN zoo)
-  'fg-muted': ['fg', 80],
-  'fg-subtle': ['fg', 65],
-  'fg-faint': ['fg', 50],
-  'fg-ghost': ['fg', 35],
+  'fg-muted': ['fg', 85],
+  'fg-subtle': ['fg', 72],
+  'fg-faint': ['fg', 64],
+  'fg-ghost': ['fg', 40],
   // Hairlines - translucent fg
   'line-subtle': ['fg', 6],
   line: ['fg', 10],

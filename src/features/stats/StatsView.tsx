@@ -476,11 +476,11 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
             </div>
             <div className="text-fg-muted text-sm tracking-wide">
               Best Day:{' '}
-              <span className="font-bold text-lg font-mono" style={{ color: 'var(--accent1)' }}>
+              <span className="font-bold text-lg font-mono" style={{ color: GOLD }}>
                 {allTimeBestDay} xp 
               </span>{' '}
               (best last 7d:{' '}
-              <span className="font-bold text-lg font-mono" style={{ color: 'var(--accent1)' }}>
+              <span className="font-bold text-lg font-mono" style={{ color: GOLD }}>
                 {bestDay7d} xp
               </span>
               )

@@ -105,7 +105,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const [parentId, setParentId] = useState<string | null>(initialParentId ?? null);
   const [autoMoveDate, setAutoMoveDate] = useState<boolean>(seededAutoMove);
 
-  const nameRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
   const collId = derivedCollectionId(parentId, todoById);
@@ -200,7 +200,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       setAutoMoveDate(seededAutoMove);
       setDate(initialDate);
       committedRef.current = false;
-      requestAnimationFrame(() => nameRef.current?.focus());
+      requestAnimationFrame(() => titleRef.current?.focus());
     }
   };
 
@@ -208,6 +208,15 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     committedRef.current = true;
     onCancel();
   };
+
+  const resizeTitle = () => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+  useLayoutEffect(resizeTitle, [text]);
+
 
   return (
     <div
@@ -219,14 +228,15 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       }}
       className="my-2 mx-4 p-3.5 bg-surface border border-[var(--accent2)]/30 rounded-2xl shadow-xl"
     >
-      <input
-        ref={nameRef}
-        autoFocus
-        type="text"
+      <textarea
+        ref={titleRef}
+        autoFocus={true}
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onInput={resizeTitle}
+        rows={1}
         placeholder="Untitled"
-        className="w-full bg-transparent text-fg text-base font-medium placeholder:text-fg-ghost focus:outline-none"
+        className="w-full bg-transparent text-fg text-base font-medium placeholder:text-fg-ghost focus:outline-none overflow-hidden resize-none"
       />
 
       <textarea

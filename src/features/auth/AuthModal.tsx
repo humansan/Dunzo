@@ -592,7 +592,7 @@ const LoginScreen: React.FC<{
 
       <div className="relative h-full w-full flex flex-col md:flex-row">
         {/* ── Brand panel ── */}
-        <div className="flex-1 flex flex-col justify-center items-center px-16 pt-14 pb-6 md:py-0">
+        <div className="flex-1 flex flex-col justify-center items-end px-16 pt-14 pb-6 md:pr-20 md:py-0">
           <div className="max-w-sm">
             <img
               src={logoUrl}
