@@ -713,15 +713,15 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               selectedCollectionId,
               selectedView,
               viewLabel,
-              currentCount,
+              currentCount
             }}
             interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
             rowHandlers={{
               onSaveTodo,
               onToggleTodo: handleToggleTodo,
               onAddSubtask,
-              onQuickAddTask: handleQuickAddTask,
-              onQuickAddInGroup: handleQuickAddInGroup,
+              onQuickAddTask: viewAllowsNew ? handleQuickAddTask : undefined,
+              onQuickAddInGroup: viewAllowsNew ? handleQuickAddInGroup : undefined,
               onNewInView: viewAllowsNew ? handleNewInView : undefined,
             }}
             dnd={dnd}
