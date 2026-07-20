@@ -75,10 +75,8 @@ export const CollectionTree: React.FC<{
   // In nav mode the active look keys off the selected view; in check mode it keys off
   // whether the row's id is in `checkedColls`.
   const itemCls = (id: string) =>
-    `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${
-      (checkMode ? checkedColls?.has(id) : selectedView === id)
-        ? 'bg-fill text-fg font-medium'
-        : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
+    `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${btnGhost(selectedView === id)} ${
+      (checkMode ? checkedColls?.has(id) : selectedView === id) && 'font-medium'
     }`;
 
   return (

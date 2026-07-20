@@ -257,7 +257,7 @@ const LoginScreen: React.FC<{
 
   // Login-specific field styling (kept local so the account modal is unaffected).
   const fieldClass =
-    'w-full bg-fill-subtle border border-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent1)] transition-colors';
+    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:ring-2 focus:ring-(--accent1) transition-all';
   const fieldLabel =
     'block text-sm font-medium text-fg-muted';
 
