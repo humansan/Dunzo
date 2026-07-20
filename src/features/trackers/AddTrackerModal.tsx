@@ -84,7 +84,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               <h2 className="text-lg font-bold text-fg">
                 {editingTracker ? 'Edit Tracker' : 'New Tracker'}
               </h2>
-              <button onClick={onClose} className="rounded-lg p-1.5 text-fg-muted transition-all hover:bg-fill hover:text-fg">
+              <button onClick={onClose} className={`rounded-lg p-1.5 transition-all ${btnGhost()}`}>
                 <X size={16} />
               </button>
             </div>

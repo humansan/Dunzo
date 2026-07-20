@@ -64,14 +64,14 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
       <div className="relative z-10 flex items-center justify-end gap-1 px-3 pt-3">
         <button
           onClick={onMaximize}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           title="Maximize"
         >
           <Maximize2 size={18} />
         </button>
         <button
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           title="Hide widget"
         >
           <X size={18} />

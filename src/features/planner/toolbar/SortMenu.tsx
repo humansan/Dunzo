@@ -59,7 +59,7 @@ export const SortMenu: React.FC<{
                   type="button"
                   onClick={() => remove(s.id)}
                   title="Remove sort"
-                  className="shrink-0 p-0.5 rounded text-fg-faint hover:text-fg hover:bg-fill transition-colors"
+                  className={`shrink-0 p-0.5 rounded  transition-colors ${btnGhost()}`}
                 >
                   <X size={14} />
                 </button>

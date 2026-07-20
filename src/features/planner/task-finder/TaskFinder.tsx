@@ -9,6 +9,7 @@ import { VARIANTS } from '@/features/planner/variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from '@/features/planner/table/TaskTable';
 import { useTaskFinderSearch } from '@/features/planner/task-finder/useTaskFinderSearch';
 import { TwoPaneResults } from '@/features/planner/task-finder/TwoPaneResults';
+import { btnGhost } from '@/theme/buttons';
 
 // A command-palette over the active workspace's tasks, driven by `onPick`: search
 // wires it to open a task's full view, a picker (e.g. reparent) wires it to its own
@@ -166,7 +167,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 p-1 rounded text-fg-faint hover:text-fg hover:bg-fill transition-colors"
+            className={`shrink-0 p-1 rounded transition-colors ${btnGhost()}`}
           >
             <X size={15} />
           </button>

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Settings, Sparkles, LogOut } from 'lucide-react';
+import { btnGhost } from '@/theme/buttons';
 
 // Account context menu opened from the ribbon logo button (bottom of the left
 // sidebar). Mirrors the app's other context menus (RowContextMenu / PopoverMenu):
@@ -8,7 +9,7 @@ import { Settings, Sparkles, LogOut } from 'lucide-react';
 // It anchors to the right of the button and grows upward (hence `bottom`, since
 // the button sits at the very bottom of the ribbon).
 const itemCls =
-  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-fg-muted hover:bg-fill hover:text-fg transition-colors';
+  `w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-colors  ${btnGhost()}`;
 
 // Wraps a wave "cell" (the icon or one letter): all share the same hue-rotate
 // loop, but a staggered negative delay offsets the colors so they ripple as a
@@ -67,7 +68,7 @@ export const AccountMenu: React.FC<{
         </button>
         <button
           onClick={onPremium}
-          className="group relative w-full overflow-hidden rounded-lg px-2.5 py-1.5 text-left text-fg-muted transition-colors"
+          className="group relative w-full overflow-hidden rounded-lg px-2.5 py-1.5 text-left text-fg-muted transition-colors cursor-pointer"
         >
           {/* Hover background: the same hue-rotate wave as the label, at low
               opacity, instead of the plain white hover fill. */}
