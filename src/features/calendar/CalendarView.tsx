@@ -427,37 +427,35 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setMiniCalMonth(d);
   };
 
-  // Get todos for a specific date.
-  // Planner (organizer) tasks route through two independent surface toggles:
-  //   • uncategorized (no collection) → the "Show uncategorized tasks" checkbox.
-  //   • categorized → "Show task planner tasks" AND one of its collection ancestors
-  //     checked in the tree (explicit include-set; a checked parent pulls in its subtree).
-  const plannerOk = useCallback(
+  // The collection filter, applied AFTER the surface toggles decide the base set: a
+  // task with no collection shows only when "Show uncategorized" is on; a task with a
+  // collection shows only when one of its collection ancestors is checked (a checked
+  // parent pulls in its whole subtree).
+  const passesCollectionFilter = useCallback(
     (t: Todo): boolean => {
-      if (!showsInOrganizer(t)) return false;
       if (collectionOf(t, byId) === null) return showUncategorized;
-      if (!showPlanner) return false;
       for (const id of taskCollectionAncestors(t, byId)) if (checkedColls.has(id)) return true;
       return false;
     },
-    [showPlanner, showUncategorized, checkedColls, byId]
+    [showUncategorized, checkedColls, byId]
   );
 
   const getTodosForDate = useCallback(
     (dateStr: string): Todo[] => {
       const dayData = dayTodos.find((d) => d.date === dateStr);
-      // Anything with a start OR an end time gets a block. The 30-minute default
-      // for a missing side is applied at render (kept off the todo) so the event
-      // card can tell which side was never set and omit it from the label.
-      return (dayData?.todos || []).filter(
-        (t) =>
-          t &&
-          (t.startTime || t.dueTime) &&
-          // A task living on both surfaces shows while either surface accepts it.
-          ((showDaily && showsOnDailyChecklist(t, dateStr)) || plannerOk(t))
-      );
+      return (dayData?.todos || []).filter((t) => {
+        // Anything with a start OR an end time gets a block. The 30-minute default
+        // for a missing side is applied at render (kept off the todo) so the event
+        // card can tell which side was never set and omit it from the label.
+        if (!t || !(t.startTime || t.dueTime)) return false;
+        // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
+        const inSet =
+          (showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && showsInOrganizer(t));
+        // Stage 2 - the uncategorized/collection filters narrow that base set.
+        return inSet && passesCollectionFilter(t);
+      });
     },
-    [dayTodos, showDaily, plannerOk]
+    [dayTodos, showDaily, showPlanner, passesCollectionFilter]
   );
 
   // --- Drag Selection for Creation --- //
