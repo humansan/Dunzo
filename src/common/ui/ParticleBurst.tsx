@@ -4,7 +4,7 @@ import { useThemeColor } from '@/theme/useThemeColor';
 
 
 // A deliberately varied palette so a burst feels colourful, not flat.
-const PARTICLE_COLORS = ['#ffc24b', '#ff8a3d', '#ff5d8f', '#a78bfa', '#7dd3fc', '#ffffff'];
+const PARTICLE_COLORS = ['#ffb82b', '#ff7d27', '#ff5d8f', '#9876ff', '#31beff', '#84ff6e'];
 
 // ── A short colourful particle burst + ring, centred on its container ──
 // Absolutely positioned, so drop it inside a `relative` parent and mount it via
@@ -32,7 +32,7 @@ export const ParticleBurst: React.FC = React.memo(() => {
         style={{ borderColor: GOLD }}
         initial={{ width: 24, height: 24, opacity: 1 }}
         animate={{ width: 48, height: 48, opacity: 0 }}
-        transition={{ duration: 0.75, ease: 'easeOut' }}
+        transition={{ duration: 0.9, ease: 'easeOut' }}
       />
       {parts.map((p, i) => (
         <motion.span
@@ -41,7 +41,7 @@ export const ParticleBurst: React.FC = React.memo(() => {
           style={{ width: p.s, height: p.s, backgroundColor: p.c, boxShadow: `0 0 6px ${p.c}` }}
           initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
           animate={{ x: p.x, y: p.y, scale: 0, opacity: 0 }}
-          transition={{ duration: 0.75, ease: 'easeOut' }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
         />
       ))}
     </div>

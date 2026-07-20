@@ -26,12 +26,9 @@ const StarIcon = React.memo(
       <motion.div
         animate={burst ? { scale: [1, 1.4, 0.8, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
         transition={{ duration: 0.9, ease: POP }}
-        style={{
-          color: active ? gold : 'rgba(255,255,255,0.18)',
-          filter: active ? `drop-shadow(0 0 5px ${gold}cc)` : 'none'
-        }}
+        className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
       >
-        <Astroid size={30} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
+        <Astroid size={32} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>
       <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
     </div>
@@ -124,7 +121,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date, pinned = tr
             )} */}
           </AnimatePresence>
           <motion.div
-            className="relative flex items-center justify-center min-w-12 h-12 rounded-full pl-4 pr-1.5"
+            className="relative flex items-center justify-center min-w-12 h-14 rounded-full pl-5 pr-2.5"
             animate={{
               backgroundColor: maxed ? GOLD : GOLD_BG,
               scale: pulsing ? [1, 1.33, 0.9, 1] : 1
@@ -136,7 +133,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date, pinned = tr
           >
             <motion.span
               key={streak}
-              className="text-2xl font-bold leading-none"
+              className="text-3xl font-bold leading-none"
               style={{ fontVariantNumeric: 'tabular-nums' }}
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1, color: maxed ? '#000000' : GOLD_TEXT }}

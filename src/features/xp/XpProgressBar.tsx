@@ -39,9 +39,13 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   // the one that's actually the bar to clear. Ties fall to the 7-day figure.
   const avgIs30 = avgLast30Days > avgLast7Days;
   const avgValue = avgIs30 ? avgLast30Days : avgLast7Days;
-  const avgLabel = avgIs30 ? 'avg 30d' : 'avg 7d';
+  const avgLabel = avgIs30 ? '30d avg' : '7d avg';
   const bestValue = reachedWeekBest ? bestAllTime : bestLast7Days;
   const bestLabel = reachedWeekBest ? 'best all time' : 'best 7d';
+
+  const reachTarget = target >= avgValue ? target : avgValue;
+  const reachText = target >= avgValue ? 'yesterday' : avgLabel;
+  const actualRemaining = reachTarget - earned;
 
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
@@ -56,16 +60,16 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   let status: string;
 
   if (!reachedTarget) {
-    status = target === 0 ? 'Any XP beats yesterday' : `${remaining} XP to reach yesterday`;
+    status = reachTarget === 0 ? `Any XP beats ${reachText}` : `${actualRemaining} XP to reach ${reachText}`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
     status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} XP to 7-day best`;
   } else if (!reachedAllTimeBest) {
     // 7-day best cleared (violet). Point at the all-time best.
-    status = `🎊On a roll!! ⬩ ${bestAllTime - earned} XP to all-time best`;
+    status = `🎊🔥On a roll!! ⬩ ${bestAllTime - earned} XP to all-time best`;
   } else {
     const over = earned - bestAllTime;
-    status = over > 0 ? `🥳New all-time best!!! ⬩ +${over} XP` : 'All-time best matched!!';
+    status = over > 0 ? `🥳😭🏆New all-time best!!! ⬩ +${over} XP` : 'All-time best matched!!';
   }
 
   const pctLabel = `${Math.round(percent)}%`;
