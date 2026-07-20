@@ -9,6 +9,10 @@ import { ParticleBurst } from '@/common/ui';
 interface StarStreakProps {
   dayTodos: DayTodos[];
   date: string;
+  // When true (default) the widget pins itself to the bottom-right corner. Pass
+  // false to render it in-flow so a parent (e.g. the centered celebration popup)
+  // can position it.
+  pinned?: boolean;
 }
 
 // Snappy-then-soft, used for the celebratory pops.
@@ -35,7 +39,7 @@ const StarIcon = React.memo(
 );
 StarIcon.displayName = 'StarIcon';
 
-const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
+const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date, pinned = true }) => {
   const GOLD = useThemeColor('xp-tier1');
   const GOLD_BG = useThemeColor('warning-tint');
   const GOLD_TEXT = useThemeColor('warning');
@@ -92,7 +96,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
   const maxed = stars >= 3;
 
   return (
-    <div className="fixed right-4 bottom-5 z-30 pointer-events-none select-none font-mono">
+    <div className={`${pinned ? 'fixed right-4 bottom-5 z-30' : ''} pointer-events-none select-none font-mono`}>
       {/* pr matches py so the badge has equal gap to the right edge as top/bottom. */}
       <div
         className="relative flex items-center gap-2.5 rounded-lg pl-5 pr-2 py-2"
