@@ -12,7 +12,7 @@ type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: bo
 // the flattened collection tree (+ collapse state), per-collection task counts, and the
 // uncategorized count. Collapse state is local/ephemeral - the calendar doesn't DB-sync
 // it the way the planner sidebar does.
-export function useCollectionTree(dayTodos: DayTodos[]): {
+export function useCollectionTree(dayTodos: DayTodos[], includeArchived: boolean = false): {
   byId: Map<string, Todo>;
   visibleCollections: VisibleCollection[];
   collectionCount: (id: string) => number;
@@ -36,7 +36,7 @@ export function useCollectionTree(dayTodos: DayTodos[]): {
   // Collections grouped by parent (root = null), each list in hub order. A parentId
   // pointing outside the collection set is treated as a root.
   const collChildren = useMemo(() => {
-    const collections = [...byId.values()].filter((t) => t.isCollection);
+    const collections = [...byId.values()].filter((t) => t.isCollection && (includeArchived || !t.archived));
     collections.sort((a, b) => (a.hubOrder ?? a.createdAt) - (b.hubOrder ?? b.createdAt));
     const ids = new Set(collections.map((c) => c.id));
     const m = new Map<string | null, Todo[]>();
@@ -47,7 +47,7 @@ export function useCollectionTree(dayTodos: DayTodos[]): {
       m.set(pid, arr);
     }
     return m;
-  }, [byId]);
+  }, [byId, includeArchived]);
 
   // Depth-first flatten into render order, hiding children of collapsed collections.
   const visibleCollections = useMemo(() => {
@@ -97,8 +97,8 @@ export function useCollectionTree(dayTodos: DayTodos[]): {
 
   // Every collection id (for select-all + default seeding).
   const allCollectionIds = useMemo(
-    () => [...byId.values()].filter((t) => t.isCollection).map((t) => t.id),
-    [byId]
+    () => [...byId.values()].filter((t) => t.isCollection && (includeArchived || !t.archived)).map((t) => t.id),
+    [byId, includeArchived]
   );
 
   // All descendant collection ids of `id` (sub-collections, recursively) - used by the

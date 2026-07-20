@@ -17,7 +17,7 @@ import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
 import { timeToPercentage, formatTime12h } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
-import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
+import { collectionOf, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
 import { Checkbox } from '@/common/ui/Checkbox';
@@ -117,7 +117,7 @@ const SurfaceCheck: React.FC<{
   checked: boolean;
   onChange: (v: boolean) => void;
 }> = ({ label, checked, onChange }) => (
-  <Checkbox checked={checked} onChange={onChange} className="w-full py-1.5" aria-label={label}>
+  <Checkbox checked={checked} onChange={onChange} className="w-full py-1" aria-label={label}>
     <span className="truncate text-xs text-fg-muted">{label}</span>
   </Checkbox>
 );
@@ -296,7 +296,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [focusDate, setFocusDate] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [miniCalMonth, setMiniCalMonth] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [showDayPicker, setShowDayPicker] = useState(false);
-  const coll = useCollectionTree(dayTodos);
 
   // The calendar sidebar filter, persisted to user_settings (surfaces + checked
   // collections). Surfaces default on; an undefined `checkedCollections` means "all
@@ -306,9 +305,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const showDaily = filter.showDaily ?? true;
   const showPlanner = filter.showPlanner ?? true;
   const showUncategorized = filter.showUncategorized ?? true;
+  // Archived tasks (and their collections) are hidden unless this is turned on.
+  const showArchived = filter.showArchived ?? false;
   const setShowDaily = useCallback((v: boolean) => patchFilter(() => ({ showDaily: v })), [patchFilter]);
   const setShowPlanner = useCallback((v: boolean) => patchFilter(() => ({ showPlanner: v })), [patchFilter]);
   const setShowUncategorized = useCallback((v: boolean) => patchFilter(() => ({ showUncategorized: v })), [patchFilter]);
+  const setShowArchived = useCallback((v: boolean) => patchFilter(() => ({ showArchived: v })), [patchFilter]);
+
+  // The collection tree shows archived collections only when "show archived" is on.
+  const coll = useCollectionTree(dayTodos, showArchived);
 
   // Days shown in the grid. `initialDays` (embedded contexts, e.g. the daily page) is a
   // fixed override and isn't persisted; the main calendar reads/writes the saved value.
@@ -516,14 +521,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         // for a missing side is applied at render (kept off the todo) so the event
         // card can tell which side was never set and omit it from the label.
         if (!t || !(t.startTime || t.dueTime)) return false;
+        // Archived tasks are hidden entirely unless "show archived" is on; the gate
+        // owns the archived exclusion, so the planner surface below uses raw
+        // showInDatabase (equivalent to showsInOrganizer for non-archived tasks).
+        if (t.archived && !showArchived) return false;
         // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
         const inSet =
-          (showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && showsInOrganizer(t));
+          (showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && t.showInDatabase === true);
         // Stage 2 - the uncategorized/collection filters narrow that base set.
         return inSet && passesCollectionFilter(t);
       });
     },
-    [dayTodos, showDaily, showPlanner, passesCollectionFilter]
+    [dayTodos, showDaily, showPlanner, showArchived, passesCollectionFilter]
   );
 
   // --- Drag Selection for Creation --- //
@@ -850,10 +859,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           {/* Which surfaces' tasks get blocked out on the grid. Sits flush under the mini
               calendar; row rhythm (space-y-0.5) matches the collection rows below. */}
-          <div className="shrink-0 mt-4 px-2.5">
+          <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
+          <div className="shrink-0 px-2.5">
             <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
             <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
             <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
+            <SurfaceCheck label="Show archived tasks" checked={showArchived} onChange={setShowArchived} />
           </div>
 
           {/* Pick which collections' tasks appear. The tree renders in checkbox mode;

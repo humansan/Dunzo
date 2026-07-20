@@ -29,6 +29,7 @@ export interface CalendarFilter {
   showDaily?: boolean;
   showPlanner?: boolean;
   showUncategorized?: boolean;
+  showArchived?: boolean; // include archived tasks + collections (undefined ⇒ false)
   checkedCollections?: string[]; // undefined ⇒ all collections checked (not yet configured)
   dayCount?: number; // days shown in the calendar grid (1/3/5/7; undefined ⇒ 3)
 }
