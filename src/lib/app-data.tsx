@@ -371,9 +371,9 @@ function useProvideAppData() {
     addHubTodo(opts?.parentId ?? null, opts);
   const handleAddSubtask = (parentId: string): string => addHubTodo(parentId);
 
-  // A block drawn on the calendar is a dated, timed task. Like every other new
-  // task it defaults to both surfaces (Planner + that day's daily checklist); the
-  // only thing special here is the drawn start/due time.
+  // A block drawn on the full calendar page is a dated, timed task. Like every
+  // other new task it defaults to both surfaces (Planner + that day's daily
+  // checklist); the only thing special here is the drawn start/due time.
   const handleCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
     addHubTodo(null, {
       date,
@@ -384,6 +384,26 @@ function useProvideAppData() {
         duePercentage: timeToPercentage(dueTime),
         showInDatabase: true,
         showInDailyList: true,
+      },
+    });
+
+  // A block drawn on the DAILY screen's 1-day calendar is a daily-list task, so it
+  // adopts the same creation defaults as a daily quick-add: always on the daily
+  // checklist, Planner visibility follows `dailyTasksInPlanner`, and it seeds the
+  // default XP (0/None ⇒ unset) and auto-move flag. The showInDatabase=false case
+  // survives normalizeVisibility because the task has a date + showInDailyList.
+  const handleDailyCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
+    addHubTodo(null, {
+      date,
+      patch: {
+        startTime,
+        startPercentage: timeToPercentage(startTime),
+        dueTime,
+        duePercentage: timeToPercentage(dueTime),
+        showInDailyList: true,
+        showInDatabase: dailyTasksInPlanner,
+        autoMoveDate: defaultAutoMoveDate,
+        ...(defaultDailyXp > 0 ? { xp: defaultDailyXp } : {}),
       },
     });
 
@@ -536,6 +556,7 @@ function useProvideAppData() {
     handleHubSaveTodo,
     handleHubAddTodo,
     handleCalendarAddTodo,
+    handleDailyCalendarAddTodo,
     handleAddSubtask,
     createCollection,
     addHubCollection,
