@@ -20,8 +20,8 @@ const StarIcon = React.memo(
   ({ active, burst, gold }: { active: boolean; burst: boolean; gold: string }) => (
     <div className="relative">
       <motion.div
-        animate={burst ? { scale: [0.5, 1.4, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
-        transition={{ duration: 0.45, ease: POP }}
+        animate={burst ? { scale: [1, 1.4, 0.8, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
+        transition={{ duration: 0.75, ease: POP }}
         style={{
           color: active ? gold : 'rgba(255,255,255,0.18)',
           filter: active ? `drop-shadow(0 0 5px ${gold}cc)` : 'none'
@@ -123,11 +123,11 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
             className="relative flex items-center justify-center min-w-12 h-12 rounded-full pl-4 pr-1.5"
             animate={{
               backgroundColor: maxed ? GOLD : GOLD_BG,
-              scale: pulsing ? [1, 1.22, 0.97, 1] : 1
+              scale: pulsing ? [1, 1.33, 0.9, 1] : 1
             }}
             transition={{
               backgroundColor: { duration: 0.4 },
-              scale: { duration: 0.45, ease: POP }
+              scale: { duration: 0.75, ease: POP }
             }}
           >
             <motion.span
@@ -136,7 +136,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
               style={{ fontVariantNumeric: 'tabular-nums' }}
               initial={{ scale: 0.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1, color: maxed ? '#000000' : GOLD_TEXT }}
-              transition={{ scale: { duration: 0.45, ease: POP }, color: { duration: 0.4 } }}
+              transition={{ scale: { duration: 0.75, ease: POP }, color: { duration: 0.4 } }}
             >
               {streak}🔥
             </motion.span>
