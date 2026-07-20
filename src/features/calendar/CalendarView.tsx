@@ -32,6 +32,14 @@ const GUTTER_WIDTH = 64; // px - width of the left time-label gutter (the day gr
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_OPTIONS = [1, 3, 5, 7];
 
+// ─── Overlap cascade tuning ──────────────────────────────────────────────────
+// Overlapping events are staggered Google-Calendar style: a later-starting event
+// indents right and stacks on top, leaving the earlier one's left edge visible.
+const INDENT_STEP_PCT = 8;  // % of the column each indent level shifts right
+const MAX_LEVELS = 5;       // cap so deep stacks stop indenting instead of overflowing
+const Z_EVENT_BASE = 10;    // resting z for a level-0 card (matches the old flat z-10)
+const Z_EVENT_HOVER = 40;   // hovered card jumps here - above siblings, below the drag ghost (z-50)
+
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number);
   return h * 60 + (m || 0);
@@ -39,6 +47,38 @@ function timeToMinutes(t: string): number {
 
 function minutesToPx(mins: number): number {
   return (mins / 60) * HOUR_HEIGHT;
+}
+
+// A timed task's vertical bounds in minutes. A missing side defaults to a 30-min
+// block (start-only → start..start+30; end-only → end-30..end); the calendar's
+// filter guarantees at least one time is set, so the opposite field is present.
+function eventBounds(todo: Todo): { startMin: number; endMin: number } {
+  const startMin = todo.startTime
+    ? timeToMinutes(todo.startTime)
+    : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
+  let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
+  if (endMin <= startMin) endMin = startMin + 30;
+  return { startMin, endMin };
+}
+
+// Assign each event a cascade indent level: the number of earlier-starting events
+// it overlaps. Two events overlap when a.startMin < b.endMin && b.startMin < a.endMin.
+// A run of mutually-overlapping events gets strictly increasing levels (0,1,2…, a
+// staircase); an event that clears an earlier one reuses the freed lower level.
+function computeOverlapLayout(
+  items: { id: string; startMin: number; endMin: number }[],
+): Map<string, number> {
+  const sorted = [...items].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+  const levels = new Map<string, number>();
+  for (let i = 0; i < sorted.length; i++) {
+    let level = 0;
+    for (let j = 0; j < i; j++) {
+      const e = sorted[j];
+      if (e.startMin < sorted[i].endMin && sorted[i].startMin < e.endMin) level++;
+    }
+    levels.set(sorted[i].id, level);
+  }
+  return levels;
 }
 
 function formatHour(h: number): string {
@@ -100,15 +140,24 @@ const EventCard: React.FC<{
   endMin: number;
   // CSS color driving the card's fill, spine and dot - see accentForTodo.
   accent: string;
+  // Cascade indent: 0 = full-width (default). A higher level shifts the card right
+  // and stacks it on top, so overlapping earlier cards stay partly visible.
+  indentLevel?: number;
   onMouseDown?: (e: React.MouseEvent) => void;
   onResizeStart?: (e: React.MouseEvent, edge: 'top' | 'bottom') => void;
   isDragging?: boolean;
   onToggle?: (e: React.MouseEvent) => void;
-}> = ({ todo, startMin, endMin, accent, onMouseDown, onResizeStart, isDragging, onToggle }) => {
+}> = ({ todo, startMin, endMin, accent, indentLevel = 0, onMouseDown, onResizeStart, isDragging, onToggle }) => {
   const [isHovered, setIsHovered] = useState(false);
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
+  // Overlap cascade: indent right by a per-level % of the column (capped), and
+  // raise z with the level so a later start sits on top. Hover lifts a buried card
+  // to the front so it can be read/clicked. Transient (drag) cards keep z-50.
+  const level = Math.min(indentLevel, MAX_LEVELS);
+  const indentLeft = level > 0 ? `${level * INDENT_STEP_PCT}%` : undefined;
+  const restingZ = isHovered ? Z_EVENT_HOVER : Z_EVENT_BASE + level;
   // Only show a time that's actually set - never fabricate the missing side.
   const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
   const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
@@ -123,11 +172,16 @@ const EventCard: React.FC<{
       onMouseLeave={() => setIsHovered(false)}
       className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
-        } ${isDragging ? 'z-50' : 'z-10 ring-1 ring-canvas'}
+        } ${isDragging ? 'z-50' : 'ring-1 ring-canvas'}
       `}
       style={{
         top: `${top}px`,
         height: `${height}px`,
+        // Cascade indent overrides the base left-1 (right-1 stays, so the card still
+        // reaches the right edge and overlays the ones behind it). z follows the
+        // level unless we're the drag ghost (which owns z-50 via the class above).
+        ...(indentLeft ? { left: indentLeft } : {}),
+        ...(isDragging ? {} : { zIndex: restingZ }),
         paddingTop: isSmall ? '0' : '5px',
         // The drag/resize ghost is outlined in the task's own accent.
         ...(isDragging ? { boxShadow: `0 0 0 1px ${accent}` } : {}),
@@ -947,6 +1001,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             {visibleDays.map((day) => {
               const dateStr = format(day, 'yyyy-MM-dd');
               const todos = getTodosForDate(dateStr);
+              // Cascade indent levels for this column's overlapping events.
+              const overlapLayout = computeOverlapLayout(
+                todos.map((t) => ({ id: t.id, ...eventBounds(t) })),
+              );
               const today = isToday(day);
 
               return (
@@ -983,14 +1041,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                   {/* Event cards */}
                   {todos.map((todo) => {
-                    // A missing side defaults to a 30-minute block (start-only →
-                    // start..start+30; end-only → end-30..end). The filter guarantees
-                    // at least one time is set, so the opposite field is present here.
-                    const startMin = todo.startTime
-                      ? timeToMinutes(todo.startTime)
-                      : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
-                    let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
-                    if (endMin <= startMin) endMin = startMin + 30;
+                    const { startMin, endMin } = eventBounds(todo);
+                    const indentLevel = overlapLayout.get(todo.id) ?? 0;
 
                     const isDraggingThis = draggingEvent?.todo.id === todo.id;
                     const isResizingThis = resizingEvent?.todo.id === todo.id;
@@ -1008,6 +1060,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           todo={todo}
                           startMin={startMin}
                           endMin={endMin}
+                          indentLevel={indentLevel}
                           accent={accentForTodo(todo)}
                           onMouseDown={(e) => handleEventMouseDown(e, todo, dateStr, startMin, endMin)}
                           onResizeStart={(e, edge) => handleEventResizeStart(e, todo, dateStr, edge, startMin, endMin)}
