@@ -61,21 +61,28 @@ function eventBounds(todo: Todo): { startMin: number; endMin: number } {
   return { startMin, endMin };
 }
 
-// Assign each event a cascade indent level: the number of earlier-starting events
-// it overlaps. Two events overlap when a.startMin < b.endMin && b.startMin < a.endMin.
-// A run of mutually-overlapping events gets strictly increasing levels (0,1,2…, a
-// staircase); an event that clears an earlier one reuses the freed lower level.
+// Assign each event a cascade indent lane, Notion-style: the smallest lane not
+// currently occupied by an earlier-starting event it overlaps (two events overlap
+// when a.startMin < b.endMin && b.startMin < a.endMin). Because a lane is reclaimed
+// the moment its occupant ends, an event that clears everything before it drops back
+// to lane 0 (full width) even while a still-running neighbour sits indented above it
+// - matching how Notion/Google reuse freed columns. Overlapping events always land
+// in distinct lanes, so higher lanes indent further and (via z) stack on top.
 function computeOverlapLayout(
   items: { id: string; startMin: number; endMin: number }[],
 ): Map<string, number> {
   const sorted = [...items].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
   const levels = new Map<string, number>();
   for (let i = 0; i < sorted.length; i++) {
-    let level = 0;
+    const taken = new Set<number>();
     for (let j = 0; j < i; j++) {
       const e = sorted[j];
-      if (e.startMin < sorted[i].endMin && sorted[i].startMin < e.endMin) level++;
+      if (e.startMin < sorted[i].endMin && sorted[i].startMin < e.endMin) {
+        taken.add(levels.get(e.id) ?? 0);
+      }
     }
+    let level = 0;
+    while (taken.has(level)) level++;
     levels.set(sorted[i].id, level);
   }
   return levels;
@@ -1077,13 +1084,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     );
                   })}
 
-                  {/* Active Dragging Event */}
+                  {/* Active Dragging Event - keep the card's cascade indent while it moves. */}
                   {draggingEvent && draggingEvent.currentDateStr === dateStr && (
                     <EventCard
                       todo={draggingEvent.todo}
                       accent={accentForTodo(draggingEvent.todo)}
                       startMin={draggingEvent.currentMins}
                       endMin={draggingEvent.currentMins + (draggingEvent.origEndMins - draggingEvent.origStartMins)}
+                      indentLevel={overlapLayout.get(draggingEvent.todo.id) ?? 0}
                       isDragging={true}
                     />
                   )}
@@ -1095,6 +1103,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       accent={accentForTodo(resizingEvent.todo)}
                       startMin={resizingEvent.currentStartMins}
                       endMin={resizingEvent.currentEndMins}
+                      indentLevel={overlapLayout.get(resizingEvent.todo.id) ?? 0}
                       isDragging={true} // reuse styling for visual feedback
                     />
                   )}
@@ -1108,6 +1117,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       accent={settling.accent}
                       startMin={settling.startMins}
                       endMin={settling.endMins}
+                      indentLevel={overlapLayout.get(settling.id) ?? 0}
                     />
                   )}
 
