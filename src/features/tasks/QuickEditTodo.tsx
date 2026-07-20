@@ -180,6 +180,13 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     if (p !== undefined) setPercentStr(p.toString());
   };
 
+  // A due time can't exist without a due date; clearing the date clears the time
+  // (and its percent + carried start time) so the form never holds a dateless time.
+  const handleDateChange = (val: string) => {
+    setDate(val);
+    if (!val) { setTime(''); setPercentStr(''); setStartTime(''); }
+  };
+
   const canSubmit = text.trim().length > 0;
 
   const submit = () => {
@@ -253,7 +260,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       <div className="flex items-center gap-1.5 mt-3 flex-wrap">
         <DateChip
           value={date}
-          onChange={setDate}
+          onChange={handleDateChange}
           placeholder="Due date"
           autoMoveDate={autoMoveDate}
           onAutoMoveDateChange={setAutoMoveDate}
@@ -262,6 +269,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           value={time}
           percent={percentStr === '' ? undefined : parseFloat(percentStr)}
           onChange={handleTimeChange}
+          disabled={!date}
         />
         {showXpChips && (
           <XpChip

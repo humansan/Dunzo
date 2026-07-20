@@ -153,8 +153,10 @@ export const RowContextMenu: React.FC<{
               <CalendarDays size={14} /> Set date
             </button>
             <button
-              onClick={() => toggleSub('time')}
-              className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''}`}
+              onClick={() => entry?.todo.dueDate && toggleSub('time')}
+              disabled={!entry?.todo.dueDate}
+              title={entry?.todo.dueDate ? undefined : 'Add a date first'}
+              className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${entry?.todo.dueDate ? '' : 'opacity-40 cursor-not-allowed'}`}
             >
               <Clock size={14} /> Set time
             </button>

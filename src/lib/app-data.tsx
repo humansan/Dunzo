@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '@/features/tasks/model';
-import { normalizeCompletion, toggledStatus, isDone } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { timeToPercentage } from '@/common/lib/time';
 import { authClient } from '@/lib/auth';
@@ -244,7 +244,7 @@ function useProvideAppData() {
     const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
     // Persist within-day position: the array order the daily/calendar view hands
     // back becomes each task's dailyOrder.
-    const upserts = todosForDate.map((t, i) => normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i })));
+    const upserts = todosForDate.map((t, i) => reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i }))));
     batchTodos.mutate({ upserts, deletes });
     if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
   };
@@ -257,7 +257,7 @@ function useProvideAppData() {
     const maxDailyOrder = todos
       .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
       .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 })) });
+    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 }))) });
   };
 
   // Auto-move-date sweep: reschedule any incomplete task whose dueDate has passed
@@ -335,7 +335,7 @@ function useProvideAppData() {
   // so callers can just set `dueDate` without worrying about the sentinel.
   const handleHubSaveTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
-    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate })) });
+    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate }))) });
   };
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
@@ -364,7 +364,7 @@ function useProvideAppData() {
       ...(opts?.patch ?? {}),
       ...(dueDate !== undefined ? { dueDate } : {}),
     };
-    createTodo.mutate(normalizeCompletion(normalizeVisibility(newTodo)));
+    createTodo.mutate(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))));
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>
@@ -378,6 +378,9 @@ function useProvideAppData() {
     addHubTodo(null, {
       date,
       patch: {
+        // A single-day timed block: start and due both live on the drawn day, so a
+        // time never sits without its date (the schedule invariant).
+        startDate: date,
         startTime,
         startPercentage: timeToPercentage(startTime),
         dueTime,
@@ -396,6 +399,8 @@ function useProvideAppData() {
     addHubTodo(null, {
       date,
       patch: {
+        // Start and due both live on the drawn day (see handleCalendarAddTodo).
+        startDate: date,
         startTime,
         startPercentage: timeToPercentage(startTime),
         dueTime,

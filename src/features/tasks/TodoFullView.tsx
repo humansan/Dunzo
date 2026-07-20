@@ -15,7 +15,7 @@ import {
 import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
-import { CollectionOption, hasDate } from '@/features/tasks/model';
+import { CollectionOption, hasDate, reconcileSchedule, type ScheduleSide } from '@/features/tasks/model';
 import { isDone } from '@/features/tasks/model';
 import {
   CompletedToggle,
@@ -146,20 +146,41 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     });
   };
 
+  // Apply a schedule-affecting change (a start/due date or time) and reconcile the
+  // invariant: a time can't exist without its date, and start can't be after due.
+  // `editedSide` names the side the user just touched, so an ordering conflict moves
+  // the OTHER side to meet it. The due date lives in `dateStr` (onSave treats its
+  // second arg as authoritative for dueDate), so we bake it into the candidate and
+  // read any reconciled dueDate back out.
+  const updateSchedule = (
+    patch: Partial<Todo>,
+    editedSide: ScheduleSide,
+    nextDueDate: string = dateStr,
+  ) => {
+    setDraft(prev => {
+      const candidate = reconcileSchedule(
+        { ...prev, ...patch, dueDate: nextDueDate || undefined },
+        editedSide,
+      );
+      const outDate = candidate.dueDate ?? '';
+      setDateStr(outDate);
+      onSave(candidate, outDate);
+      return candidate;
+    });
+  };
+
   const handleDateChange = (val: string) => {
-    setDateStr(val);
-    // Clearing the date keeps the showInDailyList flag intact - an undated task
-    // simply never reaches any daily list (showsOnDailyChecklist gates on the date),
-    // and re-adding a date later sends it straight back. We only ensure it stays
-    // reachable in the Planner (mirrors normalizeVisibility).
-    if (!val) update({ showInDatabase: true }, '');
-    else update({}, val);
+    // Clearing the due date drops the due time with it (a time needs its date -
+    // reconcileSchedule strips it) and keeps the task reachable in the Planner
+    // (mirrors normalizeVisibility); re-adding a date later sends it straight back.
+    updateSchedule(val ? {} : { showInDatabase: true }, 'due', val);
   };
 
   // Each time carries a percent-of-day twin; patchFromTime writes both (and clears
   // both), the same way the Planner's cells do.
-  const handleStartTimeChange = (val: string) => update(patchFromTime('start', val));
-  const handleDueTimeChange = (val: string) => update(patchFromTime('due', val));
+  const handleStartTimeChange = (val: string) => updateSchedule(patchFromTime('start', val), 'start');
+  const handleDueTimeChange = (val: string) => updateSchedule(patchFromTime('due', val), 'due');
+  const handleStartDateChange = (val: string) => updateSchedule({ startDate: val || undefined }, 'start');
 
   // "Show in" invariants: the daily flag can be set even without a date (it just
   // stays pending until one is added), but the task must stay reachable on at least
@@ -280,19 +301,20 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <RightProp
                 icon={<CalendarDays size={11} />}
                 label="Start"
-                onClear={() => update({ startDate: undefined, ...patchFromTime('start', '') })}
+                onClear={() => updateSchedule({ startDate: undefined, ...patchFromTime('start', '') }, 'start')}
                 canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
                   <DateChip
                     value={draft.startDate || ''}
                     placeholder="Date"
-                    onChange={(val) => update({ startDate: val || undefined })}
+                    onChange={handleStartDateChange}
                   />
                   <TimeChip
                     value={draft.startTime}
                     percent={draft.startPercentage}
                     onChange={handleStartTimeChange}
+                    disabled={!draft.startDate}
                   />
                 </div>
               </RightProp>
@@ -300,7 +322,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <RightProp
                 icon={<Clock size={11} />}
                 label="Due"
-                onClear={() => update(patchFromTime('due', ''))}
+                onClear={() => updateSchedule(patchFromTime('due', ''), 'due')}
                 canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -315,6 +337,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     value={draft.dueTime}
                     percent={draft.duePercentage}
                     onChange={handleDueTimeChange}
+                    disabled={!dateStr}
                   />
                 </div>
               </RightProp>

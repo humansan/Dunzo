@@ -604,10 +604,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
       const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
-      // Update the todo
+      // Update the todo. The block is single-day: pin BOTH start and due date to
+      // the (possibly new) column so a cross-day move doesn't leave startDate on
+      // the old day - which would read as a stale multi-day span.
       const updatedTodo = {
         ...todo,
+        startDate: currentDateStr,
         startTime: newStartTime,
+        startPercentage: timeToPercentage(newStartTime),
         dueTime: newEndTime,
         duePercentage: timeToPercentage(newEndTime),
       };
@@ -701,9 +705,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
       const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
+      // Single-day block: keep start's date pinned to this column too, so setting a
+      // start time never leaves it dateless (the schedule invariant).
       const updatedTodo = {
         ...todo,
+        startDate: dateStr,
         startTime: newStartTime,
+        startPercentage: timeToPercentage(newStartTime),
         dueTime: newEndTime,
         duePercentage: timeToPercentage(newEndTime),
       };

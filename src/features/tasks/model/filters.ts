@@ -16,6 +16,15 @@ export {
   normalizeVisibility,
 } from '@shared/domain/todoVisibility';
 
+// The start/due schedule invariant is likewise enforced on both sides of the wire
+// (see shared/domain/todoSchedule.ts); re-exported here as the client's entry point.
+export {
+  reconcileSchedule,
+  startAfterDue,
+  touchesSchedule,
+  type ScheduleSide,
+} from '@shared/domain/todoSchedule';
+
 // A todo id together with every descendant id (subtasks, recursively), for
 // cascading hub operations like delete/archive.
 export function collectWithDescendants(todos: Todo[], rootId: string): Set<string> {

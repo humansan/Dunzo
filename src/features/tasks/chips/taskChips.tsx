@@ -201,8 +201,26 @@ export const TimeChip: React.FC<{
   percent?: number;
   onChange: (val: string) => void;
   placeholder?: string;
-}> = ({ value, percent, onChange, placeholder = 'Time' }) => {
+  /** A time can't exist without a date on its side; the caller disables the chip
+   *  (greyed, non-interactive) until that side has a date. */
+  disabled?: boolean;
+}> = ({ value, percent, onChange, placeholder = 'Time', disabled = false }) => {
   const pct = percent === undefined ? null : Number.isInteger(percent) ? percent : Math.round(percent);
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        title="Add a date first"
+        className={`${chipBase} bg-fill-subtle opacity-40 cursor-not-allowed`}
+      >
+        <span className={`${chipText} text-fg-subtle`}>
+          <Clock size={16} />
+          <span className="relative top-px">{value ? formatTime12h(value) : placeholder}</span>
+        </span>
+      </button>
+    );
+  }
   return (
     <ChipPopover panel={() => <TimeInput value={value} autoFocus onChange={onChange} />}>
       {({ open }) => (
