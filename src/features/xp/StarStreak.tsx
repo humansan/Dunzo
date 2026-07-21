@@ -114,14 +114,14 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
             }}
             transition={{
               backgroundColor: { duration: 0.4 },
-              scale: { duration: 0.9, ease: POP },
+              scale: { duration: 0.9, ease: POP }
             }}
           >
             <motion.span
               key={streak}
               className="text-2xl font-bold leading-none"
               style={{ fontVariantNumeric: 'tabular-nums' }}
-              animate={{ color: maxed ? '#000000' : ["white", GOLD_TEXT], scale: maxed ? [1, 1.2, 1] : [0.8, 1]}}
+              animate={{ color: maxed ? '#000000' : ["white", GOLD_TEXT], scale: maxed ? [1, 1.25, 1] : 1}}
               transition={{ scale: { duration: 0.6, ease: POP }, color: { duration: 0.4 } }}
             >
               {streak}🔥

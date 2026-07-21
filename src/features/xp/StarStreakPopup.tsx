@@ -89,12 +89,15 @@ const StarStreakPopupBase: React.FC<StarStreakPopupProps> = ({ lit, streak, date
     <AnimatePresence>
       {show && snap && (
         <motion.div
-          className={`fixed inset-0 z-[90] flex items-center justify-center pointer-events-none ${overlayBackdrop} scale-150`}
+          // Swallows clicks while it's up: completing another task mid-celebration
+          // earns a further star, and the supersede in the effect above would drop
+          // the in-flight pop for the new one. StarStreak itself stays
+          // pointer-events-none, so there's nothing to click through to.
+          className={`fixed inset-0 z-[90] flex items-center justify-center ${overlayBackdrop} scale-150`}
           initial={{ opacity: 0, scale:0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ opacity: {duration: 0.3 }, scale: { duration: STAR_BLOOM_MS/1000, ease: 'easeOut' } }}
-          onClick={() => null}
         >
           {/* `reveal` fires the shake on the same tick as the star pop and the
               particle burst, so the hit reads as one event. */}
