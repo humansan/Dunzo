@@ -232,6 +232,13 @@ function useProvideAppData() {
   // Bucket key for a flat task (its scheduled day, or the UNDATED sentinel).
   const bucketKeyOf = (t: Todo) => (t.dueDate && t.dueDate !== UNDATED ? t.dueDate : UNDATED);
 
+  // Next free Planner order: one past the highest one in use. EVERY task must
+  // carry a hubOrder. The Planner sorts siblings by `hubOrder ?? createdAt`, and
+  // those two don't share a scale (an index vs epoch ms), so a task without one
+  // sinks below every ordered task while this max ignores it - which is what made
+  // a section's "+" drop the new task above such tasks instead of at the end.
+  const nextHubOrder = () => todos.reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0) + 1;
+
   // Replace the whole set of todos scheduled on `date` with `todosForDate` (the
   // daily/calendar views hand back the full day in its new order). Other days are
   // left untouched; the provided todos are pinned to `date` via dueDate.
@@ -244,7 +251,11 @@ function useProvideAppData() {
     const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
     // Persist within-day position: the array order the daily/calendar view hands
     // back becomes each task's dailyOrder.
-    const upserts = todosForDate.map((t, i) => reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i }))));
+    // A task created on the Daily page is built here, not by addHubTodo, so it
+    // arrives without a Planner order - hand out the next ones so it lands at the
+    // end of the Planner (see nextHubOrder). Existing orders are left alone.
+    let hubOrder = nextHubOrder();
+    const upserts = todosForDate.map((t, i) => reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i, hubOrder: t.hubOrder ?? hubOrder++ }))));
     batchTodos.mutate({ upserts, deletes });
     if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
   };
@@ -257,7 +268,7 @@ function useProvideAppData() {
     const maxDailyOrder = todos
       .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
       .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 }))) });
+    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1, hubOrder: updatedTodo.hubOrder ?? nextHubOrder() }))) });
   };
 
   // Auto-move-date sweep: reschedule any incomplete task whose dueDate has passed
@@ -346,7 +357,6 @@ function useProvideAppData() {
     parentId: string | null,
     opts?: { date?: string | null; patch?: Partial<Todo> }
   ): string => {
-    const maxOrder = todos.reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0);
     const id = Math.random().toString(36).substr(2, 9);
     // An explicit group-create date wins over anything in the patch (e.g. a date
     // filter); when none is given we keep whatever dueDate the patch carries.
@@ -358,7 +368,7 @@ function useProvideAppData() {
       showInDailyList: plannerTasksInDailyList,
       workspaceId: activeWorkspaceId,
       ...(parentId ? { parentId } : {}),
-      hubOrder: maxOrder + 1,
+      hubOrder: nextHubOrder(),
       createdAt: Date.now(),
       status: "todo",
       ...(opts?.patch ?? {}),
@@ -421,7 +431,6 @@ function useProvideAppData() {
     parentId: string | null = null,
   ): string => {
     const id = Math.random().toString(36).substr(2, 9);
-    const maxOrder = todos.reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0);
     const newCollection: Todo = {
       id,
       text: name,
@@ -430,7 +439,7 @@ function useProvideAppData() {
       color: DEFAULT_COLLECTION_SLOT,
       parentId,
       workspaceId,
-      hubOrder: maxOrder + 1,
+      hubOrder: nextHubOrder(),
       createdAt: Date.now(),
     };
     createTodo.mutate(normalizeVisibility(newCollection));

@@ -149,9 +149,16 @@ export async function mergeImportToDb(backup: BackupData): Promise<void> {
   if (backup.todos?.length) {
     const existing = await apiFetch<Todo[]>('/todos');
     const known = new Set<string>([...existing.map((t) => t.id), ...backup.todos.map((t) => t.id)]);
+    // A legacy (pre-hubOrder) backup carries todos with no Planner order. The
+    // Planner sorts siblings by `hubOrder ?? createdAt` - scales that don't mix -
+    // so an order-less todo sinks below every ordered one and newly created tasks
+    // then land above it. Give the gaps orders past everything already in use,
+    // keeping the backup's own sequence.
+    let hubOrder = [...existing, ...backup.todos].reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0) + 1;
     const normalized = backup.todos.map((t) => {
       const n = normalizeTodoForImport(t);
       if (n.parentId && !known.has(n.parentId)) n.parentId = null;
+      if (n.hubOrder === undefined || n.hubOrder === null) n.hubOrder = hubOrder++;
       return n;
     });
     const batch: TodoBatch = { upserts: topoSort(normalized) };

@@ -43,6 +43,13 @@
       "when": 1784499831760,
       "tag": "0005_daily_pet_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784931831760,
+      "tag": "0006_backfill_hub_order",
+      "breakpoints": true
     }
   ]
 }
