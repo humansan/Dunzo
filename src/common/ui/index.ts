@@ -10,3 +10,4 @@ export { CalendarInput } from './CalendarInput';
 export { DatePickerPopover } from './DatePickerPopover';
 export { TimeInput } from './TimeInput';
 export { ParticleBurst } from './ParticleBurst';
+export { ImpactShake } from './ImpactShake';

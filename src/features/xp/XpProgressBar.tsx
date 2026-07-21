@@ -82,7 +82,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const count = useMotionValue(earned);
   const display = useTransform(count, v => Math.round(v));
   useEffect(() => {
-    const controls = animate(count, earned, { duration: 0.6, ease: EXPO_OUT });
+    const controls = animate(count, earned, { duration: 0.8, ease: EXPO_OUT });
     return () => controls.stop();
   }, [count, earned]);
 
@@ -189,14 +189,14 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
             className="absolute inset-y-0 left-0 blur-lg opacity-90"
             initial={{ width: 0 }}
             animate={{ width: `${percent}%`, backgroundColor: barColor }}
-            transition={{ duration: 0.6, ease: EXPO_OUT }}
+            transition={{ duration: 0.8, ease: EXPO_OUT }}
           />
           {/* Crisp solid fill on top */}
           <motion.div
             className="absolute inset-y-0 left-0"
             initial={{ width: 0 }}
             animate={{ width: `${percent}%`, backgroundColor: barColor }}
-            transition={{ duration: 0.6, ease: EXPO_OUT }}
+            transition={{ duration: 0.8, ease: EXPO_OUT }}
           />
         </div>
       </div>

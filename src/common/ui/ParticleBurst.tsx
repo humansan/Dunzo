@@ -13,9 +13,9 @@ export const ParticleBurst: React.FC = React.memo(() => {
   const GOLD = useThemeColor('xp-tier1');
   const parts = useMemo(
     () =>
-      Array.from({ length: 10 }, (_, i) => {
+      Array.from({ length: 16 }, (_, i) => {
         const ang = (i / 10) * Math.PI * 2 + Math.random() * 0.5;
-        const dist = 14 + Math.random() * 16;
+        const dist = 16 + Math.random() * 20;
         return {
           x: Math.cos(ang) * dist,
           y: Math.sin(ang) * dist,
@@ -28,10 +28,10 @@ export const ParticleBurst: React.FC = React.memo(() => {
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <motion.span
-        className="absolute rounded-full border-2"
+        className="absolute rounded-full border-3"
         style={{ borderColor: GOLD }}
         initial={{ width: 24, height: 24, opacity: 1 }}
-        animate={{ width: 48, height: 48, opacity: 0 }}
+        animate={{ width: 96, height: 96, opacity: 0 }}
         transition={{ duration: 0.9, ease: 'easeOut' }}
       />
       {parts.map((p, i) => (

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { StarStreak } from '@/features/xp/StarStreak';
+import { StarStreak, STAR_BLOOM_MS } from '@/features/xp/StarStreak';
 import { overlayBackdrop } from '@/common/ui/modalMotion';
+import { ImpactShake } from '@/common/ui';
 
 interface StarStreakPopupProps {
   // Live goal flags + streak (DailyScreen computes them). The popup SNAPSHOTS these
@@ -14,9 +15,12 @@ interface StarStreakPopupProps {
 }
 
 // Timing (ms).
-const XP_MS = 500;       // wait out the XP count-up before the popup appears
-const BURST_LEAD = 400;  // gap between the popup appearing and the stars lighting up
-const VISIBLE_MS = 1500; // how long the popup stays up (measured from when it appears)
+const XP_MS = 900;       // wait out the XP count-up before the popup appears
+// Gap between the popup appearing and the stars lighting up. This IS the bloom's
+// charge window - the star stays dark while gold light gathers behind it - so it
+// tracks STAR_BLOOM_MS rather than being tuned independently.
+const BURST_LEAD = STAR_BLOOM_MS;
+const VISIBLE_MS = 2000; // how long the popup stays up (measured from when it appears)
 
 // The corner widget (DailyScreen) lags its data by this much so it reflects the new
 // total right as the popup lights up - "the pop plays, then the corner catches up".
@@ -85,20 +89,28 @@ const StarStreakPopupBase: React.FC<StarStreakPopupProps> = ({ lit, streak, date
     <AnimatePresence>
       {show && snap && (
         <motion.div
-          className={`fixed inset-0 z-[60] flex items-center justify-center pointer-events-none ${overlayBackdrop} scale-120`}
+          className={`fixed inset-0 z-[60] flex items-center justify-center pointer-events-none ${overlayBackdrop} scale-150`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           onClick={() => null}
         >
-          <StarStreak
-            pinned={false}
-            lit={reveal ? snap.lit : snap.lit.map((on, i) => on && !snap.burst[i])}
-            bursting={reveal ? snap.burst : undefined}
-            streak={reveal ? snap.streak : snap.prevStreak}
-            streakPulse={reveal && snap.streak > snap.prevStreak}
-          />
+          {/* `reveal` fires the shake on the same tick as the star pop and the
+              particle burst, so the hit reads as one event. */}
+          <ImpactShake active={reveal}>
+            <StarStreak
+              pinned={false}
+              lit={reveal ? snap.lit : snap.lit.map((on, i) => on && !snap.burst[i])}
+              bursting={reveal ? snap.burst : undefined}
+              // NOT gated on reveal: the bloom starts charging the moment the
+              // popup mounts and is still mounted when the burst lands, which is
+              // what lets it hand off mid-charge instead of restarting.
+              blooming={snap.burst}
+              streak={reveal ? snap.streak : snap.prevStreak}
+              streakPulse={reveal && snap.streak > snap.prevStreak}
+            />
+          </ImpactShake>
         </motion.div>
       )}
     </AnimatePresence>
