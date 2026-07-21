@@ -115,10 +115,10 @@ body {
 }
 
 /* Calendar smooth scroll */
-.calendar-scroll {
+/* .calendar-scroll {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-}
+} */
 
 .calendar-scroll::-webkit-scrollbar {
   display: none;

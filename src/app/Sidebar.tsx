@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
     <motion.div
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed left-0 top-0 bottom-0 w-14 bg-canvas border-r border-line-subtle flex flex-col items-center justify-between py-3 z-50"
+      className="fixed left-0 top-0 bottom-0 w-14 bg-surface border-r border-line-subtle flex flex-col items-center justify-between py-3 z-50"
     >
       <div className="flex flex-col gap-3">
         {items.map((item) => {

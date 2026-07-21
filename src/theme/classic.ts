@@ -123,9 +123,9 @@ const classicLight: Record<string, string> = {
   // the stack brightens toward white so cards/menus separate from the page and read as
   // raised (opposite of dark, where elevation lightens up from black). Depth also comes
   // from the line hairlines + shadows.
-  canvas: '#f1f1f1',   // page (soft gray)
-  surface: '#f5f5f5',  // cards / panels / sidebars
-  raised: '#fdfdfd',   // raised cards / inputs
+  canvas: '#f3f3f3',   // page (soft gray)
+  surface: '#f8f8f8',  // cards / panels / sidebars
+  raised: '#fbfbfb',   // raised cards / inputs
   overlay: '#ffffff',  // menus / popovers / modals (top of the stack)
   black: '#000000',
   fg: '#000000',       // near-black primary text (softer than pure #000)
@@ -140,7 +140,7 @@ const classicLight: Record<string, string> = {
   blue: '#2563eb',
   violet: '#7c3aed',
   sky: '#0369a1',
-  orange: '#c2570a',
+  orange: '#ff9a3c',
   slate: '#475569',
   coral: '#ff7745',
   // Collection swatches, saturated enough to read on white
