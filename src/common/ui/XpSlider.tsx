@@ -3,13 +3,16 @@ import { Astroid } from 'lucide-react';
 import { useThemeColor } from '@/theme/useThemeColor';
 
 // The XP/streak gold, matching StarStreak.
-const MIN = 1;
-const MAX = 5;
+const STEP = 10;
+const MIN = STEP;
+const MAX = 50;
+// One icon per step - the row is still five icons, they're just worth 10 each.
+const COUNT = MAX / STEP;
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 interface XpSliderProps {
-  /** Current XP; undefined = unset. When set it is constrained to 1–5. */
+  /** Current XP; undefined = unset. When set it is constrained to 10–50 in 10s. */
   value?: number;
   onChange: (val: number | undefined) => void;
   autoFocus?: boolean;
@@ -18,7 +21,8 @@ interface XpSliderProps {
 
 /**
  * The XP editor panel - a row of five Astroid icons that fill (gold) up to the
- * selected value, click or drag to set 1–5, plus a Clear button to unset. Own
+ * selected value, click or drag to set 10–50 in steps of 10, plus a Clear button
+ * to unset. Own
  * shell, mirroring the TimeInput / CalendarInput popover panels; hosted by any
  * anchored-popover shell (taskChips' ChipPopover, the table's CellEditorPopover).
  */
@@ -50,17 +54,20 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
   };
 
   const current = preview ? preview.value : value;
-  // How many icons paint filled: clamp legacy/out-of-range values to [0, 5] for
-  // display only (the stored value isn't changed until the user interacts).
-  const filled = current === undefined ? 0 : Math.max(0, Math.min(MAX, current));
+  // How many ICONS paint filled (not the XP value). Rounding up means an
+  // off-step or legacy 1-5 value still lights at least one icon rather than
+  // reading as empty; clamping is display-only, the stored value isn't changed
+  // until the user interacts.
+  const filled =
+    current === undefined ? 0 : Math.max(0, Math.min(COUNT, Math.ceil(current / STEP)));
 
-  // Map a pointer x within the row to a value in 1–5.
+  // Map a pointer x within the row to a value in 10–50, on the step.
   const valueFromX = (clientX: number): number => {
     const el = rowRef.current;
     if (!el) return MIN;
     const rect = el.getBoundingClientRect();
     const f = clamp01((clientX - rect.left) / rect.width);
-    return Math.min(MAX, Math.max(MIN, Math.ceil(f * MAX)));
+    return Math.min(MAX, Math.max(MIN, Math.ceil(f * COUNT) * STEP));
   };
 
   const startDrag = (e: React.MouseEvent) => {
@@ -94,9 +101,9 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
 
       {/* The rating row acts as a slider: click an icon or drag across the row. */}
       <div ref={rowRef} onMouseDown={startDrag} className="flex items-end justify-between cursor-pointer select-none">
-        {Array.from({ length: MAX }, (_, i) => {
-          const v = i + 1;
-          const on = v <= filled;
+        {Array.from({ length: COUNT }, (_, i) => {
+          const v = (i + 1) * STEP;
+          const on = i < filled;
           return (
             <div key={v} className="flex flex-col items-center gap-0.5">
               <Astroid

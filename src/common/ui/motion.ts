@@ -39,7 +39,7 @@ export interface JitterKeyframes {
 // mid-animation restarts it.
 export function jitterKeyframes({
   amplitude = 16,
-  steps = 12,
+  steps = 16,
   decay = 2,
   rotate = 0.6,
 }: JitterOptions = {}): JitterKeyframes {
