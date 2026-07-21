@@ -20,7 +20,7 @@ const XP_MS = 600;       // wait out the XP count-up before the popup appears
 // charge window - the star stays dark while gold light gathers behind it - so it
 // tracks STAR_BLOOM_MS rather than being tuned independently.
 const BURST_LEAD = STAR_BLOOM_MS;
-const VISIBLE_MS = 2000; // how long the popup stays up (measured from when it appears)
+const VISIBLE_MS = 1800; // how long the popup stays up (measured from when it appears)
 
 // The corner widget (DailyScreen) lags its data by this much so it reflects the new
 // total right as the popup lights up - "the pop plays, then the corner catches up".
@@ -89,11 +89,11 @@ const StarStreakPopupBase: React.FC<StarStreakPopupProps> = ({ lit, streak, date
     <AnimatePresence>
       {show && snap && (
         <motion.div
-          className={`fixed inset-0 z-[60] flex items-center justify-center pointer-events-none ${overlayBackdrop} scale-150`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          className={`fixed inset-0 z-[90] flex items-center justify-center pointer-events-none ${overlayBackdrop} scale-150`}
+          initial={{ opacity: 0, scale:0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ opacity: {duration: 0.3 }, scale: { duration: STAR_BLOOM_MS/1000, ease: 'easeOut' } }}
           onClick={() => null}
         >
           {/* `reveal` fires the shake on the same tick as the star pop and the
