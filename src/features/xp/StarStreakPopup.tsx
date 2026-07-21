@@ -15,7 +15,7 @@ interface StarStreakPopupProps {
 }
 
 // Timing (ms).
-const XP_MS = 900;       // wait out the XP count-up before the popup appears
+const XP_MS = 600;       // wait out the XP count-up before the popup appears
 // Gap between the popup appearing and the stars lighting up. This IS the bloom's
 // charge window - the star stays dark while gold light gathers behind it - so it
 // tracks STAR_BLOOM_MS rather than being tuned independently.

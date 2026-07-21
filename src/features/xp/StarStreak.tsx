@@ -28,7 +28,7 @@ const POP: [number, number, number, number] = [0.2, 0.9, 0.2, 1];
 // How long the bloom takes to charge. Exported because the popup has to hold the
 // star dark for exactly this long before revealing it - see STAR_BLOOM_MS use in
 // StarStreakPopup.
-export const STAR_BLOOM_MS = 800;
+export const STAR_BLOOM_MS = 600;
 
 // Memoised so unrelated parent re-renders can't re-pass fresh keyframe arrays
 // mid-burst and restart the pop.
