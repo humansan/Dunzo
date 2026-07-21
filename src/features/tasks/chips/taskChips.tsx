@@ -289,7 +289,7 @@ export const XpChip: React.FC<{
             muted
               ? 'bg-fill-subtle hover:bg-fill text-fg-ghost'
               : set
-                ? 'bg-warning-tint text-warning'
+                ? 'bg-warning/10 text-warning hover:bg-warning/18'
                 : 'bg-fill-subtle hover:bg-fill'
           }`}
         >
