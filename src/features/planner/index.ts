@@ -4,3 +4,4 @@
 // Exception: the ⌘K TaskFinder overlay is published at
 // '@/features/planner/task-finder' instead. See that file for why.
 export { PlannerScreen } from './PlannerScreen';
+export { validatePlannerSearch, type PlannerSearch } from './search';

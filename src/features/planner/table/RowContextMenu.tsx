@@ -172,9 +172,9 @@ export const RowContextMenu: React.FC<{
             <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
               <CornerDownRight size={14} /> Create task inside
             </button>
-            <button onClick={() => entry && onMakeCollection(entry)} className={itemCls}>
+            {/* <button onClick={() => entry && onMakeCollection(entry)} className={itemCls}>
               <FolderPlus size={14} /> Make collection
-            </button>
+            </button> */}
           </>
         )}
         <button onClick={() => onArchive(menu.id)} className={itemCls}>

@@ -71,8 +71,14 @@ interface PlannerViewProps {
   onAddWorkspace: () => string;
   onRenameWorkspace: (id: string, name: string) => void;
   // The selected collection/view is URL-driven (/planner/$collectionId, bare = 'all').
+  // `opts.editCollection` opens that collection's edit modal on arrival - selecting
+  // a view remounts this component, so the two must travel in one navigation.
   selectedView: string;
-  onSelectView: (view: string) => void;
+  onSelectView: (view: string, opts?: { editCollection?: string }) => void;
+  // Id of the collection whose Edit modal (name / color / parent) is open, and the
+  // setter for it. URL-driven for the same reason (see features/planner/search.ts).
+  editCollId: string | null;
+  onEditCollection: (id: string | null) => void;
   // Whether `dayTodos` has finished loading - see useHubData.
   dataReady: boolean;
   // Opening a task navigates to /task/$taskId (the shared full-view route).
@@ -100,6 +106,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   onRenameWorkspace,
   selectedView,
   onSelectView,
+  editCollId,
+  onEditCollection,
   dataReady,
   onOpenTask,
 }) => {
@@ -358,8 +366,6 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   }, [menu?.x, menu?.y]);
   // Id of the collection pending a delete decision (cascade vs. promote).
   const [deleteCollId, setDeleteCollId] = useState<string | null>(null);
-  // Id of the collection whose Edit modal (name / color / parent) is open.
-  const [editCollId, setEditCollId] = useState<string | null>(null);
   // Task id being reparented via the "Move to…" picker (null = picker closed).
   const [reparentId, setReparentId] = useState<string | null>(null);
   const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
@@ -430,19 +436,22 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // Sidebar collection drag-and-drop (reorder + nest), owns the sidebar auto-scroll.
   const collectionDnD = useCollectionDnD({ entries, collections, byId, isDescendantOf, onReorder, setCollapsedColls });
 
+  // Create → select → open the name/color modal, in ONE navigation. Selecting the
+  // new collection swaps the planner route (/planner → /planner/$collectionId),
+  // which unmounts this component, so "open the modal" has to be part of the
+  // navigation rather than a state update queued next to it.
   const handleNewCollection = () => {
     const id = onAddCollection();
-    setSelectedView(id);   // make it the active collection
-    setEditCollId(id);     // open the name/color modal
+    setSelectedView(id, { editCollection: id });
   };
   // Context-menu "Create nested collection": add a child under the target, ensure
   // the parent is expanded so the new node is visible, then select it and open its
-  // edit modal (mirrors the top-level New collection flow).
+  // edit modal (mirrors the top-level New collection flow). Collapse state is
+  // DB-synced, so it survives the remount that the navigation causes.
   const handleNewNestedCollection = (parentId: string) => {
     const id = onAddCollection(parentId);
     setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
-    setSelectedView(id);   // make the new nested collection active
-    setEditCollId(id);     // open the name/color modal
+    setSelectedView(id, { editCollection: id });
   };
   // Seed patch derived from the view's active filters: any "is <value>" filter is
   // pre-applied to tasks created in this view, so a new task still satisfies the
@@ -807,7 +816,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           colorPickerOpen={colorPickerOpen}
           onToggleColorPicker={() => setColorPickerOpen((v) => !v)}
           onClose={closeMenu}
-          onEditCollection={(id) => { setEditCollId(id); closeMenu(); }}
+          onEditCollection={(id) => { onEditCollection(id); closeMenu(); }}
           onCreateTaskInside={createTaskInside}
           onCreateNestedCollection={(id) => { handleNewNestedCollection(id); closeMenu(); }}
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
@@ -831,16 +840,20 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
       {/* Edit-collection modal: rename, recolor, and re-parent */}
       {editCollId && (() => {
         const entry = entries.find((e) => e.todo.id === editCollId);
-        if (!entry) { setEditCollId(null); return null; }
+        // A just-created collection reaches the cache a beat after the navigation
+        // that named it, so render nothing until it shows up rather than clearing
+        // the param - clearing on the first miss is what used to swallow the
+        // new-collection editor.
+        if (!entry) return null;
         return createPortal(
           <CollectionEditModal
             entry={entry}
             options={collectionOptions}
             onCreateCollection={onCreateCollection}
-            onClose={() => setEditCollId(null)}
+            onClose={() => onEditCollection(null)}
             onSave={({ text, color, parentId }) => {
               onSaveTodo({ ...entry.todo, text, color, parentId });
-              setEditCollId(null);
+              onEditCollection(null);
             }}
           />,
           document.body

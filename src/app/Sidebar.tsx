@@ -36,8 +36,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
   const items = [
     { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos' },
     { to: '/planner' as const, icon: Blocks, title: 'Task Planner' },
-    { to: '/trackers' as const, icon: Clock, title: 'Trackers' },
     { to: '/calendar' as const, icon: Calendar, title: 'Calendar' },
+    { to: '/trackers' as const, icon: Clock, title: 'Trackers' },
     { to: '/stats' as const, icon: BarChart2, title: 'Stats' },
   ];
 
