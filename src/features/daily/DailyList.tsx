@@ -8,7 +8,6 @@ import {
   CheckSquare,
   Maximize2,
   MoreHorizontal,
-  Sparkles,
   Flag,
 } from 'lucide-react';
 import CheckCircleCutout from '@/assets/CheckCircleCutout';
@@ -36,8 +35,9 @@ import { CollectionOption } from '@/features/tasks/model';
 import { isDone } from '@/features/tasks/model';
 import { pill } from '@/theme/pill';
 import { priorityOption } from '@/features/tasks/fields';
-import { TaskTimeChips, formatCountdown } from '@/features/tasks';
+import { CountdownChip, formatCountdown } from '@/features/tasks';
 import { QuickEditTodo, QuickEditValues } from '@/features/tasks';
+import { TimeChip, XpChip } from '@/features/tasks/chips';
 import { DailyRowContextMenu } from '@/features/daily/DailyRowContextMenu';
 import { useAppData } from '@/lib/app-data';
 import { btnGhost } from '@/theme/buttons';
@@ -55,7 +55,9 @@ interface TodoItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onStartTracking: (id: string) => void;
+  /** Row chip edits - the XP and time chips are pickers, not just readouts. */
+  onSetXp: (id: string, xp: number | undefined) => void;
+  onSetTime: (id: string, time: string) => void;
   /** Opens the row context menu at viewport coords (right-click or the ⋯ button). */
   onOpenMenu?: (x: number, y: number) => void;
   isDragging?: boolean;
@@ -80,7 +82,8 @@ interface SortableItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onStartTracking: (id: string) => void;
+  onSetXp: (id: string, xp: number | undefined) => void;
+  onSetTime: (id: string, time: string) => void;
   onOpenMenu?: (x: number, y: number) => void;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
@@ -100,15 +103,16 @@ export interface DailyListProps {
   /** Called on unmount-flush without closing the panel. */
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onStartTracking?: (id: string) => void;
   activeTodoId?: string | null;
   onAdd: (vals: QuickEditValues) => void;
   /** Row context menu - copy a task in place, just below the original. */
   onDuplicate?: (id: string) => void;
   /** Row context menu - reschedule to another day (YYYY-MM-DD). */
   onSetDate?: (id: string, date: string) => void;
-  /** Row context menu - set the due/end time ('' clears it). */
+  /** Set the due/end time ('' clears it) - the row's time chip and the context menu. */
   onSetTime?: (id: string, time: string) => void;
+  /** Set the task's XP (undefined clears it) - the row's XP chip. */
+  onSetXp?: (id: string, xp: number | undefined) => void;
   /** Row context menu - nest the task under another task (null = top level). */
   onSetParent?: (id: string, parentId: string | null) => void;
   /** Row context menu - insert a new task directly above/below `anchorId`. */
@@ -132,7 +136,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
   onSaveEdit,
   onCommitEdit,
   onOpenFull,
-  onStartTracking,
+  onSetXp,
+  onSetTime,
   onOpenMenu,
   isDragging,
   style,
@@ -260,22 +265,23 @@ const TodoItem: React.FC<TodoItemProps> = ({
           </div>
         )}
 
+        {/* The same editable chips the quick-edit panel uses, so a click opens the
+            XP / time picker. Unlike the panel - which always shows both with a
+            placeholder - the row only renders a chip once the task has a value. */}
         {showXpChips && todo.xp !== undefined && (
-          <div className={`flex items-center justify-center gap-1.5 px-2.75 h-[27px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
-            ? 'bg-fill-subtle text-fg-ghost'
-            : 'bg-warning-tint text-warning'
-          }`}>
-            <Sparkles size={14} />
-            <span className="relative top-px">{todo.xp} XP</span>
-          </div>
+          <XpChip value={todo.xp} muted={isDone(todo)} onChange={(val) => onSetXp(todo.id, val)} />
         )}
 
-        <TaskTimeChips
-          todo={todo}
-          countdown={countdownDisplay}
-          done={isDone(todo)}
-          onTimeClick={() => onStartTracking(todo.id)}
-        />
+        {(todo.dueTime || todo.duePercentage !== undefined) && (
+          <TimeChip
+            value={todo.dueTime}
+            percent={todo.duePercentage}
+            muted={isDone(todo)}
+            onChange={(val) => onSetTime(todo.id, val)}
+          />
+        )}
+
+        {countdownDisplay && !isDone(todo) && <CountdownChip countdown={countdownDisplay} />}
 
         <button
           onClick={() => onDelete(todo.id)}
@@ -330,11 +336,11 @@ export const DailyList: React.FC<DailyListProps> = ({
   onSaveEdit,
   onCommitEdit,
   onOpenFull,
-  onStartTracking = () => {},
   onAdd,
   onDuplicate,
   onSetDate,
   onSetTime,
+  onSetXp,
   onSetParent,
   onAddAt,
   countdownMode = 'off',
@@ -467,7 +473,8 @@ export const DailyList: React.FC<DailyListProps> = ({
                   onSaveEdit={handleSaveEdit}
                   onCommitEdit={onCommitEdit}
                   onOpenFull={onOpenFull}
-                  onStartTracking={onStartTracking}
+                  onSetXp={(id, xp) => onSetXp?.(id, xp)}
+                  onSetTime={(id, t) => onSetTime?.(id, t)}
                   onOpenMenu={(x, y) => setMenu({ id: todo.id, x, y })}
                   now={now}
                   countdownMode={countdownMode}
@@ -493,7 +500,8 @@ export const DailyList: React.FC<DailyListProps> = ({
               onSaveEdit={() => {}}
               onCommitEdit={() => {}}
               onOpenFull={() => {}}
-              onStartTracking={() => {}}
+              onSetXp={() => {}}
+              onSetTime={() => {}}
               now={now}
               countdownMode={countdownMode}
             />

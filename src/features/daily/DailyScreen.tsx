@@ -34,6 +34,10 @@ interface DailyScreenProps {
   dayTodos: DayTodos[];
   onUpdateTodos: (date: string, todos: Todo[]) => void;
   onMoveTodo: (fromDate: string, toDate: string, updatedTodo: Todo) => void;
+  // Currently unwired: the daily list's time chip used to start the tracker, but
+  // it is now a time picker (matching the quick-edit panel), so nothing in this
+  // screen starts tracking. AppShell still owns the tracker + its state, so this
+  // only needs a new trigger to come back.
   onStartTracking: (id: string) => void;
   activeTodoId: string | null;
   onToggleTodo: (id: string) => void;
@@ -280,6 +284,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   const setTodoParent = (id: string, parentId: string | null) =>
     patchTodo(id, () => ({ parentId }));
 
+  const setTodoXp = (id: string, xp: number | undefined) =>
+    patchTodo(id, () => ({ xp }));
+
   // Collection index + options for the quick-edit pickers.
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
   const collOptions = useMemo(() => buildCollectionOptions(dayTodos, byId), [dayTodos, byId]);
@@ -395,13 +402,13 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
           onSaveEdit={persistEdit}
           onCommitEdit={persistEdit}
           onOpenFull={onOpenTask}
-          onStartTracking={onStartTracking}
           activeTodoId={activeTodoId}
           onAdd={handleAddTodo}
           onAddAt={addTodoAt}
           onDuplicate={duplicateTodo}
           onSetDate={setTodoDate}
           onSetTime={setTodoTime}
+          onSetXp={setTodoXp}
           onSetParent={setTodoParent}
           countdownMode={countdownMode}
           collectionOptions={collOptions}
