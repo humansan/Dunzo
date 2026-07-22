@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Maximize2, X } from 'lucide-react';
 import { StopwatchTime } from '@/features/stopwatch/StopwatchContext';
+import defaultBgUrl from '@/assets/stopwatch_default.jpg';
 
 export type TimerState = 'idle' | 'running' | 'paused';
 
@@ -24,7 +25,9 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
   onClose,
   onMaximize,
 }) => {
-  const [bgImage, setBgImage] = useState<string | null>(null);
+  // The background is always an image: the bundled default until the user picks
+  // their own in fullscreen. Black shows through only while it loads / if it fails.
+  const [bgImage, setBgImage] = useState<string>(defaultBgUrl);
   const [bgDimness, setBgDimness] = useState<number>(0.3);
   const [bgBlur, setBgBlur] = useState<number>(0);
 
@@ -45,20 +48,16 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.1 }}
       className="fixed bottom-8 left-[calc(50%+1.75rem)] -translate-x-1/2 z-60 w-[360px] max-w-[calc(100vw-2rem)] rounded-3xl overflow-hidden shadow-2xl shadow-black/40"
-      style={{ backgroundImage: 'linear-gradient(135deg, #FF4E50 0%, #F9D423 100%)' }}
+      style={{ backgroundColor: '#000' }}
     >
       {/* Background image + dimming (mirrors fullscreen settings) */}
-      {bgImage && (
-        <img
-          src={bgImage}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: `blur(${bgBlur * 12}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
-        />
-      )}
-      {bgImage && (
-        <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
-      )}
+      <img
+        src={bgImage}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: `blur(${bgBlur * 12}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
+      />
+      <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
 
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-end gap-1 px-3 pt-3">
