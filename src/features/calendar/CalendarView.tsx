@@ -35,10 +35,11 @@ const DAY_OPTIONS = [1, 3, 5, 7];
 // ─── Overlap cascade tuning ──────────────────────────────────────────────────
 // Overlapping events are staggered Google-Calendar style: a later-starting event
 // indents right and stacks on top, leaving the earlier one's left edge visible.
-const INDENT_STEP_PCT = 8;  // % of the column each indent level shifts right
+const INDENT_STEP_PCT = 15;  // % of the column each indent level shifts right
 const MAX_LEVELS = 5;       // cap so deep stacks stop indenting instead of overflowing
 const Z_EVENT_BASE = 10;    // resting z for a level-0 card (matches the old flat z-10)
 const Z_EVENT_HOVER = 40;   // hovered card jumps here - above siblings, below the drag ghost (z-50)
+const HOVER_RAISE_DELAY_MS = 250; // dwell before a hovered card lifts, so passing over one doesn't bury an indented card
 
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -156,6 +157,18 @@ const EventCard: React.FC<{
   onToggle?: (e: React.MouseEvent) => void;
 }> = ({ todo, startMin, endMin, accent, indentLevel = 0, onMouseDown, onResizeStart, isDragging, onToggle }) => {
   const [isHovered, setIsHovered] = useState(false);
+  // The z-lift is deliberately lagged behind the hover: a card the cursor is only
+  // passing through on its way to an indented one shouldn't jump in front of it.
+  // Visual hover feedback (fill, toggle dot) stays immediate.
+  const [isRaised, setIsRaised] = useState(false);
+  const raiseTimer = useRef<number | null>(null);
+  const cancelRaise = () => {
+    if (raiseTimer.current !== null) {
+      window.clearTimeout(raiseTimer.current);
+      raiseTimer.current = null;
+    }
+  };
+  useEffect(() => cancelRaise, []);
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
@@ -166,7 +179,7 @@ const EventCard: React.FC<{
   // tasks always stack above the done ones.
   const level = Math.min(indentLevel, MAX_LEVELS);
   const indentLeft = level > 0 ? `${level * INDENT_STEP_PCT}%` : undefined;
-  const restingZ = isHovered ? Z_EVENT_HOVER : Z_EVENT_BASE + (isDone(todo) ? 0 : level);
+  const restingZ = isRaised ? Z_EVENT_HOVER : Z_EVENT_BASE + (isDone(todo) ? 0 : level);
   // Only show a time that's actually set - never fabricate the missing side. When both
   // sides share a meridiem, drop the AM/PM from the start so it reads "9:00 – 10:30 AM".
   // A one-sided task shows just that time (no dash, no fabricated duration).
@@ -184,8 +197,16 @@ const EventCard: React.FC<{
   return (
     <div
       onMouseDown={onMouseDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        cancelRaise();
+        raiseTimer.current = window.setTimeout(() => setIsRaised(true), HOVER_RAISE_DELAY_MS);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        cancelRaise();
+        setIsRaised(false);
+      }}
       className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
         } ${isDragging ? 'z-50' : 'ring-1 ring-canvas'}
@@ -255,7 +276,7 @@ const EventCard: React.FC<{
         </div>
       </div>
       {!isSmall && (
-        <div className={`text-[10px] truncate pl-4 ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
+        <div className={`text-[10px] pl-4 ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
           }`}>
           {fullTimeDisplay}
         </div>
