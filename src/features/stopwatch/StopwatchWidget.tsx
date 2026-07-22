@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Maximize2, X } from 'lucide-react';
-import { StopwatchTime } from '@/features/stopwatch/StopwatchContext';
-import defaultBgUrl from '@/assets/stopwatch_default.jpg';
+import { StopwatchTime, useStopwatch } from '@/features/stopwatch/StopwatchContext';
 
 export type TimerState = 'idle' | 'running' | 'paused';
 
@@ -25,21 +24,9 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
   onClose,
   onMaximize,
 }) => {
-  // The background is always an image: the bundled default until the user picks
-  // their own in fullscreen. Black shows through only while it loads / if it fails.
-  const [bgImage, setBgImage] = useState<string>(defaultBgUrl);
-  const [bgDimness, setBgDimness] = useState<number>(0.3);
-  const [bgBlur, setBgBlur] = useState<number>(0);
-
-  // Mirror the background configured in fullscreen mode (persisted in localStorage)
-  useEffect(() => {
-    const img = localStorage.getItem('dun-sw-bg-image');
-    if (img) setBgImage(img);
-    const d = localStorage.getItem('dun-sw-bg-dimness');
-    if (d) setBgDimness(parseFloat(d));
-    const b = localStorage.getItem('dun-sw-bg-blur');
-    if (b) setBgBlur(parseFloat(b));
-  }, []);
+  // Shared with the fullscreen view, so a background picked there is already live
+  // here. Always an image - the bundled default until the user picks their own.
+  const { bgUrl, bgDimness, bgBlur } = useStopwatch();
 
   return (
     <motion.div
@@ -52,7 +39,7 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
     >
       {/* Background image + dimming (mirrors fullscreen settings) */}
       <img
-        src={bgImage}
+        src={bgUrl}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         style={{ filter: `blur(${bgBlur * 12}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}

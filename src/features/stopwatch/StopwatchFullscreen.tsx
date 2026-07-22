@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Minimize2, X, Image as ImageIcon, Sun } from 'lucide-react';
 import { TimerState } from '@/features/stopwatch/StopwatchWidget';
-import { StopwatchTime } from '@/features/stopwatch/StopwatchContext';
-import defaultBgUrl from '@/assets/stopwatch_default.jpg';
+import { StopwatchTime, useStopwatch } from '@/features/stopwatch/StopwatchContext';
 
 interface StopwatchFullscreenProps {
   timerState: TimerState;
@@ -38,44 +37,17 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
   onMinimize,
   onClose,
 }) => {
-  // The background is always an image: the bundled default until the user picks their
-  // own. Black shows through only while it loads / if it fails.
-  const [bgImage, setBgImage] = useState<string>(defaultBgUrl);
-  const [bgDimness, setBgDimness] = useState<number>(0.3);
-  const [bgBlur, setBgBlur] = useState<number>(0);
+  // The background is shared with the widget and persisted by the context (image in
+  // IndexedDB, dimness/blur in localStorage). Always an image - the bundled default
+  // until the user picks their own; black shows only while it loads / if it fails.
+  const { bgUrl, bgDimness, bgBlur, bgError, setBgImage, setBgDimness, setBgBlur } = useStopwatch();
   const [showSettings, setShowSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load persisted background settings on mount
-  useEffect(() => {
-    const img = localStorage.getItem('dun-sw-bg-image');
-    if (img) setBgImage(img);
-    const d = localStorage.getItem('dun-sw-bg-dimness');
-    if (d) setBgDimness(parseFloat(d));
-    const b = localStorage.getItem('dun-sw-bg-blur');
-    if (b) setBgBlur(parseFloat(b));
-  }, []);
-
-  const handleDimnessChange = (val: number) => {
-    setBgDimness(val);
-    localStorage.setItem('dun-sw-bg-dimness', val.toString());
-  };
-
-  const handleBlurChange = (val: number) => {
-    setBgBlur(val);
-    localStorage.setItem('dun-sw-bg-blur', val.toString());
-  };
-
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const uri = reader.result as string;
-      setBgImage(uri);
-      localStorage.setItem('dun-sw-bg-image', uri);
-    };
-    reader.readAsDataURL(file);
+    // A File is a Blob, so it goes to IndexedDB as-is - no base64 conversion.
+    if (file) setBgImage(file);
   };
 
   return (
@@ -89,7 +61,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
     >
       {/* Background image + dimming */}
       <img
-        src={bgImage}
+        src={bgUrl}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         style={{ filter: `blur(${bgBlur * 50}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
@@ -147,9 +119,17 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
       {showSettings && (
         <div className="absolute top-20 left-5 z-20 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/10 shadow-2xl">
           <p className="text-white text-sm font-semibold mb-2">Background Dimness</p>
-          <Slider value={bgDimness} onChange={handleDimnessChange} />
+          <Slider value={bgDimness} onChange={setBgDimness} />
           <p className="text-white text-sm font-semibold mt-5 mb-2">Background Blur</p>
-          <Slider value={bgBlur} onChange={handleBlurChange} />
+          <Slider value={bgBlur} onChange={setBgBlur} />
+        </div>
+      )}
+
+      {/* A failed save used to be invisible - the image showed until the next remount,
+          then silently reverted. Now it says so. */}
+      {bgError && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-xl bg-black/50 backdrop-blur-md border border-white/10 text-white text-sm">
+          {bgError}
         </div>
       )}
 

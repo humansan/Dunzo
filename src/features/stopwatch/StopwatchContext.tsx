@@ -1,5 +1,74 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { TimerState } from '@/features/stopwatch/StopwatchWidget';
+import { loadBgImage, migrateLegacyBg, saveBgImage } from '@/features/stopwatch/bgStore';
+import defaultBgUrl from '@/assets/stopwatch_default.jpg';
+
+// The background (image + dimness + blur) is shared by the widget and the fullscreen
+// view. It lives here rather than in each component because they used to keep private
+// copies read from storage on mount, which only stayed in sync thanks to the
+// unmount/remount dance between the two modes.
+function useProvideBackground() {
+  // null ⇒ no custom image, so the bundled default is used.
+  const [bgBlob, setBgBlob] = useState<Blob | null>(null);
+  const [bgUrl, setBgUrl] = useState<string>(defaultBgUrl);
+  const [bgDimness, setBgDimnessState] = useState<number>(0.3);
+  const [bgBlur, setBgBlurState] = useState<number>(0);
+  // Set when a save fails, so the UI can say so instead of silently reverting later.
+  const [bgError, setBgError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await migrateLegacyBg();
+        const blob = await loadBgImage();
+        if (!cancelled && blob) setBgBlob(blob);
+      } catch {
+        // Storage unavailable (private mode, blocked) - keep the default image.
+      }
+    })();
+    // Dimness and blur are two short strings; localStorage is the right size for them.
+    const d = localStorage.getItem('dun-sw-bg-dimness');
+    if (d) setBgDimnessState(parseFloat(d));
+    const b = localStorage.getItem('dun-sw-bg-blur');
+    if (b) setBgBlurState(parseFloat(b));
+    return () => { cancelled = true; };
+  }, []);
+
+  // The blob is exposed to <img> as an object URL, revoked when it's replaced.
+  useEffect(() => {
+    if (!bgBlob) {
+      setBgUrl(defaultBgUrl);
+      return;
+    }
+    const url = URL.createObjectURL(bgBlob);
+    setBgUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [bgBlob]);
+
+  // A File is already a Blob, so the picked file is stored as-is - no base64 hop.
+  const setBgImage = useCallback(async (file: File) => {
+    setBgBlob(file);
+    try {
+      await saveBgImage(file);
+      setBgError(null);
+    } catch {
+      setBgError("Couldn't save this background - it will reset when you reload.");
+    }
+  }, []);
+
+  const setBgDimness = useCallback((v: number) => {
+    setBgDimnessState(v);
+    localStorage.setItem('dun-sw-bg-dimness', v.toString());
+  }, []);
+
+  const setBgBlur = useCallback((v: number) => {
+    setBgBlurState(v);
+    localStorage.setItem('dun-sw-bg-blur', v.toString());
+  }, []);
+
+  return { bgUrl, bgDimness, bgBlur, bgError, setBgImage, setBgDimness, setBgBlur };
+}
 
 // The stopwatch lives in its own context, separate from the big AppData object.
 // Crucially, `elapsed` is NOT stored here - it's derived on demand by `useElapsed()`
@@ -10,6 +79,7 @@ function useProvideStopwatch() {
   const [isStopwatchFullscreen, setIsStopwatchFullscreen] = useState(false);
   const startTimeRef = useRef<number>(0);
   const pausedElapsedRef = useRef<number>(0);
+  const background = useProvideBackground();
 
   const startTimer = useCallback(() => {
     const now = Date.now();
@@ -47,6 +117,7 @@ function useProvideStopwatch() {
     setIsStopwatchVisible,
     isStopwatchFullscreen,
     setIsStopwatchFullscreen,
+    ...background,
   };
 }
 
