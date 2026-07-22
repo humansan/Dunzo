@@ -15,7 +15,7 @@ const ProgressBar: React.FC = () => {
   const { progress, isCountdown, isOvertime } = useFocusDisplay();
   if (!isCountdown) return null;
   return (
-    <div className="w-[80%] h-1 rounded-full bg-white/15 overflow-hidden">
+    <div className="w-[80%] h-1 rounded-full bg-white/15 overflow-hidden mb-1">
       <div
         className={`h-full rounded-full transition-[width] duration-200 ease-linear ${isOvertime ? 'bg-xp-bar' : 'bg-white/80'}`}
         style={{ width: `${progress * 100}%` }}
@@ -33,7 +33,7 @@ const ProgressBar: React.FC = () => {
 // Everything about the timer comes from the context this card already used for its
 // background.
 export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({ onClose, onMaximize }) => {
-  const { bgUrl, bgDimness, bgBlur, pulseKey } = useStopwatch();
+  const { mode, bgUrl, bgDimness, bgBlur } = useStopwatch();
 
   return (
     <motion.div
@@ -55,18 +55,6 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({ onClose, onMax
           where you set it - it is not a channel for signaling phase changes. */}
       <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
 
-      {/* With no sound in v0, this flash is the primary end-of-phase signal. Keyed
-          so each phase end remounts it and replays the fade. */}
-      {pulseKey > 0 && (
-        <motion.div
-          key={pulseKey}
-          initial={{ opacity: 0.7 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 0.9 }}
-          className="absolute inset-0 bg-white pointer-events-none z-20"
-        />
-      )}
-
       {/* Window controls only - they fade back until you go looking for them. */}
       <div className="relative z-10 flex items-center justify-end px-3 pt-3">
         <button
@@ -85,7 +73,7 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({ onClose, onMax
         </button>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-3 px-6 pb-7">
+      <div className={`relative z-10 flex flex-col items-center ${mode === "stopwatch" ? "gap-4" : "gap-2"} px-6 pb-7`}>
         <FocusTime className="font-bold font-mono tracking-tight text-6xl leading-none" />
         <ProgressBar />
         <FocusControls size="sm" compact />

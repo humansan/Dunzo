@@ -98,10 +98,6 @@ function useProvideFocus() {
   const [targetMs, setTargetMs] = useState<number>(restored?.targetMs ?? 0);
   const [timerState, setTimerState] = useState<TimerState>(restored?.timerState ?? 'idle');
 
-  // Bumped on every phase end so the views can flash. With no audio in v0 this is
-  // the primary end-of-phase signal, so it fires whether or not you're looking.
-  const [pulseKey, setPulseKey] = useState(0);
-
   const [isStopwatchVisible, setIsStopwatchVisible] = useState(false);
   const [isStopwatchFullscreen, setIsStopwatchFullscreen] = useState(false);
 
@@ -162,14 +158,12 @@ function useProvideFocus() {
   // The single path a countdown leaves a phase by: natural expiry, an explicit
   // skip, or a restore that found the deadline already passed.
   //
-  //   announce  fire the notification + on-screen pulse (off for skip/restore -
-  //             you already know, or it happened while you were away).
+  //   announce  fire the notification (off for skip/restore - you already know,
+  //             or it happened while you were away).
   //   autoStart honor the auto-start prefs (off for restore: never start a block
   //             you weren't there to begin).
   const advance = useCallback(
     (o: { announce: boolean; autoStart: boolean }) => {
-      if (o.announce) setPulseKey((k) => k + 1);
-
       // A plain timer has nowhere to advance to - it rolls into overtime and keeps
       // counting, so a session that ran long still tells you by how much.
       if (mode !== 'pomodoro') {
@@ -380,7 +374,6 @@ function useProvideFocus() {
     timerState,
     startTimeRef, pausedElapsedRef,
     startTimer, pauseTimer, resetTimer, skipPhase, selectPhase,
-    pulseKey,
     // chrome
     isStopwatchVisible, setIsStopwatchVisible,
     isStopwatchFullscreen, setIsStopwatchFullscreen,

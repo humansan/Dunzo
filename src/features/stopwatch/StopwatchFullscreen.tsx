@@ -48,7 +48,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({ onMini
   // until the user picks their own; black shows only while it loads / if it fails.
   const {
     bgUrl, bgDimness, bgBlur, bgError, setBgImage, setBgDimness, setBgBlur,
-    mode, timerState, pulseKey,
+    mode, timerState,
   } = useStopwatch();
   // Two popovers share the header; opening one closes the other so they can't
   // overlap in the same corner.
@@ -80,17 +80,6 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({ onMini
       {/* Dimming is a legibility control for bright images, so it stays exactly
           where you set it - it is not a channel for signaling phase changes. */}
       <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
-
-      {/* End-of-phase flash - the primary signal, since v0 has no sound. */}
-      {pulseKey > 0 && (
-        <motion.div
-          key={pulseKey}
-          initial={{ opacity: 0.6 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: 1.1 }}
-          className="absolute inset-0 bg-white pointer-events-none z-30"
-        />
-      )}
 
       {/* Header row - sits in normal flow at the top so the timer below it reads as
           vertically centered (mirrors Tick's layout) */}
