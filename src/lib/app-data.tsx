@@ -121,7 +121,7 @@ function useProvideAppData() {
   const showXpChips = settings?.showXpChips ?? true;
   const setShowXpChips = (v: boolean) => updateSettings({ showXpChips: v });
   // Default XP seeded onto new daily-list tasks: undefined ⇒ 1, 0 ⇒ None, 1–5 ⇒ value.
-  const defaultDailyXp = settings?.defaultDailyXp ?? 10;
+  const defaultDailyXp = settings?.defaultDailyXp ?? 3;
   const setDefaultDailyXp = (v: number) => updateSettings({ defaultDailyXp: v });
   // Cross-surface default for new tasks (undefined ⇒ true, the legacy both-on
   // behavior). Applied only at creation time in addHubTodo / DailyScreen.buildTodo.

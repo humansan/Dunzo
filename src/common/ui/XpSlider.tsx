@@ -3,16 +3,16 @@ import { Astroid } from 'lucide-react';
 import { useThemeColor } from '@/theme/useThemeColor';
 
 // The XP/streak gold, matching StarStreak.
-const STEP = 10;
+const STEP = 1;
 const MIN = STEP;
-const MAX = 50;
+const MAX = 10;
 // One icon per step - the row is still five icons, they're just worth 10 each.
 const COUNT = MAX / STEP;
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 interface XpSliderProps {
-  /** Current XP; undefined = unset. When set it is constrained to 10–50 in 10s. */
+  /** Current XP; undefined = unset. When set it is constrained to 1–10 in 1s. */
   value?: number;
   onChange: (val: number | undefined) => void;
   autoFocus?: boolean;
@@ -21,7 +21,7 @@ interface XpSliderProps {
 
 /**
  * The XP editor panel - a row of five Astroid icons that fill (gold) up to the
- * selected value, click or drag to set 10–50 in steps of 10, plus a Clear button
+ * selected value, click or drag to set 1–10 in steps of 1, plus a Clear button
  * to unset. Own
  * shell, mirroring the TimeInput / CalendarInput popover panels; hosted by any
  * anchored-popover shell (taskChips' ChipPopover, the table's CellEditorPopover).
@@ -61,7 +61,7 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
   const filled =
     current === undefined ? 0 : Math.max(0, Math.min(COUNT, Math.ceil(current / STEP)));
 
-  // Map a pointer x within the row to a value in 10–50, on the step.
+  // Map a pointer x within the row to a value in 1–10, on the step.
   const valueFromX = (clientX: number): number => {
     const el = rowRef.current;
     if (!el) return MIN;
@@ -90,7 +90,7 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
     <div
       ref={rootRef}
       tabIndex={-1}
-      className={`bg-surface border border-line rounded-xl p-2.5 w-40 focus:outline-none ${className ?? ''}`}
+      className={`bg-surface border border-line rounded-xl p-2.5 w-64 focus:outline-none ${className ?? ''}`}
     >
       <div className="flex items-center gap-1.5 px-0.5 mb-2 text-sm font-mono">
         <Astroid size={14} strokeWidth={2.5} style={{ color: filled > 0 ? GOLD : undefined }} className={filled > 0 ? '' : 'text-fg-subtle'} />
