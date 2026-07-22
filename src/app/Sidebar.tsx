@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks, Search } from 'lucide-react';
+import { Clock, ListChecks, CalendarDays, Timer, BarChart2, Blocks, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import backgroundUrl from '@/assets/background.jpg';
@@ -34,9 +34,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
   if (!isVisible) return null;
 
   const items = [
-    { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos' },
+    { to: '/today' as const, icon: ListChecks, title: 'Daily Todos' },
     { to: '/planner' as const, icon: Blocks, title: 'Task Planner' },
-    { to: '/calendar' as const, icon: Calendar, title: 'Calendar' },
+    { to: '/calendar' as const, icon: CalendarDays, title: 'Calendar' },
     { to: '/trackers' as const, icon: Clock, title: 'Trackers' },
     { to: '/stats' as const, icon: BarChart2, title: 'Stats' },
   ];

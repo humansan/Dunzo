@@ -34,7 +34,7 @@ function TrackersRoute() {
                 <Clock size={18} strokeWidth={2.5} className='text-fg' />
               </div>
               <h1 className="text-xl font-bold leading-none">
-                Time Trackers
+                Time Widgets
               </h1>
             </div>
 

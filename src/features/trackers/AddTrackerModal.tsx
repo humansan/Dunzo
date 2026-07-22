@@ -82,7 +82,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
             {/* Sticky header */}
             <div className="flex justify-between items-center px-6 pt-5 pb-3 shrink-0">
               <h2 className="text-lg font-bold text-fg">
-                {editingTracker ? 'Edit Tracker' : 'New Tracker'}
+                {editingTracker ? 'Edit Widget' : 'New Widget'}
               </h2>
               <button onClick={onClose} className="rounded-lg p-1.5 text-fg-muted transition-all hover:bg-fill hover:text-fg">
                 <X size={16} />
