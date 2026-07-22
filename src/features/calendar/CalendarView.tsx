@@ -318,10 +318,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [miniCalMonth, setMiniCalMonth] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [showDayPicker, setShowDayPicker] = useState(false);
 
-  // The calendar sidebar filter, persisted to user_settings (surfaces + checked
-  // collections). Surfaces default on; an undefined `checkedCollections` means "all
-  // collections" until the user first customizes it (so a freshly-added collection is
-  // included by default). Writes are debounced/optimistic via the settings pipeline.
+  // The calendar sidebar filter, persisted to user_settings (surfaces + collections).
+  // Surfaces default on; collections are stored as an exclusion list so anything not
+  // explicitly unchecked - including newly created collections - is on by default.
+  // Writes are debounced/optimistic via the settings pipeline.
   const [filter, patchFilter] = useSyncedCalendarFilter();
   const showDaily = filter.showDaily ?? true;
   const showPlanner = filter.showPlanner ?? true;
@@ -341,41 +341,54 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const dayCount = initialDays ?? filter.dayCount ?? 3;
   const setDayCount = useCallback((n: number) => patchFilter(() => ({ dayCount: n })), [patchFilter]);
 
-  // The checked-collection set. Undefined (never configured) resolves to every current
-  // collection, so the default is "all enabled" without a seed write.
-  const checkedColls = useMemo(
-    () =>
-      filter.checkedCollections === undefined
-        ? new Set(coll.allCollectionIds)
-        : new Set(filter.checkedCollections),
-    [filter.checkedCollections, coll.allCollectionIds]
+  // Collections are persisted as an *exclusion* list: an id is checked unless it's in
+  // `uncheckedCollections`. That way a collection created after the filter was last
+  // customized is on by default, instead of being absent from a stale allowlist.
+  const uncheckedColls = useMemo(
+    () => new Set(filter.uncheckedCollections ?? []),
+    [filter.uncheckedCollections]
   );
-  // Every mutation reads the resolved set (materializing the undefined⇒all default) and
-  // writes back a concrete array.
-  const toggleChecked = useCallback(
-    (id: string) => {
-      const next = new Set(checkedColls);
-      next.has(id) ? next.delete(id) : next.add(id);
-      patchFilter(() => ({ checkedCollections: [...next] }));
+  const checkedColls = useMemo(
+    () => new Set(coll.allCollectionIds.filter((id) => !uncheckedColls.has(id))),
+    [coll.allCollectionIds, uncheckedColls]
+  );
+  // Mutations edit the exclusion set, so ids we can't currently see (e.g. archived
+  // collections while "show archived" is off) keep their state instead of being wiped.
+  const patchUnchecked = useCallback(
+    (fn: (next: Set<string>) => void) => {
+      const next = new Set(uncheckedColls);
+      fn(next);
+      patchFilter(() => ({ uncheckedCollections: [...next] }));
     },
-    [checkedColls, patchFilter]
+    [uncheckedColls, patchFilter]
   );
 
-  // Select-all / deselect-all for the collection tree header.
+  const toggleChecked = useCallback(
+    (id: string) => {
+      patchUnchecked((next) => {
+        next.has(id) ? next.delete(id) : next.add(id);
+      });
+    },
+    [patchUnchecked]
+  );
+
+  // Select-all / deselect-all for the collection tree header (over the visible ids).
   const allCollsChecked =
     coll.allCollectionIds.length > 0 && coll.allCollectionIds.every((id) => checkedColls.has(id));
   const toggleAllColls = useCallback(() => {
-    patchFilter(() => ({ checkedCollections: allCollsChecked ? [] : [...coll.allCollectionIds] }));
-  }, [allCollsChecked, coll.allCollectionIds, patchFilter]);
+    patchUnchecked((next) => {
+      for (const id of coll.allCollectionIds) allCollsChecked ? next.add(id) : next.delete(id);
+    });
+  }, [allCollsChecked, coll.allCollectionIds, patchUnchecked]);
 
   // Apply a checked state to all descendant collections (the subtree prompt's action).
   const applyDescendantColls = useCallback(
     (id: string, checked: boolean) => {
-      const next = new Set(checkedColls);
-      for (const cid of coll.descendantCollIds(id)) checked ? next.add(cid) : next.delete(cid);
-      patchFilter(() => ({ checkedCollections: [...next] }));
+      patchUnchecked((next) => {
+        for (const cid of coll.descendantCollIds(id)) checked ? next.delete(cid) : next.add(cid);
+      });
     },
-    [checkedColls, coll.descendantCollIds, patchFilter]
+    [coll.descendantCollIds, patchUnchecked]
   );
 
   // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard
