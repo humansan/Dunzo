@@ -49,7 +49,7 @@ const StarIcon = React.memo(
           animate={burst ? { opacity: 0, scale: 1.5 } : { opacity: 0.9, scale: 1 }}
           transition={
             burst
-              ? { duration: 0.9, ease: 'easeOut' }
+              ? { duration: 1.1, ease: 'easeOut' }
               : { duration: STAR_BLOOM_MS / 1000, ease: 'easeIn' }
           }
         >
@@ -58,7 +58,7 @@ const StarIcon = React.memo(
       )}
       <motion.div
         animate={burst ? { scale: [1, 1.4, 0.8, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
-        transition={{ duration: 0.9, ease: POP }}
+        transition={{ duration: 1.1, ease: POP }}
         className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
       >
         <Astroid size={30} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
@@ -114,7 +114,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
             }}
             transition={{
               backgroundColor: { duration: 0.4 },
-              scale: { duration: 0.9, ease: POP }
+              scale: { duration: 1.1, ease: POP }
             }}
           >
             <motion.span

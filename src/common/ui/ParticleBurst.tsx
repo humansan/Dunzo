@@ -30,9 +30,9 @@ export const ParticleBurst: React.FC = React.memo(() => {
       <motion.span
         className="absolute rounded-full border-3"
         style={{ borderColor: GOLD }}
-        initial={{ width: 24, height: 24, opacity: 1 }}
-        animate={{ width: 96, height: 96, opacity: 0 }}
-        transition={{ duration: 0.9, ease: 'easeOut' }}
+        initial={{ width: 24, height: 24, opacity: 1, borderWidth: 3 }}
+        animate={{ width: 96, height: 96, opacity: 0, borderWidth: 0 }}
+        transition={{ duration: 1.1, ease: 'easeOut' }}
       />
       {parts.map((p, i) => (
         <motion.span
@@ -41,7 +41,7 @@ export const ParticleBurst: React.FC = React.memo(() => {
           style={{ width: p.s, height: p.s, backgroundColor: p.c, boxShadow: `0 0 6px ${p.c}` }}
           initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
           animate={{ x: p.x, y: p.y, scale: 0, opacity: 0 }}
-          transition={{ duration: 0.9, ease: 'easeOut' }}
+          transition={{ duration: 1.1, ease: 'easeOut' }}
         />
       ))}
     </div>
