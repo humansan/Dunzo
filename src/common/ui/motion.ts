@@ -38,7 +38,7 @@ export interface JitterKeyframes {
 // Starts and ends at rest. Generate once per fire (useMemo) - regenerating
 // mid-animation restarts it.
 export function jitterKeyframes({
-  amplitude = 16,
+  amplitude = 20,
   steps = 16,
   decay = 2,
   rotate = 0.6,

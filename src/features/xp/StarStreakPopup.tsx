@@ -35,6 +35,16 @@ interface Snapshot {
 
 const starCount = (lit: boolean[]) => lit.filter(Boolean).length;
 
+// The dim/blur layer and the zoom layer are split, and driven as variants so the
+// backdrop element itself never gets a transform. backdrop-filter samples the page
+// in the element's TRANSFORMED space, so scaling a blurred fixed inset-0 layer makes
+// it composite a magnified, drifting copy of the app behind the popup (a moving
+// ghost rectangle) and forces the filter to re-rasterize every frame (flicker).
+// Variants rather than per-element initial/animate/exit so the zoom layer inherits
+// enter/exit from the backdrop without depending on exit propagation.
+const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
+const zoomVariants = { hidden: { scale: 0.9 }, visible: { scale: 1 } };
+
 // A centered, transient celebration shown when a new star is earned. It renders the
 // presentational StarStreak from a frozen snapshot and drives the burst via explicit
 // timers - no dependency on task state after the trigger.
@@ -89,31 +99,41 @@ const StarStreakPopupBase: React.FC<StarStreakPopupProps> = ({ lit, streak, date
     <AnimatePresence>
       {show && snap && (
         <motion.div
+          // Untransformed: this layer only ever fades. See the variants above for
+          // why the zoom has to live on a separate element.
+          //
           // Swallows clicks while it's up: completing another task mid-celebration
           // earns a further star, and the supersede in the effect above would drop
           // the in-flight pop for the new one. StarStreak itself stays
           // pointer-events-none, so there's nothing to click through to.
-          className={`fixed inset-0 z-[90] flex items-center justify-center ${overlayBackdrop} scale-150`}
-          initial={{ opacity: 0, scale:0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ opacity: {duration: 0.3 }, scale: { duration: STAR_BLOOM_MS/1000, ease: 'easeOut' } }}
+          className={`fixed inset-0 z-[90] flex items-center justify-center ${overlayBackdrop}`}
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+          transition={{ duration: 0.3 }}
         >
-          {/* `reveal` fires the shake on the same tick as the star pop and the
-              particle burst, so the hit reads as one event. */}
-          <ImpactShake active={reveal}>
-            <StarStreak
-              pinned={false}
-              lit={reveal ? snap.lit : snap.lit.map((on, i) => on && !snap.burst[i])}
-              bursting={reveal ? snap.burst : undefined}
-              // NOT gated on reveal: the bloom starts charging the moment the
-              // popup mounts and is still mounted when the burst lands, which is
-              // what lets it hand off mid-charge instead of restarting.
-              blooming={snap.burst}
-              streak={reveal ? snap.streak : snap.prevStreak}
-              streakPulse={reveal && snap.streak > snap.prevStreak}
-            />
-          </ImpactShake>
+          <motion.div
+            className="scale-150"
+            variants={zoomVariants}
+            transition={{ duration: STAR_BLOOM_MS / 1000, ease: 'easeOut' }}
+          >
+            {/* `reveal` fires the shake on the same tick as the star pop and the
+                particle burst, so the hit reads as one event. */}
+            <ImpactShake active={reveal}>
+              <StarStreak
+                pinned={false}
+                lit={reveal ? snap.lit : snap.lit.map((on, i) => on && !snap.burst[i])}
+                bursting={reveal ? snap.burst : undefined}
+                // NOT gated on reveal: the bloom starts charging the moment the
+                // popup mounts and is still mounted when the burst lands, which is
+                // what lets it hand off mid-charge instead of restarting.
+                blooming={snap.burst}
+                streak={reveal ? snap.streak : snap.prevStreak}
+                streakPulse={reveal && snap.streak > snap.prevStreak}
+              />
+            </ImpactShake>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
