@@ -1,3 +1,11 @@
-export { StopwatchWidget, type TimerState } from './StopwatchWidget';
+export { StopwatchWidget } from './StopwatchWidget';
 export { StopwatchFullscreen } from './StopwatchFullscreen';
-export { StopwatchProvider, useStopwatch, useElapsed, StopwatchTime, type StopwatchApi } from './StopwatchContext';
+export {
+  StopwatchProvider,
+  useStopwatch,
+  useElapsed,
+  useFocusDisplay,
+  FocusTime,
+  type StopwatchApi,
+} from './StopwatchContext';
+export type { TimerState, FocusMode, Phase, FocusPrefs } from './types';

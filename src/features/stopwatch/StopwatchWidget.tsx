@@ -1,32 +1,39 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Play, Pause, Square, RotateCcw, Maximize2, X } from 'lucide-react';
-import { StopwatchTime, useStopwatch } from '@/features/stopwatch/StopwatchContext';
-
-export type TimerState = 'idle' | 'running' | 'paused';
+import { Maximize2, X } from 'lucide-react';
+import { FocusTime, useFocusDisplay, useStopwatch } from '@/features/stopwatch/StopwatchContext';
+import { FocusControls } from '@/features/stopwatch/ui/FocusControls';
 
 interface StopwatchWidgetProps {
-  timerState: TimerState;
-  onStart: () => void;
-  onPause: () => void;
-  onStop: () => void;
-  onReset: () => void;
   onClose: () => void;
   onMaximize: () => void;
 }
 
-export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
-  timerState,
-  onStart,
-  onPause,
-  onStop,
-  onReset,
-  onClose,
-  onMaximize,
-}) => {
-  // Shared with the fullscreen view, so a background picked there is already live
-  // here. Always an image - the bundled default until the user picks their own.
-  const { bgUrl, bgDimness, bgBlur } = useStopwatch();
+// Progress under the digits. Isolated so the tick re-renders this bar and the
+// digits, and nothing else in the card.
+const ProgressBar: React.FC = () => {
+  const { progress, isCountdown, isOvertime } = useFocusDisplay();
+  if (!isCountdown) return null;
+  return (
+    <div className="w-[80%] h-1 rounded-full bg-white/15 overflow-hidden">
+      <div
+        className={`h-full rounded-full transition-[width] duration-200 ease-linear ${isOvertime ? 'bg-xp-bar' : 'bg-white/80'}`}
+        style={{ width: `${progress * 100}%` }}
+      />
+    </div>
+  );
+};
+
+// The minimized card. Deliberately just the clock: time, progress, play/pause and
+// reset. Everything that configures the session - mode, duration, pomodoro
+// settings, skip - lives in the fullscreen view, because this thing exists to be
+// glanced at while you work on something else, not operated.
+//
+// Only the close/maximize handlers are props - those are the shell's business.
+// Everything about the timer comes from the context this card already used for its
+// background.
+export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({ onClose, onMaximize }) => {
+  const { bgUrl, bgDimness, bgBlur, pulseKey } = useStopwatch();
 
   return (
     <motion.div
@@ -44,95 +51,44 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
         className="absolute inset-0 w-full h-full object-cover"
         style={{ filter: `blur(${bgBlur * 12}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
       />
+      {/* Dimming is a legibility control for bright images, so it stays exactly
+          where you set it - it is not a channel for signaling phase changes. */}
       <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
 
-      {/* Top bar */}
-      <div className="relative z-10 flex items-center justify-end gap-1 px-3 pt-3">
+      {/* With no sound in v0, this flash is the primary end-of-phase signal. Keyed
+          so each phase end remounts it and replays the fade. */}
+      {pulseKey > 0 && (
+        <motion.div
+          key={pulseKey}
+          initial={{ opacity: 0.7 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 0.9 }}
+          className="absolute inset-0 bg-white pointer-events-none z-20"
+        />
+      )}
+
+      {/* Window controls only - they fade back until you go looking for them. */}
+      <div className="relative z-10 flex items-center justify-end px-3 pt-3">
         <button
           onClick={onMaximize}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/50 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           title="Maximize"
         >
           <Maximize2 size={18} />
         </button>
         <button
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/50 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           title="Hide widget"
         >
           <X size={18} />
         </button>
       </div>
 
-      {/* Timer */}
-      <div className="relative z-10 flex flex-col items-center px-6 pb-8">
-        <div className="text-white font-bold font-mono tracking-tight text-6xl leading-none py-2">
-          <StopwatchTime />
-        </div>
-
-        <div className="flex items-center justify-center gap-3 text-sm duration-0">
-          {timerState === 'idle' && (
-            <button
-              onClick={onStart}
-              className="flex items-center justify-center gap-2 min-w-25 px-2 py-2 rounded-full bg-white/20 text-white font-bold active:bg-white/10 active:scale-90 cursor-pointer"
-            >
-              <Play size={16} fill="currentColor" />
-              <span>Start</span>
-            </button>
-          )}
-
-          {timerState === 'running' && (
-            <>
-              <button
-                onClick={onPause}
-                className="flex items-center justify-center gap-2 min-w-[100px] px-2 py-2 rounded-full bg-white/20 text-white font-semibold active:bg-white/10 active:scale-90 cursor-pointer"
-              >
-                <Pause size={16} fill="currentColor" />
-                <span>Pause</span>
-              </button>
-              <button
-                onClick={onStop}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
-                title="Stop"
-              >
-                <Square size={16} fill="currentColor" />
-              </button>
-              <button
-                onClick={onReset}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/10 active:scale-90 cursor-pointer"
-                title="Reset"
-              >
-                <RotateCcw size={16} />
-              </button>
-            </>
-          )}
-
-          {timerState === 'paused' && (
-            <>
-              <button
-                onClick={onStart}
-                className="flex items-center justify-center gap-2 min-w-[115px] px-2 py-2 rounded-full bg-white/20 text-white font-semibold active:bg-white/10 active:scale-90 cursor-pointer"
-              >
-                <Play size={16} fill="currentColor" />
-                <span>Resume</span>
-              </button>
-              <button
-                onClick={onStop}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
-                title="Stop"
-              >
-                <Square size={16} fill="currentColor" />
-              </button>
-              <button
-                onClick={onReset}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/15 text-white active:bg-white/10 active:scale-90 cursor-pointer"
-                title="Reset"
-              >
-                <RotateCcw size={16} />
-              </button>
-            </>
-          )}
-        </div>
+      <div className="relative z-10 flex flex-col items-center gap-3 px-6 pb-7">
+        <FocusTime className="font-bold font-mono tracking-tight text-6xl leading-none" />
+        <ProgressBar />
+        <FocusControls size="sm" compact />
       </div>
     </motion.div>
   );
