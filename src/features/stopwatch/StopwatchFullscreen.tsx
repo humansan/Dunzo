@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Minimize2, X, Image as ImageIcon, Sun } from 'lucide-react';
 import { TimerState } from '@/features/stopwatch/StopwatchWidget';
 import { StopwatchTime } from '@/features/stopwatch/StopwatchContext';
+import defaultBgUrl from '@/assets/stopwatch_default.jpg';
 
 interface StopwatchFullscreenProps {
   timerState: TimerState;
@@ -37,7 +38,9 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
   onMinimize,
   onClose,
 }) => {
-  const [bgImage, setBgImage] = useState<string | null>(null);
+  // The background is always an image: the bundled default until the user picks their
+  // own. Black shows through only while it loads / if it fails.
+  const [bgImage, setBgImage] = useState<string>(defaultBgUrl);
   const [bgDimness, setBgDimness] = useState<number>(0.3);
   const [bgBlur, setBgBlur] = useState<number>(0);
   const [showSettings, setShowSettings] = useState(false);
@@ -82,20 +85,16 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
-      style={{ backgroundImage: 'linear-gradient(135deg, #FF4E50 0%, #F9D423 100%)' }}
+      style={{ backgroundColor: '#000' }}
     >
       {/* Background image + dimming */}
-      {bgImage && (
-        <img
-          src={bgImage}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: `blur(${bgBlur * 50}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
-        />
-      )}
-      {bgImage && (
-        <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
-      )}
+      <img
+        src={bgImage}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: `blur(${bgBlur * 50}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
+      />
+      <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
 
       {/* Header row - sits in normal flow at the top so the timer below it reads as
           vertically centered (mirrors Tick's layout) */}
@@ -109,15 +108,13 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
           >
             <ImageIcon size={26} />
           </button>
-          {bgImage && (
-            <button
-              onClick={() => setShowSettings(s => !s)}
-              className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
-              title="Background settings"
-            >
-              <Sun size={24} />
-            </button>
-          )}
+          <button
+            onClick={() => setShowSettings(s => !s)}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            title="Background settings"
+          >
+            <Sun size={24} />
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -147,7 +144,7 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
       </div>
 
       {/* Settings dropdown - floats below the header without affecting layout */}
-      {showSettings && bgImage && (
+      {showSettings && (
         <div className="absolute top-20 left-5 z-20 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/10 shadow-2xl">
           <p className="text-white text-sm font-semibold mb-2">Background Dimness</p>
           <Slider value={bgDimness} onChange={handleDimnessChange} />
