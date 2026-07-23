@@ -26,7 +26,12 @@ function toIso(d: Date): string {
 function parseInputDate(text: string): Date | null {
   const parsed = new Date(text);
   if (isNaN(parsed.getTime())) return null;
-  const hasYear = /\b\d{4}\b/.test(text) || /[\/\-\s]\d{2}$/.test(text);
+  // A year is present when there's a 4-digit number, or a full month/day/year
+  // triple (three numbers). The previous check looked for a trailing 2-digit
+  // group, which also matched a zero-padded *day* - "07/03" or "July 03" were
+  // read as having a year and left at 2001.
+  const nums: string[] = text.match(/\d+/g) ?? [];
+  const hasYear = nums.some((n) => n.length === 4) || nums.length >= 3;
   if (!hasYear) parsed.setFullYear(new Date().getFullYear());
   return parsed;
 }
