@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
-import { trackers, type NewTrackerRow } from '../../src/db/schema';
+import { trackers, type NewTrackerRow } from '../../shared/db/schema';
 import { asyncHandler, pick, TRACKER_FIELDS, TRACKER_UPDATE_FIELDS } from '../http';
 
 export const trackersRouter = Router();

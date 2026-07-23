@@ -1,6 +1,8 @@
 import express from 'express';
+import { sql } from 'drizzle-orm';
+import { db } from './db';
 import { requireAuth } from './auth';
-import { errorMiddleware } from './http';
+import { asyncHandler, errorMiddleware } from './http';
 import { todosRouter } from './routes/todos';
 import { workspacesRouter } from './routes/workspaces';
 import { trackersRouter } from './routes/trackers';
@@ -34,6 +36,33 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/me', requireAuth, (req, res) => {
   res.json({ userId: req.userId });
 });
+
+// Public: does an account already exist for this email? Used by the email-first
+// signup step to steer existing users to log in instead of creating a duplicate.
+// Reads Neon Auth's (Better Auth) `neon_auth."user"` table — `user` is a reserved
+// word so it must be quoted. Fail-open: if the table/query is unavailable, report
+// `exists: false` so signup is never wrongly blocked (Better Auth still rejects a
+// true duplicate at signUp time).
+app.get(
+  '/api/auth/email-exists',
+  asyncHandler(async (req, res) => {
+    const email = String(req.query.email ?? '').trim().toLowerCase();
+    if (!email) {
+      res.json({ exists: false });
+      return;
+    }
+    try {
+      const result: any = await db.execute(
+        sql`select 1 from neon_auth."user" where lower(email) = ${email} limit 1`
+      );
+      const rows = result?.rows ?? result ?? [];
+      res.json({ exists: Array.isArray(rows) ? rows.length > 0 : Boolean(rows) });
+    } catch (err) {
+      console.warn('[api] email-exists check failed:', err);
+      res.json({ exists: false });
+    }
+  })
+);
 
 // Data API — all scoped by the authenticated user_id.
 app.use('/api/todos', requireAuth, todosRouter);

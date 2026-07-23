@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useAppData } from '../data/AppDataContext';
+import { useAppData } from '@/lib/app-data';
 import { resolveRoleColor } from './applyTheme';
 import type { RoleName } from './roles';
 

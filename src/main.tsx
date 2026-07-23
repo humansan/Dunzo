@@ -2,8 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
-import { router } from './router';
-import { queryClient } from './data/queryClient';
+import { router } from '@/app/router';
+import { queryClient } from '@/lib/query/queryClient';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(

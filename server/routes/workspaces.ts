@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
-import { workspaces, type NewWorkspaceRow } from '../../src/db/schema';
+import { workspaces, type NewWorkspaceRow } from '../../shared/db/schema';
 import { asyncHandler, pick, WORKSPACE_FIELDS, WORKSPACE_UPDATE_FIELDS } from '../http';
 
 export const workspacesRouter = Router();

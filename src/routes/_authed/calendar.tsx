@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CalendarView } from '../../components/CalendarView';
-import { ViewErrorFallback } from '../../components/ViewErrorFallback';
-import { useAppData } from '../../data/AppDataContext';
-import { useOverlayNav } from '../../data/useOverlayNav';
+import { CalendarView } from '@/features/calendar';
+import { ViewErrorFallback } from '@/app/ViewErrorFallback';
+import { useAppData } from '@/lib/app-data';
+import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 

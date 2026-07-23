@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PlannerScreen } from '../../../components/PlannerScreen';
-import { ViewErrorFallback } from '../../../components/ViewErrorFallback';
+import { PlannerScreen } from '@/features/planner';
+import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 
 // /planner/$collectionId — the collection id is the selected view.
 export const Route = createFileRoute('/_authed/planner/$collectionId')({

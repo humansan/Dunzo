@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { userSettings, type NewUserSettingsRow } from '../../src/db/schema';
+import { userSettings, type NewUserSettingsRow } from '../../shared/db/schema';
 import { asyncHandler, pick, SETTINGS_FIELDS } from '../http';
 
 export const settingsRouter = Router();

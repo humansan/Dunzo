@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { Todo } from '../src/types';
-import { normalizeVisibility } from '../src/utils/todoFilters';
+import type { Todo } from '../shared/types';
+import { normalizeVisibility } from '../shared/domain/todoVisibility';
 
 // Wrap an async route handler so thrown/rejected errors reach the error
 // middleware instead of crashing the process or hanging the request.
