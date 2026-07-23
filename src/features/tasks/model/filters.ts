@@ -20,6 +20,8 @@ export {
 // (see shared/domain/todoSchedule.ts); re-exported here as the client's entry point.
 export {
   reconcileSchedule,
+  normalizeScheduleTimes,
+  isScheduleValid,
   startAfterDue,
   touchesSchedule,
   type ScheduleSide,

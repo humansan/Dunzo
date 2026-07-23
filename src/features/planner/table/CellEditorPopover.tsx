@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Todo } from '@shared/types';
-import { OrganizerEntry, CollectionOption, collectionOf, reconcileSchedule } from '@/features/tasks/model';
+import { OrganizerEntry, CollectionOption, collectionOf, normalizeScheduleTimes, isScheduleValid } from '@/features/tasks/model';
 import {
   NotesField,
   OptionSelectField,
@@ -42,6 +42,10 @@ export const CellEditorPopover: React.FC<{
   onCreateCollection,
   onClose,
 }) => {
+  // Set when a schedule edit is rejected for putting start after due. Declared
+  // before the early return below so the hook order stays stable.
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+
   if (!editing.rect) return null;
   const { col } = editing;
   const isDateOrTime = col === 'date' || col === 'startDate' || col === 'start' || col === 'end';
@@ -49,11 +53,19 @@ export const CellEditorPopover: React.FC<{
   // stays chrome-less for these and just positions/sizes them.
   const isPanel = isDateOrTime || col === 'xp' || col === 'collection';
   const save = (patch: Partial<Todo>) => onSaveTodo({ ...entry.todo, ...patch });
-  // A date/time edit must keep the schedule invariant (a time needs its date; start
-  // can't be after due). `side` names the side being edited so an ordering conflict
-  // moves the other one.
-  const saveSchedule = (patch: Partial<Todo>, side: 'start' | 'due') =>
-    onSaveTodo(reconcileSchedule({ ...entry.todo, ...patch }, side));
+  // A date/time edit must keep the schedule invariant. An orphan time still drops
+  // automatically (a time needs its date), but an edit that would put start after
+  // due is DISCARDED rather than nudging the side the user didn't touch. `side`
+  // only words the notice.
+  const saveSchedule = (patch: Partial<Todo>, side: 'start' | 'due') => {
+    const candidate = normalizeScheduleTimes({ ...entry.todo, ...patch });
+    if (!isScheduleValid(candidate)) {
+      setScheduleError(side === 'start' ? "Start can't be after due" : "Due can't be before start");
+      return;
+    }
+    setScheduleError(null);
+    onSaveTodo(candidate);
+  };
   // A time column can't be edited until its side has a date.
   const noDateNotice = (label: string) => (
     <div className="rounded-lg border border-line bg-surface shadow-2xl px-3 py-2 text-xs text-fg-subtle">
@@ -149,6 +161,11 @@ export const CellEditorPopover: React.FC<{
           onChange={(val) => save({ notes: val || undefined })}
           className="w-full bg-transparent text-sm text-fg placeholder:text-fg-ghost focus:outline-none resize-none leading-relaxed [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full"
         />
+      )}
+      {scheduleError && (
+        <div className="mt-1.5 rounded-lg border border-line bg-surface shadow-2xl px-3 py-2 text-xs text-danger">
+          {scheduleError}
+        </div>
       )}
     </div>,
     document.body

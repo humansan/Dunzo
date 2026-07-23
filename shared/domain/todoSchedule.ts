@@ -15,6 +15,12 @@ import { Todo } from '../types';
 // These live in `shared/` so the exact same rule runs on the client (composed into
 // the write chain, and interactively in the editors) and on the server (an
 // authoritative backstop), mirroring normalizeVisibility in ./todoVisibility.
+//
+// Rule 2 is enforced two different ways, deliberately:
+//   - Interactive editors REJECT a violating edit outright (isScheduleValid), so
+//     the side the user did NOT touch is never moved under them.
+//   - Bulk/backstop writes CORRECT it (reconcileSchedule), because "ignore the
+//     edit" has no meaning for a batch upsert or a server-merged partial patch.
 
 export type ScheduleSide = 'start' | 'due';
 
@@ -58,6 +64,33 @@ export function startAfterDue(t: Todo): boolean {
   return s !== undefined && d !== undefined && s > d;
 }
 
+// Rule 1 on its own: drop an orphan time (and its percent twin) whose side has no
+// date. Split out of reconcileSchedule so the interactive editors can build the
+// candidate an edit produces WITHOUT Rule 2's nudge - they reject an out-of-order
+// pair instead of moving the untouched side to meet it. Clearing a due date still
+// has to drop the orphan due time, which is why this half stays automatic.
+export function normalizeScheduleTimes(todo: Todo): Todo {
+  if (todo.isCollection) return todo;
+
+  let t = todo;
+  if (!t.startDate && (t.startTime !== undefined || t.startPercentage !== undefined)) {
+    t = { ...t, startTime: undefined, startPercentage: undefined };
+  }
+  if (!t.dueDate && (t.dueTime !== undefined || t.duePercentage !== undefined)) {
+    t = { ...t, dueTime: undefined, duePercentage: undefined };
+  }
+  return t;
+}
+
+// Whether `todo` satisfies Rule 2 once orphan times are dropped. The editors gate
+// every schedule edit on this and discard the ones that fail, so a user's input is
+// never silently rewritten. Rule 1 is applied first because dropping an orphan
+// time can itself resolve an apparent same-day conflict.
+export function isScheduleValid(todo: Todo): boolean {
+  if (todo.isCollection) return true;
+  return !startAfterDue(normalizeScheduleTimes(todo));
+}
+
 // Return a copy of `todo` corrected to satisfy the schedule invariant.
 //
 // `editedSide` names the side the user just changed, so ordering conflicts move
@@ -69,15 +102,8 @@ export function reconcileSchedule(todo: Todo, editedSide?: ScheduleSide): Todo {
   // Collections ignore the task date/time fields entirely.
   if (todo.isCollection) return todo;
 
-  let t = todo;
-
   // Rule 1 - drop an orphan time (and its percent twin) whose side has no date.
-  if (!t.startDate && (t.startTime !== undefined || t.startPercentage !== undefined)) {
-    t = { ...t, startTime: undefined, startPercentage: undefined };
-  }
-  if (!t.dueDate && (t.dueTime !== undefined || t.duePercentage !== undefined)) {
-    t = { ...t, dueTime: undefined, duePercentage: undefined };
-  }
+  let t = normalizeScheduleTimes(todo);
 
   // Rule 2 - order the pair. Equalize the offending side's date first, then only
   // touch its time if a same-day time conflict remains (so a purely date-level

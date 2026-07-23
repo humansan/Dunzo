@@ -15,7 +15,7 @@ import {
 import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
-import { CollectionOption, hasDate, reconcileSchedule, type ScheduleSide } from '@/features/tasks/model';
+import { CollectionOption, hasDate, normalizeScheduleTimes, isScheduleValid, type ScheduleSide } from '@/features/tasks/model';
 import { isDone } from '@/features/tasks/model';
 import {
   CompletedToggle,
@@ -115,9 +115,14 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   useLayoutEffect(resizeTitle, [draft.text, todo.id]);
   useLayoutEffect(resizeNotes, [draft.notes, todo.id]);
 
+  // Set when a schedule edit is rejected for putting start after due; shown under
+  // the offending side's chips and cleared by the next accepted schedule edit.
+  const [scheduleError, setScheduleError] = useState<{ side: ScheduleSide; message: string } | null>(null);
+
   useEffect(() => {
     setDraft(todo);
     setDateStr(date);
+    setScheduleError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo.id]);
 
@@ -146,27 +151,39 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     });
   };
 
-  // Apply a schedule-affecting change (a start/due date or time) and reconcile the
-  // invariant: a time can't exist without its date, and start can't be after due.
-  // `editedSide` names the side the user just touched, so an ordering conflict moves
-  // the OTHER side to meet it. The due date lives in `dateStr` (onSave treats its
-  // second arg as authoritative for dueDate), so we bake it into the candidate and
-  // read any reconciled dueDate back out.
+  // Apply a schedule-affecting change (a start/due date or time). A time can't
+  // exist without its date, so orphan times are still dropped automatically - but
+  // an edit that would put start after due is DISCARDED rather than reconciled, so
+  // the side the user didn't touch never moves under them. `editedSide` names the
+  // side just touched, purely to word the rejection notice. The due date lives in
+  // `dateStr` (onSave treats its second arg as authoritative for dueDate), so we
+  // bake it into the candidate and read it back out.
   const updateSchedule = (
     patch: Partial<Todo>,
     editedSide: ScheduleSide,
     nextDueDate: string = dateStr,
   ) => {
-    setDraft(prev => {
-      const candidate = reconcileSchedule(
-        { ...prev, ...patch, dueDate: nextDueDate || undefined },
-        editedSide,
-      );
-      const outDate = candidate.dueDate ?? '';
-      setDateStr(outDate);
-      onSave(candidate, outDate);
-      return candidate;
+    const candidate = normalizeScheduleTimes({
+      ...draft,
+      ...patch,
+      dueDate: nextDueDate || undefined,
     });
+
+    if (!isScheduleValid(candidate)) {
+      // Ignore the edit outright. The chips are driven by draft/dateStr, which
+      // haven't moved, so the picker visibly snaps back to the previous value.
+      setScheduleError({
+        side: editedSide,
+        message: editedSide === 'start' ? "Start can't be after due" : "Due can't be before start",
+      });
+      return;
+    }
+
+    setScheduleError(null);
+    const outDate = candidate.dueDate ?? '';
+    setDateStr(outDate);
+    setDraft(candidate);
+    onSave(candidate, outDate);
   };
 
   const handleDateChange = (val: string) => {
@@ -317,6 +334,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     disabled={!draft.startDate}
                   />
                 </div>
+                {scheduleError?.side === 'start' && (
+                  <p className="mt-1.5 text-[11px] text-danger">{scheduleError.message}</p>
+                )}
               </RightProp>
 
               <RightProp
@@ -340,6 +360,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     disabled={!dateStr}
                   />
                 </div>
+                {scheduleError?.side === 'due' && (
+                  <p className="mt-1.5 text-[11px] text-danger">{scheduleError.message}</p>
+                )}
               </RightProp>
 
               {showXpChips && (
