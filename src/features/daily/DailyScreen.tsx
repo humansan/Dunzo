@@ -25,7 +25,7 @@ import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
 import { StarStreak, StarStreakPopup, STAR_CELEBRATE_DELAY_MS } from '@/features/xp';
-import { computeXpStats, getWeeklyXp, computeStarStreak } from '@/features/xp';
+import { computeXpStats, getWeeklyXp, computeStarStreak, buildXpHistory } from '@/features/xp';
 import { useDelayedValue } from '@/common/hooks/useDelayedValue';
 import { DailyList } from '@/features/daily/DailyList';
 import { DatePickerPopover } from '@/common/ui';
@@ -106,18 +106,23 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     [currentDayData, selectedDate]
   );
 
+  // One shared per-day rollup for the current day's XP + streak reads, so the
+  // three memos below don't each rebuild it. The corner streak (below) runs on a
+  // delayed copy of dayTodos, so it intentionally keeps its own.
+  const xpHistory = useMemo(() => buildXpHistory(dayTodos), [dayTodos]);
+
   const xpStats = useMemo(
-    () => computeXpStats(dayTodos, selectedDate, weekStartsOn),
-    [dayTodos, selectedDate, weekStartsOn]
+    () => computeXpStats(dayTodos, selectedDate, weekStartsOn, xpHistory),
+    [dayTodos, selectedDate, weekStartsOn, xpHistory]
   );
 
-  const weeklyXp = useMemo(() => getWeeklyXp(dayTodos, 4), [dayTodos]);
+  const weeklyXp = useMemo(() => getWeeklyXp(dayTodos, 4, xpHistory), [dayTodos, xpHistory]);
 
   // Star/streak flags are computed here and passed in - the widgets don't touch task
   // state. The popup gets the LIVE flags (it snapshots + animates them itself); the
   // corner gets a lagged copy so - with no animation of its own - it silently settles
   // to the new total right as the popup lights up.
-  const starStreak = useMemo(() => computeStarStreak(dayTodos, selectedDate), [dayTodos, selectedDate]);
+  const starStreak = useMemo(() => computeStarStreak(dayTodos, selectedDate, xpHistory), [dayTodos, selectedDate, xpHistory]);
   const lit = useMemo(
     () => [starStreak.flags.completedTask, starStreak.flags.beatYesterday, starStreak.flags.beatAverage],
     [starStreak]

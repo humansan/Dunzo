@@ -33,6 +33,13 @@ function parseInputDate(text: string): Date | null {
   const nums: string[] = text.match(/\d+/g) ?? [];
   const hasYear = nums.some((n) => n.length === 4) || nums.length >= 3;
   if (!hasYear) parsed.setFullYear(new Date().getFullYear());
+  // Reject a typo'd year rather than commit it. "7/3/202" parses to year 202,
+  // which would date the task ~1800 years back - and anything that later walks
+  // day-by-day over history (streaks, stats) would iterate that entire span.
+  // Treat an out-of-range year as unparseable so the input just reverts.
+  const thisYear = new Date().getFullYear();
+  const year = parsed.getFullYear();
+  if (year < thisYear - 50 || year > thisYear + 50) return null;
   return parsed;
 }
 
