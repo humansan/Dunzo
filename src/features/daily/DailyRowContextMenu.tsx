@@ -134,8 +134,10 @@ export const DailyRowContextMenu: React.FC<{
           <CalendarDays size={14} /> Set date
         </button>
         <button
-          onClick={() => toggleSub('time')}
-          className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''}`}
+          onClick={() => date && toggleSub('time')}
+          disabled={!date}
+          title={date ? undefined : 'Add a date first'}
+          className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${date ? '' : 'opacity-40 cursor-not-allowed'}`}
         >
           <Clock size={14} /> Set time
         </button>

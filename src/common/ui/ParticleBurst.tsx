@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
+import { useThemeColor } from '@/theme/useThemeColor';
 
-const GOLD = '#ffc24b';
+
 // A deliberately varied palette so a burst feels colourful, not flat.
 const PARTICLE_COLORS = ['#ffc24b', '#ff8a3d', '#ff5d8f', '#a78bfa', '#7dd3fc', '#ffffff'];
 
@@ -9,6 +10,7 @@ const PARTICLE_COLORS = ['#ffc24b', '#ff8a3d', '#ff5d8f', '#a78bfa', '#7dd3fc', 
 // Absolutely positioned, so drop it inside a `relative` parent and mount it via
 // AnimatePresence.
 export const ParticleBurst: React.FC = React.memo(() => {
+  const GOLD = useThemeColor('xp-tier1');
   const parts = useMemo(
     () =>
       Array.from({ length: 10 }, (_, i) => {

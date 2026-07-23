@@ -44,7 +44,7 @@ export const Calendar: React.FC<CalendarProps> = ({
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="text-sm font-bold text-fg-subtle">{format(currentMonth, 'MMMM yyyy')}</span>
+        <span className="text-sm font-bold text-fg-muted">{format(currentMonth, 'MMMM yyyy')}</span>
         <button
           onClick={() => onMonthChange(addDays(monthEnd, 1))}
           className="p-1 text-fg-faint hover:text-fg transition-colors"
@@ -70,7 +70,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                   : selected
                     ? 'bg-fill-stronger text-fg font-bold'
                     : inMonth
-                      ? 'text-fg-subtle hover:text-fg hover:bg-fill'
+                      ? 'text-fg-muted hover:text-fg hover:bg-fill'
                       : 'text-fg-ghost hover:bg-fill-subtle'}
               `}
             >

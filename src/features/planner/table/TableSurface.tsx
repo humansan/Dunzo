@@ -55,7 +55,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
       {titleChrome ? (
         <div className="max-w-3xl mx-auto w-full text-fg">
           {/* Project-style title - the selected collection's name, else the view label. */}
-          <div className="pt-3 mb-1">
+          <div className="pt-3 mb-5">
             <h1 className="text-3xl font-bold text-fg truncate">
               {model.selectedCollectionId ? (model.todoById.get(model.selectedCollectionId)?.text || 'Untitled') : model.viewLabel}
             </h1>

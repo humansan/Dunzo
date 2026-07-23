@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth';
+import { Checkbox } from '@/common/ui/Checkbox';
 import { apiFetch } from '@/lib/query/apiClient';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { applyTheme } from '@/theme/applyTheme';
@@ -39,24 +40,9 @@ const RememberCheckbox: React.FC<{ checked: boolean; onChange: (v: boolean) => v
   checked,
   onChange,
 }) => (
-  <button
-    type="button"
-    role="checkbox"
-    aria-checked={checked}
-    onClick={() => onChange(!checked)}
-    className="flex items-center gap-2 cursor-pointer group"
-  >
-    <span
-      className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-        checked
-          ? 'bg-[var(--accent2)] border-[var(--accent2)] text-canvas'
-          : 'border-line group-hover:border-line-strong'
-      }`}
-    >
-      {checked && <Check size={12} strokeWidth={3} />}
-    </span>
+  <Checkbox checked={checked} onChange={onChange}>
     <span className="text-sm text-fg-muted">Remember me</span>
-  </button>
+  </Checkbox>
 );
 
 const OrDivider: React.FC = () => (
@@ -271,7 +257,7 @@ const LoginScreen: React.FC<{
 
   // Login-specific field styling (kept local so the account modal is unaffected).
   const fieldClass =
-    'w-full bg-fill-subtle border border-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent1)] transition-colors';
+    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:ring-2 focus:ring-(--accent1) transition-all';
   const fieldLabel =
     'block text-sm font-medium text-fg-muted';
 
@@ -606,7 +592,7 @@ const LoginScreen: React.FC<{
 
       <div className="relative h-full w-full flex flex-col md:flex-row">
         {/* ── Brand panel ── */}
-        <div className="flex-1 flex flex-col justify-center items-center px-16 pt-14 pb-6 md:py-0">
+        <div className="flex-1 flex flex-col justify-center items-end px-16 pt-14 pb-6 md:pr-20 md:py-0">
           <div className="max-w-sm">
             <img
               src={logoUrl}

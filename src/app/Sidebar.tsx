@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
         <button
           ref={accountBtnRef}
           onClick={toggleAccountMenu}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-all"
+          className="group relative w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden transition-all cursor-pointer"
           title={isAuthenticated ? 'Account' : 'Sign In'}
         >
           {/* Vibrant sign-in background with the black logo on top (matches the

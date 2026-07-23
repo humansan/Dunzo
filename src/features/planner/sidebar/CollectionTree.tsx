@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown, CalendarCheck, FolderCheck } from 'lucide-react';
 import { OrganizerEntry } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { SIDEBAR_INDENT } from '@/features/planner/constants';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnNeutral } from '@/theme/buttons';
 import { useCollectionDnD } from '@/features/planner/hooks/useCollectionDnD';
 
 export type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChildren: boolean };
@@ -14,10 +14,13 @@ export type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChild
 // stay in one place. Drag-to-reorder/nest and the right-click menu are opt-in via the
 // `dnd` and `onOpenMenu` props - the planner passes them, search omits them.
 export const CollectionTree: React.FC<{
-  selectedView: string;
-  onSelectView: (v: string) => void;
-  allCount: number;
-  uncategorizedCount: number;
+  // Nav mode (planner sidebar / Task Finder): single-select by view string. Optional
+  // so the calendar's checkbox mode can omit them (see checkedColls below).
+  selectedView?: string;
+  onSelectView?: (v: string) => void;
+  allCount?: number;
+  // Rendered only in nav mode (the calendar's checkbox mode drops the Uncategorized row).
+  uncategorizedCount?: number;
   // Omit to hide the "Archived" pseudo-view (the Task Finder's picker doesn't
   // support it - its data layer only knows 'all' / 'uncategorized' / a collection id).
   archivedCount?: number;
@@ -33,6 +36,19 @@ export const CollectionTree: React.FC<{
   dnd?: ReturnType<typeof useCollectionDnD>;
   // Opt-in right-click context menu on a collection row.
   onOpenMenu?: (id: string, x: number, y: number) => void;
+  // Checkbox / multi-select mode (used by the Calendar's collection filter). When
+  // `onToggleChecked` is provided the tree drops the nav pseudo-views, shows only an
+  // "Uncategorized" row plus the collection tree, and each row becomes a toggle: its
+  // Shapes icon fills only when checked and the row brightens. `'uncategorized'` is the
+  // sentinel id for the Uncategorized row.
+  checkedColls?: Set<string>;
+  onToggleChecked?: (id: string) => void;
+  // Check-mode header "Select all"/"Deselect all" toggle.
+  allChecked?: boolean;
+  onToggleAll?: () => void;
+  // Set a collection's whole subtree (all descendant collections) to `checked`. When
+  // provided, toggling a collection that has sub-collections shows a small confirm prompt.
+  onToggleSubtree?: (id: string, checked: boolean) => void;
 }> = ({
   selectedView,
   onSelectView,
@@ -47,63 +63,86 @@ export const CollectionTree: React.FC<{
   toggleCollColl,
   dnd,
   onOpenMenu,
+  checkedColls,
+  onToggleChecked,
+  allChecked,
+  onToggleAll,
+  onToggleSubtree,
 }) => {
-  const itemCls = (view: string) =>
-    `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${
-      selectedView === view
-        ? 'bg-fill text-fg font-medium'
-        : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
+  const checkMode = !!onToggleChecked;
+  // Which collection's "apply to subcollections?" prompt is currently open (check mode).
+  const [subtreePrompt, setSubtreePrompt] = useState<{ id: string; checked: boolean } | null>(null);
+  // In nav mode the active look keys off the selected view; in check mode it keys off
+  // whether the row's id is in `checkedColls`.
+  const itemCls = (id: string) =>
+    `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm ${btnGhost(selectedView === id)} ${
+      (checkMode ? checkedColls?.has(id) : selectedView === id) && 'font-medium'
     }`;
 
   return (
     <div className="group/pane flex-1 min-h-0 flex flex-col">
-      {/* Section 1: All Tasks · Archived */}
-      <div className="shrink-0 p-2 pb-0 space-y-0.5">
-        <button type="button" onClick={() => onSelectView('all')} className={itemCls('all')} title="All Planner Tasks">
-          <Layers size={15} className="shrink-0 text-fg-subtle" />
-          <span className="flex-1 truncate">All Planner Tasks</span>
-          <span className="text-xs text-fg-faint font-mono mr-1.5">{allCount}</span>
-        </button>
-        {archivedCount !== undefined && (
-          <button type="button" onClick={() => onSelectView('archived')} className={itemCls('archived')} title="Archived">
-            <Archive size={15} className="shrink-0 text-fg-subtle" />
-            <span className="flex-1 truncate">Archived</span>
-            <span className="text-xs text-fg-faint font-mono mr-1.5">{archivedCount}</span>
+      {/* Section 1: All Tasks · Archived (nav mode only) */}
+      {!checkMode && (
+        <div className="shrink-0 p-2 pb-0 space-y-0.5">
+          <button type="button" onClick={() => onSelectView?.('all')} className={itemCls('all')} title="All Planner Tasks">
+            <Layers size={15} className="shrink-0 text-fg-subtle" />
+            <span className="flex-1 truncate">All Planner Tasks</span>
+            <span className="text-xs text-fg-faint font-mono mr-1.5">{allCount}</span>
           </button>
-        )}
-      </div>
+          {archivedCount !== undefined && (
+            <button type="button" onClick={() => onSelectView?.('archived')} className={itemCls('archived')} title="Archived">
+              <Archive size={15} className="shrink-0 text-fg-subtle" />
+              <span className="flex-1 truncate">Archived</span>
+              <span className="text-xs text-fg-faint font-mono mr-1.5">{archivedCount}</span>
+            </button>
+          )}
+        </div>
+      )}
 
-      <div className="my-2 mx-3 border-t border-line"></div>
+      {/* Section 2: In Daily List · Uncategorized · Categorized (nav mode only - in the
+          calendar's checkbox mode these pseudo-views live outside the tree). */}
+      {!checkMode && (
+        <>
+          <div className="my-2 mx-3 border-t border-line"></div>
+          <div className="shrink-0 px-2 space-y-0.5">
+            {inDailyListCount !== undefined && (
+              <button type="button" onClick={() => onSelectView?.('in-daily-list')} className={itemCls('in-daily-list')} title="Also In Daily List">
+                <CalendarCheck size={15} className="shrink-0 text-fg-subtle" />
+                <span className="flex-1 truncate">Also In Daily List</span>
+                <span className="text-xs text-fg-faint font-mono mr-1.5">{inDailyListCount}</span>
+              </button>
+            )}
+            <button type="button" onClick={() => onSelectView?.('uncategorized')} className={itemCls('uncategorized')} title="Uncategorized">
+              <Inbox size={15} className="shrink-0 text-fg-subtle" />
+              <span className="flex-1 truncate">Uncategorized</span>
+              <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
+            </button>
+            {categorizedCount !== undefined && (
+              <button type="button" onClick={() => onSelectView?.('categorized')} className={itemCls('categorized')} title="Categorized">
+                <FolderCheck size={15} className="shrink-0 text-fg-subtle" />
+                <span className="flex-1 truncate">Categorized</span>
+                <span className="text-xs text-fg-faint font-mono mr-1.5">{categorizedCount}</span>
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
-      {/* Section 2: In Daily List · Uncategorized · Categorized */}
-      <div className="shrink-0 px-2 space-y-0.5">
-        {inDailyListCount !== undefined && (
-          <button type="button" onClick={() => onSelectView('in-daily-list')} className={itemCls('in-daily-list')} title="Also In Daily List">
-            <CalendarCheck size={15} className="shrink-0 text-fg-subtle" />
-            <span className="flex-1 truncate">Also In Daily List</span>
-            <span className="text-xs text-fg-faint font-mono mr-1.5">{inDailyListCount}</span>
-          </button>
-        )}
-        <button type="button" onClick={() => onSelectView('uncategorized')} className={itemCls('uncategorized')} title="Uncategorized">
-          <Inbox size={15} className="shrink-0 text-fg-subtle" />
-          <span className="flex-1 truncate">Uncategorized</span>
-          <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
-        </button>
-        {categorizedCount !== undefined && (
-          <button type="button" onClick={() => onSelectView('categorized')} className={itemCls('categorized')} title="Categorized">
-            <FolderCheck size={15} className="shrink-0 text-fg-subtle" />
-            <span className="flex-1 truncate">Categorized</span>
-            <span className="text-xs text-fg-faint font-mono mr-1.5">{categorizedCount}</span>
-          </button>
-        )}
-      </div>
-
-      <div className="my-2 mx-3 border-t border-line"></div>
+      {!checkMode && <div className="my-2 mx-3 border-t border-line"></div>}
 
       {/* Section 3: user collections */}
       <div className="shrink-0 px-2 pb-0">
-        <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
-          Collections
+        <div className="px-2.5 pt-1 pb-1.5 flex items-center justify-between gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-fg-ghost">Collections</span>
+          {checkMode && onToggleAll && (
+            <button
+              type="button"
+              onClick={onToggleAll}
+              className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${btnNeutral}`}
+            >
+              {allChecked ? 'Hide all' : 'Show all'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -120,18 +159,35 @@ export const CollectionTree: React.FC<{
           const color = collectionColor(c.todo.color);
           const indent = depth * SIDEBAR_INDENT;
           const drop = dnd?.dropInfo?.id === c.todo.id ? dnd.dropInfo.pos : null;
+          // In check mode the Shapes glyph is the checkbox: filled colored glyph when
+          // checked, colored outline when not. No fill background (unlike nav mode); the
+          // text stays fg-subtle to match the rest of the sidebar, and unselected rows dim
+          // to 60% opacity - so the filled icon + full opacity is what reads as "selected".
+          const checked = checkMode && checkedColls?.has(c.todo.id);
+          const rowCls = checkMode
+            ? `w-full flex items-center rounded-lg text-left transition-colors gap-2 pl-2.5 pr-1.5 py-1.5 text-sm hover:bg-fill-subtle ${
+                checked ? 'text-fg-muted' : 'text-fg-subtle opacity-60 hover:text-fg-muted'
+              }`
+            : itemCls(c.todo.id);
+          const onRowClick = () => {
+            if (!checkMode) return onSelectView?.(c.todo.id);
+            const nowChecked = !checkedColls?.has(c.todo.id);
+            onToggleChecked?.(c.todo.id);
+            // Toggling a collection with sub-collections offers to cascade to them.
+            setSubtreePrompt(hasChildren && onToggleSubtree ? { id: c.todo.id, checked: nowChecked } : null);
+          };
           const button = (
             <button
               type="button"
-              onClick={() => onSelectView(c.todo.id)}
+              onClick={onRowClick}
               onContextMenu={onOpenMenu ? (e) => { e.preventDefault(); onOpenMenu(c.todo.id, e.clientX, e.clientY); } : undefined}
               style={{ paddingLeft: 6 + indent }}
-              className={`${itemCls(c.todo.id)} ${dnd?.dragCollId === c.todo.id ? 'opacity-40' : ''} ${
+              className={`${rowCls} ${dnd?.dragCollId === c.todo.id ? 'opacity-40' : ''} ${
                 drop === 'inside' ? 'ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/10' : ''
               }`}
               title={c.todo.text || 'Untitled collection'}
             >
-              <Shapes size={15} className="shrink-0" style={{ color }} />
+              <Shapes size={15} className="shrink-0" style={{ color }} fill={checkMode && !checked ? 'none' : 'currentColor'} strokeWidth={1.5} />
               <span className="flex-1 truncate">{c.todo.text || 'Untitled collection'}</span>
               {/* Right slot: task count by default; on pane hover, collections with
                   nested children swap it for an expand/collapse toggle. */}
@@ -153,7 +209,31 @@ export const CollectionTree: React.FC<{
             </button>
           );
 
-          if (!dnd) return <div key={c.todo.id} className="relative">{button}</div>;
+          // Inline "apply to subcollections?" prompt, shown below the just-toggled row.
+          const promptEl = subtreePrompt?.id === c.todo.id && (
+            <div
+              style={{ marginLeft: 6 + indent }}
+              className="my-1 flex items-center rounded-md bg-fill-subtle px-2 py-1 text-[11px] text-fg-muted"
+            >
+              <span className="flex-1">{subtreePrompt.checked ? 'Show' : 'Hide'} subcollections too?</span>
+              <button
+                type="button"
+                onClick={() => { onToggleSubtree?.(subtreePrompt.id, subtreePrompt.checked); setSubtreePrompt(null); }}
+                className={`shrink-0 rounded px-1.5 py-0.5 font-semibold ${btnGhost()}`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubtreePrompt(null)}
+                className={`shrink-0 rounded px-1.5 py-0.5 font-semibold ${btnGhost()}`}
+              >
+                No
+              </button>
+            </div>
+          );
+
+          if (!dnd) return <div key={c.todo.id} className="relative">{button}{promptEl}</div>;
           return (
             <div
               key={c.todo.id}

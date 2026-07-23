@@ -1,7 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Todo } from '@shared/types';
-import { OrganizerEntry, CollectionOption, collectionOf } from '@/features/tasks/model';
+import { OrganizerEntry, CollectionOption, collectionOf, reconcileSchedule } from '@/features/tasks/model';
 import {
   NotesField,
   OptionSelectField,
@@ -49,6 +49,17 @@ export const CellEditorPopover: React.FC<{
   // stays chrome-less for these and just positions/sizes them.
   const isPanel = isDateOrTime || col === 'xp' || col === 'collection';
   const save = (patch: Partial<Todo>) => onSaveTodo({ ...entry.todo, ...patch });
+  // A date/time edit must keep the schedule invariant (a time needs its date; start
+  // can't be after due). `side` names the side being edited so an ordering conflict
+  // moves the other one.
+  const saveSchedule = (patch: Partial<Todo>, side: 'start' | 'due') =>
+    onSaveTodo(reconcileSchedule({ ...entry.todo, ...patch }, side));
+  // A time column can't be edited until its side has a date.
+  const noDateNotice = (label: string) => (
+    <div className="rounded-lg border border-line bg-surface shadow-2xl px-3 py-2 text-xs text-fg-subtle">
+      Add a {label} first
+    </div>
+  );
 
   return createPortal(
     <div
@@ -99,27 +110,36 @@ export const CellEditorPopover: React.FC<{
           onChange={(val) => {
             // Clearing the date keeps the showInDailyList flag - an undated task
             // just never lands on a daily list, and re-adding a date sends it back.
-            save({ dueDate: val || undefined });
+            // reconcileSchedule also drops the due time when the date goes away.
+            saveSchedule({ dueDate: val || undefined }, 'due');
           }}
         />
       ) : col === 'startDate' ? (
         <CalendarInput
           value={entry.todo.startDate || ''}
           autoFocus
-          onChange={(val) => save({ startDate: val || undefined })}
+          onChange={(val) => saveSchedule({ startDate: val || undefined }, 'start')}
         />
       ) : col === 'start' ? (
-        <TimeInput
-          value={entry.todo.startTime}
-          autoFocus
-          onChange={(val) => save(patchFromTime('start', val))}
-        />
+        entry.todo.startDate ? (
+          <TimeInput
+            value={entry.todo.startTime}
+            autoFocus
+            onChange={(val) => saveSchedule(patchFromTime('start', val), 'start')}
+          />
+        ) : (
+          noDateNotice('start date')
+        )
       ) : col === 'end' ? (
-        <TimeInput
-          value={entry.todo.dueTime}
-          autoFocus
-          onChange={(val) => save(patchFromTime('due', val))}
-        />
+        entry.todo.dueDate ? (
+          <TimeInput
+            value={entry.todo.dueTime}
+            autoFocus
+            onChange={(val) => saveSchedule(patchFromTime('due', val), 'due')}
+          />
+        ) : (
+          noDateNotice('due date')
+        )
       ) : (
         <NotesField
           value={entry.todo.notes || ''}

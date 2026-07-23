@@ -21,6 +21,20 @@ export interface Theme {
   accent2: string; // Secondary accent (e.g. #c6dabe)
 }
 
+// The Calendar sidebar's filter selections, synced to user_settings as one jsonb
+// blob (mirrors how the planner stores hubLayout). All fields optional so an unset
+// blob falls back to sensible defaults: surfaces default on, and collections are
+// stored as an *exclusion* list so anything untouched - including a collection
+// created after the filter was last customized - is checked by default.
+export interface CalendarFilter {
+  showDaily?: boolean;
+  showPlanner?: boolean;
+  showUncategorized?: boolean;
+  showArchived?: boolean; // include archived tasks + collections (undefined ⇒ false)
+  uncheckedCollections?: string[]; // ids explicitly unchecked; everything else is checked
+  dayCount?: number; // days shown in the calendar grid (1/3/5/7; undefined ⇒ 3)
+}
+
 export type TodoStatus = 'todo' | 'in_progress' | 'completed';
 export type TodoPriority = 'low' | 'medium' | 'high';
 export type TodoUrgency = 'low' | 'medium' | 'high';

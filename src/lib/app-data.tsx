@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos } from '@/features/tasks/model';
-import { normalizeCompletion, toggledStatus, isDone } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { timeToPercentage } from '@/common/lib/time';
 import { authClient } from '@/lib/auth';
@@ -244,7 +244,7 @@ function useProvideAppData() {
     const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
     // Persist within-day position: the array order the daily/calendar view hands
     // back becomes each task's dailyOrder.
-    const upserts = todosForDate.map((t, i) => normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i })));
+    const upserts = todosForDate.map((t, i) => reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i }))));
     batchTodos.mutate({ upserts, deletes });
     if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
   };
@@ -257,7 +257,7 @@ function useProvideAppData() {
     const maxDailyOrder = todos
       .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
       .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 })) });
+    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1 }))) });
   };
 
   // Auto-move-date sweep: reschedule any incomplete task whose dueDate has passed
@@ -335,7 +335,7 @@ function useProvideAppData() {
   // so callers can just set `dueDate` without worrying about the sentinel.
   const handleHubSaveTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
-    updateTodo.mutate({ id: updatedTodo.id, patch: normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate })) });
+    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate }))) });
   };
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
@@ -364,26 +364,51 @@ function useProvideAppData() {
       ...(opts?.patch ?? {}),
       ...(dueDate !== undefined ? { dueDate } : {}),
     };
-    createTodo.mutate(normalizeCompletion(normalizeVisibility(newTodo)));
+    createTodo.mutate(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))));
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>
     addHubTodo(opts?.parentId ?? null, opts);
   const handleAddSubtask = (parentId: string): string => addHubTodo(parentId);
 
-  // A block drawn on the calendar is a dated, timed task. Like every other new
-  // task it defaults to both surfaces (Planner + that day's daily checklist); the
-  // only thing special here is the drawn start/due time.
+  // A block drawn on the full calendar page is a dated, timed task. Like every
+  // other new task it defaults to both surfaces (Planner + that day's daily
+  // checklist); the only thing special here is the drawn start/due time.
   const handleCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
     addHubTodo(null, {
       date,
       patch: {
+        // A single-day timed block: start and due both live on the drawn day, so a
+        // time never sits without its date (the schedule invariant).
+        startDate: date,
         startTime,
         startPercentage: timeToPercentage(startTime),
         dueTime,
         duePercentage: timeToPercentage(dueTime),
         showInDatabase: true,
         showInDailyList: true,
+      },
+    });
+
+  // A block drawn on the DAILY screen's 1-day calendar is a daily-list task, so it
+  // adopts the same creation defaults as a daily quick-add: always on the daily
+  // checklist, Planner visibility follows `dailyTasksInPlanner`, and it seeds the
+  // default XP (0/None ⇒ unset) and auto-move flag. The showInDatabase=false case
+  // survives normalizeVisibility because the task has a date + showInDailyList.
+  const handleDailyCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
+    addHubTodo(null, {
+      date,
+      patch: {
+        // Start and due both live on the drawn day (see handleCalendarAddTodo).
+        startDate: date,
+        startTime,
+        startPercentage: timeToPercentage(startTime),
+        dueTime,
+        duePercentage: timeToPercentage(dueTime),
+        showInDailyList: true,
+        showInDatabase: dailyTasksInPlanner,
+        autoMoveDate: defaultAutoMoveDate,
+        ...(defaultDailyXp > 0 ? { xp: defaultDailyXp } : {}),
       },
     });
 
@@ -546,6 +571,7 @@ function useProvideAppData() {
     handleHubSaveTodo,
     handleHubAddTodo,
     handleCalendarAddTodo,
+    handleDailyCalendarAddTodo,
     handleAddSubtask,
     createCollection,
     addHubCollection,

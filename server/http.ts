@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { Todo } from '../shared/types';
 import { normalizeVisibility } from '../shared/domain/todoVisibility';
+import { reconcileSchedule, SCHEDULE_KEYS } from '../shared/domain/todoSchedule';
 
 // Wrap an async route handler so thrown/rejected errors reach the error
 // middleware instead of crashing the process or hanging the request.
@@ -117,6 +118,7 @@ export const SETTINGS_FIELDS = [
   'hubColWidths',
   'hubCollapsed',
   'hubLayout',
+  'calendarFilter',
 ] as const;
 
 // Fields whose value can change which surface a todo renders on (or remove it
@@ -144,6 +146,41 @@ export function enforceVisibility<T extends Record<string, unknown>>(row: T): T 
     (row as { showInDatabase?: boolean }).showInDatabase = fixed.showInDatabase;
   }
   return row;
+}
+
+// Server-side backstop mirroring the client's reconcileSchedule: given a todo's
+// fully-merged intended state, correct the start/due schedule (drop a dateless
+// time, order start before due) in place. Cleared fields become `null` so the same
+// object also works as UPDATE setData (Postgres stores empty columns as null).
+// Mutates `row` (only the keys that actually change) and returns it.
+export function enforceSchedule<T extends Record<string, unknown>>(row: T): T {
+  const fixed = reconcileSchedule(row as unknown as Todo) as unknown as Record<string, unknown>;
+  for (const k of SCHEDULE_KEYS) {
+    const next = fixed[k] === undefined ? null : fixed[k];
+    if (next !== ((row as Record<string, unknown>)[k] ?? null)) {
+      (row as Record<string, unknown>)[k] = next;
+    }
+  }
+  return row;
+}
+
+// Patch form of the schedule backstop: given the existing row and a partial patch
+// that touches a schedule field, fold any correction into `patch` (null-clearing a
+// dropped field) so the merged result satisfies the invariant. Mirrors how the
+// visibility fix is mirrored back onto a patch. Mutates `patch`.
+export function enforceSchedulePatch(
+  patch: Record<string, unknown>,
+  existing: Record<string, unknown>
+): void {
+  const merged = reconcileSchedule({ ...existing, ...patch } as unknown as Todo) as unknown as Record<
+    string,
+    unknown
+  >;
+  for (const k of SCHEDULE_KEYS) {
+    const intended = k in patch ? patch[k] : existing[k];
+    const fixed = merged[k] === undefined ? null : merged[k];
+    if (fixed !== (intended ?? null)) patch[k] = fixed;
+  }
 }
 
 // The server owns completion stamping so it can't drift: completed_at is set

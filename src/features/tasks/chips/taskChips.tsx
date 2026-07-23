@@ -22,6 +22,7 @@ import { btnGhost } from '@/theme/buttons';
 // rowBtn used by the option / collection / parent buttons.
 export const chipBase =
   'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer';
+export const chipDeactivated = 'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-not-allowed';
 export const chipText =
   'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
 export const rowBtn =
@@ -201,8 +202,26 @@ export const TimeChip: React.FC<{
   percent?: number;
   onChange: (val: string) => void;
   placeholder?: string;
-}> = ({ value, percent, onChange, placeholder = 'Time' }) => {
+  /** A time can't exist without a date on its side; the caller disables the chip
+   *  (greyed, non-interactive) until that side has a date. */
+  disabled?: boolean;
+}> = ({ value, percent, onChange, placeholder = 'Time', disabled = false }) => {
   const pct = percent === undefined ? null : Number.isInteger(percent) ? percent : Math.round(percent);
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        title="Add a date first"
+        className={`${chipDeactivated} bg-fill-subtle opacity-40`}
+      >
+        <span className={`${chipText} text-fg-subtle`}>
+          <Clock size={16} />
+          <span className="relative top-px">{value ? formatTime12h(value) : placeholder}</span>
+        </span>
+      </button>
+    );
+  }
   return (
     <ChipPopover panel={() => <TimeInput value={value} autoFocus onChange={onChange} />}>
       {({ open }) => (

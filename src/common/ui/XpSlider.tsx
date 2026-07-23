@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Astroid } from 'lucide-react';
+import { useThemeColor } from '@/theme/useThemeColor';
 
 // The XP/streak gold, matching StarStreak.
-const GOLD = '#ffc24b';
 const MIN = 1;
 const MAX = 5;
 
@@ -23,6 +23,7 @@ interface XpSliderProps {
  * anchored-popover shell (taskChips' ChipPopover, the table's CellEditorPopover).
  */
 export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, className }) => {
+  const GOLD = useThemeColor('xp-tier1');
   const rowRef = useRef<HTMLDivElement>(null);
   // Local override of `value`, held while dragging AND after the commit until the
   // parent echoes the new value back. The echo can be a tick late - react-query

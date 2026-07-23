@@ -263,7 +263,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
         {showXpChips && todo.xp !== undefined && (
           <div className={`flex items-center justify-center gap-1.5 px-2.75 h-[27px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
             ? 'bg-fill-subtle text-fg-ghost'
-            : 'bg-warning-tint text-xp-tier1'
+            : 'bg-warning-tint text-warning'
           }`}>
             <Sparkles size={14} />
             <span className="relative top-px">{todo.xp} XP</span>

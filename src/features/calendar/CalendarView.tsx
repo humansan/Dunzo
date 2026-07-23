@@ -17,10 +17,13 @@ import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
 import { timeToPercentage, formatTime12h } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
-import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
+import { collectionOf, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
-import { Switch } from '@/common/ui/Switch';
+import { Checkbox } from '@/common/ui/Checkbox';
+import { useSyncedCalendarFilter } from '@/lib/query/settings';
+import { CollectionTree } from '@/features/planner/sidebar/CollectionTree';
+import { useCollectionTree, taskCollectionAncestors } from './useCollectionTree';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -29,6 +32,15 @@ const GUTTER_WIDTH = 64; // px - width of the left time-label gutter (the day gr
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAY_OPTIONS = [1, 3, 5, 7];
 
+// ─── Overlap cascade tuning ──────────────────────────────────────────────────
+// Overlapping events are staggered Google-Calendar style: a later-starting event
+// indents right and stacks on top, leaving the earlier one's left edge visible.
+const INDENT_STEP_PCT = 15;  // % of the column each indent level shifts right
+const MAX_LEVELS = 5;       // cap so deep stacks stop indenting instead of overflowing
+const Z_EVENT_BASE = 10;    // resting z for a level-0 card (matches the old flat z-10)
+const Z_EVENT_HOVER = 40;   // hovered card jumps here - above siblings, below the drag ghost (z-50)
+const HOVER_RAISE_DELAY_MS = 250; // dwell before a hovered card lifts, so passing over one doesn't bury an indented card
+
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number);
   return h * 60 + (m || 0);
@@ -36,6 +48,45 @@ function timeToMinutes(t: string): number {
 
 function minutesToPx(mins: number): number {
   return (mins / 60) * HOUR_HEIGHT;
+}
+
+// A timed task's vertical bounds in minutes. A missing side defaults to a 30-min
+// block (start-only → start..start+30; end-only → end-30..end); the calendar's
+// filter guarantees at least one time is set, so the opposite field is present.
+function eventBounds(todo: Todo): { startMin: number; endMin: number } {
+  const startMin = todo.startTime
+    ? timeToMinutes(todo.startTime)
+    : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
+  let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
+  if (endMin <= startMin) endMin = startMin + 30;
+  return { startMin, endMin };
+}
+
+// Assign each event a cascade indent lane, Notion-style: the smallest lane not
+// currently occupied by an earlier-starting event it overlaps (two events overlap
+// when a.startMin < b.endMin && b.startMin < a.endMin). Because a lane is reclaimed
+// the moment its occupant ends, an event that clears everything before it drops back
+// to lane 0 (full width) even while a still-running neighbour sits indented above it
+// - matching how Notion/Google reuse freed columns. Overlapping events always land
+// in distinct lanes, so higher lanes indent further and (via z) stack on top.
+function computeOverlapLayout(
+  items: { id: string; startMin: number; endMin: number }[],
+): Map<string, number> {
+  const sorted = [...items].sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+  const levels = new Map<string, number>();
+  for (let i = 0; i < sorted.length; i++) {
+    const taken = new Set<number>();
+    for (let j = 0; j < i; j++) {
+      const e = sorted[j];
+      if (e.startMin < sorted[i].endMin && sorted[i].startMin < e.endMin) {
+        taken.add(levels.get(e.id) ?? 0);
+      }
+    }
+    let level = 0;
+    while (taken.has(level)) level++;
+    levels.set(sorted[i].id, level);
+  }
+  return levels;
 }
 
 function formatHour(h: number): string {
@@ -58,6 +109,19 @@ function formatDuration(startMin: number, endMin: number): string {
 
   return parts.length > 0 ? parts.join(' ') : '0 minutes';
 }
+
+// A full-width surface toggle row for the calendar sidebar: the shared Checkbox plus a
+// constant-styled label (font-medium, steady color - it does NOT brighten when checked;
+// the box alone signals state).
+const SurfaceCheck: React.FC<{
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}> = ({ label, checked, onChange }) => (
+  <Checkbox checked={checked} onChange={onChange} className="w-full py-1" aria-label={label}>
+    <span className="truncate text-xs text-fg-muted">{label}</span>
+  </Checkbox>
+);
 
 // ─── Interfaces ─────────────────────────────────────────────────────────────
 
@@ -84,34 +148,77 @@ const EventCard: React.FC<{
   endMin: number;
   // CSS color driving the card's fill, spine and dot - see accentForTodo.
   accent: string;
+  // Cascade indent: 0 = full-width (default). A higher level shifts the card right
+  // and stacks it on top, so overlapping earlier cards stay partly visible.
+  indentLevel?: number;
   onMouseDown?: (e: React.MouseEvent) => void;
   onResizeStart?: (e: React.MouseEvent, edge: 'top' | 'bottom') => void;
   isDragging?: boolean;
   onToggle?: (e: React.MouseEvent) => void;
-}> = ({ todo, startMin, endMin, accent, onMouseDown, onResizeStart, isDragging, onToggle }) => {
+}> = ({ todo, startMin, endMin, accent, indentLevel = 0, onMouseDown, onResizeStart, isDragging, onToggle }) => {
   const [isHovered, setIsHovered] = useState(false);
+  // The z-lift is deliberately lagged behind the hover: a card the cursor is only
+  // passing through on its way to an indented one shouldn't jump in front of it.
+  // Visual hover feedback (fill, toggle dot) stays immediate.
+  const [isRaised, setIsRaised] = useState(false);
+  const raiseTimer = useRef<number | null>(null);
+  const cancelRaise = () => {
+    if (raiseTimer.current !== null) {
+      window.clearTimeout(raiseTimer.current);
+      raiseTimer.current = null;
+    }
+  };
+  useEffect(() => cancelRaise, []);
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
-  // Only show a time that's actually set - never fabricate the missing side.
+  // Overlap cascade: indent right by a per-level % of the column (capped), and
+  // raise z with the level so a later start sits on top. Hover lifts a buried card
+  // to the front so it can be read/clicked. Transient (drag) cards keep z-50.
+  // A completed task keeps its indent but drops back to the base z, so incomplete
+  // tasks always stack above the done ones.
+  const level = Math.min(indentLevel, MAX_LEVELS);
+  const indentLeft = level > 0 ? `${level * INDENT_STEP_PCT}%` : undefined;
+  const restingZ = isRaised ? Z_EVENT_HOVER : Z_EVENT_BASE + (isDone(todo) ? 0 : level);
+  // Only show a time that's actually set - never fabricate the missing side. When both
+  // sides share a meridiem, drop the AM/PM from the start so it reads "9:00 – 10:30 AM".
+  // A one-sided task shows just that time (no dash, no fabricated duration).
   const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
   const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
-  const timeRange = `${startLabel} – ${endLabel}`.trim();
-  const durationStr = `(${formatDuration(startMin, endMin)})`;
-  const fullTimeDisplay = `${timeRange} ${durationStr}`;
+  const bothTimes = !!todo.startTime && !!todo.dueTime;
+  const sameMeridiem =
+    bothTimes && (timeToMinutes(todo.startTime!) >= 720) === (timeToMinutes(todo.dueTime!) >= 720);
+  const timeRange = bothTimes
+    ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} – ${endLabel}`
+    : startLabel || endLabel;
+  const durationStr = bothTimes ? `(${formatDuration(startMin, endMin)})` : '';
+  const fullTimeDisplay = durationStr ? `${timeRange} ${durationStr}` : timeRange;
 
   return (
     <div
       onMouseDown={onMouseDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        cancelRaise();
+        raiseTimer.current = window.setTimeout(() => setIsRaised(true), HOVER_RAISE_DELAY_MS);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        cancelRaise();
+        setIsRaised(false);
+      }}
       className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
-        } ${isDragging ? 'z-50' : 'z-10 ring-1 ring-canvas'}
+        } ${isDragging ? 'z-50' : 'ring-1 ring-canvas'}
       `}
       style={{
         top: `${top}px`,
         height: `${height}px`,
+        // Cascade indent overrides the base left-1 (right-1 stays, so the card still
+        // reaches the right edge and overlays the ones behind it). z follows the
+        // level unless we're the drag ghost (which owns z-50 via the class above).
+        ...(indentLeft ? { left: indentLeft } : {}),
+        ...(isDragging ? {} : { zIndex: restingZ }),
         paddingTop: isSmall ? '0' : '5px',
         // The drag/resize ghost is outlined in the task's own accent.
         ...(isDragging ? { boxShadow: `0 0 0 1px ${accent}` } : {}),
@@ -169,11 +276,9 @@ const EventCard: React.FC<{
         </div>
       </div>
       {!isSmall && (
-        <div className={`text-[10px] truncate pl-4 ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
+        <div className={`text-[10px] pl-4 ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
           }`}>
-          {timeRange}
-          {' '}
-          {durationStr}
+          {fullTimeDisplay}
         </div>
       )}
       {!isDone(todo) && (
@@ -209,13 +314,82 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   onCreateTask,
   onOpenTask,
 }) => {
-  const [dayCount, setDayCount] = useState(initialDays || 3);
   const [focusDate, setFocusDate] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [miniCalMonth, setMiniCalMonth] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [showDayPicker, setShowDayPicker] = useState(false);
-  // Which surfaces' tasks get a block. A task on both surfaces shows if either is on.
-  const [showDaily, setShowDaily] = useState(true);
-  const [showPlanner, setShowPlanner] = useState(true);
+
+  // The calendar sidebar filter, persisted to user_settings (surfaces + collections).
+  // Surfaces default on; collections are stored as an exclusion list so anything not
+  // explicitly unchecked - including newly created collections - is on by default.
+  // Writes are debounced/optimistic via the settings pipeline.
+  const [filter, patchFilter] = useSyncedCalendarFilter();
+  const showDaily = filter.showDaily ?? true;
+  const showPlanner = filter.showPlanner ?? true;
+  const showUncategorized = filter.showUncategorized ?? true;
+  // Archived tasks (and their collections) are hidden unless this is turned on.
+  const showArchived = filter.showArchived ?? false;
+  const setShowDaily = useCallback((v: boolean) => patchFilter(() => ({ showDaily: v })), [patchFilter]);
+  const setShowPlanner = useCallback((v: boolean) => patchFilter(() => ({ showPlanner: v })), [patchFilter]);
+  const setShowUncategorized = useCallback((v: boolean) => patchFilter(() => ({ showUncategorized: v })), [patchFilter]);
+  const setShowArchived = useCallback((v: boolean) => patchFilter(() => ({ showArchived: v })), [patchFilter]);
+
+  // The collection tree shows archived collections only when "show archived" is on.
+  const coll = useCollectionTree(dayTodos, showArchived);
+
+  // Days shown in the grid. `initialDays` (embedded contexts, e.g. the daily page) is a
+  // fixed override and isn't persisted; the main calendar reads/writes the saved value.
+  const dayCount = initialDays ?? filter.dayCount ?? 3;
+  const setDayCount = useCallback((n: number) => patchFilter(() => ({ dayCount: n })), [patchFilter]);
+
+  // Collections are persisted as an *exclusion* list: an id is checked unless it's in
+  // `uncheckedCollections`. That way a collection created after the filter was last
+  // customized is on by default, instead of being absent from a stale allowlist.
+  const uncheckedColls = useMemo(
+    () => new Set(filter.uncheckedCollections ?? []),
+    [filter.uncheckedCollections]
+  );
+  const checkedColls = useMemo(
+    () => new Set(coll.allCollectionIds.filter((id) => !uncheckedColls.has(id))),
+    [coll.allCollectionIds, uncheckedColls]
+  );
+  // Mutations edit the exclusion set, so ids we can't currently see (e.g. archived
+  // collections while "show archived" is off) keep their state instead of being wiped.
+  const patchUnchecked = useCallback(
+    (fn: (next: Set<string>) => void) => {
+      const next = new Set(uncheckedColls);
+      fn(next);
+      patchFilter(() => ({ uncheckedCollections: [...next] }));
+    },
+    [uncheckedColls, patchFilter]
+  );
+
+  const toggleChecked = useCallback(
+    (id: string) => {
+      patchUnchecked((next) => {
+        next.has(id) ? next.delete(id) : next.add(id);
+      });
+    },
+    [patchUnchecked]
+  );
+
+  // Select-all / deselect-all for the collection tree header (over the visible ids).
+  const allCollsChecked =
+    coll.allCollectionIds.length > 0 && coll.allCollectionIds.every((id) => checkedColls.has(id));
+  const toggleAllColls = useCallback(() => {
+    patchUnchecked((next) => {
+      for (const id of coll.allCollectionIds) allCollsChecked ? next.add(id) : next.delete(id);
+    });
+  }, [allCollsChecked, coll.allCollectionIds, patchUnchecked]);
+
+  // Apply a checked state to all descendant collections (the subtree prompt's action).
+  const applyDescendantColls = useCallback(
+    (id: string, checked: boolean) => {
+      patchUnchecked((next) => {
+        for (const cid of coll.descendantCollIds(id)) checked ? next.delete(cid) : next.add(cid);
+      });
+    },
+    [coll.descendantCollIds, patchUnchecked]
+  );
 
   // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard
   // against the write-back round-trip: skip when it already matches focusDate, so our
@@ -281,13 +455,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
 
-  // Daily-only tasks wear the app accent. A Task Planner task wears its collection's
-  // color instead, so the calendar reads like the Planner; an uncategorized one is grey.
+  // A task wears its collection's color so the calendar reads like the Planner. Any
+  // task without a collection - whether daily-only or an uncategorized planner task -
+  // is grey.
   const accentForTodo = useCallback(
     (todo: Todo): string => {
-      if (todo.showInDatabase !== true) return 'var(--accent1)';
       const collId = collectionOf(todo, byId);
-      if (!collId) return 'var(--color-status-todo)';
+      if (!collId) return 'var(--color-collection-1)';
       return collectionColor(byId.get(collId)?.color);
     },
     [byId]
@@ -360,22 +534,39 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setMiniCalMonth(d);
   };
 
-  // Get todos for a specific date
+  // The collection filter, applied AFTER the surface toggles decide the base set: a
+  // task with no collection shows only when "Show uncategorized" is on; a task with a
+  // collection shows only when one of its collection ancestors is checked (a checked
+  // parent pulls in its whole subtree).
+  const passesCollectionFilter = useCallback(
+    (t: Todo): boolean => {
+      if (collectionOf(t, byId) === null) return showUncategorized;
+      for (const id of taskCollectionAncestors(t, byId)) if (checkedColls.has(id)) return true;
+      return false;
+    },
+    [showUncategorized, checkedColls, byId]
+  );
+
   const getTodosForDate = useCallback(
     (dateStr: string): Todo[] => {
       const dayData = dayTodos.find((d) => d.date === dateStr);
-      // Anything with a start OR an end time gets a block. The 30-minute default
-      // for a missing side is applied at render (kept off the todo) so the event
-      // card can tell which side was never set and omit it from the label.
-      return (dayData?.todos || []).filter(
-        (t) =>
-          t &&
-          (t.startTime || t.dueTime) &&
-          // A task living on both surfaces shows while either toggle is on.
-          ((showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && showsInOrganizer(t)))
-      );
+      return (dayData?.todos || []).filter((t) => {
+        // Anything with a start OR an end time gets a block. The 30-minute default
+        // for a missing side is applied at render (kept off the todo) so the event
+        // card can tell which side was never set and omit it from the label.
+        if (!t || !(t.startTime || t.dueTime)) return false;
+        // Archived tasks are hidden entirely unless "show archived" is on; the gate
+        // owns the archived exclusion, so the planner surface below uses raw
+        // showInDatabase (equivalent to showsInOrganizer for non-archived tasks).
+        if (t.archived && !showArchived) return false;
+        // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
+        const inSet =
+          (showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && t.showInDatabase === true);
+        // Stage 2 - the uncategorized/collection filters narrow that base set.
+        return inSet && passesCollectionFilter(t);
+      });
     },
-    [dayTodos, showDaily, showPlanner]
+    [dayTodos, showDaily, showPlanner, showArchived, passesCollectionFilter]
   );
 
   // --- Drag Selection for Creation --- //
@@ -524,10 +715,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
       const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
-      // Update the todo
+      // Update the todo. The block is single-day: pin BOTH start and due date to
+      // the (possibly new) column so a cross-day move doesn't leave startDate on
+      // the old day - which would read as a stale multi-day span.
       const updatedTodo = {
         ...todo,
+        startDate: currentDateStr,
         startTime: newStartTime,
+        startPercentage: timeToPercentage(newStartTime),
         dueTime: newEndTime,
         duePercentage: timeToPercentage(newEndTime),
       };
@@ -621,9 +816,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
       const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
+      // Single-day block: keep start's date pinned to this column too, so setting a
+      // start time never leaves it dateless (the schedule invariant).
       const updatedTodo = {
         ...todo,
+        startDate: dateStr,
         startTime: newStartTime,
+        startPercentage: timeToPercentage(newStartTime),
         dueTime: newEndTime,
         duePercentage: timeToPercentage(newEndTime),
       };
@@ -677,13 +876,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [settling]);
 
   return (
-    <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} max-w-[1400px] mx-auto select-none w-full`}>
+    <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-56 flex-shrink-0 pr-4 pt-2 hidden lg:block">
+        <div className="w-60 flex-shrink-0 pt-2 pr-2 hidden lg:flex lg:flex-col min-h-0 border-r border-line mr-4">
           {/* Calendar is h-full; without a content-height wrapper it eats the whole
               screen-height column and pushes the toggles below the fold. */}
-          <div className="shrink-0">
+          <div className="shrink-0 px-2">
             <Calendar
               currentMonth={miniCalMonth}
               onMonthChange={setMiniCalMonth}
@@ -692,17 +891,30 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             />
           </div>
 
-          {/* Which surfaces' tasks get blocked out on the grid. */}
-          <div className="mt-5 px-1 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-fg-faint">Show daily tasks</span>
-              <Switch checked={showDaily} onChange={setShowDaily} aria-label="Show daily tasks" />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-fg-faint">Show task planner tasks</span>
-              <Switch checked={showPlanner} onChange={setShowPlanner} aria-label="Show task planner tasks" />
-            </div>
+          {/* Which surfaces' tasks get blocked out on the grid. Sits flush under the mini
+              calendar; row rhythm (space-y-0.5) matches the collection rows below. */}
+          <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
+          <div className="shrink-0 px-2.5">
+            <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
+            <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
+            <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
+            <SurfaceCheck label="Show archived tasks" checked={showArchived} onChange={setShowArchived} />
           </div>
+
+          {/* Pick which collections' tasks appear. The tree renders in checkbox mode;
+              nothing shows until a collection is checked. */}
+          <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
+          <CollectionTree
+            visibleCollections={coll.visibleCollections}
+            collectionCount={coll.collectionCount}
+            collapsedColls={coll.collapsedColls}
+            toggleCollColl={coll.toggleCollColl}
+            checkedColls={checkedColls}
+            onToggleChecked={toggleChecked}
+            allChecked={allCollsChecked}
+            onToggleAll={toggleAllColls}
+            onToggleSubtree={applyDescendantColls}
+          />
         </div>
       )}
 
@@ -808,7 +1020,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         {/* Scrollable time grid */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden calendar-scroll"
+          className="flex-1 overflow-y-auto overflow-x-hidden calendar-scroll select-none"
         >
           <div className="flex relative" style={{ height: `${24 * HOUR_HEIGHT}px` }}>
             {/* Time labels gutter */}
@@ -848,6 +1060,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             {visibleDays.map((day) => {
               const dateStr = format(day, 'yyyy-MM-dd');
               const todos = getTodosForDate(dateStr);
+              // Cascade indent levels for this column's overlapping events.
+              const overlapLayout = computeOverlapLayout(
+                todos.map((t) => ({ id: t.id, ...eventBounds(t) })),
+              );
               const today = isToday(day);
 
               return (
@@ -884,14 +1100,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                   {/* Event cards */}
                   {todos.map((todo) => {
-                    // A missing side defaults to a 30-minute block (start-only →
-                    // start..start+30; end-only → end-30..end). The filter guarantees
-                    // at least one time is set, so the opposite field is present here.
-                    const startMin = todo.startTime
-                      ? timeToMinutes(todo.startTime)
-                      : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
-                    let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
-                    if (endMin <= startMin) endMin = startMin + 30;
+                    const { startMin, endMin } = eventBounds(todo);
+                    const indentLevel = overlapLayout.get(todo.id) ?? 0;
 
                     const isDraggingThis = draggingEvent?.todo.id === todo.id;
                     const isResizingThis = resizingEvent?.todo.id === todo.id;
@@ -909,6 +1119,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           todo={todo}
                           startMin={startMin}
                           endMin={endMin}
+                          indentLevel={indentLevel}
                           accent={accentForTodo(todo)}
                           onMouseDown={(e) => handleEventMouseDown(e, todo, dateStr, startMin, endMin)}
                           onResizeStart={(e, edge) => handleEventResizeStart(e, todo, dateStr, edge, startMin, endMin)}
@@ -918,13 +1129,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     );
                   })}
 
-                  {/* Active Dragging Event */}
+                  {/* Active Dragging Event - keep the card's cascade indent while it moves. */}
                   {draggingEvent && draggingEvent.currentDateStr === dateStr && (
                     <EventCard
                       todo={draggingEvent.todo}
                       accent={accentForTodo(draggingEvent.todo)}
                       startMin={draggingEvent.currentMins}
                       endMin={draggingEvent.currentMins + (draggingEvent.origEndMins - draggingEvent.origStartMins)}
+                      indentLevel={overlapLayout.get(draggingEvent.todo.id) ?? 0}
                       isDragging={true}
                     />
                   )}
@@ -936,6 +1148,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       accent={accentForTodo(resizingEvent.todo)}
                       startMin={resizingEvent.currentStartMins}
                       endMin={resizingEvent.currentEndMins}
+                      indentLevel={overlapLayout.get(resizingEvent.todo.id) ?? 0}
                       isDragging={true} // reuse styling for visual feedback
                     />
                   )}
@@ -949,19 +1162,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       accent={settling.accent}
                       startMin={settling.startMins}
                       endMin={settling.endMins}
+                      indentLevel={overlapLayout.get(settling.id) ?? 0}
                     />
                   )}
 
                   {/* Active Drag Selection / Creation Preview */}
                   {dragSelection && dragSelection.dateStr === dateStr && (
                     <div
-                      className="absolute left-1 right-1 rounded-lg bg-[var(--accent1)]/20 border border-[var(--accent1)]/40 pointer-events-none z-10"
+                      className="absolute left-1 right-1 rounded-lg bg-collection-1/30 border border-collection-1/60 pointer-events-none z-10"
                       style={{
                         top: `${minutesToPx(dragSelection.startMins)}px`,
                         height: `${minutesToPx(dragSelection.endMins - dragSelection.startMins)}px`,
                       }}
                     >
-                      <div className="p-1 px-2 text-[10px] font-bold text-[var(--accent1)]">
+                      <div className="p-1 px-2 text-[10px] font-bold text-collection-1">
                         {`${Math.floor(dragSelection.startMins / 60).toString().padStart(2, '0')}:${(dragSelection.startMins % 60).toString().padStart(2, '0')}`}
                         {' – '}
                         {`${Math.floor(dragSelection.endMins / 60).toString().padStart(2, '0')}:${(dragSelection.endMins % 60).toString().padStart(2, '0')}`}

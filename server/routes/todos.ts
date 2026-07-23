@@ -4,6 +4,8 @@ import { db } from '../db';
 import { todos, type NewTodoRow } from '../../shared/db/schema';
 import {
   asyncHandler,
+  enforceSchedule,
+  enforceSchedulePatch,
   enforceVisibility,
   pick,
   stampCompletion,
@@ -11,6 +13,7 @@ import {
   TODO_FIELDS,
   TODO_UPDATE_FIELDS,
 } from '../http';
+import { SCHEDULE_KEYS, touchesSchedule } from '../../shared/domain/todoSchedule';
 
 export const todosRouter = Router();
 
@@ -61,6 +64,16 @@ todosRouter.post(
         if (insertRow.showInDatabase === true && setData.showInDatabase !== true) {
           setData.showInDatabase = true;
         }
+        // Same for the schedule backstop: reconcile the full intended row, then
+        // mirror each corrected field onto the conflict-update set (null-clearing a
+        // dropped one) so an existing row is fixed too.
+        enforceSchedule(insertRow as Record<string, unknown>);
+        const insertRec = insertRow as Record<string, unknown>;
+        const setRec = setData as Record<string, unknown>;
+        for (const k of SCHEDULE_KEYS) {
+          const reconciled = insertRec[k] === undefined ? null : insertRec[k];
+          if (reconciled !== (setRec[k] ?? null)) setRec[k] = reconciled;
+        }
 
         // `where` on the conflict update prevents hijacking a row owned by
         // another user (PK `id` is global; only own rows get updated).
@@ -78,8 +91,8 @@ todosRouter.post(
         const id = (p as { id?: unknown })?.id;
         if (typeof id !== 'string') continue;
         const patch = pick<Partial<NewTodoRow>>(p, TODO_UPDATE_FIELDS);
-        // Status stamping and the visibility backstop both need the existing row.
-        if ('status' in patch || touchesVisibility(patch)) {
+        // Status stamping and the visibility/schedule backstops all need the existing row.
+        if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch)) {
           const [existing] = await tx
             .select()
             .from(todos)
@@ -95,6 +108,9 @@ todosRouter.post(
             if (merged.showInDatabase === true && patch.showInDatabase !== true) {
               patch.showInDatabase = true;
             }
+          }
+          if (existing && touchesSchedule(patch)) {
+            enforceSchedulePatch(patch as Record<string, unknown>, existing as Record<string, unknown>);
           }
         }
         if (Object.keys(patch).length === 0) continue;
@@ -126,6 +142,7 @@ todosRouter.post(
     } as NewTodoRow;
     stampCompletion(row as { status?: string | null; completedAt?: number | null });
     enforceVisibility(row as Record<string, unknown>);
+    enforceSchedule(row as Record<string, unknown>);
     const [inserted] = await db.insert(todos).values(row).returning();
     res.status(201).json(inserted);
   })
@@ -138,8 +155,8 @@ todosRouter.patch(
     const { id } = req.params;
     const userId = req.userId!;
     const patch = pick<Partial<NewTodoRow>>(req.body, TODO_UPDATE_FIELDS);
-    // Status stamping and the visibility backstop both need the existing row.
-    if ('status' in patch || touchesVisibility(patch)) {
+    // Status stamping and the visibility/schedule backstops all need the existing row.
+    if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch)) {
       const [existing] = await db
         .select()
         .from(todos)
@@ -155,6 +172,9 @@ todosRouter.patch(
         if (merged.showInDatabase === true && patch.showInDatabase !== true) {
           patch.showInDatabase = true;
         }
+      }
+      if (existing && touchesSchedule(patch)) {
+        enforceSchedulePatch(patch as Record<string, unknown>, existing as Record<string, unknown>);
       }
     }
     if (Object.keys(patch).length === 0) {

@@ -13,7 +13,7 @@ import {
   check,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
-import type { Theme, TodoStatus } from '../types';
+import type { Theme, TodoStatus, CalendarFilter } from '../types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Drizzle schema for the Neon Postgres migration (Phase 1).
@@ -144,6 +144,7 @@ export const userSettings = pgTable('user_settings', {
   hubColWidths: jsonb('hub_col_widths'), // dun-hub-col-widths
   hubCollapsed: jsonb('hub_collapsed'), // dun-hub-collapsed
   hubLayout: jsonb('hub_layout'), // last hub view + sidebar width/hidden/collapsed
+  calendarFilter: jsonb('calendar_filter').$type<CalendarFilter>(), // calendar sidebar surface + collection filter
   updatedAt: bigint('updated_at', { mode: 'number' }),
 });
 

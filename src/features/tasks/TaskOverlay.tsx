@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { TodoFullView } from '@/features/tasks/TodoFullView';
 import { useAppData } from '@/lib/app-data';
 
@@ -9,12 +9,24 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
   const d = useAppData();
   const todo = d.todoById.get(taskId) ?? null;
 
-  // Stale / deleted id (e.g. removed on another device) - leave the overlay. Only
-  // once the todos have actually loaded: on a cold /task/$taskId deep-link the map
-  // is briefly empty, and closing then would run onClose's history.back() straight
-  // out of the app (a fresh tab has nowhere to go back to).
+  // Closing runs `onClose` = history.back(); several paths can request a close for the
+  // same open (the Delete button closes, and deleting also empties the todo which trips
+  // the stale-todo effect below), so guard it to fire at most once per open. Without
+  // this, a delete pops multiple history entries and lands the user on the wrong page.
+  const closed = useRef(false);
+  useEffect(() => { closed.current = false; }, [taskId]);
+  const closeOnce = useCallback(() => {
+    if (closed.current) return;
+    closed.current = true;
+    onClose();
+  }, [onClose]);
+
+  // Stale / deleted id (e.g. removed here or on another device) - leave the overlay.
+  // Only once the todos have actually loaded: on a cold /task/$taskId deep-link the map
+  // is briefly empty, and closing then would run history.back() straight out of the app
+  // (a fresh tab has nowhere to go back to).
   useEffect(() => {
-    if (d.isDataReady && !todo) onClose();
+    if (d.isDataReady && !todo) closeOnce();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo, d.isDataReady]);
 
@@ -27,10 +39,12 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
       collectionOptions={d.hubCollectionOptions}
       onCreateCollection={d.createCollection}
       byId={d.todoById}
-      onClose={onClose}
+      onClose={closeOnce}
       onSave={(updated, newDate) => d.handleHubSaveTodo({ ...updated, dueDate: newDate || undefined })}
       onToggle={d.handleToggleTodo}
-      onDelete={(id) => { d.handleDeleteTodoById(id); onClose(); }}
+      // Just delete here; TodoFullView calls onClose (closeOnce) right after, and the
+      // stale-todo effect would otherwise fire a second close once the todo disappears.
+      onDelete={(id) => d.handleDeleteTodoById(id)}
       showXpChips={d.showXpChips}
     />
   );
