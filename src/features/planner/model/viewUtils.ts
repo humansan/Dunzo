@@ -57,6 +57,14 @@ export function getFieldRawValue(
 ): string {
   const { todo } = entry;
   switch (field) {
+    // Rank enum fields by their semantic order (the option index), not their label's
+    // spelling - so priority sorts none→low→med→high and status none→todo→active→done.
+    // "No value" ⇒ rank 0 (lowest), so an unset field stays at the low end in both
+    // directions (last when descending), never alphabetized or flipped to the front.
+    case 'priority':
+      return String(todo.priority ? PRIORITY_OPTIONS.findIndex((o) => o.value === todo.priority) + 1 : 0);
+    case 'status':
+      return String(todo.status ? STATUS_OPTIONS.findIndex((o) => o.value === todo.status) + 1 : 0);
     case 'date': return todo.dueDate || '';
     case 'startDate': return todo.startDate || '';
     case 'start': return todo.startTime || '';

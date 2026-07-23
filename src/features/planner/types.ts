@@ -1,16 +1,7 @@
 import { OrganizerEntry } from '@/features/tasks/model';
 
-// ── Sidebar pseudo-views ─────────────────────────────────────────────────────
-// Non-collection sidebar tabs. Any `selectedView` NOT in this set is treated as a
-// real collection id. 'in-daily-list' and 'categorized' filter the same organizer
-// (showInDatabase) entry set as the others - see useHubData.
-export const PSEUDO_VIEWS = new Set<string>([
-  'all',
-  'uncategorized',
-  'archived',
-  'in-daily-list',
-  'categorized',
-]);
+// The sidebar pseudo-view registry (which tasks each tab shows, how it scaffolds
+// collections, its label/counts) lives in `@/features/planner/views`.
 
 // ── Column model ─────────────────────────────────────────────────────────────
 export type ColKey =
@@ -70,6 +61,11 @@ export interface FilterRule {
   value: string;
 }
 
+// How the active filter rules combine: 'and' = a task must match every rule,
+// 'or' = it may match any one. A single per-view choice (not per-rule), shown in
+// the Filter menu as a conjunction cell before each rule.
+export type FilterMatch = 'and' | 'or';
+
 export const FILTER_CONDITIONS: { value: FilterCondition; label: string }[] = [
   { value: 'is', label: 'is' },
   { value: 'is_not', label: 'is not' },
@@ -106,7 +102,7 @@ export interface SectionsConfig {
 
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
   autoArchive: false,
-  showLeafTasks: 'none',
+  showLeafTasks: 'top',
   hideEmptyCollections: false,
   hideSubcollections: false,
   groupBy: 'collection',

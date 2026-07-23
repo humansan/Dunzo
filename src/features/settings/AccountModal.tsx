@@ -11,6 +11,7 @@ import { ListSelect, textInputCls } from '@/common/ui';
 import { Switch } from '@/common/ui';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
+import { btnGhost } from '@/theme/buttons';
 
 type CountdownMode = 'off' | 'time' | 'percent';
 type Section = 'profile' | 'settings' | 'data';
@@ -576,7 +577,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       key={key}
                       type="button"
                       onClick={() => setSection(key)}
-                      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-all ${
+                      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-all cursor-pointer ${
                         active
                           ? 'bg-black/10 text-black font-bold'
                           : 'text-black/90 hover:bg-black/10 hover:text-black font-semibold'
@@ -601,7 +602,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               <div className="flex shrink-0 justify-end px-2 py-2">
                 <button
                   onClick={onClose}
-                  className="rounded-lg p-1.5 text-fg-faint transition-all hover:bg-fill hover:text-fg"
+                  className={`rounded-lg p-1.5 transition-all ${btnGhost()}`}
                 >
                   <X size={16} />
                 </button>

@@ -21,6 +21,7 @@ import { useRowDnD } from '@/features/planner/hooks/useRowDnD';
 import { HubSidebar } from '@/features/planner/sidebar/HubSidebar';
 import { HubToolbar, ToolbarMenuKey } from '@/features/planner/toolbar/HubToolbar';
 import { groupCreateSpec, buildFilterCreatePatch } from '@/features/planner/model/viewUtils';
+import { resolveView } from '@/features/planner/views';
 import { isDone } from '@/features/tasks/model';
 import { TaskTable } from '@/features/planner/table/TaskTable';
 import { VARIANTS } from '@/features/planner/variant';
@@ -149,6 +150,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     hiddenFields,
     wrappedFields,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     updateViewState,
@@ -200,6 +202,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     collapsed,
     collapsedColls,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     showNesting: variant.showNesting,
@@ -452,11 +455,23 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     [activeFilters]
   );
 
+  // Whether the current view offers task creation (the Archived view doesn't).
+  const viewAllowsNew = resolveView(selectedView).allowNew;
+  // What a task created in this view needs to remain visible here — e.g. the In
+  // Daily List tab seeds the daily flag + today's date. Evaluated per create so
+  // dynamic values (today) stay fresh; the view's active filters still win on
+  // conflict since those are the user's explicit, in-view constraints.
+  const viewCreateArgs = (): { date?: string | null; patch: Partial<Todo> } => {
+    const seed = resolveView(selectedView).createSeed?.();
+    return { date: seed?.date, patch: { ...seed?.patch, ...inheritedFilterPatch } };
+  };
+
   // The table's "New" button adds into the selected collection (else top-level),
-  // inherits the active filters, then drops straight into the new row's title
-  // field so you can type the name without a second click.
+  // inherits the active filters + view seed, then drops straight into the new
+  // row's title field so you can type the name without a second click.
   const handleNewInView = () => {
-    const id = onAddTodo({ parentId: selectedCollectionId, patch: inheritedFilterPatch });
+    const seed = viewCreateArgs();
+    const id = onAddTodo({ parentId: selectedCollectionId, date: seed.date, patch: seed.patch });
     if (selectedCollectionId) {
       // Make sure the parent isn't collapsed, or the new row would be hidden.
       setCollapsed((prev) => { const n = new Set(prev); n.delete(selectedCollectionId); return n; });
@@ -464,21 +479,23 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     setEditing({ id, col: 'title', rect: null });
   };
   // The "+" on a collection section header (collection grouping): parent the task
-  // to that collection and seed the active filters so it stays in the filtered view.
+  // to that collection and seed the active filters + view so it stays visible.
   const handleQuickAddTask = useStableCallback((parentId: string) => {
-    const id = onAddTodo({ parentId, patch: inheritedFilterPatch });
+    const seed = viewCreateArgs();
+    const id = onAddTodo({ parentId, date: seed.date, patch: seed.patch });
     setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
     setEditing({ id, col: 'title', rect: null });
   });
   // The "+" on an attribute-grouped section header: create a task seeded with the
-  // active filters AND the section's attribute (the latter wins on conflict so it
-  // lands in that section), parent it to the selected collection so a collection
-  // view keeps it, expand the section if collapsed, and focus the new row's title.
+  // view seed + active filters AND the section's attribute/date (the section wins
+  // on conflict so it lands there), parent it to the selected collection so a
+  // collection view keeps it, expand the section if collapsed, focus the new row.
   const handleQuickAddInGroup = useStableCallback((groupValue: string) => {
     const { date, patch } = groupCreateSpec(sectionsConfig.groupBy, groupValue);
+    const seed = viewCreateArgs();
     const id = onAddTodo({
-      date,
-      patch: { ...inheritedFilterPatch, ...patch },
+      date: date ?? seed.date,
+      patch: { ...seed.patch, ...patch },
       parentId: selectedCollectionId,
     });
     const headerId = `__grp:${sectionsConfig.groupBy}:${groupValue}`;
@@ -521,7 +538,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     const anchor = byId.get(anchorId);
     if (!anchor) return;
     const parentId = anchor.todo.parentId ?? null;
-    const id = onAddTodo({ parentId, patch: inheritedFilterPatch });
+    // Seed the view predicate + filters so the sibling stays visible; keep the
+    // anchor's own date (don't force the view seed's date) so it lands in place.
+    const id = onAddTodo({ parentId, patch: viewCreateArgs().patch });
     placeRelative(id, anchorId, pos, parentId);
     closeMenu();
     setEditing({ id, col: 'title', rect: null });
@@ -601,13 +620,15 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     clearInteraction: () => { setEditing(null); setMenu(null); },
   });
 
-  // Auto-archive: when a task is being completed and the setting is on, archive
-  // it immediately instead of just toggling the checkbox.
+  // Auto-archive: when a task is being completed and the setting is on, mark it
+  // complete first (so the checkbox visibly fills) and archive it a beat later, so it
+  // doesn't vanish before the completion even registers.
   const handleToggleTodo = useStableCallback((id: string) => {
     if (sectionsConfig.autoArchive) {
       const entry = entries.find((e) => e.todo.id === id);
       if (entry && !isDone(entry.todo)) {
-        onArchiveTodo(id);
+        onToggleTodo(id);
+        setTimeout(() => onArchiveTodo(id), 500);
         return;
       }
     }
@@ -705,7 +726,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               onAddSubtask,
               onQuickAddTask: handleQuickAddTask,
               onQuickAddInGroup: handleQuickAddInGroup,
-              onNewInView: selectedView === 'archived' ? undefined : handleNewInView,
+              onNewInView: viewAllowsNew ? handleNewInView : undefined,
             }}
             dnd={dnd}
             bottomSpacer
@@ -744,9 +765,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         <FilterMenu
           anchor={filterMenu}
           filters={activeFilters}
+          match={filterMatch}
           allColumns={COLUMNS}
           uniqueValues={uniqueValues}
           onChange={(f) => updateViewState({ filters: f })}
+          onChangeMatch={(m) => updateViewState({ filterMatch: m })}
           onClose={() => setFilterMenu(null)}
         />,
         document.body

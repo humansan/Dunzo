@@ -5,11 +5,13 @@ import {
   COLUMNS,
   NAME_COL_KEY,
   FilterRule,
+  FilterMatch,
   SortRule,
   SectionsConfig,
   DEFAULT_SECTIONS_CONFIG,
 } from '@/features/planner/types';
 import { MIN_COL_WIDTH } from '@/features/planner/constants';
+import { resolveView } from '@/features/planner/views';
 import { useSyncedSetting } from '@/lib/query/settings';
 
 // Owns the table's per-view layout: column widths (persisted globally) and the
@@ -55,9 +57,10 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       )
     );
     const raw_sections = raw.sections ?? {};
-    // The In Daily List tab is a daily-tasks lens, so it defaults to date grouping.
-    // A persisted per-view override still wins (stored under workspaceId:viewId).
-    const defaultGroupBy = selectedView === 'in-daily-list' ? 'date' : DEFAULT_SECTIONS_CONFIG.groupBy;
+    // A view may declare its own default grouping (e.g. In Daily List is a daily
+    // lens, so it defaults to date grouping). A persisted per-view override still
+    // wins (stored under workspaceId:viewId).
+    const defaultGroupBy = resolveView(selectedView).defaultGroupBy ?? DEFAULT_SECTIONS_CONFIG.groupBy;
     const sections: SectionsConfig = {
       autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
       showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
@@ -71,12 +74,13 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       hiddenFields,
       wrappedFields,
       filters: (Array.isArray(raw.filters) ? raw.filters : []) as FilterRule[],
+      filterMatch: (raw.filterMatch === 'or' ? 'or' : 'and') as FilterMatch,
       sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
       sections,
     };
   }, [viewsConfig, viewConfigKey, selectedView]);
 
-  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
+  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, filterMatch, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
 
   // Persist any view-state update (partial merge).
   const updateViewState = (patch: {
@@ -84,6 +88,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     hiddenFields?: Set<ColKey>;
     wrappedFields?: Set<ColKey>;
     filters?: FilterRule[];
+    filterMatch?: FilterMatch;
     sorts?: SortRule[];
     sections?: SectionsConfig;
   }) => {
@@ -94,6 +99,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
         hiddenFields:  [...(patch.hiddenFields  ?? hiddenFields)],
         wrappedFields: [...(patch.wrappedFields ?? wrappedFields)],
         filters:       patch.filters       ?? activeFilters,
+        filterMatch:   patch.filterMatch   ?? filterMatch,
         sorts:         patch.sorts         ?? activeSorts,
         sections:      patch.sections      ?? sectionsConfig,
       },
@@ -157,6 +163,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     hiddenFields,
     wrappedFields,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     updateViewState,

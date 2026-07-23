@@ -8,7 +8,8 @@ import {
   collectionOf,
   collectionPath,
 } from '@/features/tasks/model';
-import { ColKey, COLUMNS, GroupRow, FilterRule, SortRule, SectionsConfig, PSEUDO_VIEWS } from '@/features/planner/types';
+import { ColKey, COLUMNS, GroupRow, FilterRule, FilterMatch, SortRule, SectionsConfig } from '@/features/planner/types';
+import { PLANNER_VIEWS, resolveView, ViewCtx, ViewDef } from '@/features/planner/views';
 import {
   getFieldDisplayValue,
   getFieldRawValue,
@@ -34,6 +35,7 @@ export function useHubData(params: {
   collapsed: Set<string>;
   collapsedColls: Set<string>;
   activeFilters: FilterRule[];
+  filterMatch: FilterMatch;
   activeSorts: SortRule[];
   sectionsConfig: SectionsConfig;
   // Whether the current view variant shows the collection/subtask hierarchy. When
@@ -50,6 +52,7 @@ export function useHubData(params: {
     collapsed,
     collapsedColls,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     showNesting,
@@ -78,8 +81,10 @@ export function useHubData(params: {
     [dayTodos, activeWorkspaceId]
   );
 
-  // A real collection is selected (vs. one of the sidebar pseudo-views).
-  const selectedCollectionId = PSEUDO_VIEWS.has(selectedView) ? null : selectedView;
+  // The active view's definition (which tasks it shows, how it scaffolds
+  // collections, its label). A subtree-scaffolded view is a real collection id.
+  const view = resolveView(selectedView);
+  const selectedCollectionId = view.scaffold === 'subtree' ? selectedView : null;
 
   // Ancestry helpers over the current entry set.
   const byId = useMemo(() => new Map(entries.map((e) => [e.todo.id, e])), [entries]);
@@ -144,7 +149,6 @@ export function useHubData(params: {
     }
     return false;
   };
-
   // Collections list for the sidebar (top-level sections, in hub order).
   const collections = useMemo(
     () =>
@@ -195,28 +199,41 @@ export function useHubData(params: {
     return out;
   }, [collChildren, collapsedColls]);
 
-  // The entries the table renders for the current view.
-  //   • 'all'          → everything (collections show inline as pill headers)
-  //   • 'uncategorized'→ tasks with no collection ancestor (collections excluded)
-  //   • 'archived'     → every archived todo, regardless of collection
-  //   • a collection id→ that collection's descendants (the collection node itself
-  //     is excluded, so its direct children render at depth 0)
+  // The entries the table renders for the current view, built uniformly from the
+  // view's definition (see @/features/planner/views). Every view is: pick the leaf
+  // tasks (`view.leaf`), re-attach their parent-task chain so subtask nesting
+  // survives the filter, then add the collection scaffold the view calls for:
+  //   • 'tree'      → every workspace collection (empty ones honour Hide-empty,
+  //                   so Categorized / In Daily List behave exactly like All Tasks),
+  //   • 'subtree'   → the selected collection's descendants (node itself excluded,
+  //                   so its direct children render at depth 0),
+  //   • 'ancestors' → the archived slice with its ancestor chain re-attached,
+  //   • 'none'      → no collections (a flat, collection-free list, e.g. Uncategorized).
   const viewEntries = useMemo(() => {
-    if (selectedView === 'all') return entries;
-    if (selectedView === 'uncategorized')
-      return entries.filter((e) => !e.todo.isCollection && !hasCollectionAncestor(e));
-    if (selectedView === 'categorized')
-      return entries.filter((e) => !e.todo.isCollection && hasCollectionAncestor(e));
-    // Special tab: the only view keyed off the daily-list flag (still scoped to the
-    // organizer set, so daily-only tasks aren't surfaced here). Requires a dueDate
-    // too, since a task with no date never lands on any daily list.
-    if (selectedView === 'in-daily-list')
-      return entries.filter(
-        (e) => !e.todo.isCollection && e.todo.showInDailyList === true && !!e.todo.dueDate
-      );
-    if (selectedView === 'archived') return archivedTreeEntries;
-    return entries.filter((e) => isDescendantOf(e, selectedView));
-  }, [entries, archivedTreeEntries, selectedView, byId]); // eslint-disable-line react-hooks/exhaustive-deps
+    const v = resolveView(selectedView);
+    if (v.source === 'archived') return archivedTreeEntries;
+    if (v.scaffold === 'subtree')
+      return entries.filter((e) => isDescendantOf(e, selectedView));
+
+    const ctx: ViewCtx = { hasCollectionAncestor, isDescendantOf };
+    const out = new Map<string, OrganizerEntry>();
+    // Leaf tasks + each leaf's parent-task chain (collections are added below, so
+    // the walk only re-attaches missing task parents to keep subtrees intact).
+    for (const e of entries) {
+      if (e.todo.isCollection || !v.leaf(e, ctx)) continue;
+      out.set(e.todo.id, e);
+      let pid = e.todo.parentId ?? null;
+      const seen = new Set<string>();
+      while (pid && byId.has(pid) && !seen.has(pid)) {
+        seen.add(pid);
+        const pe = byId.get(pid)!;
+        if (!pe.todo.isCollection && !out.has(pid)) out.set(pid, pe);
+        pid = pe.todo.parentId ?? null;
+      }
+    }
+    if (v.scaffold === 'tree') for (const c of collections) out.set(c.todo.id, c);
+    return [...out.values()];
+  }, [entries, collections, archivedTreeEntries, selectedView, byId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unique display values per field, computed from un-filtered view entries.
   // Used to populate the filter value dropdown.
@@ -235,12 +252,20 @@ export function useHubData(params: {
   }, [viewEntries, todoById]);
 
   // Apply active filters: collections are never filtered out (they're structural).
+  // Rules combine per `filterMatch` - 'and' = match every rule, 'or' = match any.
+  // Unset (empty-value) rules are dropped first: matchesFilter treats them as "match
+  // all", which is a harmless no-op under AND but would make OR pass everything.
   const filteredEntries = useMemo(() => {
-    if (!activeFilters.length) return viewEntries;
+    const rules = activeFilters.filter((f) => f.value);
+    if (!rules.length) return viewEntries;
     return viewEntries.filter(
-      (e) => e.todo.isCollection || activeFilters.every((f) => matchesFilter(e, f, todoById))
+      (e) =>
+        e.todo.isCollection ||
+        (filterMatch === 'or'
+          ? rules.some((f) => matchesFilter(e, f, todoById))
+          : rules.every((f) => matchesFilter(e, f, todoById)))
     );
-  }, [viewEntries, activeFilters, todoById]);
+  }, [viewEntries, activeFilters, filterMatch, todoById]);
 
   // Hide collections that have no visible task descendants (optional section setting).
   const processedEntries = useMemo(() => {
@@ -330,18 +355,19 @@ export function useHubData(params: {
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 
-  // Sidebar counts (tasks only, collections never counted).
-  const allCount = entries.filter((e) => !e.todo.isCollection).length;
-  const uncategorizedCount = entries.filter(
-    (e) => !e.todo.isCollection && !hasCollectionAncestor(e)
-  ).length;
-  const categorizedCount = entries.filter(
-    (e) => !e.todo.isCollection && hasCollectionAncestor(e)
-  ).length;
-  const inDailyListCount = entries.filter(
-    (e) => !e.todo.isCollection && e.todo.showInDailyList === true && !!e.todo.dueDate
-  ).length;
-  const archivedCount = archivedEntries.filter((e) => !e.todo.isCollection).length;
+  // Sidebar counts (tasks only, collections never counted). Each tab's count runs
+  // the same `leaf` predicate the tab renders from, so a count can never disagree
+  // with its contents.
+  const countCtx: ViewCtx = { hasCollectionAncestor, isDescendantOf };
+  const countLeaves = (v: ViewDef) =>
+    (v.source === 'archived' ? archivedEntries : entries).filter(
+      (e) => !e.todo.isCollection && v.leaf(e, countCtx)
+    ).length;
+  const allCount = countLeaves(PLANNER_VIEWS.all);
+  const uncategorizedCount = countLeaves(PLANNER_VIEWS.uncategorized);
+  const categorizedCount = countLeaves(PLANNER_VIEWS.categorized);
+  const inDailyListCount = countLeaves(PLANNER_VIEWS['in-daily-list']);
+  const archivedCount = countLeaves(PLANNER_VIEWS.archived);
   // Task-descendant count per collection (every non-collection descendant,
   // ignoring filters), precomputed in one ancestor walk instead of re-filtering
   // all entries for each sidebar row.
@@ -364,27 +390,11 @@ export function useHubData(params: {
 
   const currentCount = selectedCollectionId
     ? collectionCount(selectedCollectionId)
-    : selectedView === 'uncategorized'
-      ? uncategorizedCount
-      : selectedView === 'categorized'
-        ? categorizedCount
-        : selectedView === 'in-daily-list'
-          ? inDailyListCount
-          : selectedView === 'archived'
-            ? archivedCount
-            : allCount;
+    : countLeaves(view);
   const selectedCollectionEntry = selectedCollectionId ? byId.get(selectedCollectionId) || null : null;
   const viewLabel = selectedCollectionId
     ? selectedCollectionEntry?.todo.text || 'Untitled collection'
-    : selectedView === 'uncategorized'
-      ? 'Uncategorized'
-      : selectedView === 'categorized'
-        ? 'Categorized'
-        : selectedView === 'in-daily-list'
-          ? 'In Daily List'
-          : selectedView === 'archived'
-            ? 'Archived'
-            : 'All Tasks';
+    : view.label;
 
   return {
     entries,

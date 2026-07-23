@@ -59,9 +59,9 @@ export const CollectionTree: React.FC<{
     <div className="group/pane flex-1 min-h-0 flex flex-col">
       {/* Section 1: All Tasks · Archived */}
       <div className="shrink-0 p-2 pb-0 space-y-0.5">
-        <button type="button" onClick={() => onSelectView('all')} className={itemCls('all')} title="All Tasks">
+        <button type="button" onClick={() => onSelectView('all')} className={itemCls('all')} title="All Planner Tasks">
           <Layers size={15} className="shrink-0 text-fg-subtle" />
-          <span className="flex-1 truncate">All Tasks</span>
+          <span className="flex-1 truncate">All Planner Tasks</span>
           <span className="text-xs text-fg-faint font-mono mr-1.5">{allCount}</span>
         </button>
         {archivedCount !== undefined && (
@@ -78,9 +78,9 @@ export const CollectionTree: React.FC<{
       {/* Section 2: In Daily List · Uncategorized · Categorized */}
       <div className="shrink-0 px-2 space-y-0.5">
         {inDailyListCount !== undefined && (
-          <button type="button" onClick={() => onSelectView('in-daily-list')} className={itemCls('in-daily-list')} title="In Daily List">
+          <button type="button" onClick={() => onSelectView('in-daily-list')} className={itemCls('in-daily-list')} title="Also In Daily List">
             <CalendarCheck size={15} className="shrink-0 text-fg-subtle" />
-            <span className="flex-1 truncate">In Daily List</span>
+            <span className="flex-1 truncate">Also In Daily List</span>
             <span className="text-xs text-fg-faint font-mono mr-1.5">{inDailyListCount}</span>
           </button>
         )}
