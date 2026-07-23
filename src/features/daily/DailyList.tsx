@@ -513,7 +513,7 @@ export const DailyList: React.FC<DailyListProps> = ({
       {!isAdding ? (
         <button
           onClick={openAddPanel}
-          className="flex items-center gap-2 py-2 text-fg-ghost hover:text-fg-subtle transition-all group duration-100"
+          className="flex items-center gap-2 py-2 text-fg-ghost hover:text-fg-subtle transition-all group duration-100 cursor-pointer"
         >
           <GripVertical size={18} className="invisible" />
           <Plus size={21} strokeWidth={2.5} />

@@ -112,8 +112,8 @@ export interface TableRowHandlers {
   onSaveTodo: (updatedTodo: Todo) => void;
   onToggleTodo: (id: string) => void;
   onAddSubtask: (parentId: string) => string;
-  onQuickAddTask: (parentId: string) => void;
-  onQuickAddInGroup: (groupValue: string) => void;
+  onQuickAddTask?: (parentId: string) => void;
+  onQuickAddInGroup?: (groupValue: string) => void;
   // Omit on read-only surfaces (search) to drop the add-row + its empty state.
   onNewInView?: () => void;
 }

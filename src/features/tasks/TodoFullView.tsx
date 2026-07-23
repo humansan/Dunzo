@@ -221,7 +221,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
           <button
             onClick={onClose}
             title="Close"
-            className="p-1.5 rounded-lg text-fg-ghost hover:text-fg hover:bg-fill transition-all"
+            className={`p-1.5 rounded-lg transition-all ${btnGhost()}`}
           >
             <X size={16} />
           </button>

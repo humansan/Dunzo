@@ -17,7 +17,7 @@ import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
 import { timeToPercentage, formatTime12h } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
-import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
+import { collectionOf, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
 import { Checkbox } from '@/common/ui/Checkbox';
@@ -35,10 +35,11 @@ const DAY_OPTIONS = [1, 3, 5, 7];
 // ─── Overlap cascade tuning ──────────────────────────────────────────────────
 // Overlapping events are staggered Google-Calendar style: a later-starting event
 // indents right and stacks on top, leaving the earlier one's left edge visible.
-const INDENT_STEP_PCT = 8;  // % of the column each indent level shifts right
+const INDENT_STEP_PCT = 15;  // % of the column each indent level shifts right
 const MAX_LEVELS = 5;       // cap so deep stacks stop indenting instead of overflowing
 const Z_EVENT_BASE = 10;    // resting z for a level-0 card (matches the old flat z-10)
 const Z_EVENT_HOVER = 40;   // hovered card jumps here - above siblings, below the drag ghost (z-50)
+const HOVER_RAISE_DELAY_MS = 250; // dwell before a hovered card lifts, so passing over one doesn't bury an indented card
 
 function timeToMinutes(t: string): number {
   const [h, m] = t.split(':').map(Number);
@@ -117,7 +118,7 @@ const SurfaceCheck: React.FC<{
   checked: boolean;
   onChange: (v: boolean) => void;
 }> = ({ label, checked, onChange }) => (
-  <Checkbox checked={checked} onChange={onChange} className="w-full py-1.5" aria-label={label}>
+  <Checkbox checked={checked} onChange={onChange} className="w-full py-1" aria-label={label}>
     <span className="truncate text-xs text-fg-muted">{label}</span>
   </Checkbox>
 );
@@ -156,6 +157,18 @@ const EventCard: React.FC<{
   onToggle?: (e: React.MouseEvent) => void;
 }> = ({ todo, startMin, endMin, accent, indentLevel = 0, onMouseDown, onResizeStart, isDragging, onToggle }) => {
   const [isHovered, setIsHovered] = useState(false);
+  // The z-lift is deliberately lagged behind the hover: a card the cursor is only
+  // passing through on its way to an indented one shouldn't jump in front of it.
+  // Visual hover feedback (fill, toggle dot) stays immediate.
+  const [isRaised, setIsRaised] = useState(false);
+  const raiseTimer = useRef<number | null>(null);
+  const cancelRaise = () => {
+    if (raiseTimer.current !== null) {
+      window.clearTimeout(raiseTimer.current);
+      raiseTimer.current = null;
+    }
+  };
+  useEffect(() => cancelRaise, []);
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
@@ -166,7 +179,7 @@ const EventCard: React.FC<{
   // tasks always stack above the done ones.
   const level = Math.min(indentLevel, MAX_LEVELS);
   const indentLeft = level > 0 ? `${level * INDENT_STEP_PCT}%` : undefined;
-  const restingZ = isHovered ? Z_EVENT_HOVER : Z_EVENT_BASE + (isDone(todo) ? 0 : level);
+  const restingZ = isRaised ? Z_EVENT_HOVER : Z_EVENT_BASE + (isDone(todo) ? 0 : level);
   // Only show a time that's actually set - never fabricate the missing side. When both
   // sides share a meridiem, drop the AM/PM from the start so it reads "9:00 – 10:30 AM".
   // A one-sided task shows just that time (no dash, no fabricated duration).
@@ -184,8 +197,16 @@ const EventCard: React.FC<{
   return (
     <div
       onMouseDown={onMouseDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        cancelRaise();
+        raiseTimer.current = window.setTimeout(() => setIsRaised(true), HOVER_RAISE_DELAY_MS);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        cancelRaise();
+        setIsRaised(false);
+      }}
       className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
         } ${isDragging ? 'z-50' : 'ring-1 ring-canvas'}
@@ -255,7 +276,7 @@ const EventCard: React.FC<{
         </div>
       </div>
       {!isSmall && (
-        <div className={`text-[10px] truncate pl-4 ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
+        <div className={`text-[10px] pl-4 ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
           }`}>
           {fullTimeDisplay}
         </div>
@@ -296,60 +317,78 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [focusDate, setFocusDate] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [miniCalMonth, setMiniCalMonth] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [showDayPicker, setShowDayPicker] = useState(false);
-  const coll = useCollectionTree(dayTodos);
 
-  // The calendar sidebar filter, persisted to user_settings (surfaces + checked
-  // collections). Surfaces default on; an undefined `checkedCollections` means "all
-  // collections" until the user first customizes it (so a freshly-added collection is
-  // included by default). Writes are debounced/optimistic via the settings pipeline.
+  // The calendar sidebar filter, persisted to user_settings (surfaces + collections).
+  // Surfaces default on; collections are stored as an exclusion list so anything not
+  // explicitly unchecked - including newly created collections - is on by default.
+  // Writes are debounced/optimistic via the settings pipeline.
   const [filter, patchFilter] = useSyncedCalendarFilter();
   const showDaily = filter.showDaily ?? true;
   const showPlanner = filter.showPlanner ?? true;
   const showUncategorized = filter.showUncategorized ?? true;
+  // Archived tasks (and their collections) are hidden unless this is turned on.
+  const showArchived = filter.showArchived ?? false;
   const setShowDaily = useCallback((v: boolean) => patchFilter(() => ({ showDaily: v })), [patchFilter]);
   const setShowPlanner = useCallback((v: boolean) => patchFilter(() => ({ showPlanner: v })), [patchFilter]);
   const setShowUncategorized = useCallback((v: boolean) => patchFilter(() => ({ showUncategorized: v })), [patchFilter]);
+  const setShowArchived = useCallback((v: boolean) => patchFilter(() => ({ showArchived: v })), [patchFilter]);
+
+  // The collection tree shows archived collections only when "show archived" is on.
+  const coll = useCollectionTree(dayTodos, showArchived);
 
   // Days shown in the grid. `initialDays` (embedded contexts, e.g. the daily page) is a
   // fixed override and isn't persisted; the main calendar reads/writes the saved value.
   const dayCount = initialDays ?? filter.dayCount ?? 3;
   const setDayCount = useCallback((n: number) => patchFilter(() => ({ dayCount: n })), [patchFilter]);
 
-  // The checked-collection set. Undefined (never configured) resolves to every current
-  // collection, so the default is "all enabled" without a seed write.
-  const checkedColls = useMemo(
-    () =>
-      filter.checkedCollections === undefined
-        ? new Set(coll.allCollectionIds)
-        : new Set(filter.checkedCollections),
-    [filter.checkedCollections, coll.allCollectionIds]
+  // Collections are persisted as an *exclusion* list: an id is checked unless it's in
+  // `uncheckedCollections`. That way a collection created after the filter was last
+  // customized is on by default, instead of being absent from a stale allowlist.
+  const uncheckedColls = useMemo(
+    () => new Set(filter.uncheckedCollections ?? []),
+    [filter.uncheckedCollections]
   );
-  // Every mutation reads the resolved set (materializing the undefined⇒all default) and
-  // writes back a concrete array.
-  const toggleChecked = useCallback(
-    (id: string) => {
-      const next = new Set(checkedColls);
-      next.has(id) ? next.delete(id) : next.add(id);
-      patchFilter(() => ({ checkedCollections: [...next] }));
+  const checkedColls = useMemo(
+    () => new Set(coll.allCollectionIds.filter((id) => !uncheckedColls.has(id))),
+    [coll.allCollectionIds, uncheckedColls]
+  );
+  // Mutations edit the exclusion set, so ids we can't currently see (e.g. archived
+  // collections while "show archived" is off) keep their state instead of being wiped.
+  const patchUnchecked = useCallback(
+    (fn: (next: Set<string>) => void) => {
+      const next = new Set(uncheckedColls);
+      fn(next);
+      patchFilter(() => ({ uncheckedCollections: [...next] }));
     },
-    [checkedColls, patchFilter]
+    [uncheckedColls, patchFilter]
   );
 
-  // Select-all / deselect-all for the collection tree header.
+  const toggleChecked = useCallback(
+    (id: string) => {
+      patchUnchecked((next) => {
+        next.has(id) ? next.delete(id) : next.add(id);
+      });
+    },
+    [patchUnchecked]
+  );
+
+  // Select-all / deselect-all for the collection tree header (over the visible ids).
   const allCollsChecked =
     coll.allCollectionIds.length > 0 && coll.allCollectionIds.every((id) => checkedColls.has(id));
   const toggleAllColls = useCallback(() => {
-    patchFilter(() => ({ checkedCollections: allCollsChecked ? [] : [...coll.allCollectionIds] }));
-  }, [allCollsChecked, coll.allCollectionIds, patchFilter]);
+    patchUnchecked((next) => {
+      for (const id of coll.allCollectionIds) allCollsChecked ? next.add(id) : next.delete(id);
+    });
+  }, [allCollsChecked, coll.allCollectionIds, patchUnchecked]);
 
   // Apply a checked state to all descendant collections (the subtree prompt's action).
   const applyDescendantColls = useCallback(
     (id: string, checked: boolean) => {
-      const next = new Set(checkedColls);
-      for (const cid of coll.descendantCollIds(id)) checked ? next.add(cid) : next.delete(cid);
-      patchFilter(() => ({ checkedCollections: [...next] }));
+      patchUnchecked((next) => {
+        for (const cid of coll.descendantCollIds(id)) checked ? next.delete(cid) : next.add(cid);
+      });
     },
-    [checkedColls, coll.descendantCollIds, patchFilter]
+    [coll.descendantCollIds, patchUnchecked]
   );
 
   // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard
@@ -516,14 +555,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         // for a missing side is applied at render (kept off the todo) so the event
         // card can tell which side was never set and omit it from the label.
         if (!t || !(t.startTime || t.dueTime)) return false;
+        // Archived tasks are hidden entirely unless "show archived" is on; the gate
+        // owns the archived exclusion, so the planner surface below uses raw
+        // showInDatabase (equivalent to showsInOrganizer for non-archived tasks).
+        if (t.archived && !showArchived) return false;
         // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
         const inSet =
-          (showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && showsInOrganizer(t));
+          (showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && t.showInDatabase === true);
         // Stage 2 - the uncategorized/collection filters narrow that base set.
         return inSet && passesCollectionFilter(t);
       });
     },
-    [dayTodos, showDaily, showPlanner, passesCollectionFilter]
+    [dayTodos, showDaily, showPlanner, showArchived, passesCollectionFilter]
   );
 
   // --- Drag Selection for Creation --- //
@@ -850,10 +893,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
           {/* Which surfaces' tasks get blocked out on the grid. Sits flush under the mini
               calendar; row rhythm (space-y-0.5) matches the collection rows below. */}
-          <div className="shrink-0 mt-4 px-4">
+          <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
+          <div className="shrink-0 px-2.5">
             <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
             <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
             <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
+            <SurfaceCheck label="Show archived tasks" checked={showArchived} onChange={setShowArchived} />
           </div>
 
           {/* Pick which collections' tasks appear. The tree renders in checkbox mode;

@@ -31,6 +31,7 @@ export const AppShell: React.FC = () => {
     // global search
     isSearchOpen, setIsSearchOpen,
     searchEntries,
+    searchFlatEntries,
     todoById,
     handleHubSaveTodo,
     handleToggleTodo,
@@ -153,6 +154,7 @@ export const AppShell: React.FC = () => {
       {isSearchOpen && (
         <TaskFinder
           entries={searchEntries}
+          flatEntries={searchFlatEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
           onToggleTodo={handleToggleTodo}
