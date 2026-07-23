@@ -16,7 +16,7 @@ import { TimeInput } from '@/common/ui';
 import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '@/lib/app-data';
 
-// Right-click menu for a daily-list row — the counterpart to the Task Planner's
+// Right-click menu for a daily-list row - the counterpart to the Task Planner's
 // RowContextMenu. Date / time open the same CalendarInput + TimeInput panels the
 // quick-edit chips use, flown out beside the menu; "Set parent task" opens the
 // shared TaskFinder picker. All mutations are callbacks so DailyList's parent owns
@@ -30,7 +30,7 @@ const PANEL_HEIGHT = 420; // tall enough for the calendar; used for flip math on
 
 export const DailyRowContextMenu: React.FC<{
   todo: Todo;
-  /** The day the row is filed under — the daily list's due date. */
+  /** The day the row is filed under - the daily list's due date. */
   date: string;
   x: number;
   y: number;

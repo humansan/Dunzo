@@ -17,7 +17,7 @@ export type RowDnD = ReturnType<typeof useRowDnD>;
 // than ~40 loose ones, so a view can instantiate the table more than once (Finder
 // columns, list-as-sections) without prop-drilling everything N times.
 
-// What renders + how it's laid out — assembled from useHubData + useHubViewConfig.
+// What renders + how it's laid out - assembled from useHubData + useHubViewConfig.
 export interface TableModel {
   // Column layout.
   columns: ColDef[];
@@ -33,7 +33,7 @@ export interface TableModel {
   visibleTaskCounts: Map<string, number>;
   todoById: Map<string, Todo>;
   collapsed: Set<string>;
-  // View identity — drives the title chrome + empty-state copy.
+  // View identity - drives the title chrome + empty-state copy.
   selectedCollectionId: string | null;
   selectedView: string;
   viewLabel: string;
@@ -68,7 +68,7 @@ function nameOnlyModel(
   };
 }
 
-// A flat (single-level) name-only model — a Finder column's one sibling level.
+// A flat (single-level) name-only model - a Finder column's one sibling level.
 // `sortFn` orders the rows (omitted → hub order). Callers memoize on their inputs.
 export function buildFlatModel(
   entries: OrganizerEntry[],
@@ -101,7 +101,7 @@ export interface TableInteraction {
   toggleCollapse: (id: string) => void;
   // Finder-columns drill: `onActivate` "opens" a collection row (a new column to
   // its right) instead of collapsing its children inline; `selectedId` marks the
-  // row whose column is currently open, for the highlight. Both optional — only
+  // row whose column is currently open, for the highlight. Both optional - only
   // the columns view supplies them; every other surface leaves them undefined.
   onActivate?: (id: string) => void;
   selectedId?: string | null;

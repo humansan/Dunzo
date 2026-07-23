@@ -4,7 +4,7 @@ import { authClient } from '@/lib/auth';
 
 // Public route (sibling of _authed, not guarded): the sign-in / sign-up /
 // password-reset screen. Rendering AuthModal as its own durable route is what
-// fixes the focus-flash + form-wipe bug — nothing here subscribes to
+// fixes the focus-flash + form-wipe bug - nothing here subscribes to
 // useSession(), and the auth decision is made in beforeLoad (on navigation),
 // not in a render gate that reacts to window-focus revalidation.
 export const Route = createFileRoute('/login')({

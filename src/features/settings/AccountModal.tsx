@@ -359,7 +359,7 @@ const SettingsPane: React.FC<{
         </div>
       </div>
 
-      {/* Default visibility for new tasks — the cross-surface default per source */}
+      {/* Default visibility for new tasks - the cross-surface default per source */}
       <div className="space-y-4 border-t border-line-subtle pt-6">
         <SectionHeader>Default Visibility for New Tasks</SectionHeader>
 
@@ -447,10 +447,10 @@ const DataPane: React.FC = () => {
       const backup = parseBackup(await file.text());
       await mergeImportToDb(backup);
       await qc.invalidateQueries(); // refetch everything from the DB
-      setDataMsg({ kind: 'ok', text: 'Import complete — your data has been merged.' });
+      setDataMsg({ kind: 'ok', text: 'Import complete - your data has been merged.' });
     } catch (err) {
       console.error('[import] failed', err);
-      setDataMsg({ kind: 'err', text: 'Import failed — check that the file is a valid backup.' });
+      setDataMsg({ kind: 'err', text: 'Import failed - check that the file is a valid backup.' });
     } finally {
       setBusy(null);
     }
@@ -487,7 +487,7 @@ const DataPane: React.FC = () => {
       )}
       <p className="text-[11px] leading-relaxed text-fg-ghost">
         Export downloads your tasks, trackers, workspaces, and settings. Import merges them back in by
-        id — new items are added, matching items are overwritten, and anything not in the file is left
+        id - new items are added, matching items are overwritten, and anything not in the file is left
         untouched.
       </p>
     </div>
@@ -530,7 +530,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('profile');
 
-  // Reset to Profile only when the modal transitions open — keyed on `isOpen`
+  // Reset to Profile only when the modal transitions open - keyed on `isOpen`
   // alone so a parent re-render (e.g. updating a setting) doesn't snap it back.
   useEffect(() => {
     if (isOpen) setSection('profile');
@@ -558,7 +558,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             {...modalPop}
             className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl"
           >
-            {/* Nav rail — vibrant sign-in background image with dark text on top. */}
+            {/* Nav rail - vibrant sign-in background image with dark text on top. */}
             <div className="relative hidden sm:flex w-52 shrink-0 flex-col overflow-hidden border-r border-line-subtle">
               <img
                 src={backgroundUrl}
@@ -589,7 +589,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 })}
               </nav>
 
-              {/* Brand — pinned to the bottom over the brightest part of the image */}
+              {/* Brand - pinned to the bottom over the brightest part of the image */}
               <div className="relative mt-auto flex flex-col items-start gap-1.5 p-6">
                 <img src={logoSvg} alt="Dunzo" className="h-14 w-14 drop-shadow-sm" />
                 <span className="text-2xl font-bold tracking-tight text-[#0a0a0a]">Dunzo</span>

@@ -3,7 +3,7 @@ import { AccountModal } from '@/features/settings/AccountModal';
 import { useAppData } from '@/lib/app-data';
 
 // Settings modal wired to app data. Rendered both by AppShell (when the `settings`
-// search param is set — the in-app masked open) and by the /settings route (a cold
+// search param is set - the in-app masked open) and by the /settings route (a cold
 // deep-link). Keeping the wiring here means one source of truth for both entries.
 export const SettingsOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const d = useAppData();

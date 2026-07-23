@@ -1,4 +1,4 @@
-// The FIXED role vocabulary — the only hardcoded part of the theme system. These are
+// The FIXED role vocabulary - the only hardcoded part of the theme system. These are
 // the semantic slots components consume (as Tailwind utilities like `bg-surface`,
 // `text-fg`, `text-danger`). Which *color* fills each role is theme data (see
 // themes.ts); this file just enumerates the slots so Tailwind can pre-generate the
@@ -7,7 +7,7 @@
 export const ROLE_NAMES = [
   // Surfaces (elevation) + modal backdrop
   'canvas', 'surface', 'surface-raised', 'overlay', 'scrim',
-  // Text emphasis ramp (translucent fg tiers — see docs/theming/token-map.md)
+  // Text emphasis ramp (translucent fg tiers - see docs/theming/token-map.md)
   'fg', 'fg-muted', 'fg-subtle', 'fg-faint', 'fg-ghost',
   // Hairlines (translucent fg; unused solid `line`/`line-strong` repurposed to the ramp)
   'line-subtle', 'line', 'line-strong', 'line-stronger',

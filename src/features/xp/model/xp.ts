@@ -12,7 +12,7 @@ export interface XpStats {
   earned: number;             // XP from completed todos on the given date
   potential: number;          // XP from every todo on the given date (done + not)
   upForGrabs: number;         // XP still available to earn today (potential - earned)
-  target: number;             // first goal to beat — strictly yesterday's earned XP
+  target: number;             // first goal to beat - strictly yesterday's earned XP
   yesterday: number;          // XP earned the day before the given date (same as target)
   bestLast7Days: number;      // highest single-day earned XP over the 7 days before the date
   avgLast7Days: number;       // average daily earned XP over the 7 days before the date
@@ -34,7 +34,7 @@ const dayKey = (d: Date) => format(d, 'yyyy-MM-dd');
 // todo by dueDate, including Task Planner tasks that never render on the daily
 // list (showInDailyList !== true), so anything that reads a day's todos raw would
 // award XP and stars for tasks the user cannot see. Every count below therefore
-// goes through showsOnDailyChecklist — which also rejects the UNDATED bucket.
+// goes through showsOnDailyChecklist - which also rejects the UNDATED bucket.
 
 /** Per-day rollups of the daily-checklist todos, keyed by 'yyyy-MM-dd'. */
 export interface XpHistory {
@@ -50,7 +50,7 @@ export interface XpHistory {
 
 /**
  * Roll every daily-checklist todo up per day, once. Callers that need XP, star
- * or streak numbers should build this and share it — the lookups below are O(1),
+ * or streak numbers should build this and share it - the lookups below are O(1),
  * which is what keeps the all-time and streak walks linear.
  */
 export function buildXpHistory(dayTodos: DayTodos[]): XpHistory {
@@ -162,7 +162,7 @@ export function computeXpStats(
     totalAllTime,
     percent,
     remaining,
-    // Must actually earn something — a 0/0 day hasn't "hit" anything.
+    // Must actually earn something - a 0/0 day hasn't "hit" anything.
     reachedTarget: earned > 0 && earned >= target,
     reachedWeekBest: earned > 0 && earned >= bestLast7Days,
     reachedAllTimeBest: earned > 0 && earned >= bestAllTime
@@ -172,7 +172,7 @@ export function computeXpStats(
 /**
  * Earned XP for each of the last `weeks` sliding 7-day windows, oldest first
  * (the final entry is the current week). Windows end on today and step back 7
- * days at a time — the same shape as the stats page "Week" chart.
+ * days at a time - the same shape as the stats page "Week" chart.
  */
 export function getWeeklyXp(dayTodos: DayTodos[], weeks: number): number[] {
   const { earnedOf } = buildXpHistory(dayTodos);
@@ -200,16 +200,16 @@ export interface StarFlags {
 
 export interface DayStars {
   flags: StarFlags;
-  stars: number;     // 0..3 — how many of the flags are true
+  stars: number;     // 0..3 - how many of the flags are true
   yesterday: number; // previous day's earned XP
   avg7: number;      // trailing 7-day average earned
   avg30: number;     // trailing 30-day average earned
-  avgTarget: number; // max(avg7, avg30) — the bar the third star measures against
+  avgTarget: number; // max(avg7, avg30) - the bar the third star measures against
 }
 
 /**
- * The three star goals for `date`. They are independent — meeting them in any
- * order lights the same stars — and each is gated on earning XP *today* rather
+ * The three star goals for `date`. They are independent - meeting them in any
+ * order lights the same stars - and each is gated on earning XP *today* rather
  * than on the baseline being non-zero. So a day following an empty stretch still
  * has to earn something to clear "beat yesterday" (0 ≥ 0 is not enough), but a
  * single point is then enough to clear a baseline of zero.
@@ -245,7 +245,7 @@ export function starsFor(history: XpHistory, date: string): DayStars {
 
 /**
  * The streak as of `date`, walking every calendar day from the first record.
- * 3★ pushes it up, 2★ holds it, anything less resets it to 0 — so a skipped or
+ * 3★ pushes it up, 2★ holds it, anything less resets it to 0 - so a skipped or
  * empty day breaks it. The current day is "live": it can only extend or hold the
  * streak, never reset it mid-day (the reset lands once today rolls into the past).
  */

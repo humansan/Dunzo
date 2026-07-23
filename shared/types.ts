@@ -62,11 +62,11 @@ export interface Todo {
   showInDatabase?: boolean;   // When true, the todo appears in the Task Planner.
   showInDailyList?: boolean;  // When true, the todo appears in the daily checklist
                               // for the date it is filed under. Independent of
-                              // showInDatabase — a task can be in the Task Planner
+                              // showInDatabase - a task can be in the Task Planner
                               // only, daily list only, or both.
   archived?: boolean;         // When true, hidden from the Task Planner (shown in a
                               // future archived view). Distinct from a daily-only
-                              // todo (showInDatabase false) — an archived todo is
+                              // todo (showInDatabase false) - an archived todo is
                               // still a database todo, just put away.
   hubOrder?: number;          // Manual ordering within the Task Planner. The hub
                               // spans many dates, so it needs its own order
@@ -78,7 +78,7 @@ export interface Todo {
                               // null/undefined for a top-level todo. Subtasks can
                               // nest to any depth.
   isCollection?: boolean;     // When true, this node is a Task Planner "collection"
-                              // — a top-level section that groups child tasks. It
+                              // - a top-level section that groups child tasks. It
                               // renders as a colored pill header and ignores the
                               // task fields (date/time/percent/xp/notes).
   color?: string;             // Collection pill color (hex). Only meaningful when

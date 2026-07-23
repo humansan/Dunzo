@@ -103,15 +103,15 @@ export interface DailyListProps {
   onStartTracking?: (id: string) => void;
   activeTodoId?: string | null;
   onAdd: (vals: QuickEditValues) => void;
-  /** Row context menu — copy a task in place, just below the original. */
+  /** Row context menu - copy a task in place, just below the original. */
   onDuplicate?: (id: string) => void;
-  /** Row context menu — reschedule to another day (YYYY-MM-DD). */
+  /** Row context menu - reschedule to another day (YYYY-MM-DD). */
   onSetDate?: (id: string, date: string) => void;
-  /** Row context menu — set the due/end time ('' clears it). */
+  /** Row context menu - set the due/end time ('' clears it). */
   onSetTime?: (id: string, time: string) => void;
-  /** Row context menu — nest the task under another task (null = top level). */
+  /** Row context menu - nest the task under another task (null = top level). */
   onSetParent?: (id: string, parentId: string | null) => void;
-  /** Row context menu — insert a new task directly above/below `anchorId`. */
+  /** Row context menu - insert a new task directly above/below `anchorId`. */
   onAddAt?: (vals: QuickEditValues, anchorId: string, pos: 'above' | 'below') => void;
   countdownMode?: 'off' | 'time' | 'percent';
   collectionOptions?: CollectionOption[];

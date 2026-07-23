@@ -13,8 +13,8 @@ export function useOptimisticListMutation<T, V>(
     mutationFn,
     onMutate: (v: V) => {
       // Apply the optimistic update SYNCHRONOUSLY (no await before setQueryData)
-      // so consumers that react in the same commit — notably dnd-kit, which
-      // clears its drag transforms on drop — see the new order immediately.
+      // so consumers that react in the same commit - notably dnd-kit, which
+      // clears its drag transforms on drop - see the new order immediately.
       // Awaiting cancelQueries first defers the cache write a microtask, which
       // makes reordered items snap to the old position then animate ("bounce").
       // cancelQueries still runs (fire-and-forget) to stop an in-flight refetch

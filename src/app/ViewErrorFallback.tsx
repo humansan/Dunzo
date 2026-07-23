@@ -2,7 +2,7 @@ import { useRouter, type ErrorComponentProps } from '@tanstack/react-router';
 import { AlertTriangle } from 'lucide-react';
 
 // Localized fallback for a single view's render/loader error. It renders inside the
-// persistent shell's <Outlet/>, so the Sidebar and the other routes stay usable — a
+// persistent shell's <Outlet/>, so the Sidebar and the other routes stay usable - a
 // crash in one view no longer blanks the whole app. Retry re-runs the route.
 export function ViewErrorFallback({ error }: ErrorComponentProps) {
   const router = useRouter();

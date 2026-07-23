@@ -15,7 +15,7 @@ trackersRouter.get(
   })
 );
 
-// POST /api/trackers — create (client-generated id).
+// POST /api/trackers - create (client-generated id).
 trackersRouter.post(
   '/',
   asyncHandler(async (req, res) => {

@@ -22,7 +22,7 @@ function RootComponent() {
 
 // App-level last-resort boundary: catches anything not handled by a closer
 // errorComponent (the per-view fallbacks / the _authed data screen). Replaces the
-// old "one throw blanks the whole app" behavior — there were no error boundaries.
+// old "one throw blanks the whole app" behavior - there were no error boundaries.
 function RootErrorComponent({ error }: ErrorComponentProps) {
   return (
     <div className="h-screen flex flex-col items-center justify-center gap-4 bg-canvas text-fg-subtle text-sm text-center px-6">

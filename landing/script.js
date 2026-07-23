@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   DUNZO LANDING PAGE — Interactivity
+   DUNZO LANDING PAGE - Interactivity
    ═══════════════════════════════════════════════════════════════ */
 
 (function () {

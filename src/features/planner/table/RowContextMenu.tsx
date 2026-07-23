@@ -22,7 +22,7 @@ import { TimeInput } from '@/common/ui';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
 
 // Right-click / 3-dot row menu. Branches on whether the target row is a
-// collection (Edit / nested collection / recolor) or a task — the task items
+// collection (Edit / nested collection / recolor) or a task - the task items
 // mirror the daily list's DailyRowContextMenu, in the same order, plus the
 // planner-only "Create task inside" / "Make collection". Both share Archive +
 // Delete. All actions are passed in as callbacks so the parent owns the state

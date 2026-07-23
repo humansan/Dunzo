@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 // Neon Auth (Better Auth) issues JWTs signed with the project's keys. We verify
 // incoming Bearer tokens against the project's JWKS endpoint. Only tokens signed
-// by this project's keys pass — that is the core security guarantee.
+// by this project's keys pass - that is the core security guarantee.
 const authBaseUrl = process.env.NEON_AUTH_URL;
 if (!authBaseUrl) {
   throw new Error('NEON_AUTH_URL is not set (server-side, used for JWKS verification)');

@@ -4,7 +4,7 @@ import ws from 'ws';
 import * as schema from '../shared/db/schema';
 
 // Node needs a WebSocket implementation for the Neon serverless driver. The
-// WebSocket (Pool) driver supports transactions — needed later for batch
+// WebSocket (Pool) driver supports transactions - needed later for batch
 // reorders and the one-time import.
 neonConfig.webSocketConstructor = ws;
 

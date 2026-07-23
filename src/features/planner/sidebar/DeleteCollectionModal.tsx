@@ -39,7 +39,7 @@ export const DeleteCollectionModal: React.FC<{
           <span className="min-w-0">
             <span className="block text-sm font-semibold text-fg">Move tasks up one level</span>
             <span className="block text-xs text-fg-subtle">
-              Keep them — move into <span className="text-fg-muted font-medium">{promoteTarget}</span> and delete only the collection.
+              Keep them - move into <span className="text-fg-muted font-medium">{promoteTarget}</span> and delete only the collection.
             </span>
           </span>
         </button>

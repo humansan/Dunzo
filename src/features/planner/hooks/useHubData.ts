@@ -21,7 +21,7 @@ import { flattenTree } from '@/features/planner/sidebar/treeUtils';
 // The hub's derived-data layer: takes the raw dayTodos plus the active view/
 // filter/sort/section settings and produces every memoized projection the table
 // and sidebar render from (entry indexes, the collection tree, the filtered/
-// grouped row lists, and the per-collection counts). Pure derivation — UI state
+// grouped row lists, and the per-collection counts). Pure derivation - UI state
 // (collapse sets, the selected view) is passed in.
 export function useHubData(params: {
   dayTodos: DayTodos[];
@@ -67,7 +67,7 @@ export function useHubData(params: {
     [dayTodos, activeWorkspaceId]
   );
 
-  // Archived todos, for the 'archived' pseudo-view — kept separate from `entries`
+  // Archived todos, for the 'archived' pseudo-view - kept separate from `entries`
   // since everything else in this file (collection tree, all/uncategorized counts,
   // ancestor walks) is scoped to the non-archived organizer set.
   const archivedEntries = useMemo(
@@ -106,8 +106,8 @@ export function useHubData(params: {
   // Archived entries plus their full ancestor chain (collections *and* parent
   // tasks), pulled from the full todo index even when an ancestor itself isn't
   // archived. Without this, an archived task whose collection/parent was never
-  // archived would render as a parentless orphan — no collection header, no
-  // subtask nesting — since flattenTree only links a node to a parent that's
+  // archived would render as a parentless orphan - no collection header, no
+  // subtask nesting - since flattenTree only links a node to a parent that's
   // also present in the entry list it's given.
   const archivedTreeEntries = useMemo(() => {
     const byIdInTree = new Map<string, OrganizerEntry>();
@@ -287,7 +287,7 @@ export function useHubData(params: {
     return counts;
   }, [processedEntries, byId]);
 
-  // Grouped rows — only used when groupBy !== 'collection'.
+  // Grouped rows - only used when groupBy !== 'collection'.
   const groupedRows = useMemo((): GroupRow[] => {
     if (sectionsConfig.groupBy === 'collection') return [];
     return buildGroupedItems(processedEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection);
@@ -297,7 +297,7 @@ export function useHubData(params: {
   // filters + hideEmptyCollections. leafPosition segregates tasks vs sub-collections.
   // The dragged row stays visible (dimmed), so nothing is excluded during a drag.
   // When hideSubcollections is on we keep only the tasks sitting directly in the
-  // view's root collection — every nested sub-collection and everything inside it
+  // view's root collection - every nested sub-collection and everything inside it
   // is dropped (task→subtask nesting, whose parents are tasks, is preserved).
   //   • picked collection → keep tasks whose nearest collection ancestor is it.
   //   • 'all' / 'uncategorized' → keep top-level collection headers, the tasks

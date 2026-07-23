@@ -3,7 +3,7 @@ import { useRouter } from '@tanstack/react-router';
 // Opens the settings / task-full-view overlays as *search-param state on the
 // current page* (masked to their pretty /settings and /task/$id URLs) instead of
 // navigating to a sibling route. Because the page route under AppShell's <Outlet/>
-// never changes, the page stays mounted behind the overlay — no unmount/remount
+// never changes, the page stays mounted behind the overlay - no unmount/remount
 // flash when the overlay closes. The real /settings and /task/$taskId routes still
 // exist to resolve a cold deep-link (a masked URL reloaded from the address bar).
 export function useOverlayNav() {

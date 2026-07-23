@@ -6,7 +6,7 @@ import { asyncHandler, pick, SETTINGS_FIELDS } from '../http';
 
 export const settingsRouter = Router();
 
-// GET /api/settings — the user's settings row, or {} if none yet.
+// GET /api/settings - the user's settings row, or {} if none yet.
 settingsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -18,7 +18,7 @@ settingsRouter.get(
   })
 );
 
-// PUT /api/settings — upsert (insert-or-merge) the user's prefs + hub blobs.
+// PUT /api/settings - upsert (insert-or-merge) the user's prefs + hub blobs.
 settingsRouter.put(
   '/',
   asyncHandler(async (req, res) => {

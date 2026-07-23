@@ -65,7 +65,7 @@ export const HubSidebar: React.FC<{
       style={{ width: sidebarWidth }}
       className="group/pane relative shrink-0 flex flex-col min-h-0 border-r border-line"
     >
-      {/* ── Workspaces section (top) — independent todo databases ───────── */}
+      {/* ── Workspaces section (top) - independent todo databases ───────── */}
       {/* <div className="shrink-0 flex flex-col max-h-[38%] border-b border-line p-2">
         <div className="shrink-0 px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
           Workspaces
@@ -118,7 +118,7 @@ export const HubSidebar: React.FC<{
         </button>
       </div> */}
 
-      {/* ── Collections section (bottom) — shared with the Task Finder ────── */}
+      {/* ── Collections section (bottom) - shared with the Task Finder ────── */}
       <CollectionTree
         selectedView={selectedView}
         onSelectView={setSelectedView}

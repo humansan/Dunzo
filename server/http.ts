@@ -25,7 +25,7 @@ export function errorMiddleware(
 }
 
 // Column allow-list filter. Keeps only known, client-settable keys and drops
-// undefined — so `user_id`, the generated `completed` column, and unknown keys
+// undefined - so `user_id`, the generated `completed` column, and unknown keys
 // can never be written from request bodies.
 export function pick<T extends object>(
   body: unknown,

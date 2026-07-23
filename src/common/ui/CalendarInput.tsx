@@ -79,7 +79,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Just track what the user is typing — only parse on Enter so the parent
+    // Just track what the user is typing - only parse on Enter so the parent
     // doesn't get intermediate values (and so the popover doesn't shift around
     // while the user is still typing).
     setText(e.target.value);

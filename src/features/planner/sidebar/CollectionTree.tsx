@@ -12,17 +12,17 @@ export type VisibleCollection = { entry: OrganizerEntry; depth: number; hasChild
 // plus the nested collection tree (counts, selection, expand/collapse). Used by both
 // the Task Planner sidebar and the Task Finder's two-pane view, so styling + behavior
 // stay in one place. Drag-to-reorder/nest and the right-click menu are opt-in via the
-// `dnd` and `onOpenMenu` props — the planner passes them, search omits them.
+// `dnd` and `onOpenMenu` props - the planner passes them, search omits them.
 export const CollectionTree: React.FC<{
   selectedView: string;
   onSelectView: (v: string) => void;
   allCount: number;
   uncategorizedCount: number;
   // Omit to hide the "Archived" pseudo-view (the Task Finder's picker doesn't
-  // support it — its data layer only knows 'all' / 'uncategorized' / a collection id).
+  // support it - its data layer only knows 'all' / 'uncategorized' / a collection id).
   archivedCount?: number;
   // Omit to hide the "In Daily List" / "Categorized" pseudo-views (same reason as
-  // Archived — the Task Finder only navigates all / uncategorized / a collection).
+  // Archived - the Task Finder only navigates all / uncategorized / a collection).
   inDailyListCount?: number;
   categorizedCount?: number;
   visibleCollections: VisibleCollection[];
@@ -107,7 +107,7 @@ export const CollectionTree: React.FC<{
         </div>
       </div>
 
-      {/* Scrollable list of collections — nested tree, indented by depth. The drop is
+      {/* Scrollable list of collections - nested tree, indented by depth. The drop is
           handled on the container (not per-row) so releases in the gaps still commit. */}
       <div
         ref={dnd?.sideScroll.ref}
@@ -167,7 +167,7 @@ export const CollectionTree: React.FC<{
               onDragEnd={() => { dnd.setDragCollId(null); dnd.setDropInfo(null); dnd.sideScroll.stop(); }}
               onDragOver={(e) => dnd.onCollDragOver(e, c.todo.id)}
             >
-              {/* Reorder line — drawn at the target's indent level */}
+              {/* Reorder line - drawn at the target's indent level */}
               {drop === 'before' && (
                 <div className="pointer-events-none absolute -top-px left-0 right-1.5 z-10 h-0.5 rounded-full bg-[var(--accent2)]" style={{ marginLeft: 6 + indent }} />
               )}

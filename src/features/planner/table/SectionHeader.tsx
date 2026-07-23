@@ -5,16 +5,16 @@ import { pill as chipStyle } from '@/theme/pill';
 import { useTableVariant } from '@/features/planner/variant';
 import { btnGhost } from '@/theme/buttons';
 
-// The single source of truth for how a section header looks in the Task Planner —
+// The single source of truth for how a section header looks in the Task Planner -
 // the collapse chevron, the colored name pill, the count badge, and (critically)
 // the section spacing, which differs by view variant (read from context). BOTH
 // grouping paths render through this: collection sections (via HubRow's collection
-// branch) and attribute sections — Date/Status/Priority — (via GroupHeaderRow).
+// branch) and attribute sections - Date/Status/Priority - (via GroupHeaderRow).
 // Keeping the chrome here means a styling change applies to every grouping at once,
 // instead of having to be mirrored across two components.
 export interface SectionHeaderProps {
   gridTemplateColumns: string;
-  // Pill — the shell renders a standard pill from `label` + `color`; pass
+  // Pill - the shell renders a standard pill from `label` + `color`; pass
   // `pillOverride` to swap in a custom node (e.g. the collection's inline-edit
   // input). `onPillClick` makes the standard pill act as an edit affordance.
   color: string;
@@ -135,7 +135,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 
         {actions}
 
-        {/* Drill affordance — pushed to the right edge; marks the row as openable. */}
+        {/* Drill affordance - pushed to the right edge; marks the row as openable. */}
         {onActivate && <ChevronRight size={16} className="shrink-0 ml-auto mr-1 text-fg-ghost" />}
       </div>
     </div>

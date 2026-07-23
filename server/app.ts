@@ -1,4 +1,5 @@
 import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { sql } from 'drizzle-orm';
 import { db } from './db';
 import { requireAuth } from './auth';
@@ -8,9 +9,43 @@ import { workspacesRouter } from './routes/workspaces';
 import { trackersRouter } from './routes/trackers';
 import { settingsRouter } from './routes/settings';
 
-// The configured Express app, with no `listen` — so it can be used both by the
+// The configured Express app, with no `listen` - so it can be used both by the
 // local dev server (server/index.ts) and as a Vercel Function (api/index.ts).
 const app = express();
+
+// ── Neon Auth reverse proxy (BFF) ────────────────────────────────────────────
+// Neon Auth (Better Auth) keeps the session in a cookie set on *its* domain. When
+// the browser talks to that domain directly it's a third-party cookie, which iOS
+// WebKit (Safari + every iOS browser) drops - so login silently bounces back to
+// the sign-in screen. Proxying auth through our own origin makes that cookie
+// first-party, which every browser keeps. This is the same shape Neon ships for
+// Next.js (`@neondatabase/auth/next` proxies). The client points at
+// `/api/neon-auth`; JWT verification (server/auth.ts) is unchanged.
+//
+// Mounted BEFORE express.json() so the raw request body streams through untouched.
+// Express strips the `/api/neon-auth` mount prefix; http-proxy's default
+// prependPath re-adds the target's `/neondb/auth` path, so no pathRewrite needed.
+const neonAuthUrl = process.env.NEON_AUTH_URL;
+if (!neonAuthUrl) {
+  throw new Error('NEON_AUTH_URL is not set (used as the Neon Auth proxy target)');
+}
+app.use(
+  '/api/neon-auth',
+  createProxyMiddleware({
+    target: neonAuthUrl,
+    changeOrigin: true, // rewrite Host to Neon's vhost; keeps the browser Origin header intact
+    // Strip the `Domain=…neon.tech` attribute so Set-Cookie binds to our origin
+    // (a cross-domain Domain would be rejected by the browser). Host-only = first-party.
+    // We deliberately DON'T touch `Secure`: Neon runs on HTTPS, so Better Auth names
+    // the session cookie with the `__Secure-` prefix, and a `__Secure-`/`__Host-`
+    // cookie without the Secure attribute is rejected by the browser. Browsers accept
+    // Secure cookies on http://localhost (localhost is a secure context), so keeping
+    // Secure works in dev on Chrome/Firefox/Edge. For Safari-on-localhost, run dev
+    // over HTTPS (`npm run dev:web -- --experimental-https`), which mirrors prod.
+    cookieDomainRewrite: '',
+  })
+);
+
 app.use(express.json({ limit: '5mb' }));
 
 // CORS. On Vercel the frontend and API share one origin (requests are relative
@@ -39,7 +74,7 @@ app.get('/api/me', requireAuth, (req, res) => {
 
 // Public: does an account already exist for this email? Used by the email-first
 // signup step to steer existing users to log in instead of creating a duplicate.
-// Reads Neon Auth's (Better Auth) `neon_auth."user"` table — `user` is a reserved
+// Reads Neon Auth's (Better Auth) `neon_auth."user"` table - `user` is a reserved
 // word so it must be quoted. Fail-open: if the table/query is unavailable, report
 // `exists: false` so signup is never wrongly blocked (Better Auth still rejects a
 // true duplicate at signUp time).
@@ -64,7 +99,7 @@ app.get(
   })
 );
 
-// Data API — all scoped by the authenticated user_id.
+// Data API - all scoped by the authenticated user_id.
 app.use('/api/todos', requireAuth, todosRouter);
 app.use('/api/workspaces', requireAuth, workspacesRouter);
 app.use('/api/trackers', requireAuth, trackersRouter);

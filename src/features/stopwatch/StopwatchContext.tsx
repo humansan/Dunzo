@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import type { TimerState } from '@/features/stopwatch/StopwatchWidget';
 
 // The stopwatch lives in its own context, separate from the big AppData object.
-// Crucially, `elapsed` is NOT stored here — it's derived on demand by `useElapsed()`
+// Crucially, `elapsed` is NOT stored here - it's derived on demand by `useElapsed()`
 // in a leaf, so the 50ms tick re-renders only the digits, not every AppData consumer.
 function useProvideStopwatch() {
   const [timerState, setTimerState] = useState<TimerState>('idle');
@@ -66,7 +66,7 @@ export function useStopwatch(): StopwatchApi {
 }
 
 // Elapsed ms, derived from the running refs with a self-owned 50ms tick. Only the
-// component that calls this re-renders each tick — that's the whole point.
+// component that calls this re-renders each tick - that's the whole point.
 export function useElapsed(): number {
   const { timerState, startTimeRef, pausedElapsedRef } = useStopwatch();
   const read = () =>

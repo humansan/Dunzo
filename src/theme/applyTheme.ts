@@ -26,7 +26,7 @@ function hexToRgb(hex: string): [number, number, number] {
 // what applyTheme writes to --color-<role>: solid roles → their hex; translucent [name,α]
 // tuples → the equivalent rgba(). For the few contexts that can't consume a CSS var
 // (recharts SVG attrs, `${}`-built shadow strings). Because it's pure data it's correct on
-// first render and updates in the same render as a theme change — see useThemeColor.
+// first render and updates in the same render as a theme change - see useThemeColor.
 export function resolveRoleColor(
   themeId: string | undefined,
   mode: ThemeMode,
@@ -92,6 +92,6 @@ export function applyTheme(themeId: string | undefined, mode: ThemeMode): void {
       })
     );
   } catch {
-    /* localStorage unavailable — ignore */
+    /* localStorage unavailable - ignore */
   }
 }

@@ -97,7 +97,7 @@ export const CellEditorPopover: React.FC<{
           showInDailyList={entry.todo.showInDailyList ?? false}
           onShowInDailyListChange={(val) => save({ showInDailyList: val })}
           onChange={(val) => {
-            // Clearing the date keeps the showInDailyList flag — an undated task
+            // Clearing the date keeps the showInDailyList flag - an undated task
             // just never lands on a daily list, and re-adding a date sends it back.
             save({ dueDate: val || undefined });
           }}

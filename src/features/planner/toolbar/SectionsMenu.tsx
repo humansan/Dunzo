@@ -62,7 +62,7 @@ export const SectionsMenu: React.FC<{
             <Switch checked={config.hideEmptyCollections} onChange={(v) => set('hideEmptyCollections', v)} />
           </div>
 
-          {/* Hide sub-collections — flatten to leaf tasks only */}
+          {/* Hide sub-collections - flatten to leaf tasks only */}
           <div className={rowCls}>
             <span className={labelCls}>Hide subcollections</span>
             <Switch checked={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
@@ -104,7 +104,7 @@ export const SectionsMenu: React.FC<{
             />
           </div>
 
-          {/* Section order — only meaningful for attribute groupings. Collections
+          {/* Section order - only meaningful for attribute groupings. Collections
               keep their own manual (drag) ordering, so this is hidden there. */}
           {config.groupBy !== 'collection' && (
             <div className="space-y-1.5 mt-3">

@@ -5,7 +5,7 @@ import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/features/tasks/fields';
 import { ColKey, FilterRule, FlatNode, GroupRow } from '@/features/planner/types';
 
-// Returns a display-formatted string for a field — what the user sees in the
+// Returns a display-formatted string for a field - what the user sees in the
 // table cell. This is used for the filter value dropdown and for filter matching.
 export function getFieldDisplayValue(
   entry: OrganizerEntry,
@@ -84,7 +84,7 @@ export function compareRawValues(a: string, b: string): number {
 
 // ── Group-by helpers ──────────────────────────────────────────────────────────
 
-// The enum option sets that back the attribute groupings — the single source of
+// The enum option sets that back the attribute groupings - the single source of
 // truth for each value's label and color (defined in todoFields.tsx). Group keys
 // are display labels, so header colors are resolved by matching the label.
 const FIELD_OPTIONS: Partial<Record<ColKey, typeof STATUS_OPTIONS>> = {
@@ -102,7 +102,7 @@ const FIELD_GROUP_ORDER: Partial<Record<ColKey, string[]>> = {
 // not one section per calendar date. The id is the group key; the label is shown
 // on the header. The last bucket is a catch-all for everything further out.
 // `startOffset` is the earliest day (as a +/- offset from today, in days) that
-// lands in this bucket without spilling into an earlier, more specific one —
+// lands in this bucket without spilling into an earlier, more specific one -
 // used when quick-adding a task into a date section. Past has no true earliest,
 // so it uses yesterday (the most recent past day).
 const DATE_BUCKETS: { id: string; label: string; color: string; startOffset: number }[] = [
@@ -160,7 +160,7 @@ export function getGroupColor(field: ColKey, key: string): string {
   return FIELD_OPTIONS[field]?.find((o) => o.label === key)?.color ?? 'var(--color-fg-muted)';
 }
 
-// The Todo patch that moves a task into the group `value` for `field` — used when
+// The Todo patch that moves a task into the group `value` for `field` - used when
 // a task is dragged across sections. Returns null for fields that can't be set by
 // dropping (collection has its own tree DnD; date buckets are derived ranges).
 // An empty value clears the field.
@@ -182,7 +182,7 @@ export function groupAssignmentPatch(field: ColKey, value: string): Partial<Todo
 // when the user clicks the "+" on a group header. Returns a calendar date (for
 // date buckets) and/or a field patch (priority/status). Date buckets resolve to
 // the earliest day that falls in the bucket without spilling into an earlier,
-// more specific one — e.g. "Next 7 Days" ⇒ 2 days out, since today and tomorrow
+// more specific one - e.g. "Next 7 Days" ⇒ 2 days out, since today and tomorrow
 // are their own buckets. 'collection' grouping has its own per-header add path.
 export function groupCreateSpec(
   field: ColKey,
@@ -211,7 +211,7 @@ function parseDisplayDate(value: string): string | null {
 // Build the Todo patch that pre-seeds a newly created task with the values of the
 // active filters, so a task created inside a filtered view still satisfies those
 // filters (and stays visible) right after creation. Only equality ("is") filters on
-// settable fields seed a value — "is not"/"contains"/range conditions and unset
+// settable fields seed a value - "is not"/"contains"/range conditions and unset
 // values can't be turned into a single concrete value and are skipped. Collection
 // membership is handled separately (via the task's parent), not here.
 export function buildFilterCreatePatch(filters: FilterRule[]): Partial<Todo> {
@@ -268,8 +268,8 @@ export function buildGroupedItems(
 
   // Returns the group section a task belongs to. A subtask ALWAYS belongs to its
   // parent task's section (so a whole task subtree stays together under its root,
-  // regardless of any field value the subtask carries). Only a root task — one
-  // with no task parent — is placed by its own field value; '' means ungrouped.
+  // regardless of any field value the subtask carries). Only a root task - one
+  // with no task parent - is placed by its own field value; '' means ungrouped.
   const owningGroupCache = new Map<string, string>();
   const getOwningGroup = (taskId: string): string => {
     const cached = owningGroupCache.get(taskId);

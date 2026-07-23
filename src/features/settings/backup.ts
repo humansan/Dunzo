@@ -6,13 +6,13 @@ import type { TodoBatch } from '@/features/tasks/api';
 // ─────────────────────────────────────────────────────────────────────────────
 // Manual backup export / import (the Account panel's Export/Import buttons).
 //
-// Export snapshots the user's current DB state. Import MERGES by id into the DB —
+// Export snapshots the user's current DB state. Import MERGES by id into the DB -
 // ids absent in the DB are inserted, ids that already exist are overwritten with
 // the imported values, and existing rows not present in the backup are left
 // untouched (no deletes). Ids are preserved so the merge can match on them.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Legacy localStorage keys — only used to read the old localStorage-dump backup
+// Legacy localStorage keys - only used to read the old localStorage-dump backup
 // format that the pre-DB Export button produced, so those files still import.
 const LS = {
   todos: 'dun-todos',

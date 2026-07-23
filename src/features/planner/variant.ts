@@ -7,13 +7,13 @@ import React from 'react';
 // rather than turning a boolean into a 3-way in five files.
 //
 // Which field governs what (keep new reads on the same axis):
-//   • chrome      — the outer scroll container + header/title chrome.
-//   • columns     — which columns render, the grid, the width anchor, and the
+//   • chrome      - the outer scroll container + header/title chrome.
+//   • columns     - which columns render, the grid, the width anchor, and the
 //                   dividers/background on the sticky Name cell.
-//   • mode        — fine row/cell styling (section pill size + spacing, list wrap,
+//   • mode        - fine row/cell styling (section pill size + spacing, list wrap,
 //                   the add-row treatment).
-//   • showNesting — expand/collapse chevrons + indent + hierarchical flattening.
-//   • dnd         — whether this surface enables drag-to-reorder/nest.
+//   • showNesting - expand/collapse chevrons + indent + hierarchical flattening.
+//   • dnd         - whether this surface enables drag-to-reorder/nest.
 export type TableMode = 'table' | 'list' | 'column';
 
 export interface TableVariant {
@@ -24,7 +24,7 @@ export interface TableVariant {
   dnd: boolean;
 }
 
-// Presets are defined at module scope so their identity is stable across renders —
+// Presets are defined at module scope so their identity is stable across renders -
 // `React.memo`'d rows that read the variant from context don't re-render just for
 // reading it. Only `table` and `list` are wired today; `column`/`search` land with
 // the flat-list and Finder-columns views.

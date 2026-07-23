@@ -24,7 +24,7 @@ export interface TimePatch {
 export type TimeKind = 'start' | 'due';
 
 // A time and its percent-of-day are two views of one value, so an edit to either
-// must write BOTH keys — including the cleared case, where omitting the sibling
+// must write BOTH keys - including the cleared case, where omitting the sibling
 // key leaves it stranded (the patch is spread over the todo, so an absent key
 // means "keep"). The counterpart is dropped only when it can't be derived: an
 // unparseable time or an out-of-range percent leaves the other side as it was.
@@ -156,7 +156,7 @@ export const NotesField: React.FC<{
   );
 };
 
-// ── Status / Priority chips — same collection-style tinted pill ───────────────
+// ── Status / Priority chips - same collection-style tinted pill ───────────────
 export interface ChipOption {
   value: string;
   label: string;
@@ -190,8 +190,8 @@ export const OptionChip: React.FC<{ option: ChipOption; className?: string }> = 
 );
 
 // Single-select picker over a fixed option set. `variant`:
-//   • 'menu'   — vertical list (used in the table's popover, mirroring tags)
-//   • 'inline' — wrapped row of chips (used in the full view)
+//   • 'menu'   - vertical list (used in the table's popover, mirroring tags)
+//   • 'inline' - wrapped row of chips (used in the full view)
 // Clicking the active option again clears the field.
 export const OptionSelectField: React.FC<{
   options: ChipOption[];
@@ -276,4 +276,4 @@ export const CollectionBreadcrumb: React.FC<{
   </span>
 );
 
-// The picker itself lives in CollectionPicker.tsx — one panel, used everywhere.
+// The picker itself lives in CollectionPicker.tsx - one panel, used everywhere.

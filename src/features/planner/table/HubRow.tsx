@@ -39,7 +39,7 @@ interface HubRowProps {
   isCollapsed: boolean;
   onToggleCollapse: (id: string) => void;
   collPath: { id: string; name: string; color?: string }[];
-  // Ordered, visible columns (Name first) — drives which cells render and in what order.
+  // Ordered, visible columns (Name first) - drives which cells render and in what order.
   columns: ColDef[];
   lastColKey: ColKey; // the rightmost visible column, which gets a right divider
   wrappedFields: Set<ColKey>;
@@ -118,7 +118,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); onRowDrop?.(); },
   };
 
-  // The grip — the only draggable element, so cell clicks/edits stay intact.
+  // The grip - the only draggable element, so cell clicks/edits stay intact.
   // NOTE: this must be a plain function call (not an inner <Component/>), or each
   // re-render would create a new component type, remounting the <button> and
   // aborting any in-progress native drag (dragend never fires → stuck indicator).
@@ -152,14 +152,14 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       />
     ) : null;
   // 'inside' (nest) highlight: an overlay so it sits ABOVE the sticky Name cell
-  // (z-20) and spans the whole row — a ring on the grid would be painted over by
+  // (z-20) and spans the whole row - a ring on the grid would be painted over by
   // that opaque cell, leaving only the scrollable part highlighted.
   const insideOverlay = dropIndicator?.pos === 'inside' ? (
     <div className="pointer-events-none absolute inset-0 z-30 ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/5" />
   ) : null;
 
   const editCellWrap = 'flex items-stretch h-full border-l border-line-subtle';
-  // Empty fields render nothing — a placeholder dash just adds clutter.
+  // Empty fields render nothing - a placeholder dash just adds clutter.
   const muted = null;
 
   // A clickable display cell that switches into edit mode. `active` adds the
@@ -194,7 +194,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // ── Collection row ──────────────────────────────────────────────────────────
   // A section header, not a task: rendered through the shared SectionHeader shell
   // (same chrome/spacing as attribute-group headers) with the collection-specific
-  // bits — inline-rename pill, drag handle, options + add buttons — passed in.
+  // bits - inline-rename pill, drag handle, options + add buttons - passed in.
   if (todo.isCollection) {
     const color = collectionColor(todo.color);
     // Columns view: the header opens a child column on click (drill) rather than
@@ -427,7 +427,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         }`}
       >
         {/* The frozen Name cell needs an opaque bg so scrolled cells don't show through
-            it — which also hides the row's translucent hover fill. These two overlays
+            it - which also hides the row's translucent hover fill. These two overlays
             replay it: one on row hover, one more on cell hover. Stacking the same 5%
             fill twice is exactly what the scrolling cells do (transparent cell hover
             fill over the row's), so the Name cell lands on the same two brightness
@@ -461,7 +461,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           } ${isEditing('title') && "ring-2 ring-inset ring-[var(--accent2)]"}
           `}
         >
-          {/* Collapse chevron (nesting variants only) — a spacer keeps the checkbox
+          {/* Collapse chevron (nesting variants only) - a spacer keeps the checkbox
               aligned when a row has no children. A flat variant drops both. */}
           {nested && (hasChildren ? (
             <button
@@ -531,11 +531,11 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         </div>
       </div>
 
-      {/* Field cells — rendered in the order/visibility set by the Fields menu. */}
+      {/* Field cells - rendered in the order/visibility set by the Fields menu. */}
       {columns
         .filter((c) => c.key !== NAME_COL_KEY)
         .map((c) => <React.Fragment key={c.key}>{renderCell(c.key)}</React.Fragment>)}
-      {/* Spacer track — fills remaining width, mirrors the header spacer. A
+      {/* Spacer track - fills remaining width, mirrors the header spacer. A
           single Name column has no such track, so it's for the full-column grid. */}
       {variant.columns === 'all' && <div />}
     </div>

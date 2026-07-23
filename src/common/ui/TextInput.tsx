@@ -7,7 +7,7 @@ import React from 'react';
 // up with the dropdown trigger. Compact contexts (the date/time pickers) reuse
 // `inputBaseCls` but set their own height.
 
-// Border/fill/interaction styling, without sizing — so callers can pick a height.
+// Border/fill/interaction styling, without sizing - so callers can pick a height.
 export const inputBaseCls =
   'bg-overlay border border-line rounded-lg text-fg placeholder:text-fg-faint transition-colors focus:outline-none hover:border-line-strong focus:border-[var(--accent2)]';
 

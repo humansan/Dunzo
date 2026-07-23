@@ -4,9 +4,9 @@ import { gruvboxMaterial } from './gruvbox';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE THEME FILE. A theme owns BOTH layers:
-//   • colors: an arbitrary palette (colorName -> hex) — define as many as you want.
+//   • colors: an arbitrary palette (colorName -> hex) - define as many as you want.
 //   • roles:  the fixed RoleName vocabulary assigned to color names (role -> colorName).
-// Nothing about which color fills which role is hardcoded in the system — it's all
+// Nothing about which color fills which role is hardcoded in the system - it's all
 // here. To add/reskin a theme, add a Theme object to THEMES below. To retheme a role
 // app-wide, change one line in a `roles` map.
 //
@@ -17,8 +17,8 @@ import { gruvboxMaterial } from './gruvbox';
 // A role maps to either a solid palette color (its name) or a *translucent* token: a
 // [colorName, alphaPercent] tuple that applyTheme renders as
 // `color-mix(in srgb, var(--c-<colorName>) <alpha>%, transparent)`. The tuple keeps the
-// palette pure hex while letting fills/lines/text/tints be an alpha of a base color, and —
-// because the base is usually `fg` (which inverts per mode) — one definition auto-inverts
+// palette pure hex while letting fills/lines/text/tints be an alpha of a base color, and -
+// because the base is usually `fg` (which inverts per mode) - one definition auto-inverts
 // (white in dark, ink in light). Alpha can differ per mode by giving the two variants
 // different role maps. See docs/theming/token-map.md.
 export type RoleValue = string | readonly [colorName: string, alphaPct: number];
@@ -35,7 +35,7 @@ export interface Theme {
   light: ThemeVariant;
 }
 
-// ── Theme #1: "Classic" — the current app colors, captured as data ───────────────
+// ── Theme #1: "Classic" - the current app colors, captured as data ───────────────
 // Dark values reproduce today's look 1:1. Light values are a light rendering of the
 // same palette (tunable).
 

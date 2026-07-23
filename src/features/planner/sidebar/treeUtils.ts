@@ -34,7 +34,7 @@ export function flattenTree(
     return (a.todo.hubOrder ?? a.todo.createdAt) - (b.todo.hubOrder ?? b.todo.createdAt);
   };
 
-  // Flat mode: one sorted pass, no tree walk, no collapse — every node at depth 0.
+  // Flat mode: one sorted pass, no tree walk, no collapse - every node at depth 0.
   // Nodes are presented as a parentless root list (parentId null): a flat surface
   // shows no hierarchy, and a Finder column reorders its slice as one sibling group
   // re-anchored to the column's own parent on commit.

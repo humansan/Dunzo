@@ -9,7 +9,7 @@ import { useStableCallback } from '@/common/hooks/useStableCallback';
 
 // The dragged row's resolved drop: which row, whether it lands before/after
 // (reorder) or inside (nest), the resolved parent + indent depth (to draw the
-// line), and — in attribute-grouped mode — the destination section.
+// line), and - in attribute-grouped mode - the destination section.
 export type RowDrop = {
   id: string;
   pos: 'before' | 'inside' | 'after';
@@ -61,7 +61,7 @@ export function useRowDnD(params: {
 
   const resetDrag = useStableCallback(() => { setRowDragId(null); setRowDrop(null); tableScroll.stop(); });
 
-  // Nearest collection ancestor id (or null) — collections may only nest under
+  // Nearest collection ancestor id (or null) - collections may only nest under
   // collections, so a collection drag snaps its parent up to one.
   const nearestCollectionId = (startId: string | null): string | null => {
     let cur = startId;
@@ -76,7 +76,7 @@ export function useRowDnD(params: {
   };
 
   // Grouped-mode task rows as a flat tree (real parentId/depth, render order), plus
-  // each row's section key — the attribute-grouped analogue of `flattened`.
+  // each row's section key - the attribute-grouped analogue of `flattened`.
   const groupNodes = useMemo(
     () => groupedRows.filter((r): r is Extract<GroupRow, { type: 'task' }> => r.type === 'task').map((r) => r.node),
     [groupedRows]
@@ -90,8 +90,8 @@ export function useRowDnD(params: {
   // Is `target` the last among its siblings within `nodes`? Inserting between two
   // siblings is always expressed as the next sibling's 'before' point, so an
   // 'after' point is only meaningful on the last sibling (no next sibling whose
-  // 'before' could stand in). The dragged node — which is leaving its current spot
-  // — is skipped, so the row above it can still read as last. Siblings share a
+  // 'before' could stand in). The dragged node - which is leaving its current spot
+  // - is skipped, so the row above it can still read as last. Siblings share a
   // parent; for root-level nodes (parentId null) `sectionOf` additionally requires
   // the same section, so section roots in different sections aren't siblings.
   const isLastSiblingIn = (nodes: FlatNode[], target: FlatNode, sectionOf?: Map<string, string>): boolean => {
@@ -118,7 +118,7 @@ export function useRowDnD(params: {
 
   // Resolve the drop for collection-tree mode from the hovered row + cursor Y:
   // the top zone reorders before (as a sibling); the rest nests inside. An 'after'
-  // (sibling below) point only appears on a last sibling that isn't expanded —
+  // (sibling below) point only appears on a last sibling that isn't expanded -
   // otherwise drop after it via the row below. Collections snap to a valid parent.
   const computeTreeDrop = (targetId: string, e: React.DragEvent): RowDrop | null => {
     if (!rowDragId || targetId === rowDragId) return null;
@@ -134,7 +134,7 @@ export function useRowDnD(params: {
     const r = (e.clientY - rect.top) / rect.height;
 
     // 'inside' (nest) only when the target can legally parent the dragged node.
-    // 'after' (sibling below) only on the last sibling — and never on an expanded
+    // 'after' (sibling below) only on the last sibling - and never on an expanded
     // node, whose 'after' line would sit between it and its visible children
     // (ambiguous with nesting); drop after such a node via the row below instead.
     const canNest = draggedIsColl ? targetIsColl : true;
@@ -201,7 +201,7 @@ export function useRowDnD(params: {
     });
   });
 
-  // dragOver on a task/collection row — recompute and stash the resolved drop.
+  // dragOver on a task/collection row - recompute and stash the resolved drop.
   const onRowDragOver = useStableCallback((targetId: string, e: React.DragEvent) => {
     if (!rowDragId) return;
     e.preventDefault();
@@ -212,7 +212,7 @@ export function useRowDnD(params: {
     setRowDrop((prev) => (sameDrop(prev, next) ? prev : next));
   });
 
-  // dragOver on a section header (attribute-grouped mode) — drop at the top of it.
+  // dragOver on a section header (attribute-grouped mode) - drop at the top of it.
   const onHeaderDragOver = (headerId: string, group: string, e: React.DragEvent) => {
     if (!rowDragId || sectionsConfig.groupBy === 'collection') return;
     e.preventDefault();
@@ -242,7 +242,7 @@ export function useRowDnD(params: {
 
   // Commit an attribute-grouped drop. Reparents + reorders exactly like collection
   // mode (children follow via orderFromFlat). Then, ONLY when the task lands at a
-  // section root (no task parent) — a genuine move between sections — it reassigns
+  // section root (no task parent) - a genuine move between sections - it reassigns
   // the grouping attribute to the destination section: a status/priority patch, or
   // the bucket's earliest day for date (same as the header "+"), or a clear for the
   // ungrouped section. Nesting under a task just reparents; the subtree follows its

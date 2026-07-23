@@ -15,7 +15,7 @@ workspacesRouter.get(
   })
 );
 
-// POST /api/workspaces — create (client-generated id).
+// POST /api/workspaces - create (client-generated id).
 workspacesRouter.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -35,7 +35,7 @@ workspacesRouter.post(
   })
 );
 
-// PATCH /api/workspaces/:id — rename.
+// PATCH /api/workspaces/:id - rename.
 workspacesRouter.patch(
   '/:id',
   asyncHandler(async (req, res) => {
@@ -57,7 +57,7 @@ workspacesRouter.patch(
   })
 );
 
-// DELETE /api/workspaces/:id — FK cascade deletes its todos.
+// DELETE /api/workspaces/:id - FK cascade deletes its todos.
 workspacesRouter.delete(
   '/:id',
   asyncHandler(async (req, res) => {

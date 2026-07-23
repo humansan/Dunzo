@@ -2,7 +2,7 @@
 // change-password form in settings (features/settings). Keep the rule and its
 // human-readable hint together so the two surfaces never drift.
 
-// Human-readable summary of the policy — render this under password inputs.
+// Human-readable summary of the policy - render this under password inputs.
 export const PASSWORD_HINT =
   'At least 8 characters, with an uppercase, lowercase, and number.';
 

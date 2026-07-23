@@ -3,7 +3,7 @@
 // while ~10 modules across features, routes and theme call useAppData() (downward).
 //
 // It can't be split into a low-level context + a high-level provider, because
-// `AppData` is `ReturnType<typeof useProvideAppData>` — the type is derived from
+// `AppData` is `ReturnType<typeof useProvideAppData>` - the type is derived from
 // the provider's implementation. It sits in `lib/` rather than `app/providers/`
 // because that direction has 2 violating edges instead of ~10.
 //
@@ -70,7 +70,7 @@ function useProvideAppData() {
   // The first resolve of useSession() (undefined → id) is NOT such a transition:
   // there is no previous user, and the _authed loader already prefetched with this
   // user's token. Clearing there would evict that warm cache mid-mount, so every
-  // cold load would render one frame with empty todos — long enough for the
+  // cold load would render one frame with empty todos - long enough for the
   // "collection is gone" / "task is gone" effects downstream to bounce a deep link
   // back to /planner or out of the app entirely.
   const userId = authSession.data?.user?.id;
@@ -106,7 +106,7 @@ function useProvideAppData() {
 
   // True once the server has actually answered for the data a URL can point at.
   // `todos` / `workspaces` are `data ?? []`, so they read "empty" while loading or
-  // erroring — indistinguishable from "this collection/task really was deleted".
+  // erroring - indistinguishable from "this collection/task really was deleted".
   // Anything that reacts to a missing id by navigating away must wait for this.
   const isDataReady =
     todosQuery.isSuccess && workspacesQuery.isSuccess && settingsQuery.isSuccess;
@@ -141,7 +141,7 @@ function useProvideAppData() {
 
   // ── Task Planner workspaces (independent todo databases) ───────────────────
   // The workspace list is server data; activeWorkspaceId is now a DB-synced pref
-  // (cross-device "last workspace"). There is no fixed 'personal' id anymore — a
+  // (cross-device "last workspace"). There is no fixed 'personal' id anymore - a
   // new user is seeded a "Personal" workspace below (workspace id is a global PK).
   const activeWorkspaceId = settings?.activeWorkspaceId ?? '';
   const setActiveWorkspaceId = (id: string) => updateSettings({ activeWorkspaceId: id });
@@ -152,7 +152,7 @@ function useProvideAppData() {
     if (!isAuthenticated) { seededRef.current = false; return; }
     // Only act on a CONFIRMED successful fetch of both queries. `workspaces` is
     // `data ?? []`, which also reads empty when a fetch ERRORS (data === undefined)
-    // — e.g. a transient GET failure while the dev server restarts, or a 401
+    // - e.g. a transient GET failure while the dev server restarts, or a 401
     // during token bootstrap. Gating on isLoading alone let those blips seed a
     // duplicate empty "Personal" workspace every time. isSuccess is only true once
     // the server actually returned a list (and stays true with retained data
@@ -250,7 +250,7 @@ function useProvideAppData() {
   };
 
   // Move a todo to a new scheduled day (its dueDate). fromDate is no longer
-  // needed — the date lives on the task now. Land it at the bottom of the target
+  // needed - the date lives on the task now. Land it at the bottom of the target
   // day by giving it the next dailyOrder.
   const handleMoveTodo = (_fromDate: string, toDate: string, updatedTodo: Todo) => {
     const dueDate = toDate && toDate !== UNDATED ? toDate : undefined;
@@ -264,7 +264,7 @@ function useProvideAppData() {
   // and that carries the autoMoveDate flag onto today, so it keeps rolling forward
   // until completed. Runs at most once per local calendar day per mount (the ref
   // guard); swept tasks land on today and stop matching, so it converges. "Today"
-  // is the user's LOCAL date — the reason this lives client-side rather than a cron.
+  // is the user's LOCAL date - the reason this lives client-side rather than a cron.
   const sweptDateRef = useRef<string | null>(null);
   useEffect(() => {
     if (!isDataReady) return;
@@ -280,7 +280,7 @@ function useProvideAppData() {
         t.dueDate !== UNDATED &&
         t.dueDate < today
     );
-    // Record the pass even when empty — we've checked for today.
+    // Record the pass even when empty - we've checked for today.
     sweptDateRef.current = today;
     if (overdue.length === 0) return;
 
@@ -300,7 +300,7 @@ function useProvideAppData() {
     if (!todo) return;
     // Status is the source of truth. The server stamps completedAt, but its reply
     // never reaches the cache (mutations invalidate without refetching), so mirror
-    // the stamp client-side — otherwise completedAt stays undefined until the next
+    // the stamp client-side - otherwise completedAt stays undefined until the next
     // natural refetch and the completion timestamp renders as absent.
     const { status, completedAt } = normalizeCompletion({ ...todo, status: toggledStatus(todo) });
     updateTodo.mutate({ id: todoId, patch: { status, completedAt } });
@@ -340,7 +340,7 @@ function useProvideAppData() {
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
   // nests it as a subtask. `opts` lets a quick-add seed the task with attributes
-  // (status/priority via `patch`) and/or a scheduled day (`date`) — used by the
+  // (status/priority via `patch`) and/or a scheduled day (`date`) - used by the
   // grouped-view section "+" buttons so the new task lands in that section.
   const addHubTodo = (
     parentId: string | null,
@@ -447,7 +447,7 @@ function useProvideAppData() {
     const coll = todos.find(t => t && t.id === id);
     const grandparentId = coll?.parentId ?? null;
     const children = todos.filter(t => t && (t.parentId ?? null) === id);
-    // Reparent children (patches) before deleting the node (deletes) — the
+    // Reparent children (patches) before deleting the node (deletes) - the
     // server applies patches first, so the FK cascade won't take the children.
     batchTodos.mutate({
       patches: children.map(c => ({ id: c.id, parentId: grandparentId })),

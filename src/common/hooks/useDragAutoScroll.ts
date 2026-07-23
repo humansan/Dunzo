@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from 'react';
 // bottom edge. Speed ramps up the closer the cursor is to the edge.
 //
 // The returned `onDragOver`/`onDragEnter` also call preventDefault, which makes
-// the whole container a valid drop zone — this is what stops the cursor from
+// the whole container a valid drop zone - this is what stops the cursor from
 // flickering to the "no-drop" (circle-slash) icon when crossing row boundaries
 // or hovering gaps between rows. Call `stop()` on drop/dragend.
 export function useDragAutoScroll<T extends HTMLElement>() {

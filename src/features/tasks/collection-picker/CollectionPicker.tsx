@@ -5,7 +5,7 @@ import { CollectionBreadcrumb } from '@/features/tasks/fields';
 import { ChipPopover, rowBtn } from '@/features/tasks/chips';
 
 // ── Collection picker ────────────────────────────────────────────────────────
-// One panel — search box and results list in the same box, at a fixed width, so
+// One panel - search box and results list in the same box, at a fixed width, so
 // the list can't size itself to the longest name and the panel's mount height is
 // its real height. That last part is what lets the anchored hosts (ChipPopover,
 // CellEditorPopover) decide correctly whether to flip above the trigger: they
@@ -16,7 +16,7 @@ import { ChipPopover, rowBtn } from '@/features/tasks/chips';
 // Rows are full breadcrumbs and never truncate: the list scrolls horizontally
 // instead, so a deep path stays readable rather than turning into an ellipsis.
 
-const PANEL_WIDTH = 256; // px — keep in step with the `w-64` class below.
+const PANEL_WIDTH = 256; // px - keep in step with the `w-64` class below.
 export const COLLECTION_PANEL_WIDTH = PANEL_WIDTH;
 
 // The rows the list renders, in order. `none` clears the assignment; `create`
@@ -91,7 +91,7 @@ export const CollectionPicker: React.FC<{
 
   // Keep the highlighted row in view VERTICALLY only. `scrollIntoView` would also
   // act on the horizontal axis, and since a row is as wide as the widest
-  // breadcrumb it can't fit — the browser would yank scrollLeft back to 0 on
+  // breadcrumb it can't fit - the browser would yank scrollLeft back to 0 on
   // every arrow press, undoing the user's sideways scroll.
   useEffect(() => {
     const box = listRef.current;
@@ -110,7 +110,7 @@ export const CollectionPicker: React.FC<{
     else onChange(onCreate(row.name));
   };
 
-  // Enter/Escape must not reach the host — a keypress inside a portaled panel
+  // Enter/Escape must not reach the host - a keypress inside a portaled panel
   // bubbles through the React tree and would submit the quick-edit panel or
   // close the full-view modal. See ChipPopover's containKeys.
   const onKeyDown = (e: React.KeyboardEvent) => {

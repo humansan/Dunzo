@@ -32,7 +32,7 @@ export interface TaskFinderProps {
   // Row mutations still available from the results (checkbox toggle / inline rename).
   onSaveTodo: (updatedTodo: Todo) => void;
   onToggleTodo: (id: string) => void;
-  // Optional chrome — a picker sets a heading ("Move to…") and its own placeholder.
+  // Optional chrome - a picker sets a heading ("Move to…") and its own placeholder.
   title?: string;
   placeholder?: string;
   // Picker: hide candidates that can't be chosen (reparent excludes self + subtree).
@@ -55,7 +55,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
-  // Flat / Two-pane result layout — one preference remembered across all finder uses.
+  // Flat / Two-pane result layout - one preference remembered across all finder uses.
   const [layout, patchLayout] = useSyncedLayout();
   const finderView = layout.finderView ?? 'flat';
   const setFinderView = (v: 'flat' | 'twoPane') => patchLayout(() => ({ finderView: v }));
@@ -67,7 +67,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       return n;
     });
 
-  // A picker excludes candidates it can't accept — reparent → the moved task + its
+  // A picker excludes candidates it can't accept - reparent → the moved task + its
   // whole subtree (a cycle guard). Removing them from the candidate universe up front
   // keeps them out of matches AND out of the subtree expansion below (an excluded
   // task can be nested under a non-excluded match). Collections stay (structure).
@@ -76,10 +76,10 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
     [entries, isDisabled]
   );
 
-  // Which tasks match — VSCode-style fuzzy on the name + all-fields haystack (§hook).
+  // Which tasks match - VSCode-style fuzzy on the name + all-fields haystack (§hook).
   const matches = useTaskFinderSearch(candidateEntries, todoById, query, RESULT_LIMIT);
 
-  // Pull in each match's subtask subtree so a matched task keeps its children — the
+  // Pull in each match's subtask subtree so a matched task keeps its children - the
   // tree flatten renders them collapsibly (interim list; Phase 5 replaces this).
   const entrySet = useMemo(() => {
     if (matches.length === 0) return [];
@@ -184,7 +184,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           </button>
         )}
 
-        {/* Results — hint / empty message, else the Flat or Two-pane view. */}
+        {/* Results - hint / empty message, else the Flat or Two-pane view. */}
         <div className="flex-1 min-h-0 flex flex-col">
           {!q ? (
             <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by name or notes.</div>

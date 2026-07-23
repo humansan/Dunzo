@@ -17,7 +17,7 @@ interface XpSliderProps {
 }
 
 /**
- * The XP editor panel — a row of five Astroid icons that fill (gold) up to the
+ * The XP editor panel - a row of five Astroid icons that fill (gold) up to the
  * selected value, click or drag to set 1–5, plus a Clear button to unset. Own
  * shell, mirroring the TimeInput / CalendarInput popover panels; hosted by any
  * anchored-popover shell (taskChips' ChipPopover, the table's CellEditorPopover).
@@ -25,8 +25,8 @@ interface XpSliderProps {
 export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, className }) => {
   const rowRef = useRef<HTMLDivElement>(null);
   // Local override of `value`, held while dragging AND after the commit until the
-  // parent echoes the new value back. The echo can be a tick late — react-query
-  // applies its optimistic cache write asynchronously — so releasing the override
+  // parent echoes the new value back. The echo can be a tick late - react-query
+  // applies its optimistic cache write asynchronously - so releasing the override
   // on mouse-up paints one frame of the *old* XP before the new one lands. The
   // wrapper object lets `{ value: undefined }` mean "cleared" rather than "no override".
   const [preview, setPreview] = useState<{ value?: number } | null>(null);

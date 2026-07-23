@@ -130,7 +130,7 @@ function check(file) {
 
     // 1. Only main.tsx, routes/ and app/ itself may import app/.
     if (to === 'app' && from !== 'routes' && from !== 'app' && rel !== 'main.tsx') {
-      fail(`${from} may not import @/app — the shell is the top layer`);
+      fail(`${from} may not import @/app - the shell is the top layer`);
       continue;
     }
 
@@ -159,7 +159,7 @@ function check(file) {
       const entries = ENTRY_POINTS[name];
       if (entries && !entries.includes(sub)) {
         const pretty = entries.map((e) => `@/features/${name}${e && '/' + e}`).join(', ');
-        fail(`'@/${target}' reaches into ${name}'s internals — import from ${pretty}`);
+        fail(`'@/${target}' reaches into ${name}'s internals - import from ${pretty}`);
       }
     }
   }
@@ -172,7 +172,7 @@ for (const f of walk(join(ROOT, 'shared'))) {
   const rel = 'shared/' + relative(join(ROOT, 'shared'), f).split(sep).join('/');
   for (const { spec, line } of imports(f)) {
     if (spec.startsWith('@/') || spec.includes('src/')) {
-      violations.push({ rel, line, msg: `shared/ may not import from src/ — it is the client+server contract` });
+      violations.push({ rel, line, msg: `shared/ may not import from src/ - it is the client+server contract` });
     }
   }
 }
@@ -183,20 +183,20 @@ if (violations.length) {
   console.error('');
   for (const v of violations) console.error(`  ✗ src/${v.rel}:${v.line}\n      ${v.msg}`);
   console.error(`\n  ${violations.length} boundary violation${violations.length > 1 ? 's' : ''}\n`);
-  console.error('  If the import is correct, the layering is wrong — fix the structure,');
+  console.error('  If the import is correct, the layering is wrong - fix the structure,');
   console.error('  or add a documented entry to EXCEPTIONS in scripts/check-boundaries.mjs.\n');
   process.exit(1);
 }
 
 const stale = Object.keys(EXCEPTIONS).filter((k) => !usedExceptions.has(k));
 if (stale.length) {
-  console.error('\n  Stale EXCEPTIONS in scripts/check-boundaries.mjs (no longer needed — delete them):');
+  console.error('\n  Stale EXCEPTIONS in scripts/check-boundaries.mjs (no longer needed - delete them):');
   for (const s of stale) console.error(`    - ${s}`);
   console.error('');
   process.exit(1);
 }
 
-console.log(`  boundaries ok — ${Object.keys(EXCEPTIONS).length} documented exceptions:`);
+console.log(`  boundaries ok - ${Object.keys(EXCEPTIONS).length} documented exceptions:`);
 for (const [file, { why }] of Object.entries(EXCEPTIONS)) {
   console.log(`    src/${file}\n      ${why}`);
 }

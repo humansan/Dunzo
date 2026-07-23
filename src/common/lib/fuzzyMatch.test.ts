@@ -15,7 +15,7 @@ check('empty query → score 0', fuzzyMatch('', 'anything')?.score === 0);
 check('query longer than target → null', fuzzyMatch('abcd', 'abc') === null);
 check('case-insensitive match', fuzzyMatch('AB', 'about')?.positions.length === 2);
 
-// Ordering — the whole point of scoring.
+// Ordering - the whole point of scoring.
 check('exact prefix beats scattered', score('abc', 'abcdef') > score('abc', 'axbxcx'));
 check('consecutive beats gapped', score('plan', 'plan the trip') > score('plan', 'p l a n'));
 check('word-boundary beats mid-word', score('bar', 'foo bar') > score('bar', 'foobar'));

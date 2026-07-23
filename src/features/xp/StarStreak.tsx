@@ -37,6 +37,7 @@ StarIcon.displayName = 'StarIcon';
 
 const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
   const GOLD = useThemeColor('xp-tier1');
+  const WARNING_TINT = useThemeColor('warning-tint');
   const { stars, flags, streak } = useMemo(() => computeStarStreak(dayTodos, date), [dayTodos, date]);
 
   // The three goals are independent, so each slot tracks its own goal rather
@@ -46,7 +47,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
     [flags.completedTask, flags.beatYesterday, flags.beatAverage]
   );
 
-  // Fire animations only on a genuine increase — never on first mount or when
+  // Fire animations only on a genuine increase - never on first mount or when
   // the viewed date changes (navigating between days shouldn't celebrate).
   const prevLit = useRef(lit);
   const prevStreak = useRef(streak);
@@ -120,7 +121,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
           <motion.div
             className="relative flex items-center justify-center min-w-12 h-14 rounded-full pl-5 pr-2.5"
             animate={{
-              backgroundColor: maxed ? GOLD : useThemeColor('warning-tint'),
+              backgroundColor: maxed ? GOLD : WARNING_TINT,
               scale: pulsing ? [1, 1.22, 0.97, 1] : 1
             }}
             transition={{
@@ -146,5 +147,5 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
 };
 
 // dayTodos / date are stable between edits, so memoising keeps the widget from
-// re-rendering on DailyScreen's per-second clock tick — the source of the flutter.
+// re-rendering on DailyScreen's per-second clock tick - the source of the flutter.
 export const StarStreak = React.memo(StarStreakBase);
