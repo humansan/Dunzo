@@ -222,8 +222,12 @@ export function starsFor(history: XpHistory, date: string): DayStars {
   const parsed = parseISO(date);
   const earned = history.earnedOf(date);
   const yesterday = history.earnedOf(dayKey(subDays(parsed, 1)));
-  const avg7 = avgPriorDays(history, parsed, 7);
-  const avg30 = avgPriorDays(history, parsed, 30);
+  // Round to match the averages shown in the UI (computeXpStats + XpProgressBar):
+  // earned XP is always an integer, so comparing against the raw fraction would make
+  // "match the displayed average" fall short whenever it rounds down (e.g. avg 4.4 shows
+  // as 4, but 4 >= 4.4 is false).
+  const avg7 = Math.round(avgPriorDays(history, parsed, 7));
+  const avg30 = Math.round(avgPriorDays(history, parsed, 30));
   const avgTarget = Math.max(avg7, avg30);
 
   const flags: StarFlags = {

@@ -12,7 +12,7 @@
 // and each feature reads its own queries directly.
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
-import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '@/features/tasks/model';
+import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos } from '@/features/tasks/model';
 import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { timeToPercentage } from '@/common/lib/time';
@@ -501,8 +501,18 @@ function useProvideAppData() {
   // the active workspace's tasks; opening a result shows its full view (rendered
   // by AppShell).
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // Organizer-scoped set: the two-pane (table) search view groups tasks by their
+  // collection, and the reparent/parent pickers choose a Planner task - both want
+  // only tasks that live in the Task Planner.
   const searchEntries = useMemo(
     () => getOrganizerTodos(dayTodos).filter((e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId),
+    [dayTodos, activeWorkspaceId]
+  );
+  // Broad set: the flat (list) search view searches every unarchived task, whether
+  // it lives in the Planner, the daily list, or both - so a daily-list-only task is
+  // still findable via ⌘/Ctrl+K.
+  const searchFlatEntries = useMemo(
+    () => getSearchableTodos(dayTodos).filter((e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId),
     [dayTodos, activeWorkspaceId]
   );
   useEffect(() => {
@@ -582,6 +592,7 @@ function useProvideAppData() {
     // global task search
     isSearchOpen, setIsSearchOpen,
     searchEntries,
+    searchFlatEntries,
     // shell UI state
     isFullscreen, setIsFullscreen,
   };

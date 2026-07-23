@@ -211,7 +211,7 @@ export const OptionSelectField: React.FC<{
               type="button"
               onClick={() => onChange(selected ? undefined : opt.value)}
               style={{ ...pill(opt.color)}}
-              className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
+              className={`px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-all ${
                 selected ? `ring-2 ring-[${pill(opt.color).color}]` : 'opacity-50 hover:opacity-100'
               }`}
             >

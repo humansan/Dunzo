@@ -8,7 +8,7 @@ import {
   collectionOf,
   collectionPath,
 } from '@/features/tasks/model';
-import { ColKey, COLUMNS, GroupRow, FilterRule, SortRule, SectionsConfig } from '@/features/planner/types';
+import { ColKey, COLUMNS, GroupRow, FilterRule, FilterMatch, SortRule, SectionsConfig } from '@/features/planner/types';
 import { PLANNER_VIEWS, resolveView, ViewCtx, ViewDef } from '@/features/planner/views';
 import {
   getFieldDisplayValue,
@@ -35,6 +35,7 @@ export function useHubData(params: {
   collapsed: Set<string>;
   collapsedColls: Set<string>;
   activeFilters: FilterRule[];
+  filterMatch: FilterMatch;
   activeSorts: SortRule[];
   sectionsConfig: SectionsConfig;
   // Whether the current view variant shows the collection/subtask hierarchy. When
@@ -51,6 +52,7 @@ export function useHubData(params: {
     collapsed,
     collapsedColls,
     activeFilters,
+    filterMatch,
     activeSorts,
     sectionsConfig,
     showNesting,
@@ -250,12 +252,20 @@ export function useHubData(params: {
   }, [viewEntries, todoById]);
 
   // Apply active filters: collections are never filtered out (they're structural).
+  // Rules combine per `filterMatch` - 'and' = match every rule, 'or' = match any.
+  // Unset (empty-value) rules are dropped first: matchesFilter treats them as "match
+  // all", which is a harmless no-op under AND but would make OR pass everything.
   const filteredEntries = useMemo(() => {
-    if (!activeFilters.length) return viewEntries;
+    const rules = activeFilters.filter((f) => f.value);
+    if (!rules.length) return viewEntries;
     return viewEntries.filter(
-      (e) => e.todo.isCollection || activeFilters.every((f) => matchesFilter(e, f, todoById))
+      (e) =>
+        e.todo.isCollection ||
+        (filterMatch === 'or'
+          ? rules.some((f) => matchesFilter(e, f, todoById))
+          : rules.every((f) => matchesFilter(e, f, todoById)))
     );
-  }, [viewEntries, activeFilters, todoById]);
+  }, [viewEntries, activeFilters, filterMatch, todoById]);
 
   // Hide collections that have no visible task descendants (optional section setting).
   const processedEntries = useMemo(() => {

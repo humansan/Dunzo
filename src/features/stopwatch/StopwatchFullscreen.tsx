@@ -75,14 +75,14 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
             title="Set background image"
           >
             <ImageIcon size={26} />
           </button>
           <button
             onClick={() => setShowSettings(s => !s)}
-            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
             title="Background settings"
           >
             <Sun size={24} />
@@ -100,14 +100,14 @@ export const StopwatchFullscreen: React.FC<StopwatchFullscreenProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onMinimize}
-            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
             title="Minimize to widget"
           >
             <Minimize2 size={24} />
           </button>
           <button
             onClick={onClose}
-            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
             title="Close"
           >
             <X size={24} />
