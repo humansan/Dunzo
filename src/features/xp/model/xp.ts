@@ -1,8 +1,7 @@
 import {
   format,
   parseISO,
-  subDays,
-  addDays
+  subDays
 } from 'date-fns';
 import { DayTodos, Todo } from '@shared/types';
 import { hasDate, showsOnDailyChecklist } from '@/features/tasks/model';
@@ -115,10 +114,10 @@ export function avgPriorDays(history: XpHistory, parsed: Date, days: number): nu
 export function computeXpStats(
   dayTodos: DayTodos[],
   date: string,
-  _weekStartsOn: number
+  _weekStartsOn: number,
+  history: XpHistory = buildXpHistory(dayTodos)
 ): XpStats {
   const parsed = parseISO(date);
-  const history = buildXpHistory(dayTodos);
   const earnedOf = history.earnedOf;
 
   const earned = earnedOf(date);
@@ -174,8 +173,12 @@ export function computeXpStats(
  * (the final entry is the current week). Windows end on today and step back 7
  * days at a time - the same shape as the stats page "Week" chart.
  */
-export function getWeeklyXp(dayTodos: DayTodos[], weeks: number): number[] {
-  const { earnedOf } = buildXpHistory(dayTodos);
+export function getWeeklyXp(
+  dayTodos: DayTodos[],
+  weeks: number,
+  history: XpHistory = buildXpHistory(dayTodos)
+): number[] {
+  const { earnedOf } = history;
   const today = new Date();
   const result: number[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
@@ -244,26 +247,36 @@ export function starsFor(history: XpHistory, date: string): DayStars {
 }
 
 /**
- * The streak as of `date`, walking every calendar day from the first record.
- * 3★ pushes it up, 2★ holds it, anything less resets it to 0 - so a skipped or
- * empty day breaks it. The current day is "live": it can only extend or hold the
- * streak, never reset it mid-day (the reset lands once today rolls into the past).
+ * The streak as of `date`. 3★ extends it, 2★ holds it, anything less breaks it -
+ * so a skipped or empty day resets to 0. The current day is "live": it can only
+ * extend or hold the streak, never reset it mid-day (the reset lands once today
+ * rolls into the past).
+ *
+ * Walks BACKWARD from `date` and stops at the first day that breaks the streak: a
+ * forward walk would have reset to 0 there, so nothing earlier can contribute.
+ * This makes the cost proportional to the streak's length (a handful of days),
+ * not the account's age - and makes a stray far-past task date harmless, since
+ * the empty days between it and real history break the walk right away.
  */
-export function computeStreak(
-  history: XpHistory,
-  dayTodos: DayTodos[],
-  date: string
-): number {
-  const recorded = dayTodos.map(d => d.date).filter(hasDate).sort();
-  if (recorded.length === 0) return 0;
+export function computeStreak(history: XpHistory, date: string): number {
+  // Earliest recorded day - the walk never needs to go past it. (Days before it
+  // have no records, so 0★, which would break the streak anyway; this is just a
+  // hard floor so the loop always terminates.)
+  let firstStr: string | undefined;
+  for (const d of history.earnedByDate.keys()) {
+    if (firstStr === undefined || d < firstStr) firstStr = d;
+  }
+  if (firstStr === undefined) return 0;
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const endStr = date < todayStr ? date : todayStr; // never walk into the future
-  let cursor = parseISO(recorded[0]);
-  const end = parseISO(endStr);
+  if (endStr < firstStr) return 0;
+
+  const first = parseISO(firstStr);
+  let cursor = parseISO(endStr);
   let streak = 0;
 
-  while (cursor <= end) {
+  while (cursor >= first) {
     const dStr = dayKey(cursor);
     const s = starsFor(history, dStr).stars;
     if (dStr === todayStr) {
@@ -271,9 +284,9 @@ export function computeStreak(
     } else if (s >= 3) {
       streak += 1;
     } else if (s < 2) {
-      streak = 0;
+      break; // a forward walk resets to 0 here; the run above is the whole streak
     } // s === 2 holds
-    cursor = addDays(cursor, 1);
+    cursor = subDays(cursor, 1);
   }
   return streak;
 }
@@ -283,7 +296,10 @@ export interface StarStreakStats extends DayStars {
 }
 
 /** Stars and the streak counter for `date`, derived purely from history. */
-export function computeStarStreak(dayTodos: DayTodos[], date: string): StarStreakStats {
-  const history = buildXpHistory(dayTodos);
-  return { ...starsFor(history, date), streak: computeStreak(history, dayTodos, date) };
+export function computeStarStreak(
+  dayTodos: DayTodos[],
+  date: string,
+  history: XpHistory = buildXpHistory(dayTodos)
+): StarStreakStats {
+  return { ...starsFor(history, date), streak: computeStreak(history, date) };
 }

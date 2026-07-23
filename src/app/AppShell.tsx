@@ -43,9 +43,10 @@ export const AppShell: React.FC = () => {
     countdownMode,
   } = useAppData();
   // Stopwatch is its own context so its 50ms tick doesn't re-render this shell.
+  // The views read the engine from that context themselves; the shell only owns
+  // where they appear, so `timerState` is all it needs (for the sidebar dot).
   const {
     timerState,
-    startTimer, pauseTimer, stopTimer, resetTimer,
     isStopwatchVisible, setIsStopwatchVisible,
     isStopwatchFullscreen, setIsStopwatchFullscreen,
   } = useStopwatch();
@@ -173,11 +174,6 @@ export const AppShell: React.FC = () => {
         {isStopwatchVisible ? (
           <StopwatchWidget
             key="stopwatch"
-            timerState={timerState}
-            onStart={startTimer}
-            onPause={pauseTimer}
-            onStop={stopTimer}
-            onReset={resetTimer}
             onClose={() => setIsStopwatchVisible(false)}
             onMaximize={() => {
               setIsStopwatchVisible(false);
@@ -199,11 +195,6 @@ export const AppShell: React.FC = () => {
       <AnimatePresence>
         {isStopwatchFullscreen && (
           <StopwatchFullscreen
-            timerState={timerState}
-            onStart={startTimer}
-            onPause={pauseTimer}
-            onStop={stopTimer}
-            onReset={resetTimer}
             onMinimize={() => {
               setIsStopwatchFullscreen(false);
               setIsStopwatchVisible(true);

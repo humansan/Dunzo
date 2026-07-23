@@ -114,7 +114,7 @@ const StarStreakPopupBase: React.FC<StarStreakPopupProps> = ({ lit, streak, date
           transition={{ duration: 0.3 }}
         >
           <motion.div
-            className="scale-150"
+            className="scale-180"
             variants={zoomVariants}
             transition={{ duration: STAR_BLOOM_MS / 1000, ease: 'easeOut' }}
           >

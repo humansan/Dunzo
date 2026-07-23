@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown, CalendarCheck, FolderCheck } from 'lucide-react';
+import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown, CalendarCheck, FolderCheck, Eye, EyeOff, Plus } from 'lucide-react';
 import { OrganizerEntry } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { SIDEBAR_INDENT } from '@/features/planner/constants';
@@ -49,6 +49,7 @@ export const CollectionTree: React.FC<{
   // Set a collection's whole subtree (all descendant collections) to `checked`. When
   // provided, toggling a collection that has sub-collections shows a small confirm prompt.
   onToggleSubtree?: (id: string, checked: boolean) => void;
+  onNewCollection?: () => void;
 }> = ({
   selectedView,
   onSelectView,
@@ -68,6 +69,7 @@ export const CollectionTree: React.FC<{
   allChecked,
   onToggleAll,
   onToggleSubtree,
+  onNewCollection
 }) => {
   const checkMode = !!onToggleChecked;
   // Which collection's "apply to subcollections?" prompt is currently open (check mode).
@@ -131,16 +133,28 @@ export const CollectionTree: React.FC<{
       {!checkMode && <div className="my-2 mx-3 border-t border-line"></div>}
 
       {/* Section 3: user collections */}
-      <div className="shrink-0 px-2 pb-0">
-        <div className="px-2.5 pt-1 pb-1.5 flex items-center justify-between gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-fg-ghost">Collections</span>
+      <div className="shrink-0 px-1 pb-0">
+        <div className="px-2.5 py-1 flex items-center justify-between gap-2">
+          <span className="text-xs font-bold text-fg-muted">Collections</span>
           {checkMode && onToggleAll && (
             <button
               type="button"
               onClick={onToggleAll}
-              className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${btnNeutral}`}
+              className={`shrink-0 flex items-center gap-1 rounded pl-2 pr-1.25 py-0.75 text-[11px] font-semibold ${btnNeutral}`}
             >
-              {allChecked ? 'Hide all' : 'Show all'}
+              {allChecked ? 'Hide all' : 'Show all'} 
+              {allChecked ? <EyeOff size={12}></EyeOff> : <Eye size={12}></Eye>}
+              
+            </button>
+          )}
+          {!checkMode && (
+            <button
+              type="button"
+              onClick={onNewCollection}
+              className={`shrink-0 flex items-center gap-1 rounded pl-2 pr-1.25 py-0.75 text-[11px] font-semibold ${btnNeutral}`}
+            >
+              Create new
+              <Plus size={12}></Plus>
             </button>
           )}
         </div>
@@ -150,7 +164,7 @@ export const CollectionTree: React.FC<{
           handled on the container (not per-row) so releases in the gaps still commit. */}
       <div
         ref={dnd?.sideScroll.ref}
-        className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full"
+        className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 "
         onDragOver={dnd?.dragCollId ? dnd.sideScroll.onDragOver : undefined}
         onDragEnter={dnd?.dragCollId ? dnd.sideScroll.onDragEnter : undefined}
         onDrop={dnd ? (e) => { e.preventDefault(); dnd.onCollDrop(); } : undefined}

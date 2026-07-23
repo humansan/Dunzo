@@ -133,17 +133,18 @@ export const HubSidebar: React.FC<{
         toggleCollColl={toggleCollColl}
         dnd={dnd}
         onOpenMenu={openMenu}
+        onNewCollection={onNewCollection}
       />
 
       {/* New collection */}
-      <button
+      {/* <button
         type="button"
         onClick={onNewCollection}
         className={`shrink-0 m-2 flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm ${btnGhost()}`}
       >
         <FolderPlus size={15} />
         <span>New collection</span>
-      </button>
+      </button> */}
 
       {/* Drag handle to resize the pane */}
       <div

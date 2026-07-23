@@ -26,8 +26,20 @@ function toIso(d: Date): string {
 function parseInputDate(text: string): Date | null {
   const parsed = new Date(text);
   if (isNaN(parsed.getTime())) return null;
-  const hasYear = /\b\d{4}\b/.test(text) || /[\/\-\s]\d{2}$/.test(text);
+  // A year is present when there's a 4-digit number, or a full month/day/year
+  // triple (three numbers). The previous check looked for a trailing 2-digit
+  // group, which also matched a zero-padded *day* - "07/03" or "July 03" were
+  // read as having a year and left at 2001.
+  const nums: string[] = text.match(/\d+/g) ?? [];
+  const hasYear = nums.some((n) => n.length === 4) || nums.length >= 3;
   if (!hasYear) parsed.setFullYear(new Date().getFullYear());
+  // Reject a typo'd year rather than commit it. "7/3/202" parses to year 202,
+  // which would date the task ~1800 years back - and anything that later walks
+  // day-by-day over history (streaks, stats) would iterate that entire span.
+  // Treat an out-of-range year as unparseable so the input just reverts.
+  const thisYear = new Date().getFullYear();
+  const year = parsed.getFullYear();
+  if (year < thisYear - 50 || year > thisYear + 50) return null;
   return parsed;
 }
 

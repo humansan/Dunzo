@@ -14,3 +14,4 @@ server/app.bundle.js
 .tanstack/
 # One-off theming codemods; build/lint scripts in scripts/ are tracked
 scripts/theming/
+website/doc

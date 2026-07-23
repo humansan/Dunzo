@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useDeferredValue } from 'react';
 import { AnimatePresence } from 'motion/react';
 import {
   format,
@@ -25,7 +25,7 @@ import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
 import { StarStreak, StarStreakPopup, STAR_CELEBRATE_DELAY_MS } from '@/features/xp';
-import { computeXpStats, getWeeklyXp, computeStarStreak } from '@/features/xp';
+import { computeXpStats, getWeeklyXp, computeStarStreak, buildXpHistory } from '@/features/xp';
 import { useDelayedValue } from '@/common/hooks/useDelayedValue';
 import { DailyList } from '@/features/daily/DailyList';
 import { DatePickerPopover } from '@/common/ui';
@@ -106,18 +106,32 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     [currentDayData, selectedDate]
   );
 
+  // Decouple the XP/star/streak math from the check-off interaction. The checkbox
+  // list (`dailyTodos` above) reads the LIVE day data, so a toggle paints and
+  // animates instantly. The gamification widgets below read a DEFERRED copy, so
+  // React commits the urgent tick first and only recomputes XP in a later,
+  // low-priority render - a heavy recompute can never delay the check-off.
+  const deferredDayTodos = useDeferredValue(dayTodos);
+
+
+  // One shared per-day rollup for the current day's XP + streak reads, so the
+  // three memos below don't each rebuild it. The corner streak (below) runs on a
+  // delayed copy of dayTodos, so it intentionally keeps its own.
+  const xpHistory = useMemo(() => buildXpHistory(deferredDayTodos), [deferredDayTodos]);
+  
   const xpStats = useMemo(
-    () => computeXpStats(dayTodos, selectedDate, weekStartsOn),
-    [dayTodos, selectedDate, weekStartsOn]
+    () => computeXpStats(deferredDayTodos, selectedDate, weekStartsOn, xpHistory),
+    [deferredDayTodos, selectedDate, weekStartsOn, xpHistory]
   );
 
-  const weeklyXp = useMemo(() => getWeeklyXp(dayTodos, 4), [dayTodos]);
-
+  const weeklyXp = useMemo(() => getWeeklyXp(deferredDayTodos, 4, xpHistory), [deferredDayTodos, xpHistory]);
+  
   // Star/streak flags are computed here and passed in - the widgets don't touch task
   // state. The popup gets the LIVE flags (it snapshots + animates them itself); the
   // corner gets a lagged copy so - with no animation of its own - it silently settles
   // to the new total right as the popup lights up.
-  const starStreak = useMemo(() => computeStarStreak(dayTodos, selectedDate), [dayTodos, selectedDate]);
+  const starStreak = useMemo(() => computeStarStreak(deferredDayTodos, selectedDate, xpHistory), [deferredDayTodos, selectedDate, xpHistory]);
+
   const lit = useMemo(
     () => [starStreak.flags.completedTask, starStreak.flags.beatYesterday, starStreak.flags.beatAverage],
     [starStreak]
