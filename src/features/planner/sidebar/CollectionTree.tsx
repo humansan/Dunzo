@@ -134,7 +134,7 @@ export const CollectionTree: React.FC<{
 
       {/* Section 3: user collections */}
       <div className="shrink-0 px-1 pb-0">
-        <div className="px-2.5 py-1 flex items-center justify-between gap-2">
+        <div className="px-2.5 pb-1 flex items-center justify-between gap-2">
           <span className="text-xs font-bold text-fg-muted">Collections</span>
           {checkMode && onToggleAll && (
             <button

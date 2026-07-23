@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
-import { timeToPercentage, formatTime12h } from '@/common/lib/time';
+import { timeToPercentage, formatTime12h, minutesToTime } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
 import { collectionOf, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
@@ -186,8 +186,12 @@ const EventCard: React.FC<{
   const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
   const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
   const bothTimes = !!todo.startTime && !!todo.dueTime;
+  // % 1440 keeps a legacy "24:00" (=1440) classified as AM, matching how
+  // formatTime12h renders it - otherwise it reads as PM here and the start time
+  // below loses its meridiem, turning 22:00-midnight into "10:00 – 12:00 AM".
+  const meridiemPm = (t: string) => timeToMinutes(t) % 1440 >= 720;
   const sameMeridiem =
-    bothTimes && (timeToMinutes(todo.startTime!) >= 720) === (timeToMinutes(todo.dueTime!) >= 720);
+    bothTimes && meridiemPm(todo.startTime!) === meridiemPm(todo.dueTime!);
   const timeRange = bothTimes
     ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} – ${endLabel}`
     : startLabel || endLabel;
@@ -609,14 +613,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const handleMouseUp = () => {
       if (!dragSelection) return;
 
-      // Calculate start and end HH:MM
-      const startH = Math.floor(dragSelection.startMins / 60);
-      const startM = dragSelection.startMins % 60;
-      const endH = Math.floor(dragSelection.endMins / 60);
-      const endM = dragSelection.endMins % 60;
-
-      const startTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
-      const dueTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      // Calculate start and end HH:MM (end-of-day clamps to 23:59, not "24:00")
+      const startTime = minutesToTime(dragSelection.startMins);
+      const dueTime = minutesToTime(dragSelection.endMins);
 
       // The drawn block *is* the task - create it with those times and hand the
       // user straight to the full view to name it and fill in the rest.
@@ -706,14 +705,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const { todo, initialDateStr, currentDateStr, currentMins, origStartMins, origEndMins } = draggingEvent;
       const duration = origEndMins - origStartMins;
 
-      const startH = Math.floor(currentMins / 60);
-      const startM = currentMins % 60;
-      const endMins = currentMins + duration;
-      const endH = Math.floor(endMins / 60);
-      const endM = endMins % 60;
-
-      const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
-      const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      const newStartTime = minutesToTime(currentMins);
+      const newEndTime = minutesToTime(currentMins + duration);
 
       // Update the todo. The block is single-day: pin BOTH start and due date to
       // the (possibly new) column so a cross-day move doesn't leave startDate on
@@ -808,13 +801,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       if (!resizingEvent) return;
       const { todo, dateStr, currentStartMins, currentEndMins } = resizingEvent;
 
-      const startH = Math.floor(currentStartMins / 60);
-      const startM = currentStartMins % 60;
-      const endH = Math.floor(currentEndMins / 60);
-      const endM = currentEndMins % 60;
-
-      const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
-      const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      const newStartTime = minutesToTime(currentStartMins);
+      const newEndTime = minutesToTime(currentEndMins);
 
       // Single-day block: keep start's date pinned to this column too, so setting a
       // start time never leaves it dateless (the schedule invariant).
@@ -894,7 +882,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           {/* Which surfaces' tasks get blocked out on the grid. Sits flush under the mini
               calendar; row rhythm (space-y-0.5) matches the collection rows below. */}
           <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
-          <div className="shrink-0 px-2.5">
+          <div className="shrink-0 px-4">
             <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
             <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
             <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
@@ -1176,9 +1164,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       }}
                     >
                       <div className="p-1 px-2 text-[10px] font-bold text-collection-1">
-                        {`${Math.floor(dragSelection.startMins / 60).toString().padStart(2, '0')}:${(dragSelection.startMins % 60).toString().padStart(2, '0')}`}
+                        {minutesToTime(dragSelection.startMins)}
                         {' – '}
-                        {`${Math.floor(dragSelection.endMins / 60).toString().padStart(2, '0')}:${(dragSelection.endMins % 60).toString().padStart(2, '0')}`}
+                        {minutesToTime(dragSelection.endMins)}
                       </div>
                     </div>
                   )}
