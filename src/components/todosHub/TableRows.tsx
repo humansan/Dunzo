@@ -161,13 +161,15 @@ export const TableRows: React.FC<TableRowsProps> = ({
         </button>
       )}
 
-      {onNewInView && isEmpty && (
+      {isEmpty && (onNewInView || selectedView === 'archived') && (
         <div className="px-3 py-6 text-xs text-fg-subtle">
           {selectedCollectionId
             ? 'No tasks in this collection yet. Click “New” to add one.'
             : selectedView === 'uncategorized'
               ? 'No uncategorized tasks.'
-              : <>No todos in this collection. Click “+ New”.</>}
+              : selectedView === 'archived'
+                ? 'No archived tasks.'
+                : <>No todos in this collection. Click “+ New”.</>}
         </div>
       )}
     </>

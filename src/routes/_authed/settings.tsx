@@ -13,9 +13,7 @@ export const Route = createFileRoute('/_authed/settings')({
 
 function SettingsRoute() {
   const router = useRouter();
-  const close = () => {
-    if (window.history.length > 1) router.history.back();
-    else router.history.push('/today');
-  };
+  // Cold deep-link only (see above): nothing of ours is behind it in history.
+  const close = () => router.history.push('/today');
   return <SettingsOverlay onClose={close} />;
 }

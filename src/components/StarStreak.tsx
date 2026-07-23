@@ -35,11 +35,18 @@ const StarIcon = React.memo(({ active, burst }: { active: boolean; burst: boolea
 StarIcon.displayName = 'StarIcon';
 
 const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
-  const { stars, streak } = useMemo(() => computeStarStreak(dayTodos, date), [dayTodos, date]);
+  const { stars, flags, streak } = useMemo(() => computeStarStreak(dayTodos, date), [dayTodos, date]);
+
+  // The three goals are independent, so each slot tracks its own goal rather
+  // than a left-to-right fill: task completed, beat yesterday, beat the average.
+  const lit = useMemo(
+    () => [flags.completedTask, flags.beatYesterday, flags.beatAverage],
+    [flags.completedTask, flags.beatYesterday, flags.beatAverage]
+  );
 
   // Fire animations only on a genuine increase — never on first mount or when
   // the viewed date changes (navigating between days shouldn't celebrate).
-  const prevStars = useRef(stars);
+  const prevLit = useRef(lit);
   const prevStreak = useRef(streak);
   const prevDate = useRef(date);
   const [bursting, setBursting] = useState<number[]>([]);
@@ -48,13 +55,16 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
   useEffect(() => {
     if (prevDate.current !== date) {
       prevDate.current = date;
-      prevStars.current = stars;
+      prevLit.current = lit;
       prevStreak.current = streak;
       return;
     }
-    if (stars > prevStars.current) {
-      const newly: number[] = [];
-      for (let i = prevStars.current; i < stars; i++) newly.push(i);
+    // Burst exactly the stars that just turned on, whichever goals they are.
+    const newly = lit.reduce<number[]>(
+      (acc, on, i) => (on && !prevLit.current[i] ? [...acc, i] : acc),
+      []
+    );
+    if (newly.length > 0) {
       setBursting(b => [...b, ...newly]);
       newly.forEach(i =>
         setTimeout(() => setBursting(b => b.filter(x => x !== i)), 750)
@@ -63,9 +73,9 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
     if (streak > prevStreak.current) {
       setStreakPulse(p => p + 1);
     }
-    prevStars.current = stars;
+    prevLit.current = lit;
     prevStreak.current = streak;
-  }, [stars, streak, date]);
+  }, [lit, streak, date]);
 
   const pulsing = streakPulse > 0;
   useEffect(() => {
@@ -85,8 +95,8 @@ const StarStreakBase: React.FC<StarStreakProps> = ({ dayTodos, date }) => {
         // style={{ borderColor: GOLD, backgroundColor: 'rgba(20,16,8,0.85)' }}
       >
         <div className="flex items-center gap-2">
-          {[0, 1, 2].map(i => (
-            <StarIcon key={i} active={i < stars} burst={bursting.includes(i)} />
+          {lit.map((active, i) => (
+            <StarIcon key={i} active={active} burst={bursting.includes(i)} />
           ))}
         </div>
 

@@ -10,7 +10,7 @@ interface XpProgressBarProps {
 }
 
 // Exponential ease-out: snappy start, soft landing.
-const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
+export const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp }) => {
   // XP indicator keeps its fixed signature colors across all themes (gold → purple,
@@ -27,6 +27,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
     yesterday,
     bestLast7Days,
     avgLast7Days,
+    avgLast30Days,
     bestAllTime,
     percent,
     remaining,
@@ -34,6 +35,12 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
     reachedWeekBest,
     reachedAllTimeBest
   } = stats;
+
+  // The third star is measured against the higher of the two averages, so show
+  // the one that's actually the bar to clear. Ties fall to the 7-day figure.
+  const avgIs30 = avgLast30Days > avgLast7Days;
+  const avgValue = avgIs30 ? avgLast30Days : avgLast7Days;
+  const avgLabel = avgIs30 ? 'avg 30d' : 'avg 7d';
 
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
@@ -113,7 +120,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
             {/* Records: avg 7d ⬩ best 7d ⬩ best all time */}
             <span className="text-[12px] leading-tight">
               <span className='text-fg-muted'>
-              <span className=""> {avgLast7Days} </span> avg 7d ⬩
+              <span className=""> {avgValue} </span> {avgLabel} ⬩
               <span className=""> {bestLast7Days} </span> best 7d ⬩
               <span className=""> {bestAllTime} </span> best all-time
               </span>
@@ -122,7 +129,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
 
           {/* Last-4-weeks mini bars — a static, at-a-glance progress indicator.
               Native title tooltip needs hover, so re-enable pointer events here. */}
-          <div className="flex items-end gap-1.5 h-14 pb-2 ml-2 pointer-events-auto">
+          {/* <div className="flex items-end gap-1.5 h-14 pb-2 ml-2 pointer-events-auto">
             {(() => {
               const max = Math.max(...weeklyXp, 1);
               const MAX_H = 52;
@@ -144,7 +151,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
                 );
               });
             })()}
-          </div>
+          </div> */}
         </div>
       </div>
 

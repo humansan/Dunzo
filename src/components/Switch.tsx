@@ -30,7 +30,7 @@ export const Switch: React.FC<SwitchProps> = ({
     } ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
   >
     <span
-      className={`inline-block h-3.5 w-3.5 rounded-full bg-fg shadow-sm transition-transform ${
+      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
         checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
       }`}
     />

@@ -8,6 +8,8 @@ interface CalendarInputProps {
   onChange: (val: string) => void;
   className?: string;
   autoFocus?: boolean;
+  /** Hide the Clear button where an empty date isn't a valid state for the task. */
+  showClear?: boolean;
   showInDailyList?: boolean;
   onShowInDailyListChange?: (val: boolean) => void;
 }
@@ -31,6 +33,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   onChange,
   className,
   autoFocus,
+  showClear = true,
   showInDailyList = false,
   onShowInDailyListChange,
 }) => {
@@ -169,12 +172,14 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
           focusDate={focusDate}
         />
       </div>
-      <button
-        onClick={handleClear}
-        className="w-full mt-2 pt-2 border-t border-line text-xs font-bold text-fg-faint hover:text-fg transition-colors text-left"
-      >
-        Clear
-      </button>
+      {showClear && (
+        <button
+          onClick={handleClear}
+          className="w-full mt-2 pt-2 border-t border-line text-xs font-bold text-fg-faint hover:text-fg transition-colors text-left"
+        >
+          Clear
+        </button>
+      )}
     </div>
   );
 };

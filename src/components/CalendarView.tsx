@@ -10,16 +10,17 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  X,
-  Clock,
   Circle,
   CheckCircle2,
 } from 'lucide-react';
 import { Todo, DayTodos } from '../types';
-import { btnNeutral, btnAccent } from '../theme/buttons';
+import { btnNeutral } from '../theme/buttons';
 import { timeToPercentage, formatTime12h } from '../utils/timeUtils';
 import { isDone, toggledStatus } from '../utils/todoStatus';
+import { collectionOf, showsInOrganizer, showsOnDailyChecklist, todoIndex } from '../utils/todoFilters';
+import { collectionColor } from './todosHub/constants';
 import { Calendar } from './Calendar';
+import { Switch } from './Switch';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -44,13 +45,6 @@ function formatHour(h: number): string {
   return `${h - 12} PM`;
 }
 
-function pxToTime(px: number): string {
-  const totalMins = Math.round((px / HOUR_HEIGHT) * 60);
-  const clamped = Math.max(0, Math.min(1439, totalMins));
-  const h = Math.floor(clamped / 60);
-  const m = Math.round(clamped % 60 / 15) * 15; // snap to 15-min
-  return `${h.toString().padStart(2, '0')}:${(m % 60).toString().padStart(2, '0')}`;
-}
 
 
 function formatDuration(startMin: number, endMin: number): string {
@@ -76,14 +70,10 @@ interface CalendarViewProps {
   hideMiniCalendar?: boolean;
   // Write-back so the focused day (?date) is deep-linkable; the route wires it.
   onFocusDateChange?: (date: string) => void;
-}
-
-interface CreateFormState {
-  date: string;
-  startTime: string;
-  dueTime: string;
-  x: number;
-  y: number;
+  // Drawing a block creates the task and returns its id; clicking a block (or the
+  // freshly created one) opens it in the task full view.
+  onCreateTask: (date: string, startTime: string, dueTime: string) => string;
+  onOpenTask: (id: string) => void;
 }
 
 // ─── Event Card ─────────────────────────────────────────────────────────────
@@ -92,16 +82,21 @@ const EventCard: React.FC<{
   todo: Todo;
   startMin: number;
   endMin: number;
+  // CSS color driving the card's fill, spine and dot — see accentForTodo.
+  accent: string;
   onMouseDown?: (e: React.MouseEvent) => void;
   onResizeStart?: (e: React.MouseEvent, edge: 'top' | 'bottom') => void;
   isDragging?: boolean;
   onToggle?: (e: React.MouseEvent) => void;
-}> = ({ todo, startMin, endMin, onMouseDown, onResizeStart, isDragging, onToggle }) => {
+}> = ({ todo, startMin, endMin, accent, onMouseDown, onResizeStart, isDragging, onToggle }) => {
   const [isHovered, setIsHovered] = useState(false);
   const top = minutesToPx(startMin) + 1;
   const height = Math.max(minutesToPx(endMin - startMin), 15) - 2; // min height 15px
   const isSmall = height <= 35;
-  const timeRange = `${formatTime12h(todo.startTime || '0:00')} – ${formatTime12h(todo.dueTime || pxToTime(minutesToPx(endMin)))}`;
+  // Only show a time that's actually set — never fabricate the missing side.
+  const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
+  const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
+  const timeRange = `${startLabel} – ${endLabel}`.trim();
   const durationStr = `(${formatDuration(startMin, endMin)})`;
   const fullTimeDisplay = `${timeRange} ${durationStr}`;
 
@@ -110,20 +105,22 @@ const EventCard: React.FC<{
       onMouseDown={onMouseDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-auto transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
+      className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
-        } ${isDragging ? 'z-50 ring-1 ring-[var(--accent1)]' : 'z-10 ring-1 ring-canvas'}
+        } ${isDragging ? 'z-50' : 'z-10 ring-1 ring-canvas'}
       `}
       style={{
         top: `${top}px`,
         height: `${height}px`,
         paddingTop: isSmall ? '0' : '5px',
+        // The drag/resize ghost is outlined in the task's own accent.
+        ...(isDragging ? { boxShadow: `0 0 0 1px ${accent}` } : {}),
         // paddingBottom: isSmall ? '0' : '3.5px',
         backgroundColor: isDone(todo)
           ? ((isHovered || isDragging) ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)')
           : ((isHovered || isDragging)
-            ? 'color-mix(in srgb, var(--accent1) 40%, canvas 60%)'
-            : 'color-mix(in srgb, var(--accent1) 30%, canvas 70%)'),
+            ? `color-mix(in srgb, ${accent} 40%, canvas 60%)`
+            : `color-mix(in srgb, ${accent} 30%, canvas 70%)`),
         // border: isDone(todo)
         //   ? '1px solid rgba(255,255,255,0.05)'
         //   : '1px solid color-mix(in srgb, var(--accent1), transparent 70%)',
@@ -147,22 +144,22 @@ const EventCard: React.FC<{
               <motion.div
                 initial={{ scale: 0.4, opacity: 0 }}
                 animate={{ scale: 0.8, opacity: 1 }}
-                className={'text-[var(--accent1)]'}
+                style={{ color: accent }}
               >
                 {isDone(todo) ? <CheckCircle2 size={15} strokeWidth={2.5} /> : <Circle size={15} strokeWidth={2.5} />}
               </motion.div>
             </div>
           ) : (
             <div
-              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone(todo) ? 'bg-fill-stronger' : 'bg-[var(--accent1)]'
-                }`}
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isDone(todo) ? 'bg-fill-stronger' : ''}`}
+              style={isDone(todo) ? undefined : { backgroundColor: accent }}
             />
           )}
         </div>
         <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
           <span className={`text-[12px] font-semibold ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost line-through' : 'text-fg'
             }`}>
-            {todo.text}
+            {todo.text || 'Untitled'}
           </span>
           {isSmall && (
             <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'}`}>
@@ -180,7 +177,7 @@ const EventCard: React.FC<{
         </div>
       )}
       {!isDone(todo) && (
-        <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent1)]" />
+        <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: accent }} />
       )}
       {/* Resize handles */}
       {!isDone(todo) && onResizeStart && (
@@ -208,14 +205,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   initialDays,
   hideHeader,
   hideMiniCalendar,
-  onFocusDateChange
+  onFocusDateChange,
+  onCreateTask,
+  onOpenTask,
 }) => {
   const [dayCount, setDayCount] = useState(initialDays || 3);
   const [focusDate, setFocusDate] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [miniCalMonth, setMiniCalMonth] = useState(initialDate ? parseISO(initialDate) : new Date());
   const [showDayPicker, setShowDayPicker] = useState(false);
-  const [createForm, setCreateForm] = useState<CreateFormState | null>(null);
-  const [newTaskText, setNewTaskText] = useState('');
+  // Which surfaces' tasks get a block. A task on both surfaces shows if either is on.
+  const [showDaily, setShowDaily] = useState(true);
+  const [showPlanner, setShowPlanner] = useState(true);
 
   // Sync focus date when the URL's ?date changes (deep link / back-forward). Guard
   // against the write-back round-trip: skip when it already matches focusDate, so our
@@ -227,14 +227,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     setFocusDate(parsed);
     setMiniCalMonth(parsed);
   }, [initialDate]);
-
-  const [editingEvent, setEditingEvent] = useState<{
-    todo: Todo;
-    date: string;
-    x: number;
-    y: number;
-  } | null>(null);
-  const [editingTaskText, setEditingTaskText] = useState('');
 
   // Drag Selection State
   const [dragSelection, setDragSelection] = useState<{
@@ -268,6 +260,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     currentEndMins: number;
   } | null>(null);
 
+  const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
+
+  // Daily-only tasks wear the app accent. A Task Planner task wears its collection's
+  // color instead, so the calendar reads like the Planner; an uncategorized one is grey.
+  const accentForTodo = useCallback(
+    (todo: Todo): string => {
+      if (todo.showInDatabase !== true) return 'var(--accent1)';
+      const collId = collectionOf(todo, byId);
+      if (!collId) return 'var(--color-status-todo)';
+      return collectionColor(byId.get(collId)?.color);
+    },
+    [byId]
+  );
+
   const handleToggleTodo = useCallback((dateStr: string, todoId: string) => {
     const dayData = dayTodos.find(d => d.date === dateStr);
     if (!dayData) return;
@@ -277,7 +283,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     onUpdateTodos(dateStr, newTodos);
   }, [dayTodos, onUpdateTodos]);
 
-  const gridRef = useRef<HTMLDivElement>(null);
+  // const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dayPickerRef = useRef<HTMLDivElement>(null);
 
@@ -339,24 +345,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const getTodosForDate = useCallback(
     (dateStr: string): Todo[] => {
       const dayData = dayTodos.find((d) => d.date === dateStr);
-      return (dayData?.todos || [])
-        .filter((t) => t && (t.startTime || t.dueTime))
-        .map((t) => {
-          // Auto-assign start time if missing but dueTime exists
-          if (!t.startTime && t.dueTime) {
-            const endMins = timeToMinutes(t.dueTime);
-            const startMins = Math.max(0, endMins - 30);
-            const h = Math.floor(startMins / 60);
-            const m = startMins % 60;
-            return {
-              ...t,
-              startTime: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-            };
-          }
-          return t;
-        });
+      // Anything with a start OR an end time gets a block. The 30-minute default
+      // for a missing side is applied at render (kept off the todo) so the event
+      // card can tell which side was never set and omit it from the label.
+      return (dayData?.todos || []).filter(
+        (t) =>
+          t &&
+          (t.startTime || t.dueTime) &&
+          // A task living on both surfaces shows while either toggle is on.
+          ((showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && showsInOrganizer(t)))
+      );
     },
-    [dayTodos]
+    [dayTodos, showDaily, showPlanner]
   );
 
   // --- Drag Selection for Creation --- //
@@ -365,7 +365,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     if (e.button !== 0 || (e.target as HTMLElement).closest('[data-event-card]')) return;
 
     e.preventDefault();
-    if (createForm) setCreateForm(null); // Close existng form
 
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const y = e.clientY - rect.top;
@@ -397,7 +396,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       setDragSelection(prev => prev ? { ...prev, endMins: newEndMins } : null);
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleMouseUp = () => {
       if (!dragSelection) return;
 
       // Calculate start and end HH:MM
@@ -409,16 +408,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const startTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
       const dueTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
 
-      setCreateForm({
-        date: dragSelection.dateStr,
-        startTime,
-        dueTime,
-        // Position the modal near the release point, clamped to viewport
-        x: Math.max(10, Math.min(e.clientX, window.innerWidth - 300)),
-        y: Math.max(10, Math.min(e.clientY, window.innerHeight - 250)),
-      });
-
-      setNewTaskText('');
+      // The drawn block *is* the task — create it with those times and hand the
+      // user straight to the full view to name it and fill in the rest.
+      const id = onCreateTask(dragSelection.dateStr, startTime, dueTime);
+      onOpenTask(id);
       setDragSelection(null);
     };
 
@@ -428,7 +421,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragSelection]);
+  }, [dragSelection, onCreateTask, onOpenTask]);
 
   // --- Drag & Drop Moving --- //
   const handleEventMouseDown = (e: React.MouseEvent, todo: Todo, dateStr: string, startMin: number, endMin: number) => {
@@ -493,14 +486,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
       const dist = Math.abs(e.clientX - draggingEvent.startX) + Math.abs(e.clientY - draggingEvent.startY);
       if (dist < 5) {
-        // It's a click, not a drag
-        setEditingEvent({
-          todo: draggingEvent.todo,
-          date: draggingEvent.initialDateStr,
-          x: Math.max(10, Math.min(e.clientX, window.innerWidth - 300)),
-          y: Math.max(10, Math.min(e.clientY, window.innerHeight - 250)),
-        });
-        setEditingTaskText(draggingEvent.todo.text);
+        // It's a click, not a drag — open the task in the full view.
+        onOpenTask(draggingEvent.todo.id);
         setDraggingEvent(null);
         return;
       }
@@ -549,7 +536,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingEvent, dayTodos, onUpdateTodos, visibleDays]);
+  }, [draggingEvent, dayTodos, onUpdateTodos, visibleDays, onOpenTask]);
 
   // --- Drag Resizing --- //
   const handleEventResizeStart = (e: React.MouseEvent, todo: Todo, dateStr: string, edge: 'top' | 'bottom', startMin: number, endMin: number) => {
@@ -624,84 +611,33 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     };
   }, [resizingEvent, dayTodos, onUpdateTodos]);
 
-  useEffect(() => {
-    if (!editingEvent) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setEditingEvent(null);
-      } else if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
-
-        const dateStr = editingEvent.date;
-        const dayData = dayTodos.find((d) => d.date === dateStr);
-        const filtered = (dayData?.todos || []).filter((t) => t.id !== editingEvent.todo.id);
-        onUpdateTodos(dateStr, filtered);
-        setEditingEvent(null);
-        setEditingTaskText('');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [editingEvent, dayTodos, onUpdateTodos]);
-
-  const submitEditTask = () => {
-    if (!editingEvent || !editingTaskText.trim()) return;
-
-    const updatedTodo = {
-      ...editingEvent.todo,
-      text: editingTaskText.trim(),
-      duePercentage: timeToPercentage(editingEvent.todo.dueTime || '0:00'),
-    };
-    const dateStr = editingEvent.date;
-    const dayData = dayTodos.find((d) => d.date === dateStr);
-    const newTodos = (dayData?.todos || []).map(t => t.id === editingEvent.todo.id ? updatedTodo : t);
-    onUpdateTodos(dateStr, newTodos);
-    setEditingEvent(null);
-    setEditingTaskText('');
-  };
-
-  const deleteEditedTask = () => {
-    if (!editingEvent) return;
-    const dateStr = editingEvent.date;
-    const dayData = dayTodos.find((d) => d.date === dateStr);
-    const filtered = (dayData?.todos || []).filter((t) => t.id !== editingEvent.todo.id);
-    onUpdateTodos(dateStr, filtered);
-    setEditingEvent(null);
-    setEditingTaskText('');
-  };
-
-  const submitNewTask = () => {
-    if (!createForm || !newTaskText.trim()) return;
-    const { date, startTime, dueTime } = createForm;
-
-    const newTodo: Todo = {
-      id: Math.random().toString(36).substr(2, 9),
-      text: newTaskText.trim(),
-      status: 'todo',
-      startTime,
-      dueTime,
-      duePercentage: timeToPercentage(dueTime),
-      createdAt: Date.now(),
-    };
-
-    const existing = dayTodos.find((d) => d.date === date);
-    const existingTodos = existing?.todos || [];
-    onUpdateTodos(date, [...existingTodos, newTodo]);
-    setCreateForm(null);
-    setNewTaskText('');
-  };
-
   return (
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} max-w-[1400px] mx-auto select-none w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
         <div className="w-56 flex-shrink-0 pr-4 pt-2 hidden lg:block">
-          <Calendar
-            currentMonth={miniCalMonth}
-            onMonthChange={setMiniCalMonth}
-            onDateClick={handleMiniCalDateClick}
-            focusDate={focusDate}
-          />
+          {/* Calendar is h-full; without a content-height wrapper it eats the whole
+              screen-height column and pushes the toggles below the fold. */}
+          <div className="shrink-0">
+            <Calendar
+              currentMonth={miniCalMonth}
+              onMonthChange={setMiniCalMonth}
+              onDateClick={handleMiniCalDateClick}
+              focusDate={focusDate}
+            />
+          </div>
+
+          {/* Which surfaces' tasks get blocked out on the grid. */}
+          <div className="mt-5 px-1 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-fg-faint">Show daily tasks</span>
+              <Switch checked={showDaily} onChange={setShowDaily} aria-label="Show daily tasks" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-fg-faint">Show task planner tasks</span>
+              <Switch checked={showPlanner} onChange={setShowPlanner} aria-label="Show task planner tasks" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -883,14 +819,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                   {/* Event cards */}
                   {todos.map((todo) => {
-                    const startStr = todo.startTime || '0:00';
-                    const startMin = timeToMinutes(startStr);
-                    let endMin: number;
-                    if (todo.dueTime) {
-                      endMin = timeToMinutes(todo.dueTime);
-                    } else {
-                      endMin = startMin + 60; // default 1hr
-                    }
+                    // A missing side defaults to a 30-minute block (start-only →
+                    // start..start+30; end-only → end-30..end). The filter guarantees
+                    // at least one time is set, so the opposite field is present here.
+                    const startMin = todo.startTime
+                      ? timeToMinutes(todo.startTime)
+                      : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
+                    let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
                     if (endMin <= startMin) endMin = startMin + 30;
 
                     const isDraggingThis = draggingEvent?.todo.id === todo.id;
@@ -906,6 +841,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           todo={todo}
                           startMin={startMin}
                           endMin={endMin}
+                          accent={accentForTodo(todo)}
                           onMouseDown={(e) => handleEventMouseDown(e, todo, dateStr, startMin, endMin)}
                           onResizeStart={(e, edge) => handleEventResizeStart(e, todo, dateStr, edge, startMin, endMin)}
                           onToggle={() => handleToggleTodo(dateStr, todo.id)}
@@ -918,6 +854,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {draggingEvent && draggingEvent.currentDateStr === dateStr && (
                     <EventCard
                       todo={draggingEvent.todo}
+                      accent={accentForTodo(draggingEvent.todo)}
                       startMin={draggingEvent.currentMins}
                       endMin={draggingEvent.currentMins + (draggingEvent.origEndMins - draggingEvent.origStartMins)}
                       isDragging={true}
@@ -928,6 +865,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {resizingEvent && resizingEvent.dateStr === dateStr && (
                     <EventCard
                       todo={resizingEvent.todo}
+                      accent={accentForTodo(resizingEvent.todo)}
                       startMin={resizingEvent.currentStartMins}
                       endMin={resizingEvent.currentEndMins}
                       isDragging={true} // reuse styling for visual feedback
@@ -935,22 +873,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   )}
 
                   {/* Active Drag Selection / Creation Preview */}
-                  {((dragSelection && dragSelection.dateStr === dateStr) || (createForm && createForm.date === dateStr)) && (
+                  {dragSelection && dragSelection.dateStr === dateStr && (
                     <div
                       className="absolute left-1 right-1 rounded-lg bg-[var(--accent1)]/20 border border-[var(--accent1)]/40 pointer-events-none z-10"
                       style={{
-                        top: `${minutesToPx(dragSelection ? dragSelection.startMins : timeToMinutes(createForm!.startTime))}px`,
-                        height: `${minutesToPx((dragSelection ? dragSelection.endMins : timeToMinutes(createForm!.dueTime)) - (dragSelection ? dragSelection.startMins : timeToMinutes(createForm!.startTime)))}px`,
+                        top: `${minutesToPx(dragSelection.startMins)}px`,
+                        height: `${minutesToPx(dragSelection.endMins - dragSelection.startMins)}px`,
                       }}
                     >
                       <div className="p-1 px-2 text-[10px] font-bold text-[var(--accent1)]">
-                        {dragSelection
-                          ? `${Math.floor(dragSelection.startMins / 60).toString().padStart(2, '0')}:${(dragSelection.startMins % 60).toString().padStart(2, '0')}`
-                          : createForm!.startTime}
+                        {`${Math.floor(dragSelection.startMins / 60).toString().padStart(2, '0')}:${(dragSelection.startMins % 60).toString().padStart(2, '0')}`}
                         {' – '}
-                        {dragSelection
-                          ? `${Math.floor(dragSelection.endMins / 60).toString().padStart(2, '0')}:${(dragSelection.endMins % 60).toString().padStart(2, '0')}`
-                          : createForm!.dueTime}
+                        {`${Math.floor(dragSelection.endMins / 60).toString().padStart(2, '0')}:${(dragSelection.endMins % 60).toString().padStart(2, '0')}`}
                       </div>
                     </div>
                   )}
@@ -962,141 +896,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           {/* Ending line marking the bottom of the day — mirrors the top header border */}
           <div className="border-t border-line-subtle" />
           {/* Breathing room so the final hours scroll clear of the fixed XP progress bar */}
-          <div className="h-22 shrink-0" />
+          <div className="h-24 shrink-0" />
         </div>
       </div>
-
-      {/* Universal Task Form Modal */}
-      {(createForm || editingEvent) && (() => {
-        const isEditing = !!editingEvent;
-        const x = isEditing ? editingEvent.x : createForm!.x;
-        const y = isEditing ? editingEvent.y : createForm!.y;
-        const date = isEditing ? editingEvent.date : createForm!.date;
-        const startTime = isEditing ? (editingEvent.todo.startTime || '0:00') : createForm!.startTime;
-        const dueTime = isEditing ? (editingEvent.todo.dueTime || '0:00') : createForm!.dueTime;
-        const textValue = isEditing ? editingTaskText : newTaskText;
-        const setTextValue = isEditing ? setEditingTaskText : setNewTaskText;
-        const onSubmit = isEditing ? submitEditTask : submitNewTask;
-        const onClose = () => {
-          setCreateForm(null);
-          setEditingEvent(null);
-        };
-        const title = isEditing ? 'Edit Task' : 'New Task';
-        const buttonText = isEditing ? 'Save' : 'Create Task';
-
-        return (
-          <>
-            {/* Modal Overlay for Click Outside */}
-            <div
-              className="fixed inset-0 z-[68] bg-black/0"
-              onMouseDown={(e) => {
-                if (e.target === e.currentTarget) onClose();
-              }}
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="fixed z-[70] w-72 bg-surface border border-line rounded-2xl shadow-2xl p-4 overflow-hidden"
-              style={{
-                left: `${Math.min(x, window.innerWidth - 300)}px`,
-                top: `${Math.min(y, window.innerHeight - 220)}px`,
-              }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-fg-faint uppercase tracking-wider">
-                  {title}
-                </span>
-                <button
-                  onClick={onClose}
-                  className="text-fg-ghost hover:text-fg transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-
-              <input
-                autoFocus
-                type="text"
-                value={textValue}
-                onChange={(e) => setTextValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onSubmit();
-                  if (e.key === 'Escape') onClose();
-                }}
-                placeholder="Task name..."
-                className="w-full bg-fill-subtle border border-line rounded-xl px-3 py-2 text-sm text-fg focus:outline-none focus:border-line-stronger transition-colors mb-3"
-              />
-
-              <div className="flex gap-2 mb-3">
-                <div className="flex-1">
-                  <label className="block text-[9px] font-bold text-fg-ghost uppercase tracking-wider mb-1">
-                    Start
-                  </label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => {
-                      if (isEditing) {
-                        setEditingEvent(prev => prev ? {
-                          ...prev,
-                          todo: { ...prev.todo, startTime: e.target.value }
-                        } : null);
-                      } else {
-                        setCreateForm(prev => prev ? { ...prev, startTime: e.target.value } : null);
-                      }
-                    }}
-                                        className="w-full bg-fill-subtle border border-line rounded-lg px-2 py-1.5 text-xs font-mono text-fg focus:outline-none focus:border-line-stronger transition-colors"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-[9px] font-bold text-fg-ghost uppercase tracking-wider mb-1">
-                    End
-                  </label>
-                  <input
-                    type="time"
-                    value={dueTime}
-                    onChange={(e) => {
-                      if (isEditing) {
-                        setEditingEvent(prev => prev ? {
-                          ...prev,
-                          todo: { ...prev.todo, dueTime: e.target.value }
-                        } : null);
-                      } else {
-                        setCreateForm(prev => prev ? { ...prev, dueTime: e.target.value } : null);
-                      }
-                    }}
-                                        className="w-full bg-fill-subtle border border-line rounded-lg px-2 py-1.5 text-xs font-mono text-fg focus:outline-none focus:border-line-stronger transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="text-[10px] text-fg-ghost mb-3">
-                {format(parseISO(date), 'EEEE, MMM d, yyyy')}
-              </div>
-
-              <div className="flex gap-2">
-                {isEditing && (
-                  <button
-                    onClick={deleteEditedTask}
-                    className="flex-1 px-3 py-2 bg-danger-tint hover:bg-danger-tint text-danger rounded-xl text-xs font-bold transition-colors"
-                    tabIndex={-1}
-                  >
-                    Delete
-                  </button>
-                )}
-                <button
-                  onClick={onSubmit}
-                  disabled={!textValue.trim()}
-                  className={`flex-1 py-2 rounded-xl text-xs ${btnAccent('accent2')}`}
-                >
-                  {buttonText}
-                </button>
-              </div>
-            </motion.div>
-          </>
-        );
-      })()}
     </div>
   );
 };

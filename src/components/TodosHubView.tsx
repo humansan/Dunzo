@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
 import { DayTodos, Todo, Workspace } from '../types';
@@ -24,8 +24,6 @@ import { groupCreateSpec, buildFilterCreatePatch } from './todosHub/viewUtils';
 import { isDone } from '../utils/todoStatus';
 import { TaskTable } from './todosHub/TaskTable';
 import { VARIANTS } from './todosHub/variant';
-import { ColumnsView } from './todosHub/ColumnsView';
-import { ColumnContext } from './todosHub/Column';
 import { TaskFinder } from './todosHub/TaskFinder';
 import { FieldsMenu } from './todosHub/FieldsMenu';
 import { FilterMenu } from './todosHub/FilterMenu';
@@ -36,6 +34,8 @@ import { CellEditorPopover } from './todosHub/CellEditorPopover';
 import { RowContextMenu } from './todosHub/RowContextMenu';
 import { DeleteCollectionModal } from './todosHub/DeleteCollectionModal';
 import { useStableCallback } from './todosHub/useStableCallback';
+import { flattenTree, orderFromFlat } from './todosHub/treeUtils';
+import { timeToPercentage } from '../utils/timeUtils';
 
 interface TodosHubViewProps {
   dayTodos: DayTodos[];
@@ -72,6 +72,8 @@ interface TodosHubViewProps {
   // The selected collection/view is URL-driven (/planner/$collectionId, bare = 'all').
   selectedView: string;
   onSelectView: (view: string) => void;
+  // Whether `dayTodos` has finished loading — see useHubData.
+  dataReady: boolean;
   // Opening a task navigates to /task/$taskId (the shared full-view route).
   onOpenTask: (id: string) => void;
 }
@@ -97,6 +99,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   onRenameWorkspace,
   selectedView,
   onSelectView,
+  dataReady,
   onOpenTask,
 }) => {
   // ── Collapse state (DB-synced) ─────────────────────────────────────────────
@@ -133,8 +136,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   // Which view renders the data: the spreadsheet-style table (default) or the
   // Todoist-style single-column list. A global UI preference (like selectedView).
-  const viewMode: 'table' | 'list' | 'columns' = layout.viewMode ?? 'table';
-  const setViewMode = (m: 'table' | 'list' | 'columns') => patchLayout(() => ({ viewMode: m }));
+  const viewMode: 'table' | 'list' = layout.viewMode === 'list' ? 'list' : 'table';
+  const setViewMode = (m: 'table' | 'list') => patchLayout(() => ({ viewMode: m }));
   // The persisted table/list toggle selects a view-variant descriptor; TaskTable
   // and its rows read presentation off this instead of a `listView` boolean.
   const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
@@ -163,10 +166,10 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // lists, and per-collection counts.
   const {
     entries,
+    archivedEntries,
     selectedCollectionId,
     byId,
     todoById,
-    collPathFor,
     collPathById,
     hasCollectionAncestor,
     isDescendantOf,
@@ -176,8 +179,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     viewEntries,
     uniqueValues,
     processedEntries,
-    sortFn,
-    childrenOf,
     visibleTaskCounts,
     groupedRows,
     flattened,
@@ -185,6 +186,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     collectionCount,
     allCount,
     uncategorizedCount,
+    archivedCount,
     currentCount,
     viewLabel,
   } = useHubData({
@@ -192,6 +194,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     activeWorkspaceId,
     selectedView,
     setSelectedView,
+    dataReady,
     collapsed,
     collapsedColls,
     activeFilters,
@@ -257,14 +260,13 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   // (vs. a full-screen overlay) lets the click also land on another cell, so a single
   // click both closes this editor and opens the next one.
   const popoverRef = useRef<HTMLDivElement>(null);
-  const POPOVER_COLS: ColKey[] = ['collection', 'notes', 'status', 'priority', 'startDate', 'date', 'start', 'end'];
+  const POPOVER_COLS: ColKey[] = ['collection', 'notes', 'status', 'priority', 'startDate', 'date', 'start', 'end', 'xp'];
   const popoverOpen = !!editing && POPOVER_COLS.includes(editing.col);
   useEffect(() => {
     if (!popoverOpen) return;
     const onDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (popoverRef.current?.contains(target)) return;
-      if (target.closest('[data-tag-suggestions]')) return; // tag autocomplete renders in its own portal
       setEditing(null);
     };
     window.addEventListener('mousedown', onDown);
@@ -301,7 +303,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   }
 
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
-  useLayoutEffect(() => {
+  const placePopover = useCallback(() => {
     if (!editing || !editing.rect || !popoverRef.current) {
       setPopoverPos(null);
       return;
@@ -314,7 +316,22 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
         (h) => editing.rect!.top - h - 4,
       ),
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing?.id, editing?.col]);
+
+  useLayoutEffect(placePopover, [placePopover]);
+
+  // A panel whose content shrinks (the collection list, as the search narrows)
+  // keeps its measured `top`. Below the cell that's fine, but a panel flipped
+  // ABOVE is bottom-aligned to the cell, so its bottom edge would lift away and
+  // leave a gap. Re-place it whenever the panel's size changes.
+  useEffect(() => {
+    const el = popoverRef.current;
+    if (!popoverOpen || !el) return;
+    const ro = new ResizeObserver(() => placePopover());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [popoverOpen, placePopover]);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -345,8 +362,12 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
   const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
 
-  // The todo the context menu currently targets (to branch task vs. collection items).
-  const menuEntry = menu ? entries.find((e) => e.todo.id === menu.id) || null : null;
+  // The todo the context menu currently targets (to branch task vs. collection
+  // items). Falls back to the archived set since a menu opened from the
+  // Archived view targets a todo not present in `entries`.
+  const menuEntry = menu
+    ? entries.find((e) => e.todo.id === menu.id) || archivedEntries.find((e) => e.todo.id === menu.id) || null
+    : null;
 
   // Convert a plain task into a top-level collection: flag it, give it a default
   // color, strip the task-only fields, and clear its due date (undated) so it
@@ -408,14 +429,17 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
 
   const handleNewCollection = () => {
     const id = onAddCollection();
-    // setSelectedView(id);
-    setEditCollId(id);
+    setSelectedView(id);   // make it the active collection
+    setEditCollId(id);     // open the name/color modal
   };
-  // Context-menu "Create nested collection": add a child under the target and
-  // ensure the parent is expanded so the new node is visible.
+  // Context-menu "Create nested collection": add a child under the target, ensure
+  // the parent is expanded so the new node is visible, then select it and open its
+  // edit modal (mirrors the top-level New collection flow).
   const handleNewNestedCollection = (parentId: string) => {
-    onAddCollection(parentId);
+    const id = onAddCollection(parentId);
     setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
+    setSelectedView(id);   // make the new nested collection active
+    setEditCollId(id);     // open the name/color modal
   };
   // Seed patch derived from the view's active filters: any "is <value>" filter is
   // pre-applied to tasks created in this view, so a new task still satisfies the
@@ -467,6 +491,72 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
     setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
     closeMenu();
     setEditing({ id, col: 'title', rect: null });
+  };
+
+  // Splice `id` in next to `anchorId` among its siblings and persist the whole
+  // tree order (same mechanism the row drag-and-drop commit uses). A freshly
+  // created task starts at the bottom, so this is what moves it into place.
+  const placeRelative = (
+    id: string,
+    anchorId: string,
+    pos: 'above' | 'below',
+    parentId: string | null,
+  ) => {
+    const full = flattenTree(processedEntries).map((n) => ({ id: n.id, parentId: n.parentId }));
+    const at = full.findIndex((n) => n.id === anchorId);
+    if (at === -1) return;
+    full.splice(pos === 'above' ? at : at + 1, 0, { id, parentId });
+    let order = orderFromFlat(full);
+    // In a collection view the collection node is hidden, so its direct children
+    // read as depth-0 (parentId null). Re-anchor them to the collection on save.
+    if (selectedCollectionId) order = order.map((n) => ({ id: n.id, parentId: n.parentId ?? selectedCollectionId }));
+    onReorder(order);
+  };
+
+  // Context-menu "Add task above/below": create a sibling of the target, seeded
+  // with the view's active filters so it stays visible, then edit its title.
+  const addTaskRelative = (anchorId: string, pos: 'above' | 'below') => {
+    const anchor = byId.get(anchorId);
+    if (!anchor) return;
+    const parentId = anchor.todo.parentId ?? null;
+    const id = onAddTodo({ parentId, patch: inheritedFilterPatch });
+    placeRelative(id, anchorId, pos, parentId);
+    closeMenu();
+    setEditing({ id, col: 'title', rect: null });
+  };
+
+  // Context-menu Duplicate: copy every field except identity and the stamps that
+  // belong to the original, and drop the copy directly below it.
+  const duplicateTask = (id: string) => {
+    const todo = menuEntry?.todo;
+    if (!todo) return;
+    const fields: Partial<Todo> = { ...todo };
+    delete fields.id;
+    delete fields.createdAt;
+    delete fields.hubOrder;
+    delete fields.completedAt;
+    delete fields.trackingStartedAt;
+    delete fields.deletedAt;
+    const parentId = todo.parentId ?? null;
+    const copyId = onAddTodo({ parentId, patch: fields });
+    placeRelative(copyId, id, 'below', parentId);
+    closeMenu();
+  };
+
+  // Context-menu Set date / Set time. Clearing the end time drops the derived
+  // percentage and the start time with it (a start with no end is meaningless).
+  const setTaskDate = (date: string) => {
+    if (!menuEntry) return;
+    onSaveTodo({ ...menuEntry.todo, dueDate: date || undefined });
+  };
+  const setTaskTime = (time: string) => {
+    if (!menuEntry) return;
+    onSaveTodo({
+      ...menuEntry.todo,
+      dueTime: time || undefined,
+      duePercentage: time ? timeToPercentage(time) : undefined,
+      startTime: time ? menuEntry.todo.startTime : undefined,
+    });
   };
 
   // Context-menu Delete: a non-empty collection prompts cascade-vs-promote;
@@ -529,33 +619,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
       : null;
 
 
-  // Add a task at a Finder column's level: parent it to that column's node, seed
-  // the active filters (so it stays visible), and drop into its title editor.
-  const addTaskInColumn = (parentId: string | null) => {
-    const id = onAddTodo({ parentId, patch: inheritedFilterPatch });
-    if (parentId) setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
-    setEditing({ id, col: 'title', rect: null });
-  };
-
-  // Shared data + handlers every Finder column needs (built once, forwarded down).
-  const columnCtx: ColumnContext = {
-    childrenOf,
-    byId,
-    todoById,
-    isDescendantOf,
-    sortFn,
-    onReorder,
-    onSaveTodo,
-    onToggleTodo: handleToggleTodo,
-    onAddSubtask,
-    onAddInColumn: addTaskInColumn,
-    editing,
-    startEdit,
-    stopEdit,
-    openMenu,
-    clearInteraction: () => { setEditing(null); setMenu(null); },
-  };
-
   // Reparent picker: the moved task + a stable "can't be a new parent" predicate
   // (itself + its whole subtree, so the move can't create a cycle).
   const reparentTarget = reparentId ? byId.get(reparentId)?.todo ?? null : null;
@@ -582,6 +645,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           setSelectedView={setSelectedView}
           allCount={allCount}
           uncategorizedCount={uncategorizedCount}
+          archivedCount={archivedCount}
           visibleCollections={visibleCollections}
           collectionCount={collectionCount}
           collapsedColls={collapsedColls}
@@ -609,16 +673,8 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onToggleMenu={onToggleMenu}
         />
 
-        {/* Body — the Finder columns navigator, or the single shared table/list
-            surface selected by the variant. */}
-        {viewMode === 'columns' ? (
-          <ColumnsView
-            ctx={columnCtx}
-            rootId={selectedCollectionId}
-            labelFor={(nodeId) => (nodeId ? todoById.get(nodeId)?.text || 'Untitled' : viewLabel)}
-          />
-        ) : (
-          <TaskTable
+        {/* Body — the single shared table/list surface selected by the variant. */}
+        <TaskTable
             variant={variant}
             model={{
               columns: visibleColumns,
@@ -645,12 +701,11 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
               onAddSubtask,
               onQuickAddTask: handleQuickAddTask,
               onQuickAddInGroup: handleQuickAddInGroup,
-              onNewInView: handleNewInView,
+              onNewInView: selectedView === 'archived' ? undefined : handleNewInView,
             }}
             dnd={dnd}
             bottomSpacer
           />
-        )}
       </div>
 
       {/* Sections menu — view-level settings */}
@@ -714,7 +769,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           popoverPos={popoverPos}
           collectionOptions={collectionOptions}
           todoById={todoById}
-          collPathFor={collPathFor}
           onSaveTodo={onSaveTodo}
           onSetTaskCollection={onSetTaskCollection}
           onCreateCollection={onCreateCollection}
@@ -739,7 +793,16 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { onOpenTask(id); closeMenu(); }}
-          onArchive={(id) => { onArchiveTodo(id); closeMenu(); }}
+          onDuplicate={duplicateTask}
+          onSetDate={(_id, date) => setTaskDate(date)}
+          onSetTime={(_id, time) => setTaskTime(time)}
+          onAddTaskAbove={(id) => addTaskRelative(id, 'above')}
+          onAddTaskBelow={(id) => addTaskRelative(id, 'below')}
+          onArchive={(id) => {
+            if (menuEntry?.todo.archived) onSaveTodo({ ...menuEntry.todo, archived: false });
+            else onArchiveTodo(id);
+            closeMenu();
+          }}
           onDelete={requestDeleteFromMenu}
         />
       )}
@@ -752,7 +815,6 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           <CollectionEditModal
             entry={entry}
             options={collectionOptions}
-            todoById={todoById}
             onCreateCollection={onCreateCollection}
             onClose={() => setEditCollId(null)}
             onSave={({ text, color, parentId }) => {
@@ -792,7 +854,7 @@ export const TodosHubView: React.FC<TodosHubViewProps> = ({
           title={`Move “${reparentTarget.text || 'Untitled'}” to…`}
           placeholder="Search for a task to nest under…"
           isDisabled={reparentDisabled}
-          rootOption={{ label: 'Move to top level', onSelect: () => { onSaveTodo({ ...reparentTarget, parentId: null }); setReparentId(null); } }}
+          rootOption={{ label: 'Set no parent', onSelect: () => { onSaveTodo({ ...reparentTarget, parentId: null }); setReparentId(null); } }}
           onPick={(newParentId) => { onSaveTodo({ ...reparentTarget, parentId: newParentId }); setReparentId(null); }}
           onClose={() => setReparentId(null)}
         />

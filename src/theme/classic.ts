@@ -95,7 +95,7 @@ const classicLightRoles: Record<RoleName, RoleValue> = {
 const classicDark: Record<string, string> = {
   canvas: '#111111',
   surface: '#1a1a1a',
-  raised: '#222222',
+  raised: '#1f1f1f',
   overlay: '#2a2a2a',
   black: '#000000',
   fg: '#ffffff',
@@ -123,9 +123,9 @@ const classicLight: Record<string, string> = {
   // the stack brightens toward white so cards/menus separate from the page and read as
   // raised (opposite of dark, where elevation lightens up from black). Depth also comes
   // from the line hairlines + shadows.
-  canvas: '#efefef',   // page (soft gray)
+  canvas: '#f1f1f1',   // page (soft gray)
   surface: '#f5f5f5',  // cards / panels / sidebars
-  raised: '#fafbfc',   // raised cards / inputs
+  raised: '#fdfdfd',   // raised cards / inputs
   overlay: '#ffffff',  // menus / popovers / modals (top of the stack)
   black: '#000000',
   fg: '#000000',       // near-black primary text (softer than pure #000)

@@ -4,6 +4,7 @@ import { Tracker, TrackerDisplayMode } from '../types';
 import { calculateProgress, getOrdinal } from '../utils/timeUtils';
 import { btnGhost } from '../theme/buttons';
 import { Trash2, Settings2 } from 'lucide-react';
+import { EXPO_OUT } from './XpProgressBar';
 
 interface TrackerCardProps {
   tracker: Tracker;
@@ -11,7 +12,7 @@ interface TrackerCardProps {
   onEdit: (tracker: Tracker) => void;
 }
 
-const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
+// const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onEdit }) => {
   const [now, setNow] = useState(new Date());
@@ -67,11 +68,11 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="relative group bg-surface p-4 rounded-2xl overflow-hidden flex flex-col"
+      className="relative group bg-surface-raised p-4 rounded-2xl overflow-hidden flex flex-col"
     >
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-[var(--accent1)] text-[11px] font-bold tracking-wider uppercase mb-0.5">
+          <h3 className={`text-xs font-bold mb-0.5`} style={{ color: tracker.color }}>
             {data.label}
           </h3>
           <p className="text-fg-faint text-[11px] font-medium">
@@ -93,7 +94,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
           </button>
           <button
             onClick={() => onDelete(tracker.id)}
-            className="p-1.5 hover:bg-red-500/10 rounded-lg text-fg-faint hover:text-red-400 transition-colors"
+            className="p-1.5 hover:bg-red-500/10 rounded-lg text-fg-faint hover:text-red-400 transition-colors cursor-pointer"
           >
             <Trash2 size={12} />
           </button>

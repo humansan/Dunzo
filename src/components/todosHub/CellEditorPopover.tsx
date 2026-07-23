@@ -4,14 +4,15 @@ import { Todo } from '../../types';
 import { OrganizerEntry, CollectionOption, collectionOf } from '../../utils/todoFilters';
 import {
   NotesField,
-  CollectionSearchField,
   OptionSelectField,
+  patchFromTime,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from '../todoFields';
 import { CalendarInput } from '../CalendarInput';
 import { TimeInput } from '../TimeInput';
-import { timeToPercentage } from '../../utils/timeUtils';
+import { XpSlider } from '../XpSlider';
+import { CollectionPicker, COLLECTION_PANEL_WIDTH } from '../CollectionPicker';
 import { EditState } from './types';
 
 // The portaled inline-cell editor: a popover anchored to the cell being edited
@@ -25,7 +26,6 @@ export const CellEditorPopover: React.FC<{
   popoverPos: { top: number; left: number } | null;
   collectionOptions: CollectionOption[];
   todoById: Map<string, Todo>;
-  collPathFor: (todo: Todo) => { id: string; name: string; color?: string }[];
   onSaveTodo: (updatedTodo: Todo) => void;
   onSetTaskCollection: (taskId: string, collectionId: string | null) => void;
   onCreateCollection: (name: string) => string;
@@ -37,7 +37,6 @@ export const CellEditorPopover: React.FC<{
   popoverPos,
   collectionOptions,
   todoById,
-  collPathFor,
   onSaveTodo,
   onSetTaskCollection,
   onCreateCollection,
@@ -46,6 +45,9 @@ export const CellEditorPopover: React.FC<{
   if (!editing.rect) return null;
   const { col } = editing;
   const isDateOrTime = col === 'date' || col === 'startDate' || col === 'start' || col === 'end';
+  // Panels that supply their own popover shell (bg/border/padding); the wrapper
+  // stays chrome-less for these and just positions/sizes them.
+  const isPanel = isDateOrTime || col === 'xp' || col === 'collection';
   const save = (patch: Partial<Todo>) => onSaveTodo({ ...entry.todo, ...patch });
 
   return createPortal(
@@ -55,12 +57,12 @@ export const CellEditorPopover: React.FC<{
         position: 'fixed',
         left: popoverPos?.left ?? editing.rect.left,
         top: popoverPos?.top ?? editing.rect.bottom + 4,
-        width: isDateOrTime
-          ? 240
+        width: isPanel
+          ? (col === 'collection' ? COLLECTION_PANEL_WIDTH : 240)
           : Math.max(editing.rect.width, col === 'status' || col === 'priority' ? 180 : 260),
       }}
       className={
-        isDateOrTime
+        isPanel
           ? 'z-[65] shadow-2xl'
           : 'z-[65] rounded-lg border border-line bg-surface shadow-2xl p-2'
       }
@@ -76,13 +78,17 @@ export const CellEditorPopover: React.FC<{
           }}
         />
       ) : col === 'collection' ? (
-        <CollectionSearchField
+        <CollectionPicker
           value={collectionOf(entry.todo, todoById)}
-          currentPath={collPathFor(entry.todo)}
           options={collectionOptions}
           onChange={(id) => { onSetTaskCollection(entry.todo.id, id); onClose(); }}
           onCreate={onCreateCollection}
+        />
+      ) : col === 'xp' ? (
+        <XpSlider
+          value={entry.todo.xp}
           autoFocus
+          onChange={(val) => save({ xp: val })}
         />
       ) : col === 'date' ? (
         <CalendarInput
@@ -105,17 +111,13 @@ export const CellEditorPopover: React.FC<{
         <TimeInput
           value={entry.todo.startTime}
           autoFocus
-          onChange={(val) => save({ startTime: val || undefined })}
+          onChange={(val) => save(patchFromTime('start', val))}
         />
       ) : col === 'end' ? (
         <TimeInput
           value={entry.todo.dueTime}
           autoFocus
-          onChange={(val) => {
-            // Keep duePercentage in sync with the end time (mirrors EndTimeField).
-            const p = timeToPercentage(val);
-            save({ dueTime: val || undefined, ...(p !== undefined ? { duePercentage: p } : {}) });
-          }}
+          onChange={(val) => save(patchFromTime('due', val))}
         />
       ) : (
         <NotesField

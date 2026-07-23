@@ -27,8 +27,9 @@ import {
   Download
 } from 'lucide-react';
 import { DayTodos, Todo } from '../types';
-import { hasDate, todoIndex, collectionOf, collectionPath } from '../utils/todoFilters';
+import { hasDate, showsOnDailyChecklist, todoIndex, collectionOf, collectionPath } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
+import { buildXpHistory, starsFor } from '../utils/xpUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import { pillBg, pillBorder } from '../theme/pill';
 import { collectionColor } from './todosHub/constants';
@@ -89,43 +90,23 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     }));
 
   // 1. Build Pre-Aggregated Data Maps for Speed
-  const { xpMap, completedMap, totalTasksMap, completedTodosMap, allTimeBestDay, totalXp } = useMemo(() => {
-    const xpM = new Map<string, number>();
-    const compM = new Map<string, number>();
-    const totM = new Map<string, number>();
-    const todosM = new Map<string, Todo[]>();
-    
+  const { history, xpMap, completedMap, totalTasksMap, completedTodosMap, allTimeBestDay, totalXp } = useMemo(() => {
+    // Shared with the stars/streak below — only daily-checklist todos count.
+    const hist = buildXpHistory(dayTodos);
+    const xpM = hist.earnedByDate;
+    const compM = hist.completedCountByDate;
+    const totM = hist.totalTasksByDate;
+    const todosM = hist.completedTodosByDate;
+
     let best = 0;
     let sumXp = 0;
-
-    dayTodos.forEach(d => {
-      if (!hasDate(d.date)) return; // skip the undated Task Planner bucket
-      let dailyXp = 0;
-      let compCount = 0;
-      const compList: Todo[] = [];
-
-      (d.todos || []).forEach(t => {
-        if (t) {
-          if (isDone(t)) {
-            compCount++;
-            dailyXp += t.xp || 0;
-            compList.push(t);
-          }
-        }
-      });
-
-      xpM.set(d.date, dailyXp);
-      compM.set(d.date, compCount);
-      totM.set(d.date, (d.todos || []).length);
-      todosM.set(d.date, compList);
-
+    for (const dailyXp of xpM.values()) {
       sumXp += dailyXp;
-      if (dailyXp > best) {
-        best = dailyXp;
-      }
-    });
+      if (dailyXp > best) best = dailyXp;
+    }
 
     return {
+      history: hist,
       xpMap: xpM,
       completedMap: compM,
       totalTasksMap: totM,
@@ -156,34 +137,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     let current = 0;
     let best = 0;
 
-    const earnedOf = (s: string) => xpMap.get(s) ?? 0;
-    const completedOf = (s: string) => completedMap.get(s) ?? 0;
-
-    const avg7Of = (parsed: Date) => {
-      let sum = 0;
-      for (let i = 1; i <= 7; i++) {
-        sum += earnedOf(format(subDays(parsed, i), 'yyyy-MM-dd'));
-      }
-      return sum / 7;
-    };
-
-    const starsOf = (dStr: string) => {
-      const parsed = parseISO(dStr);
-      const e = earnedOf(dStr);
-      const avg = avg7Of(parsed);
-      const prev = earnedOf(format(subDays(parsed, 1), 'yyyy-MM-dd'));
-      if (e > 0 && e >= avg && e >= prev) return 3;
-      if (e > 0 && e >= avg) return 2;
-      if (completedOf(dStr) >= 1) return 1;
-      return 0;
-    };
-
     let cursor = parseISO(recordedDates[0]);
     const end = parseISO(todayStr);
 
     while (cursor <= end) {
       const dStr = format(cursor, 'yyyy-MM-dd');
-      const s = starsOf(dStr);
+      const s = starsFor(history, dStr).stars;
 
       if (dStr === todayStr) {
         if (s >= 3) {
@@ -205,7 +164,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     }
 
     return { current, best };
-  }, [dayTodos, xpMap, completedMap]);
+  }, [dayTodos, history]);
 
   // 4. Comparative Periods (7d, 30d, 365d)
   const comparativeStats = useMemo(() => {
@@ -346,7 +305,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     dayTodos.forEach(d => {
       if (!hasDate(d.date)) return; // skip the undated Task Planner bucket
       (d.todos || []).forEach(t => {
-        if (t && isDone(t) && t.xp) {
+        if (t && showsOnDailyChecklist(t, d.date) && isDone(t) && t.xp) {
           const path = collsForTodo(t);
           const buckets = path.length > 0 ? path : [UNCATEGORIZED];
           buckets.forEach(c => {
@@ -382,7 +341,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     dayTodos.forEach(d => {
       if (!hasDate(d.date)) return; // skip the undated Task Planner bucket
       (d.todos || []).forEach(t => {
-        if (t && isDone(t) && typeof t.xp === 'number') {
+        if (t && showsOnDailyChecklist(t, d.date) && isDone(t) && typeof t.xp === 'number') {
           rows.push({
             date: d.date,
             text: t.text,
@@ -431,42 +390,27 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
     URL.revokeObjectURL(url);
   };
 
-  // Table Star renderer
+  // Table Star renderer. The goals are independent, so each slot shows its own
+  // goal rather than filling left-to-right from a count.
   const renderStars = (dateStr: string) => {
-    const earnedOf = (s: string) => xpMap.get(s) ?? 0;
-    const completedOf = (s: string) => completedMap.get(s) ?? 0;
-
-    const avg7Of = (parsed: Date) => {
-      let sum = 0;
-      for (let i = 1; i <= 7; i++) {
-        sum += earnedOf(format(subDays(parsed, i), 'yyyy-MM-dd'));
-      }
-      return sum / 7;
-    };
-
-    const starsOf = (dStr: string) => {
-      const parsed = parseISO(dStr);
-      const e = earnedOf(dStr);
-      const avg = avg7Of(parsed);
-      const prev = earnedOf(format(subDays(parsed, 1), 'yyyy-MM-dd'));
-      if (e > 0 && e >= avg && e >= prev) return 3;
-      if (e > 0 && e >= avg) return 2;
-      if (completedOf(dStr) >= 1) return 1;
-      return 0;
-    };
-
-    const count = starsOf(dateStr);
+    const { flags } = starsFor(history, dateStr);
+    const slots: [boolean, string][] = [
+      [flags.completedTask, 'Completed a task'],
+      [flags.beatYesterday, "Matched or beat yesterday's XP"],
+      [flags.beatAverage, 'Matched or beat the 7/30-day average XP']
+    ];
     return (
       <div className="flex gap-0.5 text-fg-ghost">
-        {[0, 1, 2].map(i => (
-          <Star 
-            key={i} 
-            size={14} 
+        {slots.map(([active, label], i) => (
+          <Star
+            key={i}
+            size={14}
             strokeWidth={2}
-            fill={i < count ? GOLD : 'transparent'}
+            aria-label={label}
+            fill={active ? GOLD : 'transparent'}
             style={{
-              color: i < count ? GOLD : `color-mix(in srgb, ${FG} 15%, transparent)`,
-              filter: i < count ? `drop-shadow(0 0 3px color-mix(in srgb, ${GOLD} 40%, transparent))` : 'none'
+              color: active ? GOLD : `color-mix(in srgb, ${FG} 15%, transparent)`,
+              filter: active ? `drop-shadow(0 0 3px color-mix(in srgb, ${GOLD} 40%, transparent))` : 'none'
             }}
           />
         ))}
@@ -617,7 +561,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 onClick={() => handleSetInterval(key)}
                 className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer transition-all ${
                   chartInterval === key
-                    ? 'bg-[var(--accent1)] text-fg shadow'
+                    ? 'bg-[var(--accent1)] text-canvas shadow'
                     : 'text-fg-faint hover:text-fg'
                 }`}
               >
@@ -723,7 +667,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 onClick={() => handleSetTableMode(mode)}
                 className={`px-3 py-1.5 rounded-md font-semibold cursor-pointer transition-all ${
                   tableMode === mode
-                    ? 'bg-[var(--accent1)] text-fg shadow'
+                    ? 'bg-[var(--accent1)] text-canvas shadow'
                     : 'text-fg-faint hover:text-fg'
                 }`}
               >

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, List, Columns2, CornerUpLeft } from 'lucide-react';
+import { Search, X, List, Columns2, CornerLeftUp } from 'lucide-react';
 import { Todo } from '../../types';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { useSyncedLayout } from '../../data/settings';
@@ -136,7 +136,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="shrink-0 px-3 pt-2.5 text-[11px] font-semibold uppercase tracking-wide text-fg-faint">
+          <div className="shrink-0 px-3 pt-2.5 text-xs font-semibold text-fg-faint">
             {title}
           </div>
         )}
@@ -179,7 +179,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
             onClick={rootOption.onSelect}
             className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-line text-sm text-fg-muted hover:text-fg hover:bg-fill-subtle transition-colors"
           >
-            <CornerUpLeft size={15} className="text-fg-faint" />
+            <CornerLeftUp size={15} className="text-fg-faint" />
             {rootOption.label}
           </button>
         )}

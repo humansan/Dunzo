@@ -9,11 +9,14 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
   const d = useAppData();
   const todo = d.todoById.get(taskId) ?? null;
 
-  // Stale / deleted id (e.g. removed on another device) — leave the overlay.
+  // Stale / deleted id (e.g. removed on another device) — leave the overlay. Only
+  // once the todos have actually loaded: on a cold /task/$taskId deep-link the map
+  // is briefly empty, and closing then would run onClose's history.back() straight
+  // out of the app (a fresh tab has nowhere to go back to).
   useEffect(() => {
-    if (!todo) onClose();
+    if (d.isDataReady && !todo) onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todo]);
+  }, [todo, d.isDataReady]);
 
   if (!todo) return null;
 

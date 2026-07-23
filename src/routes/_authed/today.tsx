@@ -42,6 +42,7 @@ function TodayRoute() {
           selectedDate={selectedDate}
           onSelectDate={(next) => navigate({ search: { date: next } })}
           onOpenTask={(id) => openTask(id)}
+          onCreateTask={d.handleCalendarAddTodo}
         />
       </div>
     </main>

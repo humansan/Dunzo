@@ -38,6 +38,7 @@ export function PlannerScreen({ selectedView }: { selectedView: string }) {
           onToggleTodo={d.handleToggleTodo}
           selectedView={selectedView}
           onSelectView={onSelectView}
+          dataReady={d.isDataReady}
           onOpenTask={onOpenTask}
         />
       </div>

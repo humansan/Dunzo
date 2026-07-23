@@ -21,7 +21,7 @@
 
 // `disabled:opacity-50` is the shared disabled affordance; callers keep native `disabled`
 // (which already blocks clicks) and may add `disabled:cursor-not-allowed`.
-const base = 'transition-all disabled:opacity-50';
+const base = 'transition-all disabled:opacity-50 cursor-pointer';
 
 // Neutral resting state shared by types 2 & 3 (and type 1's toggled/open state).
 const neutralIdle = 'bg-fill-subtle text-fg-faint hover:bg-fill hover:text-fg';
@@ -30,8 +30,8 @@ export type Accent = 'accent1' | 'accent2';
 // Static (Tailwind-detectable) accent fills + matching glow, per accent. Text is
 // `text-canvas` (inverts with the page per theme) to match btnAccent.
 const accentFill: Record<Accent, string> = {
-  accent1: 'bg-[var(--accent1)] text-canvas shadow-lg shadow-[var(--accent1)]/20',
-  accent2: 'bg-[var(--accent2)] text-canvas shadow-lg shadow-[var(--accent2)]/20',
+  accent1: 'bg-[var(--accent1)] text-canvas',
+  accent2: 'bg-[var(--accent2)] text-canvas',
 };
 
 // 1 — Ghost: transparent until hover; `active` (toggled/open, e.g. a menu) = filled.

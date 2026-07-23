@@ -14,9 +14,9 @@ export const Route = createFileRoute('/_authed/task/$taskId')({
 function TaskRoute() {
   const router = useRouter();
   const { taskId } = Route.useParams();
-  const close = () => {
-    if (window.history.length > 1) router.history.back();
-    else router.history.push('/today');
-  };
+  // This route only mounts on a cold deep-link, so there is no in-app history
+  // entry behind it — history.back() would leave the app (to the new-tab page).
+  // The in-app overlay close (AppShell.closeOverlay) is the one that pops.
+  const close = () => router.history.push('/today');
   return <TaskOverlay taskId={taskId} onClose={close} />;
 }

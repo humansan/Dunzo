@@ -24,6 +24,7 @@ export const HubSidebar: React.FC<{
   setSelectedView: (v: string) => void;
   allCount: number;
   uncategorizedCount: number;
+  archivedCount: number;
   visibleCollections: VisibleCollection[];
   collectionCount: (cid: string) => number;
   collapsedColls: Set<string>;
@@ -46,6 +47,7 @@ export const HubSidebar: React.FC<{
   setSelectedView,
   allCount,
   uncategorizedCount,
+  archivedCount,
   visibleCollections,
   collectionCount,
   collapsedColls,
@@ -60,7 +62,7 @@ export const HubSidebar: React.FC<{
       className="group/pane relative shrink-0 flex flex-col min-h-0 border-r border-line"
     >
       {/* ── Workspaces section (top) — independent todo databases ───────── */}
-      <div className="shrink-0 flex flex-col max-h-[38%] border-b border-line p-2">
+      {/* <div className="shrink-0 flex flex-col max-h-[38%] border-b border-line p-2">
         <div className="shrink-0 px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
           Workspaces
         </div>
@@ -110,7 +112,7 @@ export const HubSidebar: React.FC<{
           <Plus size={15} />
           <span>New workspace</span>
         </button>
-      </div>
+      </div> */}
 
       {/* ── Collections section (bottom) — shared with the Task Finder ────── */}
       <CollectionTree
@@ -118,6 +120,7 @@ export const HubSidebar: React.FC<{
         onSelectView={setSelectedView}
         allCount={allCount}
         uncategorizedCount={uncategorizedCount}
+        archivedCount={archivedCount}
         visibleCollections={visibleCollections}
         collectionCount={collectionCount}
         collapsedColls={collapsedColls}

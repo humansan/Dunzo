@@ -1,26 +1,24 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { X, ChevronDown, Check } from 'lucide-react';
-import { Todo } from '../../types';
-import { OrganizerEntry, CollectionOption, collectionPath } from '../../utils/todoFilters';
-import { btnAccent, btnGhost } from '../../theme/buttons';
-import { CollectionSearchField } from '../todoFields';
+import { OrganizerEntry, CollectionOption } from '../../utils/todoFilters';
+import { btnAccent, btnGhost, btnNeutral } from '../../theme/buttons';
+import { CollectionPickerButton } from '../CollectionPicker';
 import { modalPop, overlayBackdrop } from '../modalMotion';
 import { textInputCls } from './TextInput';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from './constants';
 
 // ── Collection Edit modal ────────────────────────────────────────────────────
-// Rename, recolor, and re-parent a collection. The parent picker reuses the
-// table column's CollectionSearchField (search + select), with the collection
-// itself and its descendants filtered out so it can't become its own ancestor.
+// Rename, recolor, and re-parent a collection. The parent picker is the shared
+// CollectionPicker, with the collection itself and its descendants filtered out
+// so it can't become its own ancestor.
 export const CollectionEditModal: React.FC<{
   entry: OrganizerEntry;
   options: CollectionOption[];
-  todoById: Map<string, Todo>;
   onCreateCollection: (name: string) => string;
   onSave: (patch: { text: string; color: string; parentId: string | null }) => void;
   onClose: () => void;
-}> = ({ entry, options, todoById, onCreateCollection, onSave, onClose }) => {
+}> = ({ entry, options, onCreateCollection, onSave, onClose }) => {
   const [name, setName] = useState(entry.todo.text || '');
   const [color, setColor] = useState(collectionSlot(entry.todo.color));
   const [parentId, setParentId] = useState<string | null>(entry.todo.parentId ?? null);
@@ -30,12 +28,6 @@ export const CollectionEditModal: React.FC<{
   const parentOptions = options.filter(
     (o) => o.id !== entry.todo.id && !o.path.some((p) => p.id === entry.todo.id)
   );
-  const parentPath = collectionPath(parentId, todoById).map((c) => ({
-    id: c.id,
-    name: c.text || 'Untitled',
-    color: c.color,
-  }));
-
   const labelCls = 'block text-sm font-semibold text-fg mb-1.5';
 
   return (
@@ -49,12 +41,12 @@ export const CollectionEditModal: React.FC<{
         className="w-full max-w-md rounded-2xl border border-line bg-surface shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-line pl-5 pr-2.5 py-2.5">
           <h2 className="text-base font-bold text-fg">Edit</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-fg-faint hover:text-fg transition-colors"
+            className={`p-1.5 rounded-md ${btnGhost()}`}
           >
             <X size={18} />
           </button>
@@ -115,13 +107,14 @@ export const CollectionEditModal: React.FC<{
           {/* Parent collection */}
           <div>
             <label className={labelCls}>Parent collection</label>
-            <CollectionSearchField
-              value={parentId}
-              currentPath={parentPath}
+            <CollectionPickerButton
+              variant="field"
+              collectionId={parentId}
               options={parentOptions}
               onChange={setParentId}
               onCreate={onCreateCollection}
-              placeholder={parentId ? 'Change parent…' : 'No parent — search to set one…'}
+              nullLabel="No parent"
+              placeholder="Search or create a parent…"
             />
           </div>
         </div>
@@ -131,14 +124,14 @@ export const CollectionEditModal: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className={`px-3.5 py-1.5 rounded-lg text-sm ${btnGhost()}`}
+            className={`px-3 h-8 rounded-lg text-xs font-bold ${btnNeutral}`}
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={() => onSave({ text: name.trim(), color, parentId })}
-            className={`px-3.5 py-1.5 rounded-lg text-sm ${btnAccent('accent2')}`}
+            className={`px-3 h-8 rounded-lg text-xs ${btnAccent('accent2')}`}
           >
             Save
           </button>

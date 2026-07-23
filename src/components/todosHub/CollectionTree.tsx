@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Inbox, Shapes, ChevronRight, ChevronDown } from 'lucide-react';
+import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown } from 'lucide-react';
 import { OrganizerEntry } from '../../utils/todoFilters';
 import { collectionColor, SIDEBAR_INDENT } from './constants';
 import { btnGhost } from '../../theme/buttons';
@@ -17,6 +17,9 @@ export const CollectionTree: React.FC<{
   onSelectView: (v: string) => void;
   allCount: number;
   uncategorizedCount: number;
+  // Omit to hide the "Archived" pseudo-view (the Task Finder's picker doesn't
+  // support it — its data layer only knows 'all' / 'uncategorized' / a collection id).
+  archivedCount?: number;
   visibleCollections: VisibleCollection[];
   collectionCount: (id: string) => number;
   collapsedColls: Set<string>;
@@ -30,6 +33,7 @@ export const CollectionTree: React.FC<{
   onSelectView,
   allCount,
   uncategorizedCount,
+  archivedCount,
   visibleCollections,
   collectionCount,
   collapsedColls,
@@ -47,7 +51,7 @@ export const CollectionTree: React.FC<{
   return (
     <div className="group/pane flex-1 min-h-0 flex flex-col">
       {/* Fixed header: title + the two pseudo-views as separate rows */}
-      <div className="shrink-0 p-2 pb-1 space-y-0.5">
+      <div className="shrink-0 p-2 pb-0 space-y-0.5">
         <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
           Collections
         </div>
@@ -61,7 +65,16 @@ export const CollectionTree: React.FC<{
           <span className="flex-1 truncate">Uncategorized</span>
           <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
         </button>
+        {archivedCount !== undefined && (
+          <button type="button" onClick={() => onSelectView('archived')} className={itemCls('archived')} title="Archived">
+            <Archive size={15} className="shrink-0 text-fg-subtle" />
+            <span className="flex-1 truncate">Archived</span>
+            <span className="text-xs text-fg-faint font-mono mr-1.5">{archivedCount}</span>
+          </button>
+        )}
       </div>
+
+      <div className="my-2 mx-3 border-t border-line"></div>
 
       {/* Scrollable list of collections — nested tree, indented by depth. The drop is
           handled on the container (not per-row) so releases in the gaps still commit. */}

@@ -5,11 +5,11 @@ import {
   GripVertical,
   Trash2,
   Circle,
-  Clock,
   CheckSquare,
   Maximize2,
-  CalendarPlus,
+  MoreHorizontal,
   Sparkles,
+  Flag,
 } from 'lucide-react';
 import CheckCircleCutout from '../assets/CheckCircleCutout';
 import {
@@ -34,8 +34,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { Todo } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
 import { isDone } from '../utils/todoStatus';
-import { formatTime12h } from '../utils/timeUtils';
+import { pill } from '../theme/pill';
+import { priorityOption } from './todoFields';
+import { TaskTimeChips, formatCountdown } from './TaskTimeChips';
 import { QuickEditTodo, QuickEditValues } from './QuickEditTodo';
+import { DailyRowContextMenu } from './DailyRowContextMenu';
+import { btnGhost } from '../theme/buttons';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,9 +54,9 @@ interface TodoItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onAddToCalendar?: (id: string) => void;
   onStartTracking: (id: string) => void;
-  isActive: boolean;
+  /** Opens the row context menu at viewport coords (right-click or the ⋯ button). */
+  onOpenMenu?: (x: number, y: number) => void;
   isDragging?: boolean;
   style?: React.CSSProperties;
   attributes?: any;
@@ -62,7 +66,6 @@ interface TodoItemProps {
   countdownMode: 'off' | 'time' | 'percent';
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
-  initialCollectionId?: string | null;
 }
 
 interface SortableItemProps {
@@ -76,14 +79,12 @@ interface SortableItemProps {
   onSaveEdit: (id: string, vals: QuickEditValues) => void;
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onAddToCalendar: (id: string) => void;
   onStartTracking: (id: string) => void;
-  isActive: boolean;
+  onOpenMenu?: (x: number, y: number) => void;
   now: Date;
   countdownMode: 'off' | 'time' | 'percent';
   collectionOptions: CollectionOption[];
   onCreateCollection: (name: string) => string;
-  initialCollectionId: string | null;
 }
 
 export interface ListViewProps {
@@ -98,14 +99,22 @@ export interface ListViewProps {
   /** Called on unmount-flush without closing the panel. */
   onCommitEdit: (id: string, vals: QuickEditValues) => void;
   onOpenFull: (id: string) => void;
-  onAddToCalendar?: (id: string) => void;
   onStartTracking?: (id: string) => void;
   activeTodoId?: string | null;
   onAdd: (vals: QuickEditValues) => void;
+  /** Row context menu — copy a task in place, just below the original. */
+  onDuplicate?: (id: string) => void;
+  /** Row context menu — reschedule to another day (YYYY-MM-DD). */
+  onSetDate?: (id: string, date: string) => void;
+  /** Row context menu — set the due/end time ('' clears it). */
+  onSetTime?: (id: string, time: string) => void;
+  /** Row context menu — nest the task under another task (null = top level). */
+  onSetParent?: (id: string, parentId: string | null) => void;
+  /** Row context menu — insert a new task directly above/below `anchorId`. */
+  onAddAt?: (vals: QuickEditValues, anchorId: string, pos: 'above' | 'below') => void;
   countdownMode?: 'off' | 'time' | 'percent';
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
-  initialCollectionIdOf?: (todo: Todo) => string | null;
   onReorder: (todos: Todo[]) => void;
 }
 
@@ -122,9 +131,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
   onSaveEdit,
   onCommitEdit,
   onOpenFull,
-  onAddToCalendar,
   onStartTracking,
-  isActive,
+  onOpenMenu,
   isDragging,
   style,
   attributes,
@@ -134,37 +142,21 @@ const TodoItem: React.FC<TodoItemProps> = ({
   countdownMode,
   collectionOptions = [],
   onCreateCollection,
-  initialCollectionId = null,
 }) => {
-  const countdownDisplay = useMemo(() => {
-    if (countdownMode === 'off' || !todo.dueTime) return null;
+  const countdownDisplay = useMemo(
+    () => formatCountdown(todo, date, now, countdownMode),
+    [todo, date, now, countdownMode]
+  );
 
-    const [hours, minutes] = todo.dueTime.split(':').map(Number);
-    const [year, month, day] = date.split('-').map(Number);
-    const target = new Date(year, month - 1, day, hours, minutes, 0, 0);
-
-    const diff = target.getTime() - now.getTime();
-    if (diff <= 0) {
-      return countdownMode === 'percent' ? '0%' : '00:00';
-    }
-
-    if (countdownMode === 'percent') {
-      const pct = Math.max(0, Math.round((diff / (24 * 60 * 60 * 1000)) * 100));
-      return `${pct}%`;
-    } else {
-      const totalSeconds = Math.floor(diff / 1000);
-      const h = Math.floor(totalSeconds / 3600);
-      const mins = Math.floor((totalSeconds % 3600) / 60);
-      const s = totalSeconds % 60;
-      return `${h.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    }
-  }, [todo.dueTime, todo.startTime, date, now, countdownMode]);
+  // Priority is shown as an icon-only square chip, tinted with the priority color.
+  const prio = todo.priority ? priorityOption(todo.priority) : undefined;
 
   if (isEditing) {
     return (
       <div ref={setNodeRef} style={style}>
         <QuickEditTodo
           mode="edit"
+          todoId={todo.id}
           initialText={todo.text}
           initialNotes={todo.notes || ''}
           initialDate={date}
@@ -172,12 +164,17 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialTime={todo.dueTime}
           initialPercent={todo.duePercentage}
           initialXp={todo.xp}
-          initialCollectionId={initialCollectionId}
+          initialStatus={todo.status}
+          initialPriority={todo.priority}
+          initialParentId={todo.parentId}
           collectionOptions={collectionOptions}
           onCreateCollection={onCreateCollection}
           onSubmit={(vals) => onSaveEdit(todo.id, vals)}
           onCancel={onCancelEdit}
-          onOpenFull={() => onOpenFull(todo.id)}
+          // Maximizing hands the task off to the full view, so the panel behind it
+          // closes too. It closes uncommitted (not via QuickEditTodo's cancel), so
+          // the unmount flush still persists whatever was typed rather than dropping it.
+          onOpenFull={() => { onOpenFull(todo.id); onCancelEdit();}}
           onFlush={(vals) => onCommitEdit(todo.id, vals)}
         />
       </div>
@@ -188,6 +185,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      onContextMenu={(e) => { e.preventDefault(); onOpenMenu?.(e.clientX, e.clientY); }}
       className={`relative group flex items-start gap-2 py-1.5 border-b border-line-subtle ${isDragging ? 'opacity-0' : ''}`}
     >
       <button
@@ -211,38 +209,51 @@ const TodoItem: React.FC<TodoItemProps> = ({
         </motion.div>
       </button>
 
-      <div className="flex items-start gap-1.5 min-w-0">
-        <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
-          <p className={`text-md leading-6 pt-0.5 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
-            ? 'text-fg-ghost line-through translate-x-[3px]'
-            : 'text-fg group-hover/text:text-(--accent2)'
-          }`}>
-            {todo.text}
-          </p>
-        </div>
+      <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
+        <p className={`text-md leading-6 pt-0.75 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
+          ? 'text-fg-ghost line-through translate-x-[3px]'
+          : 'text-fg group-hover/text:text-accent2 cursor-pointer'
+        }`}>
+          {todo.text || 'Untitled'}
+        </p>
+      </div>
 
+      <div className="flex gap-0.5 items-center justify-center pt-0.75">
         <button
           onClick={(e) => { e.stopPropagation(); onOpenFull(todo.id); }}
           title="Open full view"
-          className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg-subtle hover:text-fg-muted hover:bg-fill-subtle rounded-md transition-all shrink-0"
+          className={`opacity-0 group-hover:opacity-100 p-1 flex self-center items-center justify-center ${btnGhost()} rounded transition-all shrink-0`}
         >
           <Maximize2 size={14} />
         </button>
 
-        {!todo.startTime && !todo.dueTime && onAddToCalendar && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddToCalendar(todo.id); }}
-            title="Add to calendar"
-            className="opacity-0 group-hover:opacity-100 p-1 h-7 flex items-center text-fg-subtle hover:text-fg-muted hover:bg-fill-subtle rounded-md transition-all shrink-0"
-          >
-            <CalendarPlus size={14} />
-          </button>
-        )}
+        {/* Same menu as right-click, anchored under the button. */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const r = e.currentTarget.getBoundingClientRect();
+            onOpenMenu?.(r.left, r.bottom + 4);
+          }}
+          title="More actions"
+          className={`opacity-0 group-hover:opacity-100 p-1 flex self-center items-center justify-center ${btnGhost()} rounded transition-all shrink-0`}
+        >
+          <MoreHorizontal size={14} />
+        </button>
       </div>
 
       <div className="flex-1" />
 
-      <div className="flex items-start gap-2 shrink-0 whitespace-nowrap">
+      <div className="flex items-start gap-1.5 shrink-0 whitespace-nowrap">
+        {prio && (
+          <div
+            title={`${prio.label} priority`}
+            style={isDone(todo) ? undefined : pill(prio.color)}
+            className={`flex items-center justify-center p-[5.5px] rounded-lg ${isDone(todo) ? 'bg-fill-subtle text-fg-ghost' : ''}`}
+          >
+            <Flag size={16} />
+          </div>
+        )}
+
         {todo.xp !== undefined && (
           <div className={`flex items-center justify-center gap-1.5 px-2.75 py-[5.5px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
             ? 'bg-fill-subtle text-fg-ghost'
@@ -253,62 +264,21 @@ const TodoItem: React.FC<TodoItemProps> = ({
           </div>
         )}
 
-        {(todo.dueTime || todo.duePercentage !== undefined) && (
-          <div
-            onClick={() => onStartTracking(todo.id)}
-            className={`flex items-center justify-center gap-2 px-2.75 cursor-pointer py-[5.5px] rounded-lg transition ${isDone(todo)
-              ? 'bg-fill-subtle shadow-none'
-              : isActive
-                ? 'bg-[var(--accent1)] shadow-lg shadow-[var(--accent1)]/10'
-                : 'bg-[var(--accent1)]/6 shadow-none hover:bg-[var(--accent1)]/15'
-            }`}>
-            {todo.dueTime && (
-              <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
-                ? 'text-fg-ghost'
-                : isActive
-                  ? 'text-canvas'
-                  : 'text-[var(--accent1)]'
-              }`}>
-                <Clock size={16} />
-                <span className="relative top-px">{formatTime12h(todo.dueTime)}</span>
-              </div>
-            )}
-            {todo.dueTime && todo.duePercentage !== undefined && (
-              <div className={`w-px h-4 transition-colors duration-500 ${isDone(todo)
-                ? 'bg-fill'
-                : isActive
-                  ? 'bg-black/20'
-                  : 'bg-[var(--accent1)]/20'
-              }`} />
-            )}
-            {todo.duePercentage !== undefined && (
-              <div className={`text-[13px] leading-none font-mono font-medium transition-colors duration-500 ${isDone(todo)
-                ? 'text-fg-ghost'
-                : isActive
-                  ? 'text-canvas'
-                  : 'text-[var(--accent1)]'
-              }`}>
-                <span className="relative top-px">{Number.isInteger(todo.duePercentage) ? todo.duePercentage : Math.round(todo.duePercentage)}%</span>
-              </div>
-            )}
-          </div>
-        )}
+        <TaskTimeChips
+          todo={todo}
+          countdown={countdownDisplay}
+          done={isDone(todo)}
+          onTimeClick={() => onStartTracking(todo.id)}
+        />
 
-        {countdownDisplay && !isDone(todo) && (
-          <div className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg transition-colors duration-500 ${isActive ? 'bg-danger text-white' : 'bg-fill-subtle text-danger'}`}>
-            <div className="text-[13px] leading-none font-mono font-medium">
-              <span className="relative top-px"> {countdownDisplay} </span>
-            </div>
-          </div>
-        )}
+        <button
+          onClick={() => onDelete(todo.id)}
+          className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg-faint hover:text-red-400 hover:bg-danger-tint rounded-lg transition-all cursor-pointer"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
 
-      <button
-        onClick={() => onDelete(todo.id)}
-        className="opacity-0 group-hover:opacity-100 min-h-7 min-w-7 flex items-center justify-center text-fg-faint hover:text-red-400 hover:bg-danger-tint rounded-lg transition-all"
-      >
-        <Trash2 size={16} />
-      </button>
     </div>
   );
 };
@@ -354,20 +324,27 @@ export const ListView: React.FC<ListViewProps> = ({
   onSaveEdit,
   onCommitEdit,
   onOpenFull,
-  onAddToCalendar,
   onStartTracking = () => {},
-  activeTodoId = null,
   onAdd,
+  onDuplicate,
+  onSetDate,
+  onSetTime,
+  onSetParent,
+  onAddAt,
   countdownMode = 'off',
   collectionOptions = [],
   onCreateCollection,
-  initialCollectionIdOf,
   onReorder,
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
+  // Right-click menu target (row id + cursor position).
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  // "Add task above/below": an inline add panel anchored to a row. The task is
+  // only created on submit, so cancelling leaves no empty row behind.
+  const [insertAt, setInsertAt] = useState<{ anchorId: string; pos: 'above' | 'below' } | null>(null);
   // Buffer to keep the reordered IDs locally so that the list never flashes
   // the old order during the render tick before React Query catches up
   // (setTimeout(0) scheduling in notifyManager, see notifyManager.ts:63).
@@ -383,8 +360,14 @@ export const ListView: React.FC<ListViewProps> = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const openAddPanel = () => { setEditingId(null); setIsAdding(true); };
-  const openEditPanel = (id: string) => { setIsAdding(false); setEditingId(id); };
+  // Only one panel is ever open: opening any of them closes the others.
+  const openAddPanel = () => { setEditingId(null); setInsertAt(null); setIsAdding(true); };
+  const openEditPanel = (id: string) => { setIsAdding(false); setInsertAt(null); setEditingId(id); };
+  const openInsertPanel = (anchorId: string, pos: 'above' | 'below') => {
+    setIsAdding(false);
+    setEditingId(null);
+    setInsertAt({ anchorId, pos });
+  };
 
   const handleSaveEdit = (id: string, vals: QuickEditValues) => {
     onSaveEdit(id, vals);
@@ -433,6 +416,22 @@ export const ListView: React.FC<ListViewProps> = ({
     [todos, activeId]
   );
 
+  const menuTodo = useMemo(
+    () => (menu ? todos.find((t) => t && t.id === menu.id) ?? null : null),
+    [todos, menu]
+  );
+
+  const insertPanel = insertAt && onAddAt && (
+    <QuickEditTodo
+      mode="add"
+      initialDate={date}
+      collectionOptions={collectionOptions}
+      onCreateCollection={onCreateCollection}
+      onSubmit={(vals) => { onAddAt(vals, insertAt.anchorId, insertAt.pos); setInsertAt(null); }}
+      onCancel={() => setInsertAt(null)}
+    />
+  );
+
   return (
     <div className="space-y-0">
       <DndContext
@@ -447,28 +446,30 @@ export const ListView: React.FC<ListViewProps> = ({
         >
           {(visibleTodos || []).map((todo) => {
             if (!todo || !todo.id) return null;
+            const anchored = insertAt?.anchorId === todo.id;
             return (
-              <SortableTodoItem
-                key={todo.id}
-                todo={todo}
-                date={date}
-                onToggle={onToggle}
-                onDelete={onDelete}
-                onEdit={(t) => openEditPanel(t.id)}
-                isEditing={editingId === todo.id}
-                onCancelEdit={() => setEditingId(null)}
-                onSaveEdit={handleSaveEdit}
-                onCommitEdit={onCommitEdit}
-                onOpenFull={onOpenFull}
-                onAddToCalendar={onAddToCalendar || (() => {})}
-                onStartTracking={onStartTracking}
-                isActive={activeTodoId === todo.id}
-                now={now}
-                countdownMode={countdownMode}
-                collectionOptions={collectionOptions}
-                onCreateCollection={onCreateCollection || (() => '')}
-                initialCollectionId={initialCollectionIdOf ? initialCollectionIdOf(todo) : null}
-              />
+              <React.Fragment key={todo.id}>
+                {anchored && insertAt!.pos === 'above' && insertPanel}
+                <SortableTodoItem
+                  todo={todo}
+                  date={date}
+                  onToggle={onToggle}
+                  onDelete={onDelete}
+                  onEdit={(t) => openEditPanel(t.id)}
+                  isEditing={editingId === todo.id}
+                  onCancelEdit={() => setEditingId(null)}
+                  onSaveEdit={handleSaveEdit}
+                  onCommitEdit={onCommitEdit}
+                  onOpenFull={onOpenFull}
+                  onStartTracking={onStartTracking}
+                  onOpenMenu={(x, y) => setMenu({ id: todo.id, x, y })}
+                  now={now}
+                  countdownMode={countdownMode}
+                  collectionOptions={collectionOptions}
+                  onCreateCollection={onCreateCollection || (() => '')}
+                />
+                {anchored && insertAt!.pos === 'below' && insertPanel}
+              </React.Fragment>
             );
           })}
         </SortableContext>
@@ -487,7 +488,6 @@ export const ListView: React.FC<ListViewProps> = ({
               onCommitEdit={() => {}}
               onOpenFull={() => {}}
               onStartTracking={() => {}}
-              isActive={activeTodoId === activeTodo.id}
               now={now}
               countdownMode={countdownMode}
             />
@@ -513,6 +513,24 @@ export const ListView: React.FC<ListViewProps> = ({
           onCreateCollection={onCreateCollection}
           onSubmit={onAdd}
           onCancel={() => setIsAdding(false)}
+        />
+      )}
+
+      {menu && menuTodo && (
+        <DailyRowContextMenu
+          todo={menuTodo}
+          date={date}
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          onOpenFull={onOpenFull}
+          onDuplicate={(id) => onDuplicate?.(id)}
+          onSetDate={(id, d) => onSetDate?.(id, d)}
+          onSetTime={(id, t) => onSetTime?.(id, t)}
+          onSetParent={(id, parentId) => onSetParent?.(id, parentId)}
+          onAddAbove={(id) => openInsertPanel(id, 'above')}
+          onAddBelow={(id) => openInsertPanel(id, 'below')}
+          onDelete={onDelete}
         />
       )}
 

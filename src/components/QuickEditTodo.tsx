@@ -1,26 +1,37 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Sparkles, Maximize2, X, Shapes } from 'lucide-react';
-import { formatTime12h, timeToPercentage, percentageToTime } from '../utils/timeUtils';
+import { Maximize2, CircleDot, Flag } from 'lucide-react';
+import { timeToPercentage } from '../utils/timeUtils';
 import { CollectionOption } from '../utils/todoFilters';
-import { btnAccent } from '../theme/buttons';
-import { CollectionSearchField } from './todoFields';
-import { pillBg, pillText } from '../theme/pill';
-import { collectionColor } from './todosHub/constants';
+import { TodoStatus, TodoPriority } from '../types';
+import { btnAccent, btnNeutral } from '../theme/buttons';
+import { statusOption, priorityOption, STATUS_OPTIONS, PRIORITY_OPTIONS } from './todoFields';
+import {
+  DateChip,
+  TimeChip,
+  XpChip,
+  OptionChipButton,
+  ParentTaskButton,
+  derivedCollectionId,
+} from './taskChips';
+import { CollectionPickerButton } from './CollectionPicker';
+import { useAppData } from '../data/AppDataContext';
 
 export interface QuickEditValues {
   text: string;
   notes: string;
-  date: string;            // YYYY-MM-DD
-  startTime?: string;      // HH:MM
+  date: string;            // YYYY-MM-DD — the due date (drives the daily-list day)
+  startTime?: string;      // HH:MM (carried through; cleared alongside the end time)
   dueTime?: string;        // HH:MM
   duePercentage?: number;
   xp?: number;
-  collectionId?: string | null; // assigned collection (positional → parentId)
+  status?: TodoStatus;
+  priority?: TodoPriority;
+  parentId?: string | null; // immediate parent (a task or a collection)
 }
 
 interface QuickEditTodoProps {
   mode: 'add' | 'edit';
+  todoId?: string;              // edit mode: excludes self + subtree from the parent picker
   initialText?: string;
   initialNotes?: string;
   initialDate: string;
@@ -28,7 +39,9 @@ interface QuickEditTodoProps {
   initialTime?: string;
   initialPercent?: number;
   initialXp?: number;
-  initialCollectionId?: string | null;
+  initialStatus?: TodoStatus;
+  initialPriority?: TodoPriority;
+  initialParentId?: string | null;
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
   onSubmit: (vals: QuickEditValues) => void;
@@ -37,10 +50,9 @@ interface QuickEditTodoProps {
   onFlush?: (vals: QuickEditValues) => void; // edit mode: persist on forced close
 }
 
-const GOLD = '#ffba44';
-
 export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   mode,
+  todoId,
   initialText,
   initialNotes,
   initialDate,
@@ -48,39 +60,39 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   initialTime,
   initialPercent,
   initialXp,
-  initialCollectionId,
+  initialStatus,
+  initialPriority,
+  initialParentId,
   collectionOptions = [],
   onCreateCollection,
   onSubmit,
   onCancel,
   onOpenFull,
-  onFlush
+  onFlush,
 }) => {
+  // Used to resolve the immediate parent into the collection breadcrumb.
+  const { todoById } = useAppData();
+
   const [text, setText] = useState(initialText || '');
   const [notes, setNotes] = useState(initialNotes || '');
-  const [date, setDate] = useState(initialDate);
+  const [date, setDate] = useState(initialDate);          // due date
   // The quick editor only exposes an end time, but it carries the start time
   // through so the Clear button can wipe both (and not silently keep a start).
   const [startTime, setStartTime] = useState(initialStartTime || '');
-  const [time, setTime] = useState(initialTime || '');
+  const [time, setTime] = useState(initialTime || '');    // due time
   const [percentStr, setPercentStr] = useState(initialPercent?.toString() ?? '');
   const [xpStr, setXpStr] = useState(initialXp?.toString() ?? '');
-  const [collectionId, setCollectionId] = useState<string | null>(initialCollectionId ?? null);
+  const [status, setStatus] = useState<TodoStatus | undefined>(initialStatus);
+  const [priority, setPriority] = useState<TodoPriority | undefined>(initialPriority);
+  const [parentId, setParentId] = useState<string | null>(initialParentId ?? null);
 
-  // Which chip's dropdown editor is open (null = none)
-  const [openEditor, setOpenEditor] = useState<'date' | 'time' | 'xp' | 'collection' | null>(null);
-  const dateWrapRef = useRef<HTMLDivElement>(null);
-  const timeWrapRef = useRef<HTMLDivElement>(null);
-  const xpWrapRef = useRef<HTMLDivElement>(null);
-  const collWrapRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
-  const currentCollection = collectionOptions.find(o => o.id === collectionId) || null;
+  const collId = derivedCollectionId(parentId, todoById);
 
   // Auto-size the notes textarea: one line by default, growing with content and
-  // capping at ~3 lines before it becomes scrollable. (Same idea as the full
-  // view, which allows more lines because it has more room.)
+  // capping at ~3 lines before it becomes scrollable.
   const NOTES_MIN_HEIGHT = 24; // px, ~1 line
   const NOTES_MAX_HEIGHT = 70; // px, ~3 lines
   const resizeNotes = () => {
@@ -91,8 +103,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     el.style.height = `${next}px`;
     el.style.overflowY = el.scrollHeight > NOTES_MAX_HEIGHT ? 'auto' : 'hidden';
   };
-
-  // Re-measure when the notes content changes (incl. when a new target re-seeds).
   useLayoutEffect(resizeNotes, [notes]);
 
   // Guards for the flush-on-unmount behaviour
@@ -107,7 +117,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     dueTime: time || undefined,
     duePercentage: percentStr ? parseFloat(percentStr) : undefined,
     xp: xpStr ? Math.max(0, parseInt(xpStr) || 0) : undefined,
-    collectionId
+    status,
+    priority,
+    parentId,
   });
 
   // Keep the latest snapshot fresh for the unmount flush.
@@ -122,10 +134,11 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setTime(initialTime || '');
     setPercentStr(initialPercent?.toString() ?? '');
     setXpStr(initialXp?.toString() ?? '');
-    setCollectionId(initialCollectionId ?? null);
-    setOpenEditor(null);
+    setStatus(initialStatus);
+    setPriority(initialPriority);
+    setParentId(initialParentId ?? null);
     committedRef.current = false;
-  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, initialXp, initialCollectionId]);
+  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, initialXp, initialStatus, initialPriority, initialParentId]);
 
   // On unmount, if an edit panel is force-closed (not via Save/Cancel), persist
   // its current values so switching panels doesn't lose changes.
@@ -139,36 +152,11 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Close the open dropdown when clicking elsewhere. Native pickers are OS-level
-  // overlays and don't dispatch mousedown to the document, so they stay open.
-  useEffect(() => {
-    if (!openEditor) return;
-    const onDown = (e: MouseEvent) => {
-      const wrap = openEditor === 'date' ? dateWrapRef.current
-        : openEditor === 'time' ? timeWrapRef.current
-          : openEditor === 'collection' ? collWrapRef.current
-            : xpWrapRef.current;
-      if (wrap && !wrap.contains(e.target as Node)) setOpenEditor(null);
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [openEditor]);
-
   const handleTimeChange = (val: string) => {
     setTime(val);
-    if (!val) { setPercentStr(''); return; }
+    if (!val) { setPercentStr(''); setStartTime(''); return; }
     const p = timeToPercentage(val);
     if (p !== undefined) setPercentStr(p.toString());
-  };
-
-  const handlePercentChange = (val: string) => {
-    setPercentStr(val);
-    if (val === '') return;
-    const num = parseFloat(val);
-    if (!isNaN(num)) {
-      const t = percentageToTime(num);
-      if (t) setTime(t);
-    }
   };
 
   const canSubmit = text.trim().length > 0;
@@ -181,12 +169,14 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       // Keep the panel open for rapid entry (Todoist-style): reset & refocus.
       setText('');
       setNotes('');
+      setStartTime('');
       setTime('');
       setPercentStr('');
       setXpStr('');
-      setCollectionId(null);
+      setStatus(undefined);
+      setPriority(undefined);
+      setParentId(null);
       setDate(initialDate);
-      setOpenEditor(null);
       committedRef.current = false;
       requestAnimationFrame(() => nameRef.current?.focus());
     }
@@ -197,30 +187,13 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     onCancel();
   };
 
-  const pct = percentStr === ''
-    ? null
-    : (Number.isInteger(+percentStr) ? +percentStr : Math.round(+percentStr));
-  const xpVal = xpStr === '' ? null : Math.max(0, parseInt(xpStr) || 0);
-
-  // Chips mirror the list-view time/percent badge: icon + mono value on a
-  // low-opacity tint of the accent color, no border.
-  const chipBase =
-    'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer';
-  const chipText =
-    'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
-  const fieldBase =
-    'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-sm font-mono focus:outline-none focus:border-[var(--accent2)]';
-  const popover =
-    'absolute z-20 top-full left-0 mt-2 rounded-xl border border-line bg-surface shadow-2xl p-2';
-
   return (
     <div
       onKeyDown={(e) => {
+        // Chips stop Enter/Escape while their popover is open, so these only fire
+        // when no editor is up.
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          if (openEditor) setOpenEditor(null); else cancel();
-        }
+        if (e.key === 'Escape') { e.preventDefault(); cancel(); }
       }}
       className="my-2 mx-4 p-3.5 bg-surface border border-[var(--accent2)]/30 rounded-2xl shadow-xl"
     >
@@ -230,7 +203,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Task name"
+        placeholder="Untitled"
         className="w-full bg-transparent text-fg text-base font-medium placeholder:text-fg-ghost focus:outline-none"
       />
 
@@ -244,179 +217,51 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         className="w-full bg-transparent resize-none text-fg-muted text-sm leading-relaxed placeholder:text-fg-ghost focus:outline-none mt-2 overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fill-stronger"
       />
 
-      {/* Chips — display only. Clicking opens a dropdown editor below the chip. */}
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
-        {/* Date */}
-        <div ref={dateWrapRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => o === 'date' ? null : 'date')}
-            className={`${chipBase} bg-[var(--accent2)]/7 hover:bg-[var(--accent2)]/15`}
-          >
-            <span className={`${chipText} text-[var(--accent2)]`}>
-              <Calendar size={16} />
-              <span className="relative top-px">{format(parseISO(date), 'MM/dd/yyyy')}</span>
-            </span>
-          </button>
-
-          {openEditor === 'date' && (
-            <div className={popover}>
-              <input
-                autoFocus
-                type="date"
-                value={date}
-                onChange={(e) => { if (e.target.value) setDate(e.target.value); }}
-                                className={`${fieldBase} w-[170px]`}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Time + % */}
-        <div ref={timeWrapRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => o === 'time' ? null : 'time')}
-            className={`${chipBase} ${time ? 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
-          >
-            {time ? (
-              <>
-                <span className={`${chipText} text-[var(--accent1)]`}>
-                  <Clock size={16} />
-                  <span className="relative top-px">{formatTime12h(time)}</span>
-                </span>
-                {pct !== null && <div className="w-px h-4 bg-[var(--accent1)]/20" />}
-                {pct !== null && (
-                  <span className={`${chipText} text-[var(--accent1)]`}>
-                    <span className="relative top-px">{pct}%</span>
-                  </span>
-                )}
-              </>
-            ) : (
-              <span className={`${chipText} text-fg-subtle`}>
-                <Clock size={16} />
-                <span className="relative top-px">Time</span>
-              </span>
-            )}
-          </button>
-
-          {openEditor === 'time' && (
-            <div className={popover}>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center h-9 bg-fill-subtle border border-line rounded-lg focus-within:border-[var(--accent2)] overflow-hidden">
-                  <input
-                    autoFocus
-                    type="time"
-                    value={time}
-                    onChange={(e) => handleTimeChange(e.target.value)}
-                                        className="bg-transparent px-3 h-full text-fg text-sm font-mono focus:outline-none w-[128px]"
-                  />
-                  <div className="w-px h-4 bg-fill-strong shrink-0" />
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="any"
-                    value={percentStr}
-                    onChange={(e) => handlePercentChange(e.target.value)}
-                                        placeholder="%"
-                    className="bg-transparent px-3 h-full text-fg text-sm font-mono focus:outline-none w-[78px]"
-                  />
-                </div>
-                {(time || startTime) && (
-                  <button
-                    type="button"
-                    onClick={() => { setStartTime(''); setTime(''); setPercentStr(''); setOpenEditor(null); }}
-                    title="Clear"
-                    className="shrink-0 p-1.5 rounded-md text-fg-faint hover:text-fg-muted hover:bg-fill-subtle"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* XP */}
-        <div ref={xpWrapRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => o === 'xp' ? null : 'xp')}
-            className={`${chipBase} ${xpVal !== null ? 'bg-warning-tint text-warning' : 'bg-fill-subtle hover:bg-fill'}`}
-          >
-            <span className={chipText}>
-              <Sparkles size={16} className={xpVal !== null ? '' : 'text-fg-subtle'} />
-              <span className={`relative top-px ${xpVal !== null ? '' : 'text-fg-subtle'}`}>
-                {xpVal !== null ? `${xpVal} XP` : 'XP'}
-              </span>
-            </span>
-          </button>
-
-          {openEditor === 'xp' && (
-            <div className={popover}>
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={xpStr}
-                  onChange={(e) => setXpStr(e.target.value)}
-                                    placeholder="XP"
-                  className={`${fieldBase} w-[110px]`}
-                />
-                {xpStr !== '' && (
-                  <button
-                    type="button"
-                    onClick={() => { setXpStr(''); setOpenEditor(null); }}
-                    title="Clear"
-                    className="shrink-0 p-1.5 rounded-md text-fg-faint hover:text-fg-muted hover:bg-fill-subtle"
-                  >
-                    <X size={15} />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Collection */}
-        <div ref={collWrapRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenEditor(o => o === 'collection' ? null : 'collection')}
-            style={currentCollection ? { backgroundColor: pillBg(collectionColor(currentCollection.color)) } : undefined}
-            className={`${chipBase} ${currentCollection ? '' : 'bg-fill-subtle hover:bg-fill'}`}
-          >
-            <span
-              className={`${chipText} max-w-[200px] ${currentCollection ? '' : 'text-fg-subtle'}`}
-              style={currentCollection ? { color: pillText(collectionColor(currentCollection.color)) } : undefined}
-            >
-              <Shapes size={16} className="shrink-0" />
-              <span className="relative top-px truncate">
-                {currentCollection ? currentCollection.path.map(p => p.name).join(' › ') : 'Collection'}
-              </span>
-            </span>
-          </button>
-
-          {openEditor === 'collection' && (
-            <div className={`${popover} w-64`}>
-              <CollectionSearchField
-                value={collectionId}
-                currentPath={currentCollection?.path || []}
-                options={collectionOptions}
-                onChange={setCollectionId}
-                onCreate={(name) => (onCreateCollection ? onCreateCollection(name) : '')}
-                autoFocus
-              />
-            </div>
-          )}
+      {/* Chips — Date · Time+% · XP · Status · Priority */}
+      <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+        <DateChip value={date} onChange={setDate} placeholder="Due date" />
+        <TimeChip
+          value={time}
+          percent={percentStr === '' ? undefined : parseFloat(percentStr)}
+          onChange={handleTimeChange}
+        />
+        <XpChip
+          value={xpStr === '' ? undefined : Math.max(0, parseInt(xpStr) || 0)}
+          onChange={(v) => setXpStr(v == null ? '' : String(v))}
+        />
+        <div className="flex">
+          <OptionChipButton
+            icon={<CircleDot size={16} className="shrink-0 text-fg-subtle" />}
+            placeholder="Status"
+            value={status}
+            option={status ? statusOption(status) : undefined}
+            options={STATUS_OPTIONS}
+            onChange={(v) => setStatus(v as TodoStatus | undefined)}
+          />
+          <OptionChipButton
+            icon={<Flag size={16} className="shrink-0 text-fg-subtle" />}
+            placeholder="Priority"
+            value={priority}
+            option={priority ? priorityOption(priority) : undefined}
+            options={PRIORITY_OPTIONS}
+            onChange={(v) => setPriority(v as TodoPriority | undefined)}
+          />
         </div>
       </div>
 
+      {/* Collection · Set parent task */}
+      <div className="flex items-stretch gap-1 mt-3 flex-wrap">
+        <CollectionPickerButton
+          collectionId={collId}
+          options={collectionOptions}
+          onChange={setParentId}
+          onCreate={(name) => (onCreateCollection ? onCreateCollection(name) : '')}
+        />
+        <ParentTaskButton todoId={todoId} parentId={parentId} onChange={setParentId} />
+      </div>
+
       {/* Footer */}
-      <div className="flex items-center gap-2 mt-2.5">
+      <div className="flex items-center gap-2 mt-2">
         {mode === 'edit' && onOpenFull && (
           <button
             type="button"
@@ -431,7 +276,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         <button
           type="button"
           onClick={cancel}
-          className="px-3 h-8 bg-fill-subtle hover:bg-fill text-fg-subtle rounded-lg text-xs font-bold"
+          className={`px-3 h-8 rounded-lg text-xs font-bold ${btnNeutral}`}
         >
           Cancel
         </button>
