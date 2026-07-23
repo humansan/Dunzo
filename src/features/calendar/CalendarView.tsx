@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   format,
@@ -486,7 +486,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [focusDate, dayCount]);
 
   // Auto-scroll to ~7 AM on mount and when focus changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = 7 * HOUR_HEIGHT;
     }
@@ -879,10 +879,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     <div className={`flex ${hideHeader ? 'h-full' : 'h-screen'} mx-auto w-full`}>
       {/* Left side: Mini calendar */}
       {!hideMiniCalendar && (
-        <div className="w-60 flex-shrink-0 pt-2 pr-2 hidden lg:flex lg:flex-col min-h-0 border-r border-line mr-4">
+        <div className="w-60 flex-shrink-0 pt-2 hidden lg:flex lg:flex-col min-h-0 border-r border-line mr-4 bg-surface">
           {/* Calendar is h-full; without a content-height wrapper it eats the whole
               screen-height column and pushes the toggles below the fold. */}
-          <div className="shrink-0 px-2">
+          <div className="shrink-0 px-3">
             <Calendar
               currentMonth={miniCalMonth}
               onMonthChange={setMiniCalMonth}

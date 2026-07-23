@@ -28,9 +28,6 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
     avgLast7Days,
     avgLast30Days,
     bestAllTime,
-    percent,
-    remaining,
-    reachedTarget,
     reachedWeekBest,
     reachedAllTimeBest
   } = stats;
@@ -39,13 +36,19 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   // the one that's actually the bar to clear. Ties fall to the 7-day figure.
   const avgIs30 = avgLast30Days > avgLast7Days;
   const avgValue = avgIs30 ? avgLast30Days : avgLast7Days;
-  const avgLabel = avgIs30 ? 'avg 30d' : 'avg 7d';
+  const avgLabel = avgIs30 ? '30d avg' : '7d avg';
   const bestValue = reachedWeekBest ? bestAllTime : bestLast7Days;
   const bestLabel = reachedWeekBest ? 'best all time' : 'best 7d';
 
+  const reachTarget = target >= avgValue ? target : avgValue;
+  const reachText = target >= avgValue ? 'yesterday' : avgLabel;
+  const remaining = reachTarget - earned;
+  const reachedTarget = earned >= reachTarget;
+  const percent = Math.min(100, (earned / reachTarget) * 100);
+
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
-  const lit = reachedWeekBest ? VIOLET : reachedTarget ? GOLD : null;
+  const lit = reachedWeekBest ? VIOLET : earned >= reachTarget ? GOLD : null;
 
   // let targets: { label: string; value: number }[] = [
   //   { label: 'yesterday', value: target },
@@ -56,16 +59,16 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   let status: string;
 
   if (!reachedTarget) {
-    status = target === 0 ? 'Any XP beats yesterday' : `${remaining} XP to reach yesterday`;
+    status = reachTarget === 0 ? `Any XP beats ${reachText}` : `${remaining} XP to reach ${reachText}`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
     status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} XP to 7-day best`;
   } else if (!reachedAllTimeBest) {
     // 7-day best cleared (violet). Point at the all-time best.
-    status = `🎊On a roll!! ⬩ ${bestAllTime - earned} XP to all-time best`;
+    status = `🎊🔥On a roll!! ⬩ ${bestAllTime - earned} XP to all-time best`;
   } else {
     const over = earned - bestAllTime;
-    status = over > 0 ? `🥳New all-time best!!! ⬩ +${over} XP` : 'All-time best matched!!';
+    status = over > 0 ? `🥳😭🏆New all-time best!!! ⬩ +${over} XP` : 'All-time best matched!!';
   }
 
   const pctLabel = `${Math.round(percent)}%`;
@@ -79,7 +82,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const count = useMotionValue(earned);
   const display = useTransform(count, v => Math.round(v));
   useEffect(() => {
-    const controls = animate(count, earned, { duration: 1.0, ease: EXPO_OUT });
+    const controls = animate(count, earned, { duration: 0.75, ease: EXPO_OUT });
     return () => controls.stop();
   }, [count, earned]);
 
@@ -186,14 +189,14 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
             className="absolute inset-y-0 left-0 blur-lg opacity-90"
             initial={{ width: 0 }}
             animate={{ width: `${percent}%`, backgroundColor: barColor }}
-            transition={{ duration: 0.6, ease: EXPO_OUT }}
+            transition={{ duration: 0.75, ease: EXPO_OUT }}
           />
           {/* Crisp solid fill on top */}
           <motion.div
             className="absolute inset-y-0 left-0"
             initial={{ width: 0 }}
             animate={{ width: `${percent}%`, backgroundColor: barColor }}
-            transition={{ duration: 0.6, ease: EXPO_OUT }}
+            transition={{ duration: 0.75, ease: EXPO_OUT }}
           />
         </div>
       </div>

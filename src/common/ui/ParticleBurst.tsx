@@ -4,7 +4,7 @@ import { useThemeColor } from '@/theme/useThemeColor';
 
 
 // A deliberately varied palette so a burst feels colourful, not flat.
-const PARTICLE_COLORS = ['#ffc24b', '#ff8a3d', '#ff5d8f', '#a78bfa', '#7dd3fc', '#ffffff'];
+const PARTICLE_COLORS = ['#ffb82b', '#ff7d27', '#ff5d8f', '#9876ff', '#31beff', '#84ff6e'];
 
 // ── A short colourful particle burst + ring, centred on its container ──
 // Absolutely positioned, so drop it inside a `relative` parent and mount it via
@@ -13,9 +13,9 @@ export const ParticleBurst: React.FC = React.memo(() => {
   const GOLD = useThemeColor('xp-tier1');
   const parts = useMemo(
     () =>
-      Array.from({ length: 10 }, (_, i) => {
+      Array.from({ length: 16 }, (_, i) => {
         const ang = (i / 10) * Math.PI * 2 + Math.random() * 0.5;
-        const dist = 14 + Math.random() * 16;
+        const dist = 16 + Math.random() * 20;
         return {
           x: Math.cos(ang) * dist,
           y: Math.sin(ang) * dist,
@@ -28,20 +28,20 @@ export const ParticleBurst: React.FC = React.memo(() => {
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <motion.span
-        className="absolute rounded-full border-2"
+        className="absolute rounded-full border-3"
         style={{ borderColor: GOLD }}
-        initial={{ width: 6, height: 6, opacity: 0.9 }}
-        animate={{ width: 42, height: 42, opacity: 0 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
+        initial={{ width: 24, height: 24, opacity: 1, borderWidth: 3 }}
+        animate={{ width: 96, height: 96, opacity: 0, borderWidth: 0 }}
+        transition={{ duration: 1.1, ease: 'easeOut' }}
       />
       {parts.map((p, i) => (
         <motion.span
           key={i}
-          className="absolute rounded-full"
+          className="absolute rounded-full scale-180"
           style={{ width: p.s, height: p.s, backgroundColor: p.c, boxShadow: `0 0 6px ${p.c}` }}
           initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
           animate={{ x: p.x, y: p.y, scale: 0, opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={{ duration: 1.1, ease: 'easeOut' }}
         />
       ))}
     </div>

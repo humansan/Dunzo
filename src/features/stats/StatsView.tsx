@@ -595,7 +595,8 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                 allowDecimals={false}
                 fontFamily="Space Grotesk, monospace"
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: FG, fillOpacity: 0.05 }} />
+              {/* Recharts defaults the tooltip to `transition: transform 400ms ease`. Set false for better transition*/}
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: FG, fillOpacity: 0.05 }} isAnimationActive={false} />
               <Bar dataKey="xp" fill="var(--accent1)" />
             </BarChart>
           </ResponsiveContainer>

@@ -19,7 +19,7 @@ function CalendarRoute() {
   const { openTask } = useOverlayNav();
   const { date } = Route.useSearch();
   return (
-    <main className="mx-auto px-2 h-screen py-0">
+    <main className="mx-auto h-screen py-0">
       <div>
         <CalendarView
           dayTodos={d.dayTodos}

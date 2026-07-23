@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Clock, CheckSquare, Calendar, Timer, BarChart2, Blocks, Search } from 'lucide-react';
+import { Clock, ListChecks, CalendarDays, Timer, BarChart2, Blocks, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import backgroundUrl from '@/assets/background.jpg';
@@ -34,10 +34,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
   if (!isVisible) return null;
 
   const items = [
-    { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos' },
+    { to: '/today' as const, icon: ListChecks, title: 'Daily Todos' },
     { to: '/planner' as const, icon: Blocks, title: 'Task Planner' },
+    { to: '/calendar' as const, icon: CalendarDays, title: 'Calendar' },
     { to: '/trackers' as const, icon: Clock, title: 'Trackers' },
-    { to: '/calendar' as const, icon: Calendar, title: 'Calendar' },
     { to: '/stats' as const, icon: BarChart2, title: 'Stats' },
   ];
 
@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
     <motion.div
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed left-0 top-0 bottom-0 w-14 bg-canvas border-r border-line-subtle flex flex-col items-center justify-between py-5 z-50"
+      className="fixed left-0 top-0 bottom-0 w-14 bg-surface border-r border-line-subtle flex flex-col items-center justify-between py-3 z-50"
     >
       <div className="flex flex-col gap-3">
         {items.map((item) => {

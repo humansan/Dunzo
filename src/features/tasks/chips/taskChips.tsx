@@ -205,8 +205,12 @@ export const TimeChip: React.FC<{
   /** A time can't exist without a date on its side; the caller disables the chip
    *  (greyed, non-interactive) until that side has a date. */
   disabled?: boolean;
-}> = ({ value, percent, onChange, placeholder = 'Time', disabled = false }) => {
+  /** Drops the accent tint but stays clickable - the daily list uses it to grey
+   *  the chip on a completed task. */
+  muted?: boolean;
+}> = ({ value, percent, onChange, placeholder = 'Time', disabled = false, muted = false }) => {
   const pct = percent === undefined ? null : Number.isInteger(percent) ? percent : Math.round(percent);
+  const tone = muted ? 'text-fg-ghost' : 'text-[var(--accent1)]';
   if (disabled) {
     return (
       <button
@@ -228,17 +232,27 @@ export const TimeChip: React.FC<{
         <button
           type="button"
           onClick={open}
-          className={`${chipBase} ${value ? 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
+          className={`${chipBase} ${
+            muted || !(value || pct !== null)
+              ? 'bg-fill-subtle hover:bg-fill'
+              : 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15'
+          }`}
         >
-          {value ? (
+          {/* A percentage can outlive its time (the daily list shows either), so
+              this keys off both rather than on `value` alone. */}
+          {value || pct !== null ? (
             <>
-              <span className={`${chipText} text-[var(--accent1)]`}>
-                <Clock size={16} />
-                <span className="relative top-px">{formatTime12h(value)}</span>
-              </span>
-              {pct !== null && <div className="w-px h-4 bg-[var(--accent1)]/20" />}
+              {value && (
+                <span className={`${chipText} ${tone}`}>
+                  <Clock size={16} />
+                  <span className="relative top-px">{formatTime12h(value)}</span>
+                </span>
+              )}
+              {value && pct !== null && (
+                <div className={`w-px h-4 ${muted ? 'bg-fill' : 'bg-[var(--accent1)]/20'}`} />
+              )}
               {pct !== null && (
-                <span className={`${chipText} text-[var(--accent1)]`}>
+                <span className={`${chipText} ${tone}`}>
                   <span className="relative top-px">{pct}%</span>
                 </span>
               )}
@@ -259,19 +273,29 @@ export const TimeChip: React.FC<{
 export const XpChip: React.FC<{
   value?: number;
   onChange: (val: number | undefined) => void;
-}> = ({ value, onChange }) => {
+  /** Drops the gold tint but stays clickable - the daily list uses it to grey the
+   *  chip on a completed task. */
+  muted?: boolean;
+}> = ({ value, onChange, muted = false }) => {
   const set = value !== undefined;
+  const dim = muted ? 'text-fg-ghost' : 'text-fg-subtle';
   return (
     <ChipPopover panel={() => <XpSlider value={value} autoFocus onChange={onChange} />}>
       {({ open }) => (
         <button
           type="button"
           onClick={open}
-          className={`${chipBase} ${set ? 'bg-warning-tint text-warning' : 'bg-fill-subtle hover:bg-fill'}`}
+          className={`${chipBase} ${
+            muted
+              ? 'bg-fill-subtle hover:bg-fill text-fg-ghost'
+              : set
+                ? 'bg-warning/10 text-warning hover:bg-warning/18'
+                : 'bg-fill-subtle hover:bg-fill'
+          }`}
         >
           <span className={chipText}>
-            <Astroid size={16} className={set ? '' : 'text-fg-subtle'} />
-            <span className={`relative top-px ${set ? '' : 'text-fg-subtle'}`}>{set ? `${value} XP` : 'XP'}</span>
+            <Astroid size={16} className={set && !muted ? '' : dim} />
+            <span className={`relative top-px ${set && !muted ? '' : dim}`}>{set ? `${value} XP` : 'XP'}</span>
           </span>
         </button>
       )}

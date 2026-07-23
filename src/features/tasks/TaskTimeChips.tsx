@@ -35,6 +35,26 @@ export function formatCountdown(
   return `${h.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+/**
+ * The time-remaining pill. Split out from TaskTimeChips because the daily list
+ * renders it alongside the interactive TimeChip (which opens a time picker)
+ * rather than the read-only due-time chip below.
+ */
+export const CountdownChip: React.FC<{ countdown: string; inverted?: boolean }> = ({
+  countdown,
+  inverted = false,
+}) => (
+  <div
+    className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg ${
+      inverted ? 'bg-danger text-white' : 'bg-fill-subtle text-danger'
+    }`}
+  >
+    <div className="text-[13px] leading-none font-mono font-medium">
+      <span className="relative top-px">{countdown}</span>
+    </div>
+  </div>
+);
+
 interface TaskTimeChipsProps {
   todo: Todo;
   /** Pre-formatted countdown text (see formatCountdown); null/undefined hides the chip. */
@@ -42,20 +62,18 @@ interface TaskTimeChipsProps {
   /** 'inverted' = solid accent fill with inverted text - used by the active tracker. */
   variant?: 'default' | 'inverted';
   done?: boolean;
-  /** When provided the time chip becomes clickable (starts tracking). */
-  onTimeClick?: () => void;
 }
 
 /**
- * The due-time (+ due-percentage) chip and the countdown chip, shared by the daily
- * list rows and the active-task tracker so both read identically.
+ * The read-only due-time (+ due-percentage) chip and the countdown chip. Used by
+ * the active-task tracker; the daily list builds the same readout from the
+ * editable TimeChip plus CountdownChip.
  */
 export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
   todo,
   countdown,
   variant = 'default',
   done = false,
-  onTimeClick,
 }) => {
   const inverted = variant === 'inverted';
   const textCls = done ? 'text-fg-ghost' : inverted ? 'text-canvas' : 'text-(--accent1)';
@@ -64,10 +82,7 @@ export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
     <>
       {(todo.dueTime || todo.duePercentage !== undefined) && (
         <div
-          onClick={onTimeClick}
           className={`flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg transition ${
-            onTimeClick ? 'cursor-pointer' : ''
-          } ${
             done
               ? 'bg-fill-subtle shadow-none'
               : inverted
@@ -94,17 +109,7 @@ export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
         </div>
       )}
 
-      {countdown && !done && (
-        <div
-          className={`flex items-center gap-2 px-2.75 h-[27px] rounded-lg ${
-            inverted ? 'bg-danger text-white' : 'bg-fill-subtle text-danger'
-          }`}
-        >
-          <div className="text-[13px] leading-none font-mono font-medium">
-            <span className="relative top-px">{countdown}</span>
-          </div>
-        </div>
-      )}
+      {countdown && !done && <CountdownChip countdown={countdown} inverted={inverted} />}
     </>
   );
 };

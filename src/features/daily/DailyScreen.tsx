@@ -24,8 +24,9 @@ import { TrackerCard } from '@/features/trackers';
 import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
-import { StarStreak } from '@/features/xp';
-import { computeXpStats, getWeeklyXp } from '@/features/xp';
+import { StarStreak, StarStreakPopup, STAR_CELEBRATE_DELAY_MS } from '@/features/xp';
+import { computeXpStats, getWeeklyXp, computeStarStreak } from '@/features/xp';
+import { useDelayedValue } from '@/common/hooks/useDelayedValue';
 import { DailyList } from '@/features/daily/DailyList';
 import { DatePickerPopover } from '@/common/ui';
 
@@ -33,6 +34,10 @@ interface DailyScreenProps {
   dayTodos: DayTodos[];
   onUpdateTodos: (date: string, todos: Todo[]) => void;
   onMoveTodo: (fromDate: string, toDate: string, updatedTodo: Todo) => void;
+  // Currently unwired: the daily list's time chip used to start the tracker, but
+  // it is now a time picker (matching the quick-edit panel), so nothing in this
+  // screen starts tracking. AppShell still owns the tracker + its state, so this
+  // only needs a new trigger to come back.
   onStartTracking: (id: string) => void;
   activeTodoId: string | null;
   onToggleTodo: (id: string) => void;
@@ -107,6 +112,23 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   );
 
   const weeklyXp = useMemo(() => getWeeklyXp(dayTodos, 4), [dayTodos]);
+
+  // Star/streak flags are computed here and passed in - the widgets don't touch task
+  // state. The popup gets the LIVE flags (it snapshots + animates them itself); the
+  // corner gets a lagged copy so - with no animation of its own - it silently settles
+  // to the new total right as the popup lights up.
+  const starStreak = useMemo(() => computeStarStreak(dayTodos, selectedDate), [dayTodos, selectedDate]);
+  const lit = useMemo(
+    () => [starStreak.flags.completedTask, starStreak.flags.beatYesterday, starStreak.flags.beatAverage],
+    [starStreak]
+  );
+
+  const cornerTodos = useDelayedValue(dayTodos, STAR_CELEBRATE_DELAY_MS);
+  const cornerStreak = useMemo(() => computeStarStreak(cornerTodos, selectedDate), [cornerTodos, selectedDate]);
+  const cornerLit = useMemo(
+    () => [cornerStreak.flags.completedTask, cornerStreak.flags.beatYesterday, cornerStreak.flags.beatAverage],
+    [cornerStreak]
+  );
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: weekStartsOn as 0 | 1 | 2 | 3 | 4 | 5 | 6 });
@@ -262,6 +284,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   const setTodoParent = (id: string, parentId: string | null) =>
     patchTodo(id, () => ({ parentId }));
 
+  const setTodoXp = (id: string, xp: number | undefined) =>
+    patchTodo(id, () => ({ xp }));
+
   // Collection index + options for the quick-edit pickers.
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
   const collOptions = useMemo(() => buildCollectionOptions(dayTodos, byId), [dayTodos, byId]);
@@ -377,13 +402,13 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
           onSaveEdit={persistEdit}
           onCommitEdit={persistEdit}
           onOpenFull={onOpenTask}
-          onStartTracking={onStartTracking}
           activeTodoId={activeTodoId}
           onAdd={handleAddTodo}
           onAddAt={addTodoAt}
           onDuplicate={duplicateTodo}
           onSetDate={setTodoDate}
           onSetTime={setTodoTime}
+          onSetXp={setTodoXp}
           onSetParent={setTodoParent}
           countdownMode={countdownMode}
           collectionOptions={collOptions}
@@ -418,7 +443,8 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       {xpEnabled && (
         <>
           <XpProgressBar stats={xpStats} weeklyXp={weeklyXp} />
-          <StarStreak dayTodos={dayTodos} date={selectedDate} />
+          <StarStreak lit={cornerLit} streak={cornerStreak.streak} />
+          <StarStreakPopup lit={lit} streak={starStreak.streak} date={selectedDate} />
         </>
       )}
 
