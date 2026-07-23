@@ -61,7 +61,7 @@ const StarIcon = React.memo(
         transition={{ duration: 1.1, ease: POP }}
         className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
       >
-        <Astroid size={30} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
+        <Astroid size={32} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>
       <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
     </div>
@@ -119,7 +119,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
           >
             <motion.span
               key={streak}
-              className="text-2xl font-bold leading-none"
+              className="text-3xl font-bold leading-none"
               style={{ fontVariantNumeric: 'tabular-nums' }}
               animate={{ color: maxed ? '#000000' : ["white", GOLD_TEXT], scale: maxed ? [1, 1.25, 1] : 1}}
               transition={{ scale: { duration: 0.6, ease: POP }, color: { duration: 0.4 } }}

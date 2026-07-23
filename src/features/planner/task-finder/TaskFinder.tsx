@@ -9,6 +9,7 @@ import { VARIANTS } from '@/features/planner/variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from '@/features/planner/table/TaskTable';
 import { useTaskFinderSearch } from '@/features/planner/task-finder/useTaskFinderSearch';
 import { TwoPaneResults } from '@/features/planner/task-finder/TwoPaneResults';
+import { btnGhost } from '@/theme/buttons';
 
 // A command-palette over the active workspace's tasks, driven by `onPick`: search
 // wires it to open a task's full view, a picker (e.g. reparent) wires it to its own
@@ -24,7 +25,13 @@ const RESULT_LIMIT = 50;
 const NOOP = () => {};
 
 export interface TaskFinderProps {
+  // The task universe searched by the two-pane (Collections) view and the pickers.
+  // Global search passes its Planner-scoped organizer set here.
   entries: OrganizerEntry[];
+  // Optional broader universe for the flat (list) view - global search passes every
+  // unarchived task (Planner + daily-list-only) so daily-only tasks are findable.
+  // Omitted by pickers, which fall back to `entries` in both views.
+  flatEntries?: OrganizerEntry[];
   todoById: Map<string, Todo>;
   // Choosing a task: search opens its full view; a picker returns it to the caller.
   onPick: (id: string) => void;
@@ -43,6 +50,7 @@ export interface TaskFinderProps {
 
 export const TaskFinder: React.FC<TaskFinderProps> = ({
   entries,
+  flatEntries,
   todoById,
   onPick,
   onClose,
@@ -67,17 +75,31 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       return n;
     });
 
+  // The flat (list) view searches the broader `flatEntries` universe when provided
+  // (global search: every unarchived task, so daily-list-only tasks are findable);
+  // the two-pane (Collections) view stays scoped to `entries` (the organizer set it
+  // groups by collection). Pickers pass no `flatEntries`, so both views use `entries`.
+  const activeEntries = finderView === 'flat' ? (flatEntries ?? entries) : entries;
+
   // A picker excludes candidates it can't accept - reparent → the moved task + its
   // whole subtree (a cycle guard). Removing them from the candidate universe up front
   // keeps them out of matches AND out of the subtree expansion below (an excluded
   // task can be nested under a non-excluded match). Collections stay (structure).
   const candidateEntries = useMemo(
-    () => (isDisabled ? entries.filter((e) => e.todo.isCollection || !isDisabled(e.todo.id)) : entries),
-    [entries, isDisabled]
+    () => (isDisabled ? activeEntries.filter((e) => e.todo.isCollection || !isDisabled(e.todo.id)) : activeEntries),
+    [activeEntries, isDisabled]
   );
 
   // Which tasks match - VSCode-style fuzzy on the name + all-fields haystack (§hook).
   const matches = useTaskFinderSearch(candidateEntries, todoById, query, RESULT_LIMIT);
+
+  // The two-pane (Collections) view is a browsable table: with no query it shows the
+  // full table so the user can explore collections/tabs before searching, then the
+  // search filters it once they type. (The flat view stays empty until a query.)
+  const twoPaneMatches = useMemo(
+    () => (q ? matches : candidateEntries.filter((e) => !e.todo.isCollection)),
+    [q, matches, candidateEntries]
+  );
 
   // Pull in each match's subtask subtree so a matched task keeps its children - the
   // tree flatten renders them collapsibly (interim list; Phase 5 replaces this).
@@ -166,7 +188,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 p-1 rounded text-fg-faint hover:text-fg hover:bg-fill transition-colors"
+            className={`shrink-0 p-1 rounded transition-colors ${btnGhost()}`}
           >
             <X size={15} />
           </button>
@@ -184,21 +206,23 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
           </button>
         )}
 
-        {/* Results - hint / empty message, else the Flat or Two-pane view. */}
+        {/* Results. The two-pane view is always browsable (full table with no query,
+            filtered once a query is typed). The flat view stays empty until the user
+            types, then shows matches / a no-match message. */}
         <div className="flex-1 min-h-0 flex flex-col">
-          {!q ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by name or notes.</div>
-          ) : matches.length === 0 ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
-          ) : finderView === 'twoPane' ? (
+          {finderView === 'twoPane' ? (
             <TwoPaneResults
               entries={candidateEntries}
               todoById={todoById}
-              matches={matches}
+              matches={twoPaneMatches}
               onPick={onPick}
               onSaveTodo={onSaveTodo}
               onToggleTodo={onToggleTodo}
             />
+          ) : !q ? (
+            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by name or notes.</div>
+          ) : matches.length === 0 ? (
+            <div className="px-4 py-6 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
           ) : (
             <TaskTable
               variant={VARIANTS.search}

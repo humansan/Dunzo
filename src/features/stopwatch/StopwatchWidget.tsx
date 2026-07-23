@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { Play, Pause, Square, RotateCcw, Maximize2, X } from 'lucide-react';
-import { StopwatchTime } from '@/features/stopwatch/StopwatchContext';
+import { StopwatchTime, useStopwatch } from '@/features/stopwatch/StopwatchContext';
 
 export type TimerState = 'idle' | 'running' | 'paused';
 
@@ -24,19 +24,9 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
   onClose,
   onMaximize,
 }) => {
-  const [bgImage, setBgImage] = useState<string | null>(null);
-  const [bgDimness, setBgDimness] = useState<number>(0.3);
-  const [bgBlur, setBgBlur] = useState<number>(0);
-
-  // Mirror the background configured in fullscreen mode (persisted in localStorage)
-  useEffect(() => {
-    const img = localStorage.getItem('dun-sw-bg-image');
-    if (img) setBgImage(img);
-    const d = localStorage.getItem('dun-sw-bg-dimness');
-    if (d) setBgDimness(parseFloat(d));
-    const b = localStorage.getItem('dun-sw-bg-blur');
-    if (b) setBgBlur(parseFloat(b));
-  }, []);
+  // Shared with the fullscreen view, so a background picked there is already live
+  // here. Always an image - the bundled default until the user picks their own.
+  const { bgUrl, bgDimness, bgBlur } = useStopwatch();
 
   return (
     <motion.div
@@ -45,33 +35,29 @@ export const StopwatchWidget: React.FC<StopwatchWidgetProps> = ({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.1 }}
       className="fixed bottom-8 left-[calc(50%+1.75rem)] -translate-x-1/2 z-60 w-[360px] max-w-[calc(100vw-2rem)] rounded-3xl overflow-hidden shadow-2xl shadow-black/40"
-      style={{ backgroundImage: 'linear-gradient(135deg, #FF4E50 0%, #F9D423 100%)' }}
+      style={{ backgroundColor: '#000' }}
     >
       {/* Background image + dimming (mirrors fullscreen settings) */}
-      {bgImage && (
-        <img
-          src={bgImage}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: `blur(${bgBlur * 12}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
-        />
-      )}
-      {bgImage && (
-        <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
-      )}
+      <img
+        src={bgUrl}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: `blur(${bgBlur * 12}px)`, transform: `scale(${1 + bgBlur * 0.2})` }}
+      />
+      <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${bgDimness})` }} />
 
       {/* Top bar */}
       <div className="relative z-10 flex items-center justify-end gap-1 px-3 pt-3">
         <button
           onClick={onMaximize}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           title="Maximize"
         >
           <Maximize2 size={18} />
         </button>
         <button
           onClick={onClose}
-          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           title="Hide widget"
         >
           <X size={18} />

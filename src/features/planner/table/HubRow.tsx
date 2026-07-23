@@ -250,7 +250,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               onClick={() => { onQuickAddTask ? onQuickAddTask(todo.id) : onAddSubtask(todo.id); }}
               className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
             >
-              <Plus size={18} />
+              {onQuickAddTask && <Plus size={18} />}
             </button>
           </>
         }

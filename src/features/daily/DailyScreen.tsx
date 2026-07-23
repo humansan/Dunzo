@@ -309,7 +309,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   return (
     <div className="mx-auto px-1 pt-2 flex gap-4 h-screen overflow-hidden">
       {/* Left side: Trackers List */}
-      <div className="w-[20%] flex-shrink-0 overflow-y-auto pr-1 pb-12 no-scrollbar">
+      <div className="w-[20%] min-w-45 hidden md:block flex-shrink-0 overflow-y-auto pr-1 pb-12 no-scrollbar">
         <div className="flex flex-col gap-3 pt-1">
           <AnimatePresence>
             {orderedTrackers.map((tracker) => (
@@ -424,7 +424,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       </div>
 
       {/* Right side: 1-Day Calendar */}
-      <div className="w-90 shrink-0 hidden lg:block h-full">
+      <div className="max-w-90 w-[25%] shrink-0 hidden lg:block h-full">
         <div className="h-full overflow-hidden flex flex-col">
           <CalendarView
             dayTodos={dayTodos}
