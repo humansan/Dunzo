@@ -5,6 +5,8 @@ import CheckCircleCutout from '../assets/CheckCircleCutout';
 import { timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { TodoStatus, TodoPriority } from '../types';
 import { CollectionOption } from '../utils/todoFilters';
+import { pill } from '../theme/pill';
+import { collectionColor } from './todosHub/constants';
 
 // ── Shared todo field editors ────────────────────────────────────────────────
 // Small controlled inputs for each todo field, shared by the full-view panel and
@@ -20,7 +22,7 @@ export interface TimePatch {
 
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
 export const fieldInputClass =
-  'bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
+  'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
 
 // ── Completion toggle ────────────────────────────────────────────────────────
 export const CompletedToggle: React.FC<{
@@ -33,7 +35,7 @@ export const CompletedToggle: React.FC<{
     <motion.div
       animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
       transition={{ duration: 0.3 }}
-      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : 'text-white/50 hover:text-white'}`}
+      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : 'text-fg-subtle hover:text-fg'}`}
     >
       {completed
         ? <CheckCircleCutout size={size} strokeWidth={2.5} />
@@ -56,7 +58,6 @@ export const DateField: React.FC<{
     autoFocus={autoFocus}
     onBlur={onBlur}
     onChange={(e) => onChange(e.target.value)}
-    style={{ colorScheme: 'dark' }}
     className={className ?? fieldInputClass}
   />
 );
@@ -75,7 +76,6 @@ export const StartTimeField: React.FC<{
     autoFocus={autoFocus}
     onBlur={onBlur}
     onChange={(e) => onChange({ startTime: e.target.value || undefined })}
-    style={{ colorScheme: 'dark' }}
     className={className ?? fieldInputClass}
   />
 );
@@ -98,7 +98,6 @@ export const EndTimeField: React.FC<{
       const p = timeToPercentage(val);
       onChange({ dueTime: val || undefined, ...(p !== undefined ? { duePercentage: p } : {}) });
     }}
-    style={{ colorScheme: 'dark' }}
     className={className ?? fieldInputClass}
   />
 );
@@ -129,7 +128,6 @@ export const PercentField: React.FC<{
         onChange({ duePercentage: num, ...(t ? { dueTime: t } : {}) });
       }
     }}
-    style={{ colorScheme: 'dark' }}
     placeholder={placeholder}
     className={className ?? fieldInputClass}
   />
@@ -154,7 +152,6 @@ export const XpField: React.FC<{
       const v = e.target.value;
       onChange(v === '' ? undefined : Math.max(0, parseInt(v) || 0));
     }}
-    style={{ colorScheme: 'dark' }}
     placeholder="0"
     className={className ?? fieldInputClass}
   />
@@ -205,7 +202,7 @@ export const NotesField: React.FC<{
       placeholder={placeholder}
       className={
         className ??
-        'w-full bg-transparent resize-none text-sm text-white/80 placeholder:text-white/25 focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/25'
+        'w-full bg-transparent resize-none text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fill-stronger'
       }
     />
   );
@@ -218,28 +215,26 @@ export interface ChipOption {
   color: string; // base color; chip renders as tinted bg + color-mixed text (like collection pills)
 }
 
+// Colors are theme roles (see src/theme). Resolved from --color-* at render, so
+// status/priority chips follow the active theme + dark/light mode.
 export const STATUS_OPTIONS: ChipOption[] = [
-  { value: 'todo',        label: 'Todo',        color: '#6b7280' }, // gray
-  { value: 'in_progress', label: 'In Progress', color: '#3b82f6' }, // blue
-  { value: 'completed',   label: 'Completed',   color: '#22c55e' }, // green
+  { value: 'todo',        label: 'Todo',        color: 'var(--color-status-todo)' },
+  { value: 'in_progress', label: 'In Progress', color: 'var(--color-status-active)' },
+  { value: 'completed',   label: 'Completed',   color: 'var(--color-status-done)' },
 ];
 
 export const PRIORITY_OPTIONS: ChipOption[] = [
-  { value: 'low',    label: 'Low',    color: '#6b7280' }, // slate
-  { value: 'medium', label: 'Medium', color: '#f59e0b' }, // amber
-  { value: 'high',   label: 'High',   color: '#ef4444' }, // red
+  { value: 'low',    label: 'Low',    color: 'var(--color-priority-low)' },
+  { value: 'medium', label: 'Medium', color: 'var(--color-priority-med)' },
+  { value: 'high',   label: 'High',   color: 'var(--color-priority-high)' },
 ];
 
 export const statusOption   = (v?: TodoStatus)   => STATUS_OPTIONS.find((o)   => o.value === v);
 export const priorityOption = (v?: TodoPriority) => PRIORITY_OPTIONS.find((o) => o.value === v);
 
-// Tinted-bg pill — matches the collection header pill style for visual consistency.
-const chipBg   = (c: string) => `${c}70`;
-const chipText = (c: string) => `color-mix(in srgb, ${c} 20%, white)`;
-
 export const OptionChip: React.FC<{ option: ChipOption; className?: string }> = ({ option, className = '' }) => (
   <span
-    style={{ backgroundColor: chipBg(option.color), color: chipText(option.color) }}
+    style={pill(option.color)}
     className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${className}`}
   >
     {option.label}
@@ -261,16 +256,15 @@ export const OptionSelectField: React.FC<{
       <div className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = value === opt.value;
+          const color = pill(opt.color)
           return (
             <button
               key={opt.value}
               type="button"
               onClick={() => onChange(selected ? undefined : opt.value)}
-              style={{ backgroundColor: chipBg(opt.color), color: chipText(opt.color) }}
+              style={{ ...pill(opt.color)}}
               className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all ${
-                selected
-                  ? `ring-2 ring-[${opt.color}] ring-offset`
-                  : 'opacity-45 hover:opacity-100'
+                selected ? `ring-2 ring-[${pill(opt.color).color}]` : 'opacity-50 hover:opacity-100'
               }`}
             >
               {opt.label}
@@ -291,11 +285,11 @@ export const OptionSelectField: React.FC<{
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onChange(selected ? undefined : opt.value)}
             className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-lg text-left transition-colors ${
-              selected ? 'bg-white/10' : 'hover:bg-white/5'
+              selected ? 'bg-fill' : 'hover:bg-fill-subtle'
             }`}
           >
             <OptionChip option={opt} />
-            {selected && <Check size={14} className="ml-auto text-white/60" />}
+            {selected && <Check size={14} className="ml-auto text-fg-subtle" />}
           </button>
         );
       })}
@@ -308,9 +302,6 @@ export const OptionSelectField: React.FC<{
 // every collection along the path. The chip shows that whole path as tinted
 // pills separated by a chevron; the search picks/creates a single collection.
 
-const COLL_FALLBACK = '#9ca3af';
-const collChipText = (color?: string) => `color-mix(in srgb, ${color || COLL_FALLBACK} 40%, white)`;
-const collChipBg = (color?: string) => `${color || COLL_FALLBACK}40`;
 
 // Renders a collection path as `[root] › [child] › [leaf]`.
 export const CollectionBreadcrumb: React.FC<{
@@ -320,9 +311,9 @@ export const CollectionBreadcrumb: React.FC<{
   <span className={`inline-flex items-center gap-0.5 min-w-0 ${className}`}>
     {path.map((c, i) => (
       <React.Fragment key={c.id}>
-        {i > 0 && <ChevronRight size={12} className="shrink-0 text-white/30" />}
+        {i > 0 && <ChevronRight size={12} className="shrink-0 text-fg-ghost" />}
         <span
-          style={{ backgroundColor: collChipBg(c.color), color: collChipText(c.color) }}
+          style={pill(collectionColor(c.color))}
           className="shrink-0 max-w-[160px] truncate rounded-full px-2 py-0.5 text-xs font-medium"
         >
           {c.name}
@@ -383,7 +374,7 @@ export const CollectionSearchField: React.FC<{
   const dropdown = showPopup && (
     <div
       data-tag-suggestions
-      className={`absolute z-10 top-full left-0 mt-3 ${dropdownWidthCls} max-h-44 overflow-y-auto rounded-xl border border-white/10 bg-[#222222] shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full`}
+      className={`absolute z-10 top-full left-0 mt-3 ${dropdownWidthCls} max-h-44 overflow-y-auto rounded-xl border border-line bg-surface-raised shadow-2xl p-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full`}
     >
       {matches.map((o) => (
         <button
@@ -391,10 +382,10 @@ export const CollectionSearchField: React.FC<{
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => pick(o.id)}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-white/10 transition-colors"
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-fill transition-colors"
         >
           <CollectionBreadcrumb path={o.path} className="flex-1" />
-          {o.id === value && <Check size={13} className="ml-auto shrink-0 text-white/50" />}
+          {o.id === value && <Check size={13} className="ml-auto shrink-0 text-fg-subtle" />}
         </button>
       ))}
       {input.trim() && !exact && (
@@ -402,7 +393,7 @@ export const CollectionSearchField: React.FC<{
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={create}
-          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm text-fg-muted hover:bg-fill hover:text-fg transition-colors"
         >
           <Shapes size={13} className="text-[var(--accent2)] shrink-0" />
           <span className="truncate">Create “{input.trim()}”</span>
@@ -426,7 +417,7 @@ export const CollectionSearchField: React.FC<{
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder={value ? '' : (placeholder ?? 'Add a collection…')}
-            className="flex-1 min-w-[80px] bg-transparent text-sm text-white placeholder:text-white/25 focus:outline-none h-7"
+            className="flex-1 min-w-[80px] bg-transparent text-sm text-fg placeholder:text-fg-ghost focus:outline-none h-7"
           />
         </div>
         {dropdown}
@@ -442,7 +433,7 @@ export const CollectionSearchField: React.FC<{
           <button
             type="button"
             onClick={() => { onChange(null); setInput(''); }}
-            className="shrink-0 text-white/40 hover:text-white/80 transition-colors"
+            className="shrink-0 text-fg-faint hover:text-fg-muted transition-colors"
           >
             <X size={13} />
           </button>
@@ -458,7 +449,7 @@ export const CollectionSearchField: React.FC<{
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={placeholder ?? (value ? 'Change collection…' : 'Search or create collection…')}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-sm focus:outline-none focus:border-[var(--accent2)]"
+          className="w-full bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent2)]"
         />
         {dropdown}
       </div>

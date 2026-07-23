@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { NAME_BASE_PAD, INDENT } from './constants';
+import { btnGhost } from '../../theme/buttons';
 import { GroupRow } from './types';
 import { SectionHeader } from './SectionHeader';
 
@@ -40,7 +41,7 @@ export const GroupHeaderRow: React.FC<{
           type="button"
           title="Add task"
           onClick={() => onAddTask(value)}
-          className="shrink-0 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+          className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
         >
           <Plus size={18} />
         </button>

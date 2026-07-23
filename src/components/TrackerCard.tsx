@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Tracker, TrackerDisplayMode } from '../types';
 import { calculateProgress, getOrdinal } from '../utils/timeUtils';
+import { btnGhost } from '../theme/buttons';
 import { Trash2, Settings2 } from 'lucide-react';
 
 interface TrackerCardProps {
@@ -66,14 +67,14 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="relative group bg-neutral-900 p-4 rounded-2xl shadow-xl overflow-hidden flex flex-col"
+      className="relative group bg-surface p-4 rounded-2xl overflow-hidden flex flex-col"
     >
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="text-[var(--accent1)] text-[11px] font-bold tracking-wider uppercase mb-0.5">
             {data.label}
           </h3>
-          <p className="text-white/40 text-[11px] font-medium">
+          <p className="text-fg-faint text-[11px] font-medium">
             {data.subLabel}
           </p>
           {secondaryText && (
@@ -86,13 +87,13 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(tracker)}
-            className="p-1.5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-colors"
+            className={`p-1.5 rounded-lg ${btnGhost()}`}
           >
             <Settings2 size={12} />
           </button>
           <button
             onClick={() => onDelete(tracker.id)}
-            className="p-1.5 hover:bg-red-500/10 rounded-lg text-white/40 hover:text-red-400 transition-colors"
+            className="p-1.5 hover:bg-red-500/10 rounded-lg text-fg-faint hover:text-red-400 transition-colors"
           >
             <Trash2 size={12} />
           </button>
@@ -116,12 +117,12 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
           </span>
         )}
 
-        <div className="ml-auto text-white/20 text-xs font-medium italic">
+        <div className="ml-auto text-fg-ghost text-xs font-medium italic">
           {/* {getOrdinal(dayOfMonth)} */}
         </div>
       </div>
 
-      <div className="relative h-1 w-full bg-white/5 rounded-full">
+      <div className="relative h-1 w-full bg-fill-subtle rounded-full">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${data.percentage}%` }}

@@ -9,7 +9,7 @@ import React from 'react';
 
 // Border/fill/interaction styling, without sizing — so callers can pick a height.
 export const inputBaseCls =
-  'bg-[#2a2a2a] border border-white/10 rounded-lg text-white placeholder:text-white/35 transition-colors focus:outline-none hover:border-white/20 focus:border-[var(--accent2)]';
+  'bg-overlay border border-line rounded-lg text-fg placeholder:text-fg-faint transition-colors focus:outline-none hover:border-line-strong focus:border-[var(--accent2)]';
 
 // The full default look (matches the ListSelect trigger box).
 export const textInputCls = `${inputBaseCls} px-2.5 h-8 text-[13px]`;

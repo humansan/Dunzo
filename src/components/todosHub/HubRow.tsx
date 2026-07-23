@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { GripVertical, MoreHorizontal, ChevronRight, ChevronDown, Plus } from 'lucide-react';
 import { Todo } from '../../types';
+import { btnGhost } from '../../theme/buttons';
 import { formatTime12h, percentageToTime, formatMinutes } from '../../utils/timeUtils';
 import {
   CompletedToggle,
@@ -13,7 +14,8 @@ import {
   priorityOption,
 } from '../todoFields';
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from './types';
-import { INDENT, NAME_BASE_PAD, DEFAULT_COLLECTION_COLOR, pillTextColor, cellEditCls } from './constants';
+import { INDENT, NAME_BASE_PAD, cellEditCls, collectionColor } from './constants';
+import { pill } from '../../theme/pill';
 import { SectionHeader } from './SectionHeader';
 import { useTableVariant } from './variant';
 import { isDone } from '../../utils/todoStatus';
@@ -132,7 +134,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           onRowDragStart?.(todo.id);
         }}
         onDragEnd={() => onRowDragEnd?.()}
-        className={`shrink-0 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
+        className={`shrink-0 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
         title="Drag to reorder / nest"
       >
         <GripVertical size={16} />
@@ -156,7 +158,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     <div className="pointer-events-none absolute inset-0 z-30 ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/5" />
   ) : null;
 
-  const editCellWrap = 'flex items-stretch h-full border-l border-white/8';
+  const editCellWrap = 'flex items-stretch h-full border-l border-line-subtle';
   // Empty fields render nothing — a placeholder dash just adds clutter.
   const muted = null;
 
@@ -176,12 +178,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     return (
       <div
         onClick={(e) => startEdit(todo.id, col, e)}
-        className={`flex items-start py-2 px-2.5 border-l border-white/8 cursor-pointer hover:bg-white/3 overflow-hidden ${
+        className={`flex items-start py-2 px-2.5 border-l border-line-subtle cursor-pointer hover:bg-fill-subtle overflow-hidden ${
           wrap ? '[&_.truncate]:whitespace-normal [&_.truncate]:break-words' : ''
         } ${
           active ? 'ring-1 ring-inset ring-(--accent2)/60' : ''
         } ${
-          col === lastColKey ? 'border-r border-white/8' : ''
+          col === lastColKey ? 'border-r border-line-subtle' : ''
         }`}
       >
         {children}
@@ -194,7 +196,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // (same chrome/spacing as attribute-group headers) with the collection-specific
   // bits — inline-rename pill, drag handle, options + add buttons — passed in.
   if (todo.isCollection) {
-    const color = todo.color || DEFAULT_COLLECTION_COLOR;
+    const color = collectionColor(todo.color);
     // Columns view: the header opens a child column on click (drill) rather than
     // inline-renaming, so the rename pill/editor is swapped for the drill wiring
     // (rename stays available via the ⋯ menu → Edit collection).
@@ -217,8 +219,8 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
             placeholder="Collection name"
             size={1}
-            style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
-            className="w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px text-sm font-medium focus:outline-none placeholder:text-white/40 ring-1 ring-current/60"
+            style={pill(color)}
+            className="w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px text-sm font-medium focus:outline-none placeholder:text-fg-faint ring-1 ring-current/60"
           />
         ) : undefined}
         isCollapsed={isCollapsed}
@@ -238,7 +240,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 const r = e.currentTarget.getBoundingClientRect();
                 openMenu(todo.id, r.left, r.bottom + 4);
               }}
-              className="shrink-0 mr-0.5 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+              className={`shrink-0 mr-0.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
             >
               <MoreHorizontal size={18} />
             </button>
@@ -246,7 +248,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               type="button"
               title="Add task"
               onClick={() => { onQuickAddTask ? onQuickAddTask(todo.id) : onAddSubtask(todo.id); }}
-              className="shrink-0 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+              className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
             >
               <Plus size={18} />
             </button>
@@ -281,7 +283,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'date':
         return (
           <DisplayCell col="date" active={isEditing('date')}>
-            <span className="truncate text-sm text-white/90">
+            <span className="truncate text-sm text-fg">
               {todo.dueDate ? format(parseISO(todo.dueDate), 'MMM d, yyyy') : muted}
             </span>
           </DisplayCell>
@@ -289,7 +291,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'startDate':
         return (
           <DisplayCell col="startDate" active={isEditing('startDate')}>
-            <span className="truncate text-sm text-white/90">
+            <span className="truncate text-sm text-fg">
               {todo.startDate ? format(parseISO(todo.startDate), 'MMM d, yyyy') : muted}
             </span>
           </DisplayCell>
@@ -297,13 +299,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'start':
         return (
           <DisplayCell col="start" active={isEditing('start')}>
-            <span className="truncate text-sm text-white/90">{todo.startTime ? formatTime12h(todo.startTime) : muted}</span>
+            <span className="truncate text-sm text-fg">{todo.startTime ? formatTime12h(todo.startTime) : muted}</span>
           </DisplayCell>
         );
       case 'end':
         return (
           <DisplayCell col="end" active={isEditing('end')}>
-            <span className="truncate text-sm text-white/90">{todo.dueTime ? formatTime12h(todo.dueTime) : muted}</span>
+            <span className="truncate text-sm text-fg">{todo.dueTime ? formatTime12h(todo.dueTime) : muted}</span>
           </DisplayCell>
         );
       case 'percent':
@@ -313,7 +315,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           </div>
         ) : (
           <DisplayCell col="percent">
-            <span className="truncate text-sm text-white/90">
+            <span className="truncate text-sm text-fg">
               {todo.duePercentage !== undefined ? `${todo.duePercentage}%` : muted}
             </span>
           </DisplayCell>
@@ -331,13 +333,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           </div>
         ) : (
           <DisplayCell col="xp">
-            <span className="truncate text-sm text-white/90">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
+            <span className="truncate text-sm text-fg">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
           </DisplayCell>
         );
       case 'notes':
         return (
           <DisplayCell col="notes">
-            {todo.notes ? <span className="truncate text-sm text-white/90">{todo.notes}</span> : muted}
+            {todo.notes ? <span className="truncate text-sm text-fg">{todo.notes}</span> : muted}
           </DisplayCell>
         );
       case 'startPercent':
@@ -360,14 +362,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                   saveField({ startPercentage: num, ...(t ? { startTime: t } : {}) });
                 }
               }}
-              style={{ colorScheme: 'dark' }}
-              placeholder="e.g. 50"
+                            placeholder="e.g. 50"
               className={cellEditCls}
             />
           </div>
         ) : (
           <DisplayCell col="startPercent">
-            <span className="truncate text-sm text-white/90">
+            <span className="truncate text-sm text-fg">
               {todo.startPercentage !== undefined ? `${todo.startPercentage}%` : muted}
             </span>
           </DisplayCell>
@@ -388,14 +389,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 const num = parseInt(val, 10);
                 if (!isNaN(num) && num >= 0) saveField({ estimatedTime: num });
               }}
-              style={{ colorScheme: 'dark' }}
-              placeholder="min"
+                            placeholder="min"
               className={cellEditCls}
             />
           </div>
         ) : (
           <DisplayCell col="estimatedTime">
-            <span className="truncate text-sm text-white/90">
+            <span className="truncate text-sm text-fg">
               {todo.estimatedTime !== undefined ? formatMinutes(todo.estimatedTime) : muted}
             </span>
           </DisplayCell>
@@ -403,11 +403,11 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'createdAt':
         return (
           <div
-            className={`flex items-start h-full py-2 px-2.5 border-l border-white/8 overflow-hidden ${
-              col === lastColKey ? 'border-r border-white/8' : ''
+            className={`flex items-start h-full py-2 px-2.5 border-l border-line-subtle overflow-hidden ${
+              col === lastColKey ? 'border-r border-line-subtle' : ''
             }`}
           >
-            <span className="truncate text-sm text-white/60">
+            <span className="truncate text-sm text-fg-subtle">
               {format(new Date(todo.createdAt), 'MMM d, yyyy')}
             </span>
           </div>
@@ -415,11 +415,11 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'completedAt':
         return (
           <div
-            className={`flex items-start h-full py-2 px-2.5 border-l border-white/8 overflow-hidden ${
-              col === lastColKey ? 'border-r border-white/8' : ''
+            className={`flex items-start h-full py-2 px-2.5 border-l border-line-subtle overflow-hidden ${
+              col === lastColKey ? 'border-r border-line-subtle' : ''
             }`}
           >
-            <span className="truncate text-sm text-white/90">
+            <span className="truncate text-sm text-fg">
               {todo.completedAt ? format(new Date(todo.completedAt), 'MMM d, yyyy') : muted}
             </span>
           </div>
@@ -434,8 +434,8 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       style={style}
       {...dropProps}
       onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-      className={`relative grid items-stretch min-h-[36px] border-b border-white/8 group/row ${
-        isDragSource ? 'opacity-40' : 'hover:bg-white/2'
+      className={`relative grid items-stretch min-h-[36px] border-b border-line-subtle group/row ${
+        isDragSource ? 'opacity-40' : 'hover:bg-fill-subtle'
       }`}
     >
       {dropLine('before')}
@@ -446,7 +446,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       <div
         ref={dragImageRef}
         className={`sticky left-0 z-20 flex items-start h-full overflow-hidden ${
-          variant.columns === 'all' ? 'border-r border-white/8 bg-[#0a0a0a] group-hover/row:bg-[#0f0f0f] hover:bg-[#161616]' : ''
+          variant.columns === 'all' ? 'border-r border-line-subtle bg-canvas group-hover/row:bg-canvas hover:bg-surface' : ''
         }`}
       >
         {/* Name band. Each leading control is a line-height box (`h-5`) that centers
@@ -478,7 +478,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleCollapse(todo.id); }}
-              className="shrink-0 h-5 w-5 mr-0.5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+              className="shrink-0 h-5 w-5 mr-0.5 flex items-center justify-center rounded text-fg-ghost hover:text-fg-subtle hover:bg-fill transition-colors"
               title={isCollapsed ? 'Expand subtasks' : 'Collapse subtasks'}
             >
               {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
@@ -503,7 +503,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 resize-none field-sizing-content break-words py-0 pl-1 pr-1.5 text-sm text-white focus:outline-none"
+                className="flex-1 min-w-0 resize-none field-sizing-content break-words py-0 pl-1 pr-1.5 text-sm text-fg focus:outline-none"
               />
             ) : (
               <input
@@ -514,16 +514,16 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 h-full pl-1 pr-1.5 text-sm text-white focus:outline-none"
+                className="flex-1 min-w-0 h-full pl-1 pr-1.5 text-sm text-fg focus:outline-none"
               />
             )
           ) : (
             <>
               <span
                 onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 min-w-0 pl-1 text-sm cursor-text ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-white/45 line-through' : 'text-white'}`}
+                className={`flex-1 min-w-0 pl-1 text-sm cursor-text ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg'}`}
               >
-                {todo.text || <span className="text-white/40">Untitled</span>}
+                {todo.text || <span className="text-fg-faint">Untitled</span>}
               </span>
               <button
                 type="button"
@@ -533,7 +533,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                   const r = e.currentTarget.getBoundingClientRect();
                   openMenu(todo.id, r.left, r.bottom + 4);
                 }}
-                className="shrink-0 mr-1.5 p-0.5 rounded text-white/50 hover:text-white hover:bg-white/10 opacity-0 group-hover/row:opacity-100 transition-all"
+                className={`shrink-0 mr-1.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
               >
                 <MoreHorizontal size={16} />
               </button>

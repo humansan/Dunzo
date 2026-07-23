@@ -84,16 +84,16 @@ export const ListSelect: React.FC<{
         aria-expanded={open}
         disabled={disabled}
         onClick={() => !disabled && setOpen((o) => !o)}
-        className={`flex items-center gap-2 bg-[#2a2a2a] border rounded-lg px-2.5 h-8 text-[13px] transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-          open ? 'border-[var(--accent2)]' : 'border-white/10 hover:border-white/20'
+        className={`flex items-center gap-2 bg-overlay border rounded-lg px-2.5 h-8 text-[13px] transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
+          open ? 'border-[var(--accent2)]' : 'border-line hover:border-line-strong'
         } ${className}`}
       >
-        <span className={`flex-1 min-w-0 truncate text-left ${selected ? 'text-white/90' : 'text-white/35'}`}>
+        <span className={`flex-1 min-w-0 truncate text-left ${selected ? 'text-fg' : 'text-fg-faint'}`}>
           {selected ? selected.label : placeholder}
         </span>
         <ChevronDown
           size={14}
-          className={`shrink-0 text-white/40 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`shrink-0 text-fg-faint transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -112,7 +112,7 @@ export const ListSelect: React.FC<{
               ref={menuRef}
               role="listbox"
               style={{ position: 'fixed', left: pos.left, top: pos.top, minWidth: pos.width }}
-              className="z-[81] flex flex-col gap-0.5 max-h-64 overflow-y-auto rounded-lg border border-white/10 bg-[#1f1f1f] shadow-2xl p-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full"
+              className="z-[81] flex flex-col gap-0.5 max-h-64 overflow-y-auto rounded-lg border border-line bg-surface shadow-2xl p-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full"
             >
               {options.map((opt) => {
                 const isSelected = opt.value === value;
@@ -126,11 +126,11 @@ export const ListSelect: React.FC<{
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => pick(opt)}
                     className={`w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left text-[13px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                      isSelected ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/[0.06] hover:text-white'
+                      isSelected ? 'bg-fill text-fg' : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
                     }`}
                   >
                     <span className="flex-1 min-w-0 truncate">{opt.label}</span>
-                    {isSelected && <Check size={14} className="shrink-0 text-white/60" />}
+                    {isSelected && <Check size={14} className="shrink-0 text-fg-subtle" />}
                   </button>
                 );
               })}

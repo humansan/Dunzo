@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
-import { NAME_BASE_PAD, INDENT, pillTextColor } from './constants';
+import { NAME_BASE_PAD, INDENT } from './constants';
+import { pill as chipStyle } from '../../theme/pill';
 import { useTableVariant } from './variant';
 
 // The single source of truth for how a section header looks in the Task Planner —
@@ -73,7 +74,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   const pill = pillOverride ?? (
     <span
       onClick={onPillClick}
-      style={{ backgroundColor: `${color}40`, color: pillTextColor(color) }}
+      style={chipStyle(color)}
       className={`min-w-0 max-w-full truncate rounded-full px-2.5 py-px font-medium ${
         onPillClick ? 'cursor-text' : ''
       } ${mode === 'list' ? 'text-base' : 'text-sm'}`}
@@ -94,13 +95,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       // view stays tight (pt-4). Column mode drops to the 36px task-row height so a
       // section header reads as just another even-height row. All keep the bottom
       // border.
-      className={`relative grid border-white/8 border-b group/row ${
+      className={`relative grid border-line-subtle border-b group/row ${
         mode === 'column'
           ? 'items-center min-h-[36px]'
           : mode === 'list'
             ? 'items-end min-h-12 pt-6 pb-2'
             : 'items-end min-h-12 pt-4'
-      } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-white/[0.07]' : ''} ${isDragSource ? 'opacity-50' : ''}`}
+      } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-fill' : ''} ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}
       {/* Header group, pinned left so it stays visible on horizontal scroll.
@@ -108,13 +109,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       <div
         ref={dragImageRef}
         style={{ paddingLeft: NAME_BASE_PAD + depth * INDENT }}
-        className="sticky left-0 z-20 flex items-center h-full min-w-0 overflow-hidden bg-[#0a0a0a]"
+        className="sticky left-0 z-20 flex items-center h-full min-w-0 overflow-hidden bg-canvas"
       >
         {hasToggle ? (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onToggleCollapse(); }}
-            className="shrink-0 p-0.5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+            className="shrink-0 p-0.5 flex items-center justify-center rounded text-fg-ghost hover:text-fg-subtle hover:bg-fill transition-colors"
             title={isCollapsed ? toggleTitle?.expand : toggleTitle?.collapse}
           >
             {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
@@ -128,13 +129,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         {pill}
 
         {count !== undefined && (
-          <span className="shrink-0 text-xs px-1.5 text-white/40 font-mono">{count}</span>
+          <span className="shrink-0 text-xs px-1.5 text-fg-faint font-mono">{count}</span>
         )}
 
         {actions}
 
         {/* Drill affordance — pushed to the right edge; marks the row as openable. */}
-        {onActivate && <ChevronRight size={16} className="shrink-0 ml-auto mr-1 text-white/30" />}
+        {onActivate && <ChevronRight size={16} className="shrink-0 ml-auto mr-1 text-fg-ghost" />}
       </div>
     </div>
   );

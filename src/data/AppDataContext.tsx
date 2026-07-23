@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Theme, DayTodos, Todo, Tracker } from '../types';
+import { DayTodos, Todo, Tracker } from '../types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos } from '../utils/todoFilters';
 import { toggledStatus } from '../utils/todoStatus';
 import { authClient } from '../auth';
@@ -8,8 +8,10 @@ import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } 
 import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from './trackers';
 import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from './workspaces';
 import { useSettings, useUpdateSettings } from './settings';
+import { applyTheme, type ThemeMode } from '../theme/applyTheme';
+import { DEFAULT_THEME_ID } from '../theme/themes';
+import { DEFAULT_COLLECTION_SLOT } from '../components/todosHub/constants';
 
-const DEFAULT_THEME: Theme = { accent1: '#c6dabe', accent2: '#c6dabe' };
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
 // Within-day order follows `dailyOrder` (the daily list's own persisted order;
@@ -82,14 +84,17 @@ function useProvideAppData() {
   const settings = settingsQuery.data;
   const updateSettings = useUpdateSettings();
 
-  const theme = settings?.theme ?? DEFAULT_THEME;
-  const setTheme = (t: Theme) => updateSettings({ theme: t });
   const weekStartsOn = settings?.weekStartsOn ?? 1;
   const setWeekStartsOn = (v: number) => updateSettings({ weekStartsOn: v });
   const countdownMode = settings?.countdownMode ?? 'off';
   const setCountdownMode = (v: 'off' | 'time' | 'percent') => updateSettings({ countdownMode: v });
   const xpEnabled = settings?.xpEnabled ?? true;
   const setXpEnabled = (v: boolean) => updateSettings({ xpEnabled: v });
+  // Color theme + dark/light mode (DB-synced; applied to CSS vars by the effect below).
+  const themeId = settings?.themeId ?? DEFAULT_THEME_ID;
+  const setThemeId = (id: string) => updateSettings({ themeId: id });
+  const mode: ThemeMode = settings?.mode ?? 'dark';
+  const setMode = (m: ThemeMode) => updateSettings({ mode: m });
 
   // ── Task Planner workspaces (independent todo databases) ───────────────────
   // The workspace list is server data; activeWorkspaceId is now a DB-synced pref
@@ -140,11 +145,17 @@ function useProvideAppData() {
   // calendar, stats) that still consume DayTodos[]. Not persisted.
   const dayTodos = useMemo(() => groupByDueDate(todos), [todos]);
 
-  // Theme is DB-synced now; this effect only reflects it onto the CSS variables.
+  // Theme + mode are DB-synced; this effect reflects them onto the CSS variables.
+  // applyTheme writes the role/color tokens (--color-*/--c-*), the theme-owned accents
+  // (--accent1/2), and toggles `.dark`. When mode === 'system', re-apply on OS change.
   useEffect(() => {
-    document.documentElement.style.setProperty('--accent1', theme.accent1);
-    document.documentElement.style.setProperty('--accent2', theme.accent2);
-  }, [theme]);
+    applyTheme(themeId, mode);
+    if (mode !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => applyTheme(themeId, mode);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [themeId, mode]);
 
   useEffect(() => {
     if (activeTodoId) {
@@ -293,7 +304,7 @@ function useProvideAppData() {
       text: name,
       showInDatabase: true,
       isCollection: true,
-      color: '#9ca3af',
+      color: DEFAULT_COLLECTION_SLOT,
       parentId,
       workspaceId,
       hubOrder: maxOrder + 1,
@@ -403,7 +414,8 @@ function useProvideAppData() {
     todoById,
     hubCollectionOptions,
     // settings/prefs
-    theme, setTheme,
+    themeId, setThemeId,
+    mode, setMode,
     weekStartsOn, setWeekStartsOn,
     countdownMode, setCountdownMode,
     xpEnabled, setXpEnabled,

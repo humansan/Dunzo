@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import { XpStats } from '../utils/xpUtils';
+import { useThemeColor } from '../theme/useThemeColor';
 
 interface XpProgressBarProps {
   stats: XpStats;
@@ -8,13 +9,17 @@ interface XpProgressBarProps {
   weeklyXp: number[];
 }
 
-const GOLD = '#ffc24b';
-const VIOLET = '#a78bfa';
-
 // Exponential ease-out: snappy start, soft landing.
 const EXPO_OUT: [number, number, number, number] = [0.15, 0, 0, 1];
 
 export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp }) => {
+  // XP indicator keeps its fixed signature colors across all themes (gold → purple,
+  // coral bar). Only the base "not yet lit" text follows the theme so it stays legible
+  // in light mode.
+  const GOLD = useThemeColor('xp-tier1');
+  const VIOLET = useThemeColor('xp-tier2');
+  const CORAL = useThemeColor('xp-bar');
+  const FG = useThemeColor('fg');
   const {
     earned,
     target,
@@ -49,7 +54,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   }
 
   const pctLabel = `${Math.round(percent)}%`;
-  const barColor = reachedWeekBest ? VIOLET : "#ff723a"; //#ff774d coral maybe
+  const barColor = reachedWeekBest ? VIOLET : CORAL;
 
   // Count-up: smoothly tick the displayed number toward the real earned total.
   const count = useMotionValue(earned);
@@ -68,12 +73,14 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
         <div
           className="relative flex items-end gap-3.5 transition-all duration-300"
           style={{
-            textShadow: lit ? `0 0 18px ${lit}66, 0 0 6px ${lit}40` : 'none'
+            textShadow: lit
+              ? `0 0 18px color-mix(in srgb, ${lit} 40%, transparent), 0 0 6px color-mix(in srgb, ${lit} 25%, transparent)`
+              : 'none'
           }}
         >
           <div className="relative flex items-baseline gap-1.5 leading-none">
             <motion.span
-              animate={{ color: lit ?? '#ffffff' }}
+              animate={{ color: lit ?? FG }}
               transition={{ duration: 0.3, ease: EXPO_OUT }}
               className="text-7xl font-medium"
               style={{ fontVariantNumeric: 'tabular-nums' }}
@@ -93,19 +100,19 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
 
             {/* Today: still available ⬩ yesterday */}
             <span className="text-[12px] font-medium leading-tight">
-              <span className='text-white/85'>
+              <span className='text-fg'>
               <span className="">{upForGrabs}</span> up for grabs ⬩ 
               <span className=""> {yesterday}</span> yesterday</span>
-              {/* <span className="text-white/95">{upForGrabs}</span>
-              <span className="text-white/60"> up for grabs</span>
-              <span className="text-white/30"> ⬩ </span>
-              <span className="text-white/95">{yesterday}</span>
-              <span className="text-white/60"> yesterday</span> */}
+              {/* <span className="text-fg">{upForGrabs}</span>
+              <span className="text-fg-subtle"> up for grabs</span>
+              <span className="text-fg-ghost"> ⬩ </span>
+              <span className="text-fg">{yesterday}</span>
+              <span className="text-fg-subtle"> yesterday</span> */}
             </span>
 
             {/* Records: avg 7d ⬩ best 7d ⬩ best all time */}
             <span className="text-[12px] leading-tight">
-              <span className='text-white/70'>
+              <span className='text-fg-muted'>
               <span className=""> {avgLast7Days} </span> avg 7d ⬩
               <span className=""> {bestLast7Days} </span> best 7d ⬩
               <span className=""> {bestAllTime} </span> best all-time
@@ -147,14 +154,14 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
       <div className="fixed bottom-0 left-14 right-0 z-30 pointer-events-none">
         <div className="relative flex justify-center mb-1">
           <span
-            className="text-[12px] tracking-wide text-white/60 font-mono"
+            className="text-[12px] tracking-wide text-fg-subtle font-mono"
             style={{ fontVariantNumeric: 'tabular-nums' }}
           >
             {pctLabel}
           </span>
         </div>
 
-        <div className="relative h-2 w-full bg-white/10">
+        <div className="relative h-2 w-full bg-fill">
           {/* Soft blurred glow that follows the fill */}
           <motion.div
             className="absolute inset-y-0 left-0 blur-lg opacity-90"

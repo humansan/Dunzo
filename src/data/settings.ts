@@ -26,7 +26,9 @@ export interface HubLayout {
 }
 
 export interface UserSettings {
-  theme?: Theme;
+  theme?: Theme;            // user's custom accent colors (accent1/accent2)
+  themeId?: string;         // selected color theme id (see src/theme/themes.ts; default 'classic')
+  mode?: 'dark' | 'light' | 'system'; // dark/light selection (default 'dark')
   weekStartsOn?: number;
   countdownMode?: 'off' | 'time' | 'percent';
   xpEnabled?: boolean;

@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/src/assets/icon-invert2.png" />
     <title>Dunzo</title>
+    <script>
+      // Pre-paint theme bootstrap: apply the last-used canvas/fg + dark class before
+      // React (and DB settings) load, so a reload never flashes the default theme.
+      // The full token set is applied by applyTheme() once AppDataProvider mounts.
+      (function () {
+        try {
+          var b = JSON.parse(localStorage.getItem('theme-boot') || 'null');
+          if (!b) return;
+          var el = document.documentElement;
+          el.classList.toggle('dark', !!b.dark);
+          if (b.canvas) { el.style.setProperty('--color-canvas', b.canvas); el.style.backgroundColor = b.canvas; }
+          if (b.fg) { el.style.setProperty('--color-fg', b.fg); el.style.color = b.fg; }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -12,3 +12,4 @@ docs/
 server/app.bundle.js
 .codegraph/
 .tanstack/
+scripts/

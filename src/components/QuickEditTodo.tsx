@@ -3,7 +3,10 @@ import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Sparkles, Maximize2, X, Shapes } from 'lucide-react';
 import { formatTime12h, timeToPercentage, percentageToTime } from '../utils/timeUtils';
 import { CollectionOption } from '../utils/todoFilters';
+import { btnAccent } from '../theme/buttons';
 import { CollectionSearchField } from './todoFields';
+import { pillBg, pillText } from '../theme/pill';
+import { collectionColor } from './todosHub/constants';
 
 export interface QuickEditValues {
   text: string;
@@ -206,9 +209,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const chipText =
     'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
   const fieldBase =
-    'bg-white/5 border border-white/10 rounded-lg px-3 h-9 text-white text-sm font-mono focus:outline-none focus:border-[var(--accent2)]';
+    'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-sm font-mono focus:outline-none focus:border-[var(--accent2)]';
   const popover =
-    'absolute z-20 top-full left-0 mt-2 rounded-xl border border-white/10 bg-[#1f1f1f] shadow-2xl p-2';
+    'absolute z-20 top-full left-0 mt-2 rounded-xl border border-line bg-surface shadow-2xl p-2';
 
   return (
     <div
@@ -219,7 +222,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           if (openEditor) setOpenEditor(null); else cancel();
         }
       }}
-      className="my-2 mx-4 p-3.5 bg-[#1A1A1A] border border-[var(--accent2)]/30 rounded-2xl shadow-xl"
+      className="my-2 mx-4 p-3.5 bg-surface border border-[var(--accent2)]/30 rounded-2xl shadow-xl"
     >
       <input
         ref={nameRef}
@@ -228,7 +231,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Task name"
-        className="w-full bg-transparent text-white text-base font-medium placeholder:text-white/30 focus:outline-none"
+        className="w-full bg-transparent text-fg text-base font-medium placeholder:text-fg-ghost focus:outline-none"
       />
 
       <textarea
@@ -238,7 +241,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         onInput={resizeNotes}
         rows={1}
         placeholder="Add notes…"
-        className="w-full bg-transparent resize-none text-white/70 text-sm leading-relaxed placeholder:text-white/25 focus:outline-none mt-2 overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-white/25"
+        className="w-full bg-transparent resize-none text-fg-muted text-sm leading-relaxed placeholder:text-fg-ghost focus:outline-none mt-2 overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-fill-stronger"
       />
 
       {/* Chips — display only. Clicking opens a dropdown editor below the chip. */}
@@ -263,8 +266,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
                 type="date"
                 value={date}
                 onChange={(e) => { if (e.target.value) setDate(e.target.value); }}
-                style={{ colorScheme: 'dark' }}
-                className={`${fieldBase} w-[170px]`}
+                                className={`${fieldBase} w-[170px]`}
               />
             </div>
           )}
@@ -275,7 +277,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           <button
             type="button"
             onClick={() => setOpenEditor(o => o === 'time' ? null : 'time')}
-            className={`${chipBase} ${time ? 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15' : 'bg-white/5 hover:bg-white/10'}`}
+            className={`${chipBase} ${time ? 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
           >
             {time ? (
               <>
@@ -291,7 +293,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
                 )}
               </>
             ) : (
-              <span className={`${chipText} text-white/55`}>
+              <span className={`${chipText} text-fg-subtle`}>
                 <Clock size={16} />
                 <span className="relative top-px">Time</span>
               </span>
@@ -301,16 +303,15 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           {openEditor === 'time' && (
             <div className={popover}>
               <div className="flex items-center gap-2">
-                <div className="flex items-center h-9 bg-white/5 border border-white/10 rounded-lg focus-within:border-[var(--accent2)] overflow-hidden">
+                <div className="flex items-center h-9 bg-fill-subtle border border-line rounded-lg focus-within:border-[var(--accent2)] overflow-hidden">
                   <input
                     autoFocus
                     type="time"
                     value={time}
                     onChange={(e) => handleTimeChange(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
-                    className="bg-transparent px-3 h-full text-white text-sm font-mono focus:outline-none w-[128px]"
+                                        className="bg-transparent px-3 h-full text-fg text-sm font-mono focus:outline-none w-[128px]"
                   />
-                  <div className="w-px h-4 bg-white/15 shrink-0" />
+                  <div className="w-px h-4 bg-fill-strong shrink-0" />
                   <input
                     type="number"
                     min="0"
@@ -318,9 +319,8 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
                     step="any"
                     value={percentStr}
                     onChange={(e) => handlePercentChange(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
-                    placeholder="%"
-                    className="bg-transparent px-3 h-full text-white text-sm font-mono focus:outline-none w-[78px]"
+                                        placeholder="%"
+                    className="bg-transparent px-3 h-full text-fg text-sm font-mono focus:outline-none w-[78px]"
                   />
                 </div>
                 {(time || startTime) && (
@@ -328,7 +328,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
                     type="button"
                     onClick={() => { setStartTime(''); setTime(''); setPercentStr(''); setOpenEditor(null); }}
                     title="Clear"
-                    className="shrink-0 p-1.5 rounded-md text-white/40 hover:text-white/80 hover:bg-white/5"
+                    className="shrink-0 p-1.5 rounded-md text-fg-faint hover:text-fg-muted hover:bg-fill-subtle"
                   >
                     <X size={15} />
                   </button>
@@ -343,11 +343,11 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           <button
             type="button"
             onClick={() => setOpenEditor(o => o === 'xp' ? null : 'xp')}
-            className={`${chipBase} ${xpVal !== null ? 'bg-[#ffba44]/10 hover:bg-[#ffba44]/20' : 'bg-white/5 hover:bg-white/10'}`}
+            className={`${chipBase} ${xpVal !== null ? 'bg-warning-tint text-warning' : 'bg-fill-subtle hover:bg-fill'}`}
           >
-            <span className={chipText} style={{ color: xpVal !== null ? GOLD : undefined }}>
-              <Sparkles size={16} className={xpVal !== null ? '' : 'text-white/55'} />
-              <span className={`relative top-px ${xpVal !== null ? '' : 'text-white/55'}`}>
+            <span className={chipText}>
+              <Sparkles size={16} className={xpVal !== null ? '' : 'text-fg-subtle'} />
+              <span className={`relative top-px ${xpVal !== null ? '' : 'text-fg-subtle'}`}>
                 {xpVal !== null ? `${xpVal} XP` : 'XP'}
               </span>
             </span>
@@ -363,8 +363,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
                   step="1"
                   value={xpStr}
                   onChange={(e) => setXpStr(e.target.value)}
-                  style={{ colorScheme: 'dark' }}
-                  placeholder="XP"
+                                    placeholder="XP"
                   className={`${fieldBase} w-[110px]`}
                 />
                 {xpStr !== '' && (
@@ -372,7 +371,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
                     type="button"
                     onClick={() => { setXpStr(''); setOpenEditor(null); }}
                     title="Clear"
-                    className="shrink-0 p-1.5 rounded-md text-white/40 hover:text-white/80 hover:bg-white/5"
+                    className="shrink-0 p-1.5 rounded-md text-fg-faint hover:text-fg-muted hover:bg-fill-subtle"
                   >
                     <X size={15} />
                   </button>
@@ -387,12 +386,12 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           <button
             type="button"
             onClick={() => setOpenEditor(o => o === 'collection' ? null : 'collection')}
-            style={currentCollection ? { backgroundColor: `${currentCollection.color || '#9ca3af'}14` } : undefined}
-            className={`${chipBase} ${currentCollection ? '' : 'bg-white/5 hover:bg-white/10'}`}
+            style={currentCollection ? { backgroundColor: pillBg(collectionColor(currentCollection.color)) } : undefined}
+            className={`${chipBase} ${currentCollection ? '' : 'bg-fill-subtle hover:bg-fill'}`}
           >
             <span
-              className={`${chipText} max-w-[200px] ${currentCollection ? '' : 'text-white/55'}`}
-              style={currentCollection ? { color: `color-mix(in srgb, ${currentCollection.color || '#9ca3af'} 60%, white)` } : undefined}
+              className={`${chipText} max-w-[200px] ${currentCollection ? '' : 'text-fg-subtle'}`}
+              style={currentCollection ? { color: pillText(collectionColor(currentCollection.color)) } : undefined}
             >
               <Shapes size={16} className="shrink-0" />
               <span className="relative top-px truncate">
@@ -423,7 +422,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
             type="button"
             onClick={onOpenFull}
             title="Open full view"
-            className="p-1.5 -ml-1 text-white/40 hover:text-white/80 hover:bg-white/5 rounded-md"
+            className="p-1.5 -ml-1 text-fg-faint hover:text-fg-muted hover:bg-fill-subtle rounded-md"
           >
             <Maximize2 size={15} />
           </button>
@@ -432,7 +431,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         <button
           type="button"
           onClick={cancel}
-          className="px-3 h-8 bg-white/5 hover:bg-white/10 text-white/60 rounded-lg text-xs font-bold"
+          className="px-3 h-8 bg-fill-subtle hover:bg-fill text-fg-subtle rounded-lg text-xs font-bold"
         >
           Cancel
         </button>
@@ -440,7 +439,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="px-4 h-8 bg-[var(--accent2)] hover:opacity-90 text-black font-bold rounded-lg text-xs disabled:opacity-30 disabled:cursor-not-allowed"
+          className={`px-4 h-8 rounded-lg text-xs disabled:cursor-not-allowed ${btnAccent('accent2')}`}
         >
           {mode === 'add' ? 'Add task' : 'Save changes'}
         </button>

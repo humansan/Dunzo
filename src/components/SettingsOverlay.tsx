@@ -20,8 +20,8 @@ export const SettingsOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) 
       onUpdateCountdownMode={d.setCountdownMode}
       xpEnabled={d.xpEnabled}
       onUpdateXpEnabled={d.setXpEnabled}
-      theme={d.theme}
-      onUpdateTheme={d.setTheme}
+      mode={d.mode}
+      onUpdateMode={d.setMode}
     />
   );
 };

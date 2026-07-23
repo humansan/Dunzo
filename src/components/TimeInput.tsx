@@ -240,12 +240,12 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
     <div
       ref={colRef}
       onMouseDown={onDown}
-      className="relative h-[200px] rounded-lg border border-white/10 cursor-pointer select-none overflow-hidden"
+      className="relative h-[200px] rounded-lg border border-line cursor-pointer select-none overflow-hidden"
     >
       {/* Marker line drawn first so the labels paint on top and stay readable. */}
       {lineFrac != null && (
         <div
-          className="absolute left-0 right-0 h-0.5 bg-[#d93d42] pointer-events-none"
+          className="absolute left-0 right-0 h-0.5 bg-danger pointer-events-none"
           style={{ top: `${lineFrac * 100}%`, transform: 'translateY(-50%)' }}
         />
       )}
@@ -255,7 +255,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
           <span
             key={v}
             className={`absolute left-0 right-0 text-center text-[11px] pointer-events-none transition-colors ${
-              active ? 'text-white font-bold' : 'text-white/40'
+              active ? 'text-fg font-bold' : 'text-fg-faint'
             }`}
             style={{ top: `${((i + 0.5) / 12) * 100}%`, transform: 'translateY(-50%)' }}
           >
@@ -272,7 +272,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
   ];
 
   return (
-    <div className={`bg-[#1A1A1A] border border-white/10 rounded-xl p-2.5 w-60 ${className ?? ''}`}>
+    <div className={`bg-surface border border-line rounded-xl p-2.5 w-60 ${className ?? ''}`}>
       <input
         ref={inputRef}
         type="text"
@@ -286,8 +286,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
         }}
         onBlur={() => commit(text)}
         placeholder="e.g. 9a or 3:24 PM or 54%"
-        style={{ colorScheme: 'dark' }}
-        className="w-full bg-[#2a2a2a] border border-white/10 rounded-lg px-2.5 py-1 text-sm text-white placeholder:text-white/35 focus:outline-none hover:border-white/20 focus:border-[var(--accent2)] transition-colors"
+                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-[var(--accent2)] transition-colors"
       />
 
       <div className="grid grid-cols-2 gap-1 mt-1.5">
@@ -296,7 +295,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
             key={p.time}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => applyTime(p.time)}
-            className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-md text-[10px] font-medium text-white/70 transition-colors"
+            className="px-2 py-1 bg-fill-subtle hover:bg-fill rounded-md text-[10px] font-medium text-fg-muted transition-colors"
           >
             {p.label}
           </button>
@@ -332,8 +331,8 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
                 onClick={() => setMeridiem(isPM)}
                 className={`rounded-md border px-2 py-1 text-[10px] font-bold transition-colors ${
                   active
-                    ? 'bg-[#d93d42] border-transparent text-white'
-                    : 'border-white/10 bg-white/5 text-white/55 hover:bg-white/10 hover:text-white/80'
+                    ? 'bg-danger border-transparent text-fg'
+                    : 'border-line bg-fill-subtle text-fg-subtle hover:bg-fill hover:text-fg-muted'
                 }`}
               >
                 {label}
@@ -346,7 +345,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
       <button
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => { onChange(''); lastLeft.current = ''; lastRight.current = ''; setText(''); }}
-        className="w-full mt-2 pt-2 border-t border-white/10 text-xs font-bold text-white/40 hover:text-white transition-colors text-left"
+        className="w-full mt-2 pt-2 border-t border-line text-xs font-bold text-fg-faint hover:text-fg transition-colors text-left"
       >
         Clear
       </button>

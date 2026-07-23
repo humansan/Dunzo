@@ -23,13 +23,13 @@ export const ColumnsView: React.FC<{
     setPath((p) => [...p.slice(0, index + 1), id]);
 
   return (
-    <div className="flex-1 min-h-0 flex overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb]:rounded-full">
+    <div className="flex-1 min-h-0 flex overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full">
       {path.map((nodeId, i) => (
         <div
           key={`${i}:${nodeId ?? '__root'}`}
-          className="w-80 shrink-0 min-h-0 flex flex-col border-r border-white/8"
+          className="w-80 shrink-0 min-h-0 flex flex-col border-r border-line-subtle"
         >
-          <div className="shrink-0 h-9 flex items-center px-3 border-b border-white/10 text-xs font-semibold tracking-wide text-white/60 truncate">
+          <div className="shrink-0 h-9 flex items-center px-3 border-b border-line text-xs font-semibold tracking-wide text-fg-subtle truncate">
             {labelFor(nodeId)}
           </div>
           <Column

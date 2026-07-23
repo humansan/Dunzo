@@ -5,6 +5,7 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import backgroundUrl from '../assets/background.jpg';
 import logoSvg from '../assets/icon-balanced.svg';
 import { AccountMenu } from './AccountMenu';
+import { btnNeutral, btnToggle } from '../theme/buttons';
 
 interface SidebarProps {
   isVisible: boolean;
@@ -33,18 +34,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
   if (!isVisible) return null;
 
   const items = [
-    { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos', color: '--accent2' },
-    { to: '/planner' as const, icon: Blocks, title: 'Task Planner', color: '--accent2' },
-    { to: '/trackers' as const, icon: Clock, title: 'Trackers', color: '--accent2' },
-    { to: '/calendar' as const, icon: Calendar, title: 'Calendar', color: '--accent2' },
-    { to: '/stats' as const, icon: BarChart2, title: 'Stats', color: '--accent2' },
+    { to: '/today' as const, icon: CheckSquare, title: 'Daily Todos' },
+    { to: '/planner' as const, icon: Blocks, title: 'Task Planner' },
+    { to: '/trackers' as const, icon: Clock, title: 'Trackers' },
+    { to: '/calendar' as const, icon: Calendar, title: 'Calendar' },
+    { to: '/stats' as const, icon: BarChart2, title: 'Stats' },
   ];
 
   return (
     <motion.div
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="fixed left-0 top-0 bottom-0 w-14 bg-[#111] border-r border-white/5 flex flex-col items-center justify-between py-5 z-50"
+      className="fixed left-0 top-0 bottom-0 w-14 bg-canvas border-r border-line-subtle flex flex-col items-center justify-between py-5 z-50"
     >
       <div className="flex flex-col gap-3">
         {items.map((item) => {
@@ -54,18 +55,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
             <Link
               key={item.to}
               to={item.to}
-              className={`group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                isActive
-                  ? `bg-[var(${item.color})] text-black shadow-lg shadow-[var(${item.color})]/20`
-                  : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
-              }`}
+              className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnToggle(isActive)}`}
               title={item.title}
             >
               <Icon size={18} strokeWidth={2.5} />
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active"
-                  className={`absolute -left-3 w-1 h-5 bg-[var(${item.color})] rounded-r-full`}
+                  className="absolute -left-3 w-1 h-5 bg-[var(--accent2)] rounded-r-full"
                 />
               )}
             </Link>
@@ -76,20 +73,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
       <div className="flex flex-col gap-3">
         <button
           onClick={onSearchClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+          className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnNeutral}`}
           title="Search tasks (⌘K)"
         >
-          <Search size={18} strokeWidth={2.5} className="text-white/40 group-hover:text-white transition-colors" />
+          <Search size={18} strokeWidth={2.5} className="text-fg-faint group-hover:text-fg transition-colors" />
         </button>
         <button
           onClick={onStopwatchClick}
-          className="group relative w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white/5 hover:bg-white/10"
+          className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnNeutral}`}
           title="Stopwatch"
         >
           <Timer
             size={18}
             strokeWidth={2.5}
-            className={`transition-colors ${isStopwatchActive ? 'text-[var(--accent1)]' : 'text-white/40 group-hover:text-white'}`}
+            className={`transition-colors ${isStopwatchActive ? 'text-[var(--accent1)]' : 'text-fg-faint group-hover:text-fg'}`}
           />
         </button>
         <button

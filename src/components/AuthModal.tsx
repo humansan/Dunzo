@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
 import { authClient } from '../auth';
+import { applyTheme } from '../theme/applyTheme';
+import { btnAccent } from '../theme/buttons';
+import { DEFAULT_THEME_ID } from '../theme/themes';
 import backgroundUrl from '../assets/background.jpg';
 import logoUrl from '../assets/icon.svg';
 
@@ -32,6 +35,16 @@ function readAuthDraft(): { email?: string; mode?: AuthMode } {
 const LoginScreen: React.FC<{
   onAuthenticated: () => void;
 }> = ({ onAuthenticated }) => {
+  // Pre-auth, AppDataProvider (and the user's saved theme) isn't mounted. Follow the
+  // OS light/dark preference on the login screen so it isn't locked to one mode.
+  useEffect(() => {
+    applyTheme(DEFAULT_THEME_ID, 'system');
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => applyTheme(DEFAULT_THEME_ID, 'system');
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
   const resetToken = getResetToken();
   const [draft] = useState(readAuthDraft);
   // Restore only a benign mode (never a stale forgot/reset flow) unless the URL
@@ -133,9 +146,9 @@ const LoginScreen: React.FC<{
 
   // Login-specific field styling (kept local so the account modal is unaffected).
   const fieldClass =
-    'w-full bg-white/5 border border-white/10 rounded-lg px-4 h-9 text-white text-sm focus:outline-none focus:border-[var(--accent1)] transition-colors';
+    'w-full bg-fill-subtle border border-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:border-[var(--accent1)] transition-colors';
   const fieldLabel =
-    'block text-sm font-medium text-white/80';
+    'block text-sm font-medium text-fg-muted';
 
   const renderForm = () => {
     // ── Forgot password ──────────────────────────────────────────────────────
@@ -143,12 +156,12 @@ const LoginScreen: React.FC<{
       if (forgotSent) {
         return (
           <>
-            <h2 className="text-2xl md:text-[28px] font-bold text-white mb-3">Check your email</h2>
-            <p className="text-sm text-white/60 mb-6">
-              We sent a password reset link to <span className="text-white/90">{email}</span>.
+            <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Check your email</h2>
+            <p className="text-sm text-fg-subtle mb-6">
+              We sent a password reset link to <span className="text-fg">{email}</span>.
               Check your inbox and follow the link to set a new password.
             </p>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-fg-muted">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
@@ -162,8 +175,8 @@ const LoginScreen: React.FC<{
       }
       return (
         <>
-          <h2 className="text-2xl md:text-[28px] font-bold text-white mb-2">Reset your password</h2>
-          <p className="text-sm text-white/60 mb-5">
+          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-2">Reset your password</h2>
+          <p className="text-sm text-fg-subtle mb-5">
             Enter your email and we'll send you a link to reset your password.
           </p>
           <form onSubmit={handleForgotSubmit} className="space-y-3.5">
@@ -185,12 +198,12 @@ const LoginScreen: React.FC<{
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className={`w-full h-9 rounded-lg cursor-pointer disabled:cursor-not-allowed ${btnAccent()}`}
             >
               {submitting ? 'Sending…' : 'Send Reset Link'}
             </button>
           </form>
-          <p className="text-sm text-white/80 mt-5">
+          <p className="text-sm text-fg-muted mt-5">
             <button
               type="button"
               onClick={() => switchMode('login')}
@@ -208,14 +221,14 @@ const LoginScreen: React.FC<{
       if (resetDone) {
         return (
           <>
-            <h2 className="text-2xl md:text-[28px] font-bold text-white mb-3">Password updated</h2>
-            <p className="text-sm text-white/60 mb-6">
+            <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Password updated</h2>
+            <p className="text-sm text-fg-subtle mb-6">
               Your password has been changed. You can now log in with your new password.
             </p>
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] cursor-pointer"
+              className={`w-full h-9 rounded-lg cursor-pointer ${btnAccent()}`}
             >
               Log In
             </button>
@@ -224,7 +237,7 @@ const LoginScreen: React.FC<{
       }
       return (
         <>
-          <h2 className="text-2xl md:text-[28px] font-bold text-white mb-6">Set new password</h2>
+          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-6">Set new password</h2>
           <form onSubmit={handleResetSubmit} className="space-y-3.5">
             <div>
               <label className={`${fieldLabel} mb-1.5`}>New password</label>
@@ -241,7 +254,7 @@ const LoginScreen: React.FC<{
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -262,7 +275,7 @@ const LoginScreen: React.FC<{
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
                   aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -275,7 +288,7 @@ const LoginScreen: React.FC<{
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className={`w-full h-9 rounded-lg cursor-pointer disabled:cursor-not-allowed ${btnAccent()}`}
             >
               {submitting ? 'Saving…' : 'Set Password'}
             </button>
@@ -287,7 +300,7 @@ const LoginScreen: React.FC<{
     // ── Login / Signup ───────────────────────────────────────────────────────
     return (
       <>
-        <h2 className="text-2xl md:text-[28px] font-bold text-white mb-6">
+        <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-6">
           {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -327,7 +340,7 @@ const LoginScreen: React.FC<{
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-ghost hover:text-fg-muted transition-colors"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -340,12 +353,12 @@ const LoginScreen: React.FC<{
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-[var(--accent1)] hover:opacity-90 text-black font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="w-full bg-[var(--accent1)] hover:opacity-90 text-canvas font-bold h-9 rounded-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {submitting ? 'Please wait…' : mode === 'login' ? 'Log In' : 'Create Account'}
           </button>
         </form>
-        <p className="text-sm text-white/80 mt-5">
+        <p className="text-sm text-fg-muted mt-5">
           {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
           <button
             type="button"
@@ -391,7 +404,7 @@ const LoginScreen: React.FC<{
             // initial={{ opacity: 0, y: 16 }}
             // animate={{ opacity: 1, y: 0 }}
             // transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="w-full bg-[#1a1a1a] rounded-3xl flex items-center justify-center p-7 md:w-130 md:h-140"
+            className="w-full bg-surface rounded-3xl flex items-center justify-center p-7 md:w-130 md:h-140"
           >
             {/* Content block: constrained + centered inside the visual block */}
             <div className="w-full md:w-90 md:px-8 md:py-10">

@@ -3,25 +3,8 @@ import { COLUMNS } from './types';
 import { SectionsConfig } from './types';
 import { PopoverMenu } from './PopoverMenu';
 import { ListSelect } from './ListSelect';
+import { Switch } from '../Switch';
 
-// Minimal inline toggle switch (no external dep).
-const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={value}
-    onClick={() => onChange(!value)}
-    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none ${
-      value ? 'bg-[var(--accent2)]' : 'bg-white/15'
-    }`}
-  >
-    <span
-      className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${
-        value ? 'translate-x-[18px]' : 'translate-x-[3px]'
-      }`}
-    />
-  </button>
-);
 
 // Three-way segmented control for showLeafTasks.
 const Segment: React.FC<{
@@ -29,14 +12,14 @@ const Segment: React.FC<{
   value: string;
   onChange: (v: string) => void;
 }> = ({ options, value, onChange }) => (
-  <div className="flex gap-0.5 rounded-lg bg-white/[0.06] p-0.5">
+  <div className="flex gap-0.5 rounded-lg bg-fill-subtle p-0.5">
     {options.map((o) => (
       <button
         key={o.value}
         type="button"
         onClick={() => onChange(o.value)}
         className={`flex-1 px-2 py-0.5 rounded-md text-[12px] font-medium transition-colors ${
-          value === o.value ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/70'
+          value === o.value ? 'bg-fill-strong text-fg' : 'text-fg-faint hover:text-fg-muted'
         }`}
       >
         {o.label}
@@ -45,9 +28,9 @@ const Segment: React.FC<{
   </div>
 );
 
-const labelCls = 'text-[13px] text-white/65';
+const labelCls = 'text-[13px] text-fg-muted';
 const rowCls = 'flex items-center justify-between gap-4';
-const sectionCls = 'space-y-3 pb-3 border-b border-white/8 last:border-0 last:pb-0';
+const sectionCls = 'space-y-3 pb-3 border-b border-line-subtle last:border-0 last:pb-0';
 
 export const SectionsMenu: React.FC<{
   anchor: { right: number; top: number };
@@ -64,25 +47,25 @@ export const SectionsMenu: React.FC<{
       title="Sections"
       onClose={onClose}
       className="w-[280px] p-3 space-y-3"
-      headerClassName="px-0.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-white/30"
+      headerClassName="px-0.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost"
     >
         <div className={sectionCls}>
           {/* Auto-archive */}
           <div className={rowCls}>
             <span className={labelCls}>Auto-archive completed</span>
-            <Toggle value={config.autoArchive} onChange={(v) => set('autoArchive', v)} />
+            <Switch checked={config.autoArchive} onChange={(v) => set('autoArchive', v)} />
           </div>
 
           {/* Hide empty collections */}
           <div className={rowCls}>
             <span className={labelCls}>Hide empty sections</span>
-            <Toggle value={config.hideEmptyCollections} onChange={(v) => set('hideEmptyCollections', v)} />
+            <Switch checked={config.hideEmptyCollections} onChange={(v) => set('hideEmptyCollections', v)} />
           </div>
 
           {/* Hide sub-collections — flatten to leaf tasks only */}
           <div className={rowCls}>
             <span className={labelCls}>Hide subcollections</span>
-            <Toggle value={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
+            <Switch checked={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
           </div>
         </div>
 

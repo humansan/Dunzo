@@ -25,14 +25,14 @@ function RootComponent() {
 // old "one throw blanks the whole app" behavior — there were no error boundaries.
 function RootErrorComponent({ error }: ErrorComponentProps) {
   return (
-    <div className="h-screen flex flex-col items-center justify-center gap-4 bg-neutral-950 text-white/60 text-sm text-center px-6">
-      <p className="text-white/80 font-semibold">Something went wrong.</p>
+    <div className="h-screen flex flex-col items-center justify-center gap-4 bg-canvas text-fg-subtle text-sm text-center px-6">
+      <p className="text-fg-muted font-semibold">Something went wrong.</p>
       {error?.message && (
-        <p className="text-white/40 max-w-md break-words">{error.message}</p>
+        <p className="text-fg-faint max-w-md break-words">{error.message}</p>
       )}
       <button
         onClick={() => window.location.reload()}
-        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-semibold"
+        className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold"
       >
         Reload
       </button>
