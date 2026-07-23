@@ -138,6 +138,14 @@ body {
   to { filter: hue-rotate(360deg); }
 }
 
+/* Section-pill inline edit: the inset ring grows in on mount. A CSS transition
+   can't do this — the input mounts already ringed, so there's no state change to
+   animate; a keyframe runs on mount. `currentColor` matches the pill's text hue. */
+@keyframes ring-grow {
+  from { box-shadow: 0 0 0 0; }
+  to { box-shadow: 0 0 0 2px; }
+}
+
 @layer utilities {
 
   /* Hide scrollbar for Chrome, Safari and Opera */

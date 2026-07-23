@@ -31,6 +31,7 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
       onSave={(updated, newDate) => d.handleHubSaveTodo({ ...updated, dueDate: newDate || undefined })}
       onToggle={d.handleToggleTodo}
       onDelete={(id) => { d.handleDeleteTodoById(id); onClose(); }}
+      showXpChips={d.showXpChips}
     />
   );
 };

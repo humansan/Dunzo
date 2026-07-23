@@ -4,12 +4,12 @@ import { Astroid } from 'lucide-react';
 // The XP/streak gold, matching StarStreak.
 const GOLD = '#ffc24b';
 const MIN = 1;
-const MAX = 10;
+const MAX = 5;
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 interface XpSliderProps {
-  /** Current XP; undefined = unset. When set it is constrained to 1–10. */
+  /** Current XP; undefined = unset. When set it is constrained to 1–5. */
   value?: number;
   onChange: (val: number | undefined) => void;
   autoFocus?: boolean;
@@ -17,8 +17,8 @@ interface XpSliderProps {
 }
 
 /**
- * The XP editor panel — a row of ten Astroid icons that fill (gold) up to the
- * selected value, click or drag to set 1–10, plus a Clear button to unset. Own
+ * The XP editor panel — a row of five Astroid icons that fill (gold) up to the
+ * selected value, click or drag to set 1–5, plus a Clear button to unset. Own
  * shell, mirroring the TimeInput / CalendarInput popover panels; hosted by any
  * anchored-popover shell (taskChips' ChipPopover, the table's CellEditorPopover).
  */
@@ -49,11 +49,11 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
   };
 
   const current = preview ? preview.value : value;
-  // How many icons paint filled: clamp legacy/out-of-range values to [0, 10] for
+  // How many icons paint filled: clamp legacy/out-of-range values to [0, 5] for
   // display only (the stored value isn't changed until the user interacts).
   const filled = current === undefined ? 0 : Math.max(0, Math.min(MAX, current));
 
-  // Map a pointer x within the row to a value in 1–10.
+  // Map a pointer x within the row to a value in 1–5.
   const valueFromX = (clientX: number): number => {
     const el = rowRef.current;
     if (!el) return MIN;
@@ -82,7 +82,7 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
     <div
       ref={rootRef}
       tabIndex={-1}
-      className={`bg-surface border border-line rounded-xl p-2.5 w-60 focus:outline-none ${className ?? ''}`}
+      className={`bg-surface border border-line rounded-xl p-2.5 w-40 focus:outline-none ${className ?? ''}`}
     >
       <div className="flex items-center gap-1.5 px-0.5 mb-2 text-sm font-mono">
         <Astroid size={14} strokeWidth={2.5} style={{ color: filled > 0 ? GOLD : undefined }} className={filled > 0 ? '' : 'text-fg-subtle'} />

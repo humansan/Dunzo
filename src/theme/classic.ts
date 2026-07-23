@@ -34,7 +34,7 @@ const classicRoles: Record<RoleName, RoleValue> = {
   info: 'blue',
   // Feedback tint backgrounds — translucent hue
   'danger-tint': ['red', 12],
-  'warning-tint': ['amber', 10],
+  'warning-tint': ['gold', 10],
   'success-tint': ['emerald', 12],
   'info-tint': ['blue', 12],
   'status-todo': 'subtle',
@@ -87,7 +87,7 @@ const classicLightRoles: Record<RoleName, RoleValue> = {
   'fill-stronger': ['fg', 15],
   // Feedback tints
   'danger-tint': ['red', 10],
-  'warning-tint': ['amber', 12],
+  'warning-tint': ['gold', 9],
   'success-tint': ['emerald', 10],
   'info-tint': ['blue', 10],
 };
@@ -104,8 +104,8 @@ const classicDark: Record<string, string> = {
   accent1: '#e1e354',
   accent2: '#c6dabe',
   red: '#d93d42',
-  gold: '#ffc24b',
-  amber: '#ffba44',
+  gold: '#ffcd4e',
+  amber: '#ffcd4e',
   emerald: '#22c55e',
   blue: '#3b82f6',
   violet: '#a78bfa',
@@ -131,10 +131,10 @@ const classicLight: Record<string, string> = {
   fg: '#000000',       // near-black primary text (softer than pure #000)
   muted: '#3f4652',   // (legacy solid; text ramp now uses translucent fg)
   subtle: '#5b6472',  // still used by status-todo / priority-low chips
-  accent1: '#81a400', // olive-gold — balances readable-as-text vs black-text-on-accent-bg
+  accent1: '#7a9c00', // olive-gold — balances readable-as-text vs black-text-on-accent-bg
   accent2: '#6c8c83', // medium green — same balance
   red: '#d42d33',
-  gold: '#e7a829',    // XP signature gold, deepened to read on white
+  gold: '#d58d11',    // XP signature gold, deepened to read on white
   amber: '#a86616',
   emerald: '#0f8a4c',
   blue: '#2563eb',

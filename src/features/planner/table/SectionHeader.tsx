@@ -100,7 +100,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         mode === 'column'
           ? 'items-center min-h-[36px]'
           : mode === 'list'
-            ? 'items-end min-h-12 pt-6 pb-2'
+            ? 'items-end min-h-15 pt-5'
             : 'items-end min-h-12 pt-4'
       } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-fill' : ''} ${isDragSource ? 'opacity-50' : ''}`}
     >

@@ -44,6 +44,7 @@ interface TodoFullViewProps {
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  showXpChips: boolean; // hide the XP property when the settings toggle is off
 }
 
 // Vertical property block for the right pane: label row on top, control below.
@@ -87,6 +88,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onSave,
   onToggle,
   onDelete,
+  showXpChips,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
@@ -146,9 +148,11 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
   const handleDateChange = (val: string) => {
     setDateStr(val);
-    // An undated task can't live on the daily list — drop it off and make sure it
-    // stays reachable in the Planner (mirrors normalizeVisibility).
-    if (!val) update({ showInDailyList: false, showInDatabase: true }, '');
+    // Clearing the date keeps the showInDailyList flag intact — an undated task
+    // simply never reaches any daily list (showsOnDailyChecklist gates on the date),
+    // and re-adding a date later sends it straight back. We only ensure it stays
+    // reachable in the Planner (mirrors normalizeVisibility).
+    if (!val) update({ showInDatabase: true }, '');
     else update({}, val);
   };
 
@@ -157,13 +161,16 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const handleStartTimeChange = (val: string) => update(patchFromTime('start', val));
   const handleDueTimeChange = (val: string) => update(patchFromTime('due', val));
 
-  // "Show in" invariants: Daily needs a date, and the task must stay visible on at
-  // least one surface — so the sole enabled switch can't be turned off.
-  const dailyAllowed = hasDate(dateStr);
+  // "Show in" invariants: the daily flag can be set even without a date (it just
+  // stays pending until one is added), but the task must stay reachable on at least
+  // one surface — so a switch that is the sole *effective* surface can't be turned
+  // off. A daily-flagged task only counts as reachable there once it has a date.
+  const dated = hasDate(dateStr);
   const plannerOn = draft.showInDatabase === true;
-  const dailyOn = draft.showInDailyList === true && dailyAllowed;
-  const plannerDisabled = plannerOn && !dailyOn;
-  const dailyDisabled = !dailyAllowed || (dailyOn && !plannerOn);
+  const dailyFlag = draft.showInDailyList === true;
+  const dailyEffective = dailyFlag && dated; // actually reaches a daily list
+  const plannerDisabled = plannerOn && !dailyEffective;
+  const dailyDisabled = dailyEffective && !plannerOn;
 
   const handleArchive = () => {
     const nowArchived = !draft.archived;
@@ -297,7 +304,13 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 canClear={false}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <DateChip value={dateStr} placeholder="Date" onChange={handleDateChange} />
+                  <DateChip
+                    value={dateStr}
+                    placeholder="Date"
+                    onChange={handleDateChange}
+                    autoMoveDate={draft.autoMoveDate ?? false}
+                    onAutoMoveDateChange={(val) => update({ autoMoveDate: val })}
+                  />
                   <TimeChip
                     value={draft.dueTime}
                     percent={draft.duePercentage}
@@ -306,14 +319,16 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 </div>
               </RightProp>
 
-              <RightProp
-                icon={<Astroid size={11} />}
-                label="XP"
-                onClear={() => update({ xp: undefined })}
-                canClear={draft.xp !== undefined}
-              >
-                <XpChip value={draft.xp} onChange={(val) => update({ xp: val })} />
-              </RightProp>
+              {showXpChips && (
+                <RightProp
+                  icon={<Astroid size={11} />}
+                  label="XP"
+                  onClear={() => update({ xp: undefined })}
+                  canClear={draft.xp !== undefined}
+                >
+                  <XpChip value={draft.xp} onChange={(val) => update({ xp: val })} />
+                </RightProp>
+              )}
 
               {/* Where the task surfaces. Daily needs a date; at least one must stay on. */}
               <RightProp icon={<Database size={11} />} label="Show in">
@@ -328,12 +343,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     />
                   </div>
                   <div
-                    className={`flex items-center justify-between ${dailyAllowed ? '' : 'opacity-40'}`}
-                    title={dailyAllowed ? undefined : 'Set a due date to show this task in Daily Tasks'}
+                    className="flex items-center justify-between"
+                    title={dailyFlag && !dated ? 'Applies once this task has a due date' : undefined}
                   >
-                    <span className="text-xs text-fg-faint">Daily Tasks</span>
+                    <span className="flex flex-col">
+                      <span className="text-xs text-fg-faint">Daily Tasks</span>
+                      {dailyFlag && !dated && (
+                        <span className="text-[10px] text-fg-faint">Pending a due date</span>
+                      )}
+                    </span>
                     <Switch
-                      checked={dailyOn}
+                      checked={dailyFlag}
                       disabled={dailyDisabled}
                       onChange={(val) => update({ showInDailyList: val })}
                       aria-label="Show in Daily Tasks"

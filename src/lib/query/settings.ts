@@ -31,7 +31,13 @@ export interface UserSettings {
   mode?: 'dark' | 'light' | 'system'; // dark/light selection (default 'dark')
   weekStartsOn?: number;
   countdownMode?: 'off' | 'time' | 'percent';
-  xpEnabled?: boolean;
+  xpEnabled?: boolean;          // show the XP bar + streaks (undefined ⇒ true)
+  showXpChips?: boolean;        // show per-task XP chips (undefined ⇒ true)
+  defaultDailyXp?: number;      // default XP for new daily tasks (undefined ⇒ 1, 0 ⇒ None)
+  // Cross-surface default for new tasks (undefined ⇒ true). See app-data.tsx.
+  plannerTasksInDailyList?: boolean; // planner-created tasks also show on daily list
+  dailyTasksInPlanner?: boolean;     // daily-created tasks also show in Task Planner
+  defaultAutoMoveDate?: boolean;     // new daily-list tasks auto-move overdue → today (undefined ⇒ false)
   activeWorkspaceId?: string;
   hubViews?: Record<string, any>; // per `workspace:view` field config
   hubColWidths?: Record<string, number>;

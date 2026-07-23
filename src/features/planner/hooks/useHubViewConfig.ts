@@ -55,12 +55,15 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       )
     );
     const raw_sections = raw.sections ?? {};
+    // The In Daily List tab is a daily-tasks lens, so it defaults to date grouping.
+    // A persisted per-view override still wins (stored under workspaceId:viewId).
+    const defaultGroupBy = selectedView === 'in-daily-list' ? 'date' : DEFAULT_SECTIONS_CONFIG.groupBy;
     const sections: SectionsConfig = {
       autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
       showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
       hideEmptyCollections: raw_sections.hideEmptyCollections ?? DEFAULT_SECTIONS_CONFIG.hideEmptyCollections,
       hideSubcollections:   raw_sections.hideSubcollections   ?? DEFAULT_SECTIONS_CONFIG.hideSubcollections,
-      groupBy:              raw_sections.groupBy              ?? DEFAULT_SECTIONS_CONFIG.groupBy,
+      groupBy:              raw_sections.groupBy              ?? defaultGroupBy,
       groupSortDirection:   raw_sections.groupSortDirection   ?? DEFAULT_SECTIONS_CONFIG.groupSortDirection,
     };
     return {
@@ -71,7 +74,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
       sections,
     };
-  }, [viewsConfig, viewConfigKey]);
+  }, [viewsConfig, viewConfigKey, selectedView]);
 
   const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
 

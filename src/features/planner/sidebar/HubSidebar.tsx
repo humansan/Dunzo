@@ -25,6 +25,8 @@ export const HubSidebar: React.FC<{
   allCount: number;
   uncategorizedCount: number;
   archivedCount: number;
+  inDailyListCount: number;
+  categorizedCount: number;
   visibleCollections: VisibleCollection[];
   collectionCount: (cid: string) => number;
   collapsedColls: Set<string>;
@@ -48,6 +50,8 @@ export const HubSidebar: React.FC<{
   allCount,
   uncategorizedCount,
   archivedCount,
+  inDailyListCount,
+  categorizedCount,
   visibleCollections,
   collectionCount,
   collapsedColls,
@@ -121,6 +125,8 @@ export const HubSidebar: React.FC<{
         allCount={allCount}
         uncategorizedCount={uncategorizedCount}
         archivedCount={archivedCount}
+        inDailyListCount={inDailyListCount}
+        categorizedCount={categorizedCount}
         visibleCollections={visibleCollections}
         collectionCount={collectionCount}
         collapsedColls={collapsedColls}

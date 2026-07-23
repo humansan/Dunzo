@@ -107,7 +107,7 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
             {/* Today: still available ⬩ yesterday */}
             <span className="text-[12px] font-medium leading-tight">
               <span className='text-fg'>
-              <span className="">{upForGrabs}</span> up for grabs ⬩ 
+              <span className="">{upForGrabs} up for grabs</span> ⬩ 
               <span className=""> {yesterday}</span> yesterday</span>
               {/* <span className="text-fg">{upForGrabs}</span>
               <span className="text-fg-subtle"> up for grabs</span>
@@ -119,8 +119,8 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
             {/* Records: avg 7d ⬩ best 7d ⬩ best all time */}
             <span className="text-[12px] leading-tight">
               <span className='text-fg-muted'>
-              <span className=""> {avgValue} </span> {avgLabel} ⬩
-              <span className=""> {bestLast7Days} </span> best 7d ⬩
+              <span className=""> {avgLast7Days} </span> {'avg 7d'} ⬩
+              <span className=""> {avgLast30Days} </span> {'avg 30d'} ⬩
               <span className=""> {bestAllTime} </span> best all-time
               </span>
             </span>

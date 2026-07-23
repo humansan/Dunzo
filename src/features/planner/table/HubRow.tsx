@@ -181,7 +181,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         className={`flex items-start py-2 px-2.5 border-l border-line-subtle cursor-pointer hover:bg-fill-subtle overflow-hidden ${
           wrap ? '[&_.truncate]:whitespace-normal [&_.truncate]:break-words' : ''
         } ${
-          active ? 'ring-1 ring-inset ring-(--accent2)/60' : ''
+          active ? 'ring-2 ring-inset ring-(--accent2)' : ''
         } ${
           col === lastColKey ? 'border-r border-line-subtle' : ''
         }`}
@@ -220,7 +220,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             placeholder="Collection name"
             size={1}
             style={pill(color)}
-            className="w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px text-sm font-medium focus:outline-none placeholder:text-fg-faint ring-1 ring-current/60"
+            className={`w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px font-medium focus:outline-none placeholder:text-fg-faint animate-[ring-grow_75ms_linear_both] ${variant.mode === 'list' ? 'text-base' : 'text-sm'}`}
           />
         ) : undefined}
         isCollapsed={isCollapsed}
@@ -458,7 +458,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           style={{ paddingLeft: NAME_BASE_PAD + depth * INDENT }}
           className={`relative z-10 flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
             isEditing('title') && !titleWrapped ? 'h-9' : 'py-[8px]'
-          } ${isEditing('title') && "ring-1 ring-inset ring-[var(--accent2)]/60"}
+          } ${isEditing('title') && "ring-2 ring-inset ring-[var(--accent2)]"}
           `}
         >
           {/* Collapse chevron (nesting variants only) — a spacer keeps the checkbox

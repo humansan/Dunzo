@@ -50,6 +50,9 @@ export interface Todo {
   estimatedTime?: number;  // Estimated minutes to complete
   countCompletion?: number; // How many times this must be done to count complete (default 1)
   repeatInterval?: number; // Days between repeats (0 = no repeat)
+  autoMoveDate?: boolean;  // When true, an incomplete task whose dueDate has passed
+                           // is automatically rescheduled to today by the load-time
+                           // sweep (so it keeps rolling forward until completed).
   notes?: string;          // Freeform notes text
   xp?: number;             // Points granted on completion (XP system TBD)
   createdAt: number;       // Timestamp (ms) when todo was created

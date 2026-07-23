@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown } from 'lucide-react';
+import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown, CalendarCheck, FolderCheck } from 'lucide-react';
 import { OrganizerEntry } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { SIDEBAR_INDENT } from '@/features/planner/constants';
@@ -21,6 +21,10 @@ export const CollectionTree: React.FC<{
   // Omit to hide the "Archived" pseudo-view (the Task Finder's picker doesn't
   // support it — its data layer only knows 'all' / 'uncategorized' / a collection id).
   archivedCount?: number;
+  // Omit to hide the "In Daily List" / "Categorized" pseudo-views (same reason as
+  // Archived — the Task Finder only navigates all / uncategorized / a collection).
+  inDailyListCount?: number;
+  categorizedCount?: number;
   visibleCollections: VisibleCollection[];
   collectionCount: (id: string) => number;
   collapsedColls: Set<string>;
@@ -35,6 +39,8 @@ export const CollectionTree: React.FC<{
   allCount,
   uncategorizedCount,
   archivedCount,
+  inDailyListCount,
+  categorizedCount,
   visibleCollections,
   collectionCount,
   collapsedColls,
@@ -51,20 +57,12 @@ export const CollectionTree: React.FC<{
 
   return (
     <div className="group/pane flex-1 min-h-0 flex flex-col">
-      {/* Fixed header: title + the two pseudo-views as separate rows */}
+      {/* Section 1: All Tasks · Archived */}
       <div className="shrink-0 p-2 pb-0 space-y-0.5">
-        <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
-          Collections
-        </div>
         <button type="button" onClick={() => onSelectView('all')} className={itemCls('all')} title="All Tasks">
           <Layers size={15} className="shrink-0 text-fg-subtle" />
           <span className="flex-1 truncate">All Tasks</span>
           <span className="text-xs text-fg-faint font-mono mr-1.5">{allCount}</span>
-        </button>
-        <button type="button" onClick={() => onSelectView('uncategorized')} className={itemCls('uncategorized')} title="Uncategorized">
-          <Inbox size={15} className="shrink-0 text-fg-subtle" />
-          <span className="flex-1 truncate">Uncategorized</span>
-          <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
         </button>
         {archivedCount !== undefined && (
           <button type="button" onClick={() => onSelectView('archived')} className={itemCls('archived')} title="Archived">
@@ -76,6 +74,38 @@ export const CollectionTree: React.FC<{
       </div>
 
       <div className="my-2 mx-3 border-t border-line"></div>
+
+      {/* Section 2: In Daily List · Uncategorized · Categorized */}
+      <div className="shrink-0 px-2 space-y-0.5">
+        {inDailyListCount !== undefined && (
+          <button type="button" onClick={() => onSelectView('in-daily-list')} className={itemCls('in-daily-list')} title="In Daily List">
+            <CalendarCheck size={15} className="shrink-0 text-fg-subtle" />
+            <span className="flex-1 truncate">In Daily List</span>
+            <span className="text-xs text-fg-faint font-mono mr-1.5">{inDailyListCount}</span>
+          </button>
+        )}
+        <button type="button" onClick={() => onSelectView('uncategorized')} className={itemCls('uncategorized')} title="Uncategorized">
+          <Inbox size={15} className="shrink-0 text-fg-subtle" />
+          <span className="flex-1 truncate">Uncategorized</span>
+          <span className="text-xs text-fg-faint font-mono mr-1.5">{uncategorizedCount}</span>
+        </button>
+        {categorizedCount !== undefined && (
+          <button type="button" onClick={() => onSelectView('categorized')} className={itemCls('categorized')} title="Categorized">
+            <FolderCheck size={15} className="shrink-0 text-fg-subtle" />
+            <span className="flex-1 truncate">Categorized</span>
+            <span className="text-xs text-fg-faint font-mono mr-1.5">{categorizedCount}</span>
+          </button>
+        )}
+      </div>
+
+      <div className="my-2 mx-3 border-t border-line"></div>
+
+      {/* Section 3: user collections */}
+      <div className="shrink-0 px-2 pb-0">
+        <div className="px-2.5 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost">
+          Collections
+        </div>
+      </div>
 
       {/* Scrollable list of collections — nested tree, indented by depth. The drop is
           handled on the container (not per-row) so releases in the gaps still commit. */}

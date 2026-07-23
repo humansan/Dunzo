@@ -72,6 +72,7 @@ export const todos = pgTable(
     estimatedTime: integer('estimated_time'),
     countCompletion: integer('count_completion'),
     repeatInterval: integer('repeat_interval'),
+    autoMoveDate: boolean('auto_move_date'),
     notes: text('notes'),
     xp: integer('xp'),
     color: text('color'),
@@ -120,9 +121,24 @@ export const trackers = pgTable(
 export const userSettings = pgTable('user_settings', {
   userId: text('user_id').primaryKey(),
   theme: jsonb('theme').$type<Theme>(),
+  themeId: text('theme_id'), // selected color theme id (src/theme/themes.ts; default 'classic')
+  mode: text('mode').$type<'dark' | 'light' | 'system'>(), // dark/light/system (default 'dark')
   weekStartsOn: integer('week_starts_on'),
   countdownMode: text('countdown_mode'),
-  xpEnabled: boolean('xp_enabled'),
+  xpEnabled: boolean('xp_enabled'), // show the XP bar + streaks (default true)
+  showXpChips: boolean('show_xp_chips'), // show per-task XP chips (null ⇒ true)
+  // Default XP for new daily-list tasks. Null ⇒ 1 (never configured); 0 ⇒ None
+  // (no XP); 1–5 ⇒ that value. Only seeds the daily quick-add.
+  defaultDailyXp: integer('default_daily_xp'),
+  // Cross-surface default for new tasks: whether a task created in the Task
+  // Planner also shows on the daily list, and whether a task created in the daily
+  // list also shows in the Task Planner. Null ⇒ true (both surfaces, the legacy
+  // default). Only apply at creation time.
+  plannerTasksInDailyList: boolean('planner_tasks_in_daily_list'),
+  dailyTasksInPlanner: boolean('daily_tasks_in_planner'),
+  // Default auto-move-date flag for new DAILY-LIST tasks (null ⇒ false). Planner
+  // tasks default off regardless. Only applied at creation time.
+  defaultAutoMoveDate: boolean('default_auto_move_date'),
   activeWorkspaceId: text('active_workspace_id'),
   hubViews: jsonb('hub_views'), // dun-hub-views: per-view field order/visibility/filters/sorts/sections
   hubColWidths: jsonb('hub_col_widths'), // dun-hub-col-widths

@@ -39,6 +39,7 @@ import { priorityOption } from '@/features/tasks/fields';
 import { TaskTimeChips, formatCountdown } from '@/features/tasks';
 import { QuickEditTodo, QuickEditValues } from '@/features/tasks';
 import { DailyRowContextMenu } from '@/features/daily/DailyRowContextMenu';
+import { useAppData } from '@/lib/app-data';
 import { btnGhost } from '@/theme/buttons';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -147,6 +148,8 @@ const TodoItem: React.FC<TodoItemProps> = ({
     () => formatCountdown(todo, date, now, countdownMode),
     [todo, date, now, countdownMode]
   );
+  // Per-task XP chip visibility (settings toggle, independent of the XP bar).
+  const { showXpChips } = useAppData();
 
   // Priority is shown as an icon-only square chip, tinted with the priority color.
   const prio = todo.priority ? priorityOption(todo.priority) : undefined;
@@ -167,6 +170,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialStatus={todo.status}
           initialPriority={todo.priority}
           initialParentId={todo.parentId}
+          initialAutoMoveDate={todo.autoMoveDate}
           collectionOptions={collectionOptions}
           onCreateCollection={onCreateCollection}
           onSubmit={(vals) => onSaveEdit(todo.id, vals)}
@@ -247,19 +251,21 @@ const TodoItem: React.FC<TodoItemProps> = ({
         {prio && (
           <div
             title={`${prio.label} priority`}
-            style={isDone(todo) ? undefined : pill(prio.color)}
-            className={`flex items-center justify-center p-[5.5px] rounded-lg ${isDone(todo) ? 'bg-fill-subtle text-fg-ghost' : ''}`}
+            style={isDone(todo) ? undefined : {
+              backgroundColor: prio.color,
+            }}
+            className={`flex items-center justify-center p-[5.5px] rounded-lg ${isDone(todo) ? 'bg-fill-subtle text-fg-ghost' : 'text-white'}`}
           >
             <Flag size={16} />
           </div>
         )}
 
-        {todo.xp !== undefined && (
-          <div className={`flex items-center justify-center gap-1.5 px-2.75 py-[5.5px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
+        {showXpChips && todo.xp !== undefined && (
+          <div className={`flex items-center justify-center gap-1.5 px-2.75 h-[27px] rounded-lg text-[13px] leading-none font-mono font-medium ${isDone(todo)
             ? 'bg-fill-subtle text-fg-ghost'
-            : 'bg-warning-tint text-warning'
+            : 'bg-warning-tint text-xp-tier1'
           }`}>
-            <Sparkles size={16} />
+            <Sparkles size={14} />
             <span className="relative top-px">{todo.xp} XP</span>
           </div>
         )}
@@ -499,7 +505,7 @@ export const DailyList: React.FC<DailyListProps> = ({
       {!isAdding ? (
         <button
           onClick={openAddPanel}
-          className="flex items-center gap-2 py-2 text-fg-ghost hover:text-fg-subtle transition-all group duration-100"
+          className="flex items-center gap-2 py-2 text-fg-ghost hover:text-fg-subtle transition-all group duration-100 cursor-pointer"
         >
           <GripVertical size={18} className="invisible" />
           <Plus size={21} strokeWidth={2.5} />
