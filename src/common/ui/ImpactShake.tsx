@@ -18,7 +18,7 @@ interface ImpactShakeProps {
 // one element fight. Also avoid wrapping a backdrop-blur layer: transforming it
 // is expensive, and shaking the dim along with the content looks wrong.
 export const ImpactShake: React.FC<ImpactShakeProps> = React.memo(
-  ({ active, duration = 0.25, amplitude, steps, decay, children }) => {
+  ({ active, duration = 0.33, amplitude, steps, decay, children }) => {
     // Fresh randomness per fire, but pinned for the duration of that fire: a
     // parent re-render mid-shake must not reshuffle the keyframes and restart it.
     const frames = useMemo(

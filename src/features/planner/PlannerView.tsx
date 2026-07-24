@@ -162,6 +162,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     activeSorts,
     sectionsConfig,
     updateViewState,
+    applyToAllViews,
     colByKey,
     toggleField,
     toggleWrap,
@@ -748,6 +749,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           anchor={sectionsMenu}
           config={sectionsConfig}
           onChange={(cfg) => updateViewState({ sections: cfg })}
+          onSetForAll={() => applyToAllViews('sections')}
           onClose={() => setSectionsMenu(null)}
         />,
         document.body
@@ -764,6 +766,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onMove={moveField}
           onToggle={toggleField}
           onToggleWrap={toggleWrap}
+          onSetForAll={() => applyToAllViews('fields')}
           onClose={() => setFieldsMenu(null)}
         />,
         document.body
@@ -779,6 +782,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           uniqueValues={uniqueValues}
           onChange={(f) => updateViewState({ filters: f })}
           onChangeMatch={(m) => updateViewState({ filterMatch: m })}
+          onSetForAll={() => applyToAllViews('filter')}
           onClose={() => setFilterMenu(null)}
         />,
         document.body
@@ -791,6 +795,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           sorts={activeSorts}
           allColumns={COLUMNS}
           onChange={(s) => updateViewState({ sorts: s })}
+          onSetForAll={() => applyToAllViews('sort')}
           onClose={() => setSortMenu(null)}
         />,
         document.body

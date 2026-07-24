@@ -76,6 +76,29 @@ export const DEFAULT_HIDDEN_COLS: ColKey[] = COLUMNS.map((c) => c.key).filter(
 
 export type EditState = { id: string; col: ColKey; rect: DOMRect | null } | null;
 
+// ── Toolbar menus ────────────────────────────────────────────────────────────
+export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
+
+// The stored per-view config fields (see useHubViewConfig's hubViews records).
+export type ViewConfigField =
+  | 'fieldOrder'
+  | 'hiddenFields'
+  | 'wrappedFields'
+  | 'filters'
+  | 'filterMatch'
+  | 'sorts'
+  | 'sections';
+
+// Which stored fields each toolbar menu owns. This is the unit "Set for all"
+// broadcasts to the workspace default and clears from every per-view record, so
+// broadcasting one menu never disturbs the others' per-view settings.
+export const MENU_SLICES: Record<ToolbarMenuKey, readonly ViewConfigField[]> = {
+  sections: ['sections'],
+  fields: ['fieldOrder', 'hiddenFields', 'wrappedFields'],
+  filter: ['filters', 'filterMatch'],
+  sort: ['sorts'],
+};
+
 // ── View filter / sort rules ──────────────────────────────────────────────────
 export type FilterCondition = 'is' | 'is_not' | 'contains' | 'greater_than' | 'less_than';
 
