@@ -442,7 +442,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   };
 
   return (
-    <div className="py-8 max-w-5xl mx-auto px-4">
+    <div className="py-2 max-w-5xl mx-auto px-4">
       {/* Page Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent1)] text-canvas shadow-lg shadow-[var(--accent1)]/10">

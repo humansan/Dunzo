@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Astroid } from 'lucide-react';
 import { useThemeColor } from '@/theme/useThemeColor';
 import { ParticleBurst } from '@/common/ui';
+import fireUrl from '@/assets/fire-svg.svg';
 
 interface StarStreakProps {
   // The three goal flags in slot order: completed a task, beat yesterday, beat the
@@ -61,7 +62,7 @@ const StarIcon = React.memo(
         transition={{ duration: 1.1, ease: POP }}
         className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
       >
-        <Astroid size={32} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
+        <Astroid size={34} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>
       <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
     </div>
@@ -119,12 +120,22 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
           >
             <motion.span
               key={streak}
-              className="text-3xl font-bold leading-none"
+              className="text-3xl font-bold leading-none flex items-center"
               style={{ fontVariantNumeric: 'tabular-nums' }}
               animate={{ color: maxed ? '#000000' : ["white", GOLD_TEXT], scale: maxed ? [1, 1.25, 1] : 1}}
               transition={{ scale: { duration: 0.6, ease: POP }, color: { duration: 0.4 } }}
             >
               {streak}🔥
+              {/* {maxed ? (
+                <picture className="pb-0.5">
+                  <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.webp" alt="🔥" width="32" height="32" />
+                </picture>
+              ) : (
+                <picture className="pb-0.5">
+                  <img src={fireUrl} alt="🔥" width="32" height="32" />
+                </picture>
+              )
+              } */}
             </motion.span>
           </motion.div>
         </div>

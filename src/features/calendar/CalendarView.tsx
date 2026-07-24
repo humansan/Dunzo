@@ -204,9 +204,9 @@ const EventCard: React.FC<{
   const timeRange = continuesAfter
     ? `${startLabel || formatTime12h('00:00')}`
     : continuesBefore
-      ? `${endLabel || formatTime12h('23:59')}`
+      ? `ends ${endLabel || formatTime12h('23:59')}`
       : bothTimes
-        ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} – ${endLabel}`
+        ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} - ${endLabel}`
         : startLabel || endLabel;
   // Duration is the WHOLE task's length, never this segment's slice.
   const isSegment = continuesBefore || continuesAfter;
