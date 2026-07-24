@@ -17,7 +17,7 @@ import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
 import { timeToPercentage, formatTime12h, minutesToTime } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
-import { collectionOf, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
+import { collectionOf, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
 import { Checkbox } from '@/common/ui/Checkbox';
@@ -611,10 +611,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // both. Anything longer is dropped entirely - the all-day header bar those want
   // isn't built yet.
   //
-  // The surface/collection filters run ONCE per task, against its anchor day (the
-  // dueDate bucket it lives in) rather than per column. showsOnDailyChecklist is
-  // date-specific and is false on a span's first day, so filtering per column would
-  // silently hide that half whenever only the Daily surface is enabled.
+  // The span is resolved BEFORE the surface filters, because it is what decides
+  // whether a task is placeable at all. The Daily surface then reads the raw
+  // showInDailyList flag rather than showsOnDailyChecklist: that helper keys on
+  // dueDate because the daily CHECKLIST is dueDate-driven, but the calendar places a
+  // task by its span - so a start-only task (no dueDate) still belongs under the
+  // Daily surface when it carries the flag. Filtering per column would also hide a
+  // span's first day, since its dueDate only matches the second.
   const todosByDate = useMemo(() => {
     const map = new Map<string, { todo: Todo; span: TodoSpan }[]>();
     for (const day of dayTodos) {
@@ -627,16 +630,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         // owns the archived exclusion, so the planner surface below uses raw
         // showInDatabase (equivalent to showsInOrganizer for non-archived tasks).
         if (t.archived && !showArchived) continue;
+
+        const span = todoSpan(t);
+        // A null span means there's no real date to place the task on. Over 24h is a
+        // multi-day task: it belongs in the all-day header bar rather than the time
+        // grid, and that isn't built yet - so it isn't drawn at all.
+        if (!span || !isRenderableSpan(span)) continue;
+
         // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
         const inSet =
-          (showDaily && showsOnDailyChecklist(t, day.date)) || (showPlanner && t.showInDatabase === true);
+          (showDaily && t.showInDailyList === true) || (showPlanner && t.showInDatabase === true);
         // Stage 2 - the uncategorized/collection filters narrow that base set.
         if (!inSet || !passesCollectionFilter(t)) continue;
 
-        const span = todoSpan(t);
-        // Over 24h is a multi-day task: it belongs in the all-day header bar rather
-        // than the time grid, and that isn't built yet - so it isn't drawn at all.
-        if (!span || !isRenderableSpan(span)) continue;
         const firstIdx = Math.floor(span.absStart / MINS_PER_DAY);
         const lastIdx = Math.floor(span.absEnd / MINS_PER_DAY);
         for (let i = firstIdx; i <= lastIdx; i++) {

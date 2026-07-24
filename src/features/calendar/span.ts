@@ -71,8 +71,25 @@ export function normalizeSpanEnd(span: TodoSpan): TodoSpan {
 // gets a block. When startDate is an EARLIER day the task is a span, and a missing
 // time means that side is all-day: it runs from 00:00, or through the end of its day.
 export function todoSpan(todo: Todo): TodoSpan | null {
-  if (!todo.dueDate) return null;
   if (!todo.startTime && !todo.dueTime) return null;
+
+  // A task normally anchors on its due date. One with ONLY a start side - a start
+  // date and time, no due date at all - anchors on its START date instead, so it
+  // gets the same 30-minute block an end-only task gets. Anchoring solely on
+  // dueDate used to drop these entirely, which is why an end-only task drew a block
+  // but a start-only one silently didn't. The end is clamped to the end of its own
+  // day, mirroring how the end-only default clamps its start at 00:00: a task with
+  // no due side shouldn't spill a phantom segment into the next day.
+  if (!todo.dueDate) {
+    if (!todo.startDate || !todo.startTime) return null; // a time needs its own date
+    const base = dayIndex(todo.startDate) * MINS_PER_DAY;
+    const startMin = timeToMinutes(todo.startTime);
+    return normalizeSpanEnd({
+      absStart: base + startMin,
+      absEnd: base + Math.min(startMin + 30, MINS_PER_DAY),
+    });
+  }
+
   const dueIdx = dayIndex(todo.dueDate);
   const startIdx = todo.startDate ? dayIndex(todo.startDate) : dueIdx;
   const diff = dueIdx - startIdx;
