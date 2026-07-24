@@ -55,8 +55,8 @@ export function jitterKeyframes({
     const t = i / steps;
     const envelope = (1 - t) ** decay;
     const flip = i % 2 === 0 ? 1 : -1;
-    x.push(flip * mag() * amplitude * envelope);
-    y.push(-flip * mag() * amplitude * envelope);
+    x.push(-flip * mag() * amplitude * envelope);
+    y.push(flip * mag() * amplitude * envelope);
     r.push(flip * mag() * rotate * envelope);
     times.push(t);
   }

@@ -3,7 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Astroid } from 'lucide-react';
 import { useThemeColor } from '@/theme/useThemeColor';
 import { ParticleBurst } from '@/common/ui';
-import fireUrl from '@/assets/fire-svg.svg';
+// import fireUrl from '@/assets/fire-svg.svg';
+import fireUrl from '@/assets/Fire.svg';
+import fireAnimUrl from '@/assets/Fire.gif';
+
 
 interface StarStreakProps {
   // The three goal flags in slot order: completed a task, beat yesterday, beat the
@@ -125,17 +128,16 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
               animate={{ color: maxed ? '#000000' : ["white", GOLD_TEXT], scale: maxed ? [1, 1.25, 1] : 1}}
               transition={{ scale: { duration: 0.6, ease: POP }, color: { duration: 0.4 } }}
             >
-              {streak}🔥
-              {/* {maxed ? (
-                <picture className="pb-0.5">
-                  <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.webp" alt="🔥" width="32" height="32" />
+              {streak}
+              {maxed ? (
+                <picture className="pb-0.5 px-0.75">
+                  <img src={fireAnimUrl} alt="🔥" width="34" height="34" />
                 </picture>
-              ) : (
-                <picture className="pb-0.5">
-                  <img src={fireUrl} alt="🔥" width="32" height="32" />
+              ):(
+                <picture className="pb-0.5 px-0.75">
+                  <img src={fireUrl} alt="🔥" width="34" height="34" />
                 </picture>
-              )
-              } */}
+              )}
             </motion.span>
           </motion.div>
         </div>
