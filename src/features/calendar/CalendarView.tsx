@@ -34,6 +34,7 @@ import {
   shiftSpan,
   resizeSpan,
   decomposeSpan,
+  isRenderableSpan,
   type TodoSpan,
 } from './span';
 
@@ -51,7 +52,7 @@ const INDENT_STEP_PCT = 15;  // % of the column each indent level shifts right
 const MAX_LEVELS = 5;       // cap so deep stacks stop indenting instead of overflowing
 const Z_EVENT_BASE = 10;    // resting z for a level-0 card (matches the old flat z-10)
 const Z_EVENT_HOVER = 40;   // hovered card jumps here - above siblings, below the drag ghost (z-50)
-const HOVER_RAISE_DELAY_MS = 250; // dwell before a hovered card lifts, so passing over one doesn't bury an indented card
+const HOVER_RAISE_DELAY_MS = 400; // dwell before a hovered card lifts, so passing over one doesn't bury an indented card
 
 function minutesToPx(mins: number): number {
   return (mins / 60) * HOUR_HEIGHT;
@@ -452,7 +453,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     edge: 'top' | 'bottom';
     origSpan: TodoSpan;
     curSpan: TodoSpan;
-    startY: number;
+    grabAbsMins: number;   // absolute minute under the cursor when the resize began
+    grabDateStr: string;   // column the handle was grabbed in
   } | null>(null);
 
   // Post-drop "settling" ghost. onUpdateTodos writes the new time through react-query's
@@ -632,10 +634,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         if (!inSet || !passesCollectionFilter(t)) continue;
 
         const span = todoSpan(t);
-        if (!span) continue;
+        // Over 24h is a multi-day task: it belongs in the all-day header bar rather
+        // than the time grid, and that isn't built yet - so it isn't drawn at all.
+        if (!span || !isRenderableSpan(span)) continue;
         const firstIdx = Math.floor(span.absStart / MINS_PER_DAY);
         const lastIdx = Math.floor(span.absEnd / MINS_PER_DAY);
-        if (lastIdx - firstIdx > 1) continue; // spans 3+ days: not drawn for now
         for (let i = firstIdx; i <= lastIdx; i++) {
           const key = dateStrFromIndex(i);
           const arr = map.get(key);
@@ -793,20 +796,52 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [draggingEvent, dayTodos, onUpdateTodos, visibleDays, onOpenTask]);
 
   // --- Drag Resizing --- //
-  const handleEventResizeStart = (e: React.MouseEvent, todo: Todo, span: TodoSpan, edge: 'top' | 'bottom') => {
+  const handleEventResizeStart = (
+    e: React.MouseEvent,
+    todo: Todo,
+    span: TodoSpan,
+    dateStr: string,
+    edge: 'top' | 'bottom',
+  ) => {
     if (e.button !== 0) return;
     e.stopPropagation();
+    if (!scrollContainerRef.current) return;
+
+    // Anchor on the pointer's ABSOLUTE grid position, exactly like the move handler.
+    // This used to be a viewport-space delta (clientY - startY), which silently
+    // desyncs by however much the grid scrolls mid-drag - and reaching the small
+    // hours means dragging to the very top of the grid, precisely where that
+    // overshoot pushes the edge past midnight and onto the wrong day.
+    const containerRect = scrollContainerRef.current.getBoundingClientRect();
+    const relativeY = e.clientY - containerRect.top + scrollContainerRef.current.scrollTop;
+    const grabAbsMins = dayIndex(dateStr) * MINS_PER_DAY + (relativeY / HOUR_HEIGHT) * 60;
 
     setSettling(null); // a fresh resize supersedes any in-flight settle
-    setResizingEvent({ todo, edge, origSpan: span, curSpan: span, startY: e.clientY });
+    setResizingEvent({
+      todo,
+      edge,
+      origSpan: span,
+      curSpan: span,
+      grabAbsMins,
+      grabDateStr: dateStr,
+    });
   };
 
   useEffect(() => {
     if (!resizingEvent) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - resizingEvent.startY;
-      const deltaMins = Math.round((deltaY / HOUR_HEIGHT) * 60 / 15) * 15;
+      if (!scrollContainerRef.current) return;
+
+      // Scroll-proof: derive the pointer's absolute minute the same way the move
+      // handler does, then take the delta from where the handle was grabbed. A
+      // pointer above/below the column simply reads past that day's bounds, which is
+      // what lets an edge cross midnight into the neighbouring day.
+      const containerRect = scrollContainerRef.current.getBoundingClientRect();
+      const relativeY = e.clientY - containerRect.top + scrollContainerRef.current.scrollTop;
+      const pointerAbs =
+        dayIndex(resizingEvent.grabDateStr) * MINS_PER_DAY + (relativeY / HOUR_HEIGHT) * 60;
+      const deltaMins = Math.round((pointerAbs - resizingEvent.grabAbsMins) / 15) * 15;
 
       // Only the dragged edge moves (see resizeSpan), so a resize writes back just
       // that one side - and working in absolute minutes lets the edge cross midnight,
@@ -1108,7 +1143,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           indentLevel={indentLevel}
                           accent={accentForTodo(todo)}
                           onMouseDown={(e) => handleEventMouseDown(e, todo, span, dateStr)}
-                          onResizeStart={(e, edge) => handleEventResizeStart(e, todo, span, edge)}
+                          onResizeStart={(e, edge) => handleEventResizeStart(e, todo, span, dateStr, edge)}
                           // Toggle writes through the task's own bucket (its dueDate),
                           // which is NOT this column for a span's first day.
                           onToggle={() => handleToggleTodo(todo.dueDate ?? dateStr, todo.id)}

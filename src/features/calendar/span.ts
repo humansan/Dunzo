@@ -15,10 +15,18 @@ import { minutesToTime, timeToPercentage } from '@/common/lib/time';
 
 export const MINS_PER_DAY = 1440;
 
-// The longest span the calendar draws: two calendar days, i.e. through 23:59 of the
-// day after the start. Longer tasks aren't rendered at all (the all-day bar across
-// the header isn't built yet) and drag/resize clamp to this so one can't be made.
-export const MAX_SPAN_MINS = 2 * MINS_PER_DAY - 1;
+// The longest task the calendar draws: 24 hours. Anything longer is a multi-day
+// task and belongs in the all-day bar across the header, which isn't built yet, so
+// those aren't rendered at all (see isRenderableSpan). Drag and resize clamp to
+// this, so an edge stops at 24h rather than silently pushing the task out of view.
+//
+// This one rule also bounds the grid to two day columns, which is why no separate
+// day-count cap is needed: a span of at most 24h starting at worst 23:59 ends at
+// 23:59 the next day, so it can never touch a third. Capping *duration* is the fix
+// for the older `2 * MINS_PER_DAY - 1` cap, which capped length rather than days and
+// therefore let an end dragged from an early start land on a third day - where the
+// renderer dropped the task and it vanished.
+export const MAX_SPAN_MINS = MINS_PER_DAY;
 
 // Day indices go through differenceInCalendarDays/addDays rather than dividing
 // milliseconds, so a DST shift can never slide a task onto the wrong day.
@@ -92,6 +100,18 @@ export function spanDayCount(span: TodoSpan): number {
   return Math.floor(span.absEnd / MINS_PER_DAY) - Math.floor(span.absStart / MINS_PER_DAY) + 1;
 }
 
+export function spanDuration(span: TodoSpan): number {
+  return span.absEnd - span.absStart;
+}
+
+// Whether the calendar draws this span at all. Over 24h is a multi-day task, which
+// belongs in the (not yet built) all-day header bar rather than the time grid. The
+// day-count check is redundant given the duration cap - it's kept as a cheap guard
+// for stored data that predates the cap.
+export function isRenderableSpan(span: TodoSpan): boolean {
+  return spanDuration(span) <= MAX_SPAN_MINS && spanDayCount(span) <= 2;
+}
+
 // The slice of `span` falling on `dateStr`, or null when it doesn't reach that day.
 // A day the span passes through runs edge to edge; the continues* flags tell the card
 // to square that corner and drop its resize handle there, since the midnight seam is
@@ -108,23 +128,22 @@ export function segmentFor(span: TodoSpan, dateStr: string): Segment | null {
   };
 }
 
-// Move a span by `delta` minutes, preserving its length and never letting it reach a
-// third day (a long span nudged forward would otherwise spill past the 2-day cap).
+// Move a span by `delta` minutes, preserving its length. Needs no span cap of its
+// own: a move never changes duration, and a task longer than MAX_SPAN_MINS isn't
+// rendered, so it has no handles to grab in the first place. (The previous version
+// clamped the start against a day-offset budget here, which could snap a long task
+// backwards for no reason.)
 export function shiftSpan(span: TodoSpan, delta: number): TodoSpan {
   const duration = span.absEnd - span.absStart;
-  let absStart = Math.max(0, span.absStart + delta);
-  const maxOffset = MAX_SPAN_MINS - duration;
-  if (maxOffset >= 0) {
-    const dayStart = Math.floor(absStart / MINS_PER_DAY) * MINS_PER_DAY;
-    absStart = Math.min(absStart, dayStart + maxOffset);
-  }
+  const absStart = Math.max(0, span.absStart + delta);
   return { absStart, absEnd: absStart + duration };
 }
 
 // Move one edge of a span. The other side keeps its original value, so a resize
 // writes back only the side that was dragged. Collapsing to zero is allowed (equal
-// start/end is a real 0-minute task); the MAX_SPAN_MINS clamp stops the dragged edge
-// from reaching a third day while still letting it cross midnight.
+// start/end is a real 0-minute task), and the edge may cross midnight freely; the
+// MAX_SPAN_MINS clamp simply stops it at 24h, so the task stays renderable instead
+// of quietly growing past the limit and disappearing.
 export function resizeSpan(span: TodoSpan, edge: 'top' | 'bottom', delta: number): TodoSpan {
   if (edge === 'top') {
     let absStart = Math.min(Math.max(0, span.absStart + delta), span.absEnd);
