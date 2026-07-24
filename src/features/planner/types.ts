@@ -29,17 +29,17 @@ export interface ColDef {
 
 export const COLUMNS: ColDef[] = [
   { key: 'title', label: 'Name', defaultWidth: 320 },
-  { key: 'status', label: 'Status', defaultWidth: 140 },
   { key: 'priority', label: 'Priority', defaultWidth: 120 },
+  { key: 'notes', label: 'Notes', defaultWidth: 280 },
   { key: 'startDate', label: 'Start Date', defaultWidth: 150 },
-  { key: 'date', label: 'Due Date', defaultWidth: 150 },
   { key: 'start', label: 'Start Time', defaultWidth: 110 },
+  { key: 'startPercent', label: 'Start %', defaultWidth: 90 },
+  { key: 'date', label: 'End Date', defaultWidth: 150 },
   { key: 'end', label: 'End Time', defaultWidth: 110 },
   { key: 'percent', label: 'End %', defaultWidth: 90 },
+  { key: 'status', label: 'Status', defaultWidth: 140 },
   { key: 'collection', label: 'Collection', defaultWidth: 240 },
   { key: 'xp', label: 'XP', defaultWidth: 80 },
-  { key: 'notes', label: 'Notes', defaultWidth: 280 },
-  { key: 'startPercent', label: 'Start %', defaultWidth: 90 },
   { key: 'estimatedTime', label: 'Est. Time', defaultWidth: 110 },
   { key: 'createdAt', label: 'Created At', defaultWidth: 150 },
   { key: 'completedAt', label: 'Completed At', defaultWidth: 150 },
@@ -48,6 +48,31 @@ export const COLUMNS: ColDef[] = [
 // The Name column is pinned first and can never be hidden - every other field
 // can be reordered and toggled via the Fields menu.
 export const NAME_COL_KEY: ColKey = 'title';
+
+// What a view shows before anyone touches its Fields menu. Everything else in
+// COLUMNS starts hidden and can be switched back on from that menu; Name is
+// always visible regardless, since NAME_COL_KEY is pinned.
+//
+// This is a DEFAULT, not a restriction: it only applies to a view with no saved
+// field config. Once a view's config has been written, its stored set wins.
+export const DEFAULT_VISIBLE_COLS: ColKey[] = [
+  'title',
+  'priority',
+  'notes',
+  'date',
+  'end',
+  'status',
+  'collection',
+  'xp',
+  'createdAt',
+  'completedAt',
+];
+
+// The complement of the above - what a fresh view starts with hidden. Derived so
+// that adding a column to COLUMNS hides it by default until it's listed above.
+export const DEFAULT_HIDDEN_COLS: ColKey[] = COLUMNS.map((c) => c.key).filter(
+  (k) => !DEFAULT_VISIBLE_COLS.includes(k)
+);
 
 export type EditState = { id: string; col: ColKey; rect: DOMRect | null } | null;
 

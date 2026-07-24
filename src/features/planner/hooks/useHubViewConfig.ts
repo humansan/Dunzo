@@ -9,6 +9,7 @@ import {
   SortRule,
   SectionsConfig,
   DEFAULT_SECTIONS_CONFIG,
+  DEFAULT_HIDDEN_COLS,
 } from '@/features/planner/types';
 import { MIN_COL_WIDTH } from '@/features/planner/constants';
 import { resolveView } from '@/features/planner/views';
@@ -46,8 +47,11 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
         (k) => k !== NAME_COL_KEY
       ),
     ];
+    // A view with no saved field config starts on DEFAULT_HIDDEN_COLS rather than
+    // showing every column. A stored array wins even when it's empty - that means
+    // the user has explicitly unhidden everything, which must not be overwritten.
     const hiddenFields = new Set<ColKey>(
-      (Array.isArray(raw.hiddenFields) ? raw.hiddenFields : []).filter(
+      (Array.isArray(raw.hiddenFields) ? raw.hiddenFields : DEFAULT_HIDDEN_COLS).filter(
         (k: string): k is ColKey => k !== NAME_COL_KEY && allColKeys.includes(k as ColKey)
       )
     );
@@ -177,3 +181,4 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     startResize,
   };
 }
+
