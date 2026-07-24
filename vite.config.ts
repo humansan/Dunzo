@@ -6,6 +6,11 @@ import { defineConfig } from 'vite';
 import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
+  // The app is served under /app (the marketing site owns the domain root).
+  // `base` prefixes every built asset URL; `outDir` puts the build where those
+  // URLs physically resolve (dist/app/* served at /app/*). See website plan §9.
+  base: '/app/',
+  build: { outDir: 'dist/app' },
   plugins: [
     // Must run before react() - it generates src/routeTree.gen.ts from src/routes.
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),

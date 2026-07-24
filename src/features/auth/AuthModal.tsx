@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth';
+import { withBase } from '@/lib/basePath';
 import { Checkbox } from '@/common/ui/Checkbox';
 import { apiFetch } from '@/lib/query/apiClient';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
@@ -187,7 +188,7 @@ const LoginScreen: React.FC<{
       // post-OAuth landing via getSession(), so onAuthenticated isn't called here.
       await (authClient as any).signIn.social({
         provider: 'google',
-        callbackURL: window.location.origin + '/today',
+        callbackURL: window.location.origin + withBase('/today'),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
@@ -203,7 +204,7 @@ const LoginScreen: React.FC<{
         email,
         // Land the reset link on the public /login route so the ?token= isn't
         // swallowed by the _authed guard (which would nest it in ?redirect=).
-        redirectTo: window.location.origin + '/login',
+        redirectTo: window.location.origin + withBase('/login'),
       });
       if (error) throw new Error(error.message || 'Could not send reset email');
       setForgotSent(true);

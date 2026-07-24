@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { SettingsOverlay } from '@/features/settings';
+import { withBase } from '@/lib/basePath';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 
 // Standalone /settings route - only reached by a cold deep-link (reloading the
@@ -14,6 +15,6 @@ export const Route = createFileRoute('/_authed/settings')({
 function SettingsRoute() {
   const router = useRouter();
   // Cold deep-link only (see above): nothing of ours is behind it in history.
-  const close = () => router.history.push('/today');
+  const close = () => router.history.push(withBase('/today'));
   return <SettingsOverlay onClose={close} />;
 }
