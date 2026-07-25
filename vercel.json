@@ -14,6 +14,10 @@
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/app", "destination": "/app/index.html" },
     { "source": "/app/(.*)", "destination": "/app/index.html" },
-    { "source": "/", "destination": "/landing/index.html" }
+    { "source": "/", "destination": "/landing/index.html" },
+    { "source": "/features", "destination": "/landing/features/index.html" },
+    { "source": "/how-it-works", "destination": "/landing/how-it-works/index.html" },
+    { "source": "/start", "destination": "/landing/start/index.html" },
+    { "source": "/(.*)", "destination": "/landing/$1" }
   ]
 }

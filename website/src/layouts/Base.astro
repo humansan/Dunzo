@@ -1,0 +1,31 @@
+---
+// PHASE 1 scaffold. Nav, Footer, CtaBand, and the full <head> (OG tags, JSON-LD,
+// canonical) land in Phase 3 / Phase 7.
+import '@fontsource-variable/dm-sans';
+import '@fontsource-variable/space-grotesk';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Dunzo pairs a strategic planner and calendar for the big picture with a daily list that keeps you focused on today. Finish it to earn XP, stars, and keep the streak alive.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

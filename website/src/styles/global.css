@@ -1,0 +1,50 @@
+/* PHASE 1 ONLY — the minimum needed to prove the font + build pipeline works.
+   Phase 2 replaces this with tokens.css (the full §3 system) + a real global.css.
+   Do not build page styles on top of this file; it is scaffolding. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+:root {
+  --canvas: #111111;
+  --fg: #ffffff;
+  --fg-subtle: rgb(255 255 255 / 0.72);
+  --fg-ghost: rgb(255 255 255 / 0.4);
+  --gold: #ffcd4e;
+
+  --font-sans: 'DM Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Grotesk Variable', ui-monospace, monospace;
+
+  color-scheme: dark;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--canvas);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

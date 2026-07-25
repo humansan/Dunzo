@@ -1,0 +1,74 @@
+---
+// PHASE 1 placeholder. Its only job is to prove the pipeline end to end:
+// Astro builds → dist/landing → Vercel serves it at / → the app still owns /app.
+// Phase 4 replaces this file with the real Home.
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Dunzo — Plan big. Win the day.">
+  <main>
+    <p class="eyebrow">Coming together</p>
+    <h1>Plan big. Win the day.</h1>
+    <p class="sub">
+      Dunzo pairs a strategic planner and calendar for the big picture with a daily list that keeps
+      you focused on today. Finish it to earn XP, stars, and keep the streak alive.
+    </p>
+    <a class="cta" href="/app/login">Start free &rarr;</a>
+  </main>
+</Base>
+
+<style>
+  main {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+    padding: 24px;
+    max-width: 640px;
+    margin-inline: auto;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--fg-ghost);
+  }
+
+  h1 {
+    font-size: clamp(2.75rem, 8vw, 4.5rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+  }
+
+  .sub {
+    color: var(--fg-subtle);
+    max-width: 34ch;
+  }
+
+  .cta {
+    margin-top: 8px;
+    background: var(--gold);
+    color: #111;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 12px 22px;
+    border-radius: 10px;
+    box-shadow: 0 0 24px -6px rgb(255 205 78 / 0.5);
+    transition: opacity 160ms;
+  }
+
+  .cta:hover {
+    opacity: 0.9;
+  }
+
+  .cta:active {
+    transform: scale(0.98);
+  }
+</style>

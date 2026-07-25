@@ -14,4 +14,11 @@ server/app.bundle.js
 .tanstack/
 # One-off theming codemods; build/lint scripts in scripts/ are tracked
 scripts/theming/
-website/
+# website/ holds the marketing site source and IS tracked (Vercel builds it).
+# Its artifacts and reference material are not.
+website/node_modules/
+website/dist/
+website/.astro/
+website/doc/
+website idea*.md
+website plan.md

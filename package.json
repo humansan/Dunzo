@@ -9,7 +9,7 @@
     "dev:web": "vite --port=3000 --host=0.0.0.0",
     "dev:server": "tsx watch server/index.ts",
     "build": "vite build && npm run build:api && npm run build:landing",
-    "build:landing": "node scripts/copy-landing.mjs",
+    "build:landing": "npm --prefix website ci --no-audit --no-fund && npm --prefix website run build",
     "build:api": "esbuild server/app.ts --bundle --platform=node --format=esm --packages=external --outfile=server/app.bundle.js",
     "vercel-build": "npm run build",
     "preview": "vite preview",
