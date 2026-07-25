@@ -1,18 +1,26 @@
 ---
-// PHASE 1 scaffold. Nav, Footer, CtaBand, and the full <head> (OG tags, JSON-LD,
-// canonical) land in Phase 3 / Phase 7.
-import '@fontsource-variable/dm-sans';
-import '@fontsource-variable/space-grotesk';
+// Nav, Footer, and CtaBand land in Phase 3; OG tags, JSON-LD, and canonical in
+// Phase 7.
+//
+// `wght.css` rather than `index.css`: weight axis, normal style only — no italic
+// files in the build. Both families ship unicode-range'd subsets, so latin-ext
+// and vietnamese are never fetched for English copy.
+import '@fontsource-variable/dm-sans/wght.css';
+import '@fontsource-variable/space-grotesk/wght.css';
+import '../styles/tokens.css';
 import '../styles/global.css';
 
 interface Props {
   title: string;
   description?: string;
+  /** Keep a page out of search results (the kitchen sink). */
+  noindex?: boolean;
 }
 
 const {
   title,
   description = 'Dunzo pairs a strategic planner and calendar for the big picture with a daily list that keeps you focused on today. Finish it to earn XP, stars, and keep the streak alive.',
+  noindex = false,
 } = Astro.props;
 ---
 
@@ -23,9 +31,11 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <meta name="generator" content={Astro.generator} />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <slot />
   </body>
 </html>

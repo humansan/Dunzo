@@ -1,0 +1,75 @@
+---
+/**
+ * Section — the standard eyebrow + H2 + deck header, plus a slot for the body.
+ *
+ * Every content section on the site uses this so the vertical rhythm and header
+ * treatment stay identical. `align="center"` for full-width sections, the default
+ * `"start"` for the asymmetric media-beside-copy ones.
+ */
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  deck?: string;
+  align?: 'start' | 'center';
+  /** Anchor target — used by the /features scroll-spy rail and footer links. */
+  id?: string;
+  /** Visual treatment: flat canvas (default), a gold glow, or a --surface band. */
+  variant?: 'plain' | 'lift' | 'band';
+  class?: string;
+}
+
+const {
+  eyebrow,
+  title,
+  deck,
+  align = 'start',
+  id,
+  variant = 'plain',
+  class: className = '',
+} = Astro.props;
+
+const hasHeader = Boolean(eyebrow || title || deck);
+const variantClass = variant === 'plain' ? '' : `section--${variant}`;
+---
+
+<section
+  id={id}
+  class:list={['section', variantClass, className]}
+  data-align={align}
+>
+  <div class="container">
+    {
+      hasHeader && (
+        <header class="head" data-align={align}>
+          {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+          {title && <h2>{title}</h2>}
+          {deck && <p class="deck">{deck}</p>}
+        </header>
+      )
+    }
+    <slot />
+  </div>
+</section>
+
+<style>
+  .head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-12);
+  }
+
+  .head[data-align='center'] {
+    align-items: center;
+    text-align: center;
+  }
+
+  .head[data-align='center'] :global(.deck) {
+    margin-inline: auto;
+  }
+
+  /* An H2 wants a tighter gap to its eyebrow than to its deck. */
+  .head .eyebrow + :global(h2) {
+    margin-top: calc(var(--space-2) * -1);
+  }
+</style>

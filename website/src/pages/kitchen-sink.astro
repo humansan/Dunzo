@@ -1,0 +1,386 @@
+---
+/**
+ * /kitchen-sink — every token, type size, button state, and component variant on
+ * one page. Unlinked and noindex'd, but it DOES ship, so the system can be
+ * reviewed on the deployed site from any device.
+ *
+ * When a token or component changes, change it here too. This page is the
+ * regression test for the design system.
+ */
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+import SpecChip from '../components/SpecChip.astro';
+import SpecList from '../components/SpecList.astro';
+import DeviceFrame from '../components/DeviceFrame.astro';
+
+const surfaces = [
+  ['--canvas', '#111111', 'page'],
+  ['--surface', '#1a1a1a', 'cards, panels'],
+  ['--raised', '#1f1f1f', 'raised cards, code'],
+  ['--overlay', '#2a2a2a', 'popovers, nav-on-scroll'],
+];
+
+const textRamp = [
+  ['--fg', 'primary'],
+  ['--fg-muted', 'body copy'],
+  ['--fg-subtle', 'decks, secondary'],
+  ['--fg-faint', 'labels, captions'],
+  ['--fg-ghost', 'eyebrows, footnotes'],
+];
+
+const brand = [
+  ['--gold', 'PRIMARY — CTAs, XP, streak'],
+  ['--accent', 'secondary highlight'],
+  ['--accent2', 'quiet accents, done'],
+  ['--coral', 'XP bar fill'],
+  ['--violet', '7-day-best tier'],
+  ['--emerald', 'completed, calendar'],
+  ['--blue', 'in progress'],
+  ['--red', 'high priority'],
+];
+
+const colls = [1, 2, 3, 4, 5, 6, 7, 8];
+
+const typeScale = [
+  ['--text-hero', 'Plan big. Win the day.', 'h1 · 44 → 84'],
+  ['--text-h2', 'One set of tasks. Two surfaces.', 'h2 · 32 → 46'],
+  ['--text-stat', '499', 'stat · 40 → 56 · mono, tnum'],
+  ['--text-h3', 'Check and it&rsquo;s done.', 'h3 · 20 → 22'],
+  ['--text-deck', 'Plan in the wide view. Do in the narrow one.', 'deck · 17 → 19'],
+  ['--text-body', 'Every task is worth 1 to 5 XP.', 'body · 16 → 17'],
+  ['--text-caption', 'Table mode shown.', 'caption · 14'],
+  ['--text-eyebrow', 'THE IDEA', 'eyebrow · 12 · mono, tracked'],
+];
+
+const specs = [
+  { term: 'Status', def: 'Todo, In Progress, Completed — or cleared.' },
+  { term: 'Priority', def: 'Low, Medium, High, or none.' },
+  {
+    term: 'Move forward if overdue',
+    def: 'An overdue task rolls its due date to today and keeps appearing until it&rsquo;s done.',
+  },
+  { term: 'XP', def: '1–5, or none. Default is <code>1</code> and configurable.' },
+  { term: 'Show in', def: 'Two switches: Task Planner and Daily Tasks.' },
+];
+
+const radii = [
+  ['--radius-chip', '10px', 'chips, buttons'],
+  ['--radius-card', '14px', 'feature cards'],
+  ['--radius-panel', '20px', 'device frames'],
+  ['--radius-frame', '28px', 'CTA band'],
+];
+---
+
+<Base title="Kitchen sink · Dunzo" noindex={true}>
+  <main id="main">
+    <Section
+      eyebrow="Design system"
+      title="Kitchen sink"
+      deck="Every token, size, state, and component variant. Unlinked and noindex'd. If you change a token, change this page too."
+    >
+      <div class="chips">
+        <SpecChip>tokens.css</SpecChip>
+        <SpecChip>global.css</SpecChip>
+        <SpecChip tone="gold">4 components</SpecChip>
+      </div>
+    </Section>
+
+    {/* ── Color ─────────────────────────────────────────────────────────── */}
+    <Section eyebrow="01" title="Surfaces" variant="band">
+      <div class="swatches">
+        {
+          surfaces.map(([token, hex, use]) => (
+            <div class="sw">
+              <div class="sw-chip" style={`background: var(${token});`} />
+              <code>{token}</code>
+              <span class="caption">
+                {hex} · {use}
+              </span>
+            </div>
+          ))
+        }
+      </div>
+    </Section>
+
+    <Section eyebrow="02" title="Text ramp">
+      <div class="ramp">
+        {
+          textRamp.map(([token, use]) => (
+            <p style={`color: var(${token});`}>
+              <code>{token}</code> — The quick brown fox jumps over the lazy dog.{' '}
+              <span class="caption">({use})</span>
+            </p>
+          ))
+        }
+      </div>
+    </Section>
+
+    <Section eyebrow="03" title="Brand & signal" variant="band">
+      <div class="swatches">
+        {
+          brand.map(([token, use]) => (
+            <div class="sw">
+              <div class="sw-chip" style={`background: var(${token});`} />
+              <code>{token}</code>
+              <span class="caption">{use}</span>
+            </div>
+          ))
+        }
+      </div>
+      <p class="caption note">
+        Gold discipline: at most twice per viewport — the CTA, and one earned moment.
+      </p>
+      <div class="dots">
+        {colls.map((n) => <span class="dot" style={`background: var(--coll-${n});`} />)}
+        <span class="caption">the app&rsquo;s 8 collection swatches</span>
+      </div>
+    </Section>
+
+    {/* ── Type ──────────────────────────────────────────────────────────── */}
+    <Section eyebrow="04" title="Type scale">
+      <div class="type">
+        {
+          typeScale.map(([token, sample, label]) => (
+            <div class="type-row">
+              <span
+                class:list={['type-sample', { mono: token === '--text-stat' || token === '--text-eyebrow' }]}
+                style={`font-size: var(${token});`}
+                set:html={sample}
+              />
+              <span class="caption">{label}</span>
+            </div>
+          ))
+        }
+      </div>
+    </Section>
+
+    {/* ── Buttons ───────────────────────────────────────────────────────── */}
+    <Section eyebrow="05" title="Buttons" variant="band">
+      <div class="btns">
+        <a class="btn btn--primary" href="#">Start free &rarr;</a>
+        <a class="btn btn--secondary" href="#">See how it works</a>
+        <a class="btn btn--ghost" href="#">Features</a>
+        <a class="btn btn--sm btn--secondary" href="#">Small</a>
+      </div>
+      <div class="btns inverted">
+        <a class="btn btn--inverted" href="#">Start free &rarr;</a>
+        <span class="caption">on the CTA band</span>
+      </div>
+    </Section>
+
+    {/* ── Chips ─────────────────────────────────────────────────────────── */}
+    <Section eyebrow="06" title="Spec chips">
+      <div class="chips">
+        <SpecChip>Ctrl+K</SpecChip>
+        <SpecChip>1 / 3 / 5 / 7 days</SpecChip>
+        <SpecChip>5 XP tiers</SpecChip>
+        <SpecChip>Day / 4 days / Week / Month</SpecChip>
+        <SpecChip mono={false}>Drag to reorder</SpecChip>
+        <SpecChip tone="gold">Export CSV</SpecChip>
+      </div>
+    </Section>
+
+    {/* ── Spec list ─────────────────────────────────────────────────────── */}
+    <Section eyebrow="07" title="Spec list" deck="The reference format for /features." variant="band">
+      <SpecList items={specs} />
+    </Section>
+
+    {/* ── Device frame ──────────────────────────────────────────────────── */}
+    <Section
+      eyebrow="08"
+      title="Device frame"
+      deck="Three modes, identical footprint. Phase 4 lays out with placeholders, Phase 5 swaps stills in, Phase 7 swaps five for video — each a prop change."
+    >
+      <div class="frames">
+        <DeviceFrame
+          type="placeholder"
+          label="S5"
+          note="Planner, table mode — grouped by collection, 3 nested levels"
+          ratio="16/10"
+          caption="type=&quot;placeholder&quot;"
+        />
+        <DeviceFrame
+          type="placeholder"
+          label="V1"
+          note="The day getting done — check off two tasks, bar turns gold"
+          ratio="16/10"
+          caption="the same slot, awaiting capture"
+        />
+      </div>
+      <div class="frames narrow">
+        <DeviceFrame type="placeholder" label="S12b" note="XP bar — gold state" ratio="21/9" />
+        <DeviceFrame type="placeholder" label="S13" note="Stars + streak badge" ratio="21/9" />
+      </div>
+    </Section>
+
+    {/* ── Radii & elevation ─────────────────────────────────────────────── */}
+    <Section eyebrow="09" title="Radii & elevation" variant="band">
+      <div class="radii">
+        {
+          radii.map(([token, px, use]) => (
+            <div class="rad" style={`border-radius: var(${token});`}>
+              <code>{token}</code>
+              <span class="caption">
+                {px} · {use}
+              </span>
+            </div>
+          ))
+        }
+      </div>
+      <div class="elev">
+        <div class="el" style="box-shadow: var(--shadow-card);"><code>--shadow-card</code></div>
+        <div class="el" style="box-shadow: var(--shadow-frame);"><code>--shadow-frame</code></div>
+        <div class="el gold" style="box-shadow: var(--glow-gold);"><code>--glow-gold</code></div>
+      </div>
+    </Section>
+
+    {/* ── Section variants ──────────────────────────────────────────────── */}
+    <Section
+      eyebrow="10"
+      title="Centered header"
+      deck="align=&quot;center&quot; for full-width sections; the default start alignment for asymmetric ones."
+      align="center"
+      variant="lift"
+    >
+      <p class="caption" style="text-align:center;">
+        This section also demonstrates <code>variant="lift"</code> — the radial gold glow.
+      </p>
+    </Section>
+  </main>
+</Base>
+
+<style>
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: var(--space-5);
+  }
+
+  .sw {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .sw-chip {
+    height: 64px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--line);
+  }
+
+  .sw code,
+  .rad code,
+  .el code {
+    font-size: var(--text-caption);
+    color: var(--fg);
+  }
+
+  .ramp {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .note {
+    margin-top: var(--space-6);
+  }
+
+  .dots {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+
+  .dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+  }
+
+  .type {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  .type-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--line-subtle);
+  }
+
+  .type-sample {
+    color: var(--fg);
+    font-weight: var(--weight-bold);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .type-sample.mono {
+    font-family: var(--font-mono);
+    font-feature-settings: 'tnum';
+  }
+
+  .btns {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .btns.inverted {
+    margin-top: var(--space-6);
+    padding: var(--space-6);
+    border-radius: var(--radius-frame);
+    background: linear-gradient(120deg, var(--gold), var(--emerald));
+  }
+
+  .frames {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-8);
+  }
+
+  .frames.narrow {
+    margin-top: var(--space-8);
+  }
+
+  .radii,
+  .elev {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: var(--space-6);
+  }
+
+  .elev {
+    margin-top: var(--space-12);
+  }
+
+  .rad,
+  .el {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-5);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    min-height: 96px;
+  }
+
+  .el {
+    border-radius: var(--radius-card);
+  }
+
+  .el.gold {
+    border-color: var(--gold);
+  }
+</style>

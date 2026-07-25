@@ -1,0 +1,135 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   DUNZO WEBSITE — DESIGN TOKENS
+   The single source of truth for the visual system (website plan §3).
+
+   Colors are lifted from the app's Classic dark theme (src/theme/classic.ts) with
+   ONE deliberate remap: the app's accent1 is the yellow-green #e1e354, but on the
+   website GOLD is the primary brand color and the yellow-green is demoted to a
+   secondary highlight.
+
+   GOLD DISCIPLINE: gold is the loudest thing on any screen. At most twice per
+   viewport — the CTA, and one earned moment (an XP number, the streak, active nav).
+
+   Breakpoints are 1200 / 900 / 640. They are NOT tokens: custom properties can't
+   be used in media query conditions. Hard-code those three numbers.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surfaces ───────────────────────────────────────────────────────────── */
+  --canvas: #111111; /* page */
+  --surface: #1a1a1a; /* cards, panels */
+  --raised: #1f1f1f; /* raised cards, code blocks */
+  --overlay: #2a2a2a; /* popovers, nav-on-scroll */
+
+  /* ── Text ramp (translucent white, so it works on any surface) ──────────── */
+  --fg: #ffffff;
+  --fg-muted: rgb(255 255 255 / 0.85); /* body copy */
+  --fg-subtle: rgb(255 255 255 / 0.72); /* secondary copy, decks */
+  --fg-faint: rgb(255 255 255 / 0.64); /* labels, captions */
+  --fg-ghost: rgb(255 255 255 / 0.4); /* eyebrows, footnotes */
+
+  /* ── Hairlines & fills ──────────────────────────────────────────────────── */
+  --line-subtle: rgb(255 255 255 / 0.06);
+  --line: rgb(255 255 255 / 0.1);
+  --line-strong: rgb(255 255 255 / 0.2);
+  --fill-subtle: rgb(255 255 255 / 0.05);
+  --fill: rgb(255 255 255 / 0.1);
+
+  /* ── Brand & signal ─────────────────────────────────────────────────────── */
+  --gold: #ffcd4e; /* PRIMARY — CTAs, XP, streak, active nav */
+  --accent: #e1e354; /* secondary highlight (the app's accent1) */
+  --accent2: #c6dabe; /* soft green — quiet accents, "done" */
+  --coral: #ff723a; /* XP bar fill */
+  --violet: #a78bfa; /* 7-day-best tier */
+  --emerald: #22c55e; /* completed, calendar blocks */
+  --blue: #3b82f6; /* in progress */
+  --red: #d93d42; /* high priority */
+
+  /* ── Collection swatches (the app's 8, for the Collections section) ─────── */
+  --coll-1: #9ca3af;
+  --coll-2: #f87171;
+  --coll-3: #fb923c;
+  --coll-4: #fbbf24;
+  --coll-5: #4ade80;
+  --coll-6: #2dd4bf;
+  --coll-7: #60a5fa;
+  --coll-8: #c084fc;
+
+  /* ── Type families ──────────────────────────────────────────────────────── */
+  --font-sans: 'DM Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Grotesk Variable', ui-monospace, SFMono-Regular, monospace;
+
+  /* ── Type scale ─────────────────────────────────────────────────────────── */
+  /* Fluid: each clamp interpolates between the §3 mobile and desktop sizes, so
+     there is exactly one scale and no per-breakpoint overrides to drift. */
+  --text-hero: clamp(2.75rem, 1.6rem + 5.75vw, 5.25rem); /* 44 → 84 */
+  --text-h2: clamp(2rem, 1.4rem + 3vw, 2.875rem); /* 32 → 46 */
+  --text-h3: clamp(1.25rem, 1.19rem + 0.31vw, 1.375rem); /* 20 → 22 */
+  --text-stat: clamp(2.5rem, 1.7rem + 4vw, 3.5rem); /* 40 → 56 */
+  --text-deck: clamp(1.0625rem, 1.02rem + 0.23vw, 1.1875rem); /* 17 → 19 */
+  --text-body: clamp(1rem, 0.98rem + 0.12vw, 1.0625rem); /* 16 → 17 */
+  --text-caption: 0.875rem; /* 14 */
+  --text-eyebrow: 0.75rem; /* 12 */
+
+  /* ── Type detail ────────────────────────────────────────────────────────── */
+  --tracking-hero: -0.035em;
+  --tracking-h2: -0.025em;
+  --tracking-h3: -0.01em;
+  --tracking-wordmark: -0.02em;
+  --tracking-eyebrow: 0.14em;
+
+  --leading-hero: 0.98;
+  --leading-tight: 1.12;
+  --leading-body: 1.65;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semi: 600;
+  --weight-bold: 700;
+
+  /* ── Measure (max line lengths — the plan specifies these per role) ─────── */
+  --measure-sub: 34ch; /* hero subhead */
+  --measure-deck: 58ch; /* section decks */
+  --measure-body: 68ch; /* long-form prose */
+
+  /* ── Space ──────────────────────────────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  --container: 1200px;
+  --gutter: clamp(20px, 1.2rem + 0.4vw, 24px);
+  --grid-gap: 24px;
+  --section-y: clamp(80px, 3rem + 5vw, 128px); /* 80 mobile → 128 desktop */
+
+  /* ── Radii ──────────────────────────────────────────────────────────────── */
+  --radius-chip: 10px;
+  --radius-card: 14px;
+  --radius-panel: 20px;
+  --radius-frame: 28px; /* CTA band + device frames */
+  --radius-logo: 7px; /* icon-invert2.png at nav size */
+
+  /* ── Elevation ──────────────────────────────────────────────────────────── */
+  --shadow-frame: 0 30px 80px -20px rgb(0 0 0 / 0.7);
+  --shadow-card: 0 12px 32px -12px rgb(0 0 0 / 0.5);
+  --glow-gold: 0 0 24px -6px rgb(255 205 78 / 0.5);
+
+  /* ── Motion ─────────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms;
+  --dur: 240ms;
+  --dur-slow: 500ms;
+
+  /* ── Section lift (used where a section needs separation from the canvas) ─ */
+  --glow-section: radial-gradient(60% 50% at 50% 0%, rgb(255 205 78 / 0.07), transparent);
+
+  color-scheme: dark;
+}

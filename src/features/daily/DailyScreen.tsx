@@ -438,7 +438,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       </div>
 
       {/* Right side: 1-Day Calendar */}
-      <div className="max-w-90 w-[25%] shrink-0 hidden lg:block h-full">
+      <div className="max-w-110 w-[24%] shrink-0 hidden lg:block h-full">
         <div className="h-full overflow-hidden flex flex-col">
           <CalendarView
             dayTodos={dayTodos}

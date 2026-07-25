@@ -1,0 +1,193 @@
+---
+/**
+ * DeviceFrame — the wrapper every screenshot and video on the site sits in.
+ *
+ * THIS COMPONENT IS LOAD-BEARING FOR THE BUILD ORDER. Phase 4 lays out every page
+ * with `type="placeholder"`, Phase 5 swaps in stills, Phase 7 swaps five of those
+ * for video. Each swap must be a prop change at the call site and nothing more —
+ * so all three modes reserve identical space via the same aspect ratio.
+ *
+ *   <DeviceFrame type="placeholder" label="S5" note="Planner, table mode" ratio="16/10" />
+ *   <DeviceFrame type="image" src="/assets/shots/s5.webp" alt="…" width={1600} height={1000} />
+ *   <DeviceFrame type="video" src="/assets/video/v4.webm" poster="/assets/shots/s5.webp" … />
+ *
+ * No fake browser chrome: the app has its own sidebar and already reads as an app.
+ */
+interface Props {
+  type: 'image' | 'video' | 'placeholder';
+  /** image: the 1× webp. video: the .webm (the .mp4 sibling is derived). */
+  src?: string;
+  /** Optional explicit 2× image; otherwise derived as name@2x.ext. */
+  src2x?: string;
+  /** Required for images. Videos are decorative (their information is in the copy). */
+  alt?: string;
+  /** Video poster — always a still, so it can serve as the LCP element. */
+  poster?: string;
+  width?: number;
+  height?: number;
+  /** CSS aspect-ratio, e.g. "16/10". Falls back to width/height, then 16/10. */
+  ratio?: string;
+  /** Hero only: eager-load and prioritize. Everything else lazy-loads. */
+  priority?: boolean;
+  /** Placeholder mode: the asset ID from plan §9, e.g. "S5" or "V1". */
+  label?: string;
+  /** Placeholder mode: what the shot is, so Phase 4 layouts are self-documenting. */
+  note?: string;
+  /** Caption rendered under the frame. */
+  caption?: string;
+  class?: string;
+}
+
+const {
+  type,
+  src,
+  src2x,
+  alt,
+  poster,
+  width,
+  height,
+  ratio,
+  priority = false,
+  label,
+  note,
+  caption,
+  class: className = '',
+} = Astro.props;
+
+const aspect = ratio ?? (width && height ? `${width}/${height}` : '16/10');
+
+// Derive the 2× still and the .mp4 sibling so call sites stay short.
+const retina = src2x ?? (src ? src.replace(/(\.[a-z0-9]+)$/i, '@2x$1') : undefined);
+const mp4 = src ? src.replace(/\.webm$/i, '.mp4') : undefined;
+
+if (type === 'image' && !alt) {
+  throw new Error(`DeviceFrame: type="image" requires alt text (src: ${src})`);
+}
+if (type !== 'placeholder' && !src) {
+  throw new Error(`DeviceFrame: type="${type}" requires src`);
+}
+---
+
+<figure class:list={['wrap', className]}>
+  <div class="frame" style={`aspect-ratio: ${aspect};`}>
+    {
+      type === 'image' && (
+        <img
+          src={src}
+          srcset={retina ? `${src} 1x, ${retina} 2x` : undefined}
+          alt={alt}
+          width={width}
+          height={height}
+          loading={priority ? 'eager' : 'lazy'}
+          fetchpriority={priority ? 'high' : undefined}
+          decoding="async"
+        />
+      )
+    }
+    {
+      type === 'video' && (
+        <video
+          poster={poster}
+          width={width}
+          height={height}
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          aria-hidden="true"
+        >
+          <source src={src} type="video/webm" />
+          <source src={mp4} type="video/mp4" />
+        </video>
+      )
+    }
+    {
+      type === 'placeholder' && (
+        <div class="ph">
+          {label && <span class="ph-id">{label}</span>}
+          {note && <span class="ph-note">{note}</span>}
+        </div>
+      )
+    }
+  </div>
+  {caption && <figcaption class="caption">{caption}</figcaption>}
+</figure>
+
+<style>
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .frame {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-frame);
+    transition:
+      transform var(--dur) var(--ease-out),
+      box-shadow var(--dur) var(--ease-out);
+  }
+
+  /* 1px inner highlight along the top edge — reads as a lit screen bezel. */
+  .frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 1px 0 0 var(--line-subtle);
+    pointer-events: none;
+  }
+
+  .wrap:hover .frame {
+    transform: translateY(-4px);
+    box-shadow: 0 40px 90px -20px rgb(0 0 0 / 0.78);
+  }
+
+  .frame :global(img),
+  .frame :global(video) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top left;
+  }
+
+  /* ── Placeholder ────────────────────────────────────────────────────────── */
+  .ph {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    text-align: center;
+    padding: var(--space-6);
+    background:
+      repeating-linear-gradient(
+        135deg,
+        transparent 0 14px,
+        rgb(255 255 255 / 0.02) 14px 28px
+      ),
+      var(--raised);
+  }
+
+  .ph-id {
+    font-family: var(--font-mono);
+    font-size: var(--text-h3);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.04em;
+    color: var(--fg-faint);
+  }
+
+  .ph-note {
+    font-size: var(--text-caption);
+    color: var(--fg-ghost);
+    max-width: 32ch;
+  }
+</style>
