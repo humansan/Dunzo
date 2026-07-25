@@ -39,7 +39,7 @@ export const COLUMNS: ColDef[] = [
   { key: 'percent', label: 'End %', defaultWidth: 90 },
   { key: 'status', label: 'Status', defaultWidth: 140 },
   { key: 'collection', label: 'Collection', defaultWidth: 240 },
-  { key: 'xp', label: 'XP', defaultWidth: 80 },
+  { key: 'xp', label: 'xp', defaultWidth: 80 },
   { key: 'estimatedTime', label: 'Est. Time', defaultWidth: 110 },
   { key: 'createdAt', label: 'Created At', defaultWidth: 150 },
   { key: 'completedAt', label: 'Completed At', defaultWidth: 150 },
@@ -149,7 +149,7 @@ export interface SectionsConfig {
 }
 
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
-  autoArchive: false,
+  autoArchive: true,
   showLeafTasks: 'top',
   hideEmptyCollections: false,
   hideSubcollections: false,

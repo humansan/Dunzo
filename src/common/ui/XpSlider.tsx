@@ -95,7 +95,7 @@ export const XpSlider: React.FC<XpSliderProps> = ({ value, onChange, autoFocus, 
       <div className="flex items-center gap-1.5 px-0.5 mb-2 text-sm font-mono">
         <Astroid size={14} strokeWidth={2.5} style={{ color: filled > 0 ? GOLD : undefined }} className={filled > 0 ? '' : 'text-fg-subtle'} />
         <span className={filled > 0 ? 'text-fg' : 'text-fg-faint'}>
-          {current !== undefined ? `${current} XP` : 'Set XP'}
+          {current !== undefined ? `${current} xp` : 'Set xp'}
         </span>
       </div>
 

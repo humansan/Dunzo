@@ -59,16 +59,16 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   let status: string;
 
   if (!reachedTarget) {
-    status = reachTarget === 0 ? `Any XP beats ${reachText}` : `${remaining} XP to reach ${reachText}`;
+    status = reachTarget === 0 ? `Any xp beats ${reachText}` : `${remaining} xp to reach ${reachText}`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
-    status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} XP to 7-day best`;
+    status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} xp to 7-day best`;
   } else if (!reachedAllTimeBest) {
     // 7-day best cleared (violet). Point at the all-time best.
-    status = `🎊🔥On a roll!! ⬩ ${bestAllTime - earned} XP to all-time best`;
+    status = `🎊🔥On a roll!! ⬩ ${bestAllTime - earned} xp to all-time best`;
   } else {
     const over = earned - bestAllTime;
-    status = over > 0 ? `🥳😭🏆New all-time best!!! ⬩ +${over} XP` : 'All-time best matched!!';
+    status = over > 0 ? `🥳😭🏆New all-time best!!! ⬩ +${over} xp` : 'All-time best matched!!';
   }
 
   const pctLabel = `${Math.round(percent)}%`;

@@ -295,7 +295,7 @@ export const XpChip: React.FC<{
         >
           <span className={chipText}>
             <Astroid size={16} className={set && !muted ? '' : dim} />
-            <span className={`relative top-px ${set && !muted ? '' : dim}`}>{set ? `${value} XP` : 'XP'}</span>
+            <span className={`relative top-px ${set && !muted ? '' : dim}`}>{set ? `${value} xp` : 'xp'}</span>
           </span>
         </button>
       )}
