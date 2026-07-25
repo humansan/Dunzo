@@ -1,0 +1,232 @@
+---
+/**
+ * Nav — sticky, 68px. Transparent over the hero; past 24px of scroll it picks up a
+ * translucent canvas fill, a blur, and a bottom hairline so it separates from
+ * whatever it's over.
+ *
+ * The mobile sheet (<900px) is the only JS on the site so far: a class toggle and
+ * an Escape handler. No framework.
+ */
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.png';
+import { NAV_LINKS, APP_URL } from '../config';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) => path === href;
+---
+
+<header class="nav" data-nav>
+  <div class="container bar">
+    <a class="brand" href="/" aria-label="Dunzo — home">
+      <Image src={logo} alt="" width={52} height={52} loading="eager" densities={[1, 2]} />
+      <span>Dunzo</span>
+    </a>
+
+    <nav class="links" aria-label="Primary">
+      {
+        NAV_LINKS.map(({ href, label }) => (
+          <a href={href} class:list={['link', { active: isActive(href) }]} aria-current={isActive(href) ? 'page' : undefined}>
+            {label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="actions">
+      <a class="btn btn--primary btn--sm cta" href={APP_URL}>Start free &rarr;</a>
+      <button class="burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-sheet" data-burger>
+        <span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="sheet" id="nav-sheet" hidden data-sheet>
+    <nav aria-label="Primary (mobile)">
+      {NAV_LINKS.map(({ href, label }) => <a href={href}>{label}</a>)}
+    </nav>
+    <a class="btn btn--primary" href={APP_URL}>Start free &rarr;</a>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition:
+      background var(--dur) ease,
+      backdrop-filter var(--dur) ease,
+      border-color var(--dur) ease;
+    border-bottom: 1px solid transparent;
+  }
+
+  .nav[data-scrolled] {
+    background: rgb(17 17 17 / 0.78);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom-color: var(--line);
+  }
+
+  .bar {
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    text-decoration: none;
+    font-weight: var(--weight-semi);
+    font-size: 19px;
+    letter-spacing: var(--tracking-wordmark);
+    color: var(--fg);
+  }
+
+  .brand :global(img) {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-logo);
+  }
+
+  .links {
+    display: flex;
+    gap: var(--space-8);
+  }
+
+  .link {
+    position: relative;
+    color: var(--fg-subtle);
+    text-decoration: none;
+    padding-block: var(--space-2);
+  }
+
+  .link:hover {
+    color: var(--fg);
+  }
+
+  .link.active {
+    color: var(--fg);
+  }
+
+  .link.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -4px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--gold);
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  /* ── Mobile ─────────────────────────────────────────────────────────────── */
+
+  .burger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-chip);
+    padding: 0 9px;
+  }
+
+  .burger span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--fg-subtle);
+    transition: transform var(--dur) var(--ease-out);
+  }
+
+  .burger:hover span {
+    background: var(--fg);
+  }
+
+  .sheet {
+    display: none;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding: var(--space-8) var(--gutter) var(--space-12);
+    background: var(--canvas);
+    border-top: 1px solid var(--line-subtle);
+  }
+
+  .sheet nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .sheet a:not(.btn) {
+    font-size: 28px;
+    font-weight: var(--weight-semi);
+    letter-spacing: var(--tracking-h3);
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .sheet .btn {
+    align-self: flex-start;
+  }
+
+  @media (max-width: 900px) {
+    .links {
+      display: none;
+    }
+
+    .burger {
+      display: flex;
+    }
+
+    .sheet[data-open] {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  const nav = document.querySelector<HTMLElement>('[data-nav]');
+  const burger = document.querySelector<HTMLButtonElement>('[data-burger]');
+  const sheet = document.querySelector<HTMLElement>('[data-sheet]');
+
+  // Fill + blur past 24px, so the nav is invisible over the hero and solid after.
+  const onScroll = () => {
+    if (!nav) return;
+    nav.toggleAttribute('data-scrolled', window.scrollY > 24);
+  };
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  const setOpen = (open: boolean) => {
+    if (!burger || !sheet) return;
+    burger.setAttribute('aria-expanded', String(open));
+    sheet.toggleAttribute('data-open', open);
+    sheet.hidden = !open;
+    document.body.style.overflow = open ? 'hidden' : '';
+  };
+
+  burger?.addEventListener('click', () => {
+    setOpen(burger.getAttribute('aria-expanded') !== 'true');
+  });
+
+  // Escape closes; so does resizing back up to desktop, or the sheet would be
+  // stuck open behind a hidden burger.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setOpen(false);
+  });
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 900) setOpen(false);
+  });
+</script>

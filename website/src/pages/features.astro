@@ -1,0 +1,19 @@
+---
+// PHASE 3 shell. Phase 6.1 builds this out: a sticky scroll-spy rail plus ten
+// SpecList sections (Tasks, Daily list, Planner, Collections, Calendar, XP,
+// Focus, Trackers, Search, Settings).
+import Base from '../layouts/Base.astro';
+import Section from '../components/Section.astro';
+---
+
+<Base
+  title="Features · Dunzo"
+  description="Every feature in Dunzo, grouped by surface: tasks, the daily list, the planner, collections, the calendar, XP and streaks, focus, trackers, search, and settings."
+>
+  <Section
+    as="h1"
+    eyebrow="Reference"
+    title="Every feature, by surface"
+    deck="Dunzo is a task app with two surfaces on one set of tasks. The planner is where projects live — a table with nested collections, grouping, filters, and configurable fields — and the calendar is where they get time. The daily list is where a single day happens: the tasks due today, nothing else, in big readable type. Finish them and you earn XP against a target set by your own history. Three stars a day keeps a streak alive."
+  />
+</Base>

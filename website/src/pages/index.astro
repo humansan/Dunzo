@@ -1,74 +1,54 @@
 ---
-// PHASE 1 placeholder. Its only job is to prove the pipeline end to end:
-// Astro builds → dist/landing → Vercel serves it at / → the app still owns /app.
-// Phase 4 replaces this file with the real Home.
+// PHASE 3 shell. The real Home — ten sections, starting with the two-surface
+// split — is Phase 4. This is the hero's copy in the shell so the nav, CTA band,
+// and footer can be reviewed in place.
 import Base from '../layouts/Base.astro';
+import { TAGLINE, SUBHEAD, APP_URL } from '../config';
 ---
 
-<Base title="Dunzo — Plan big. Win the day.">
-  <main id="main">
-    <p class="eyebrow">Coming together</p>
-    <h1>Plan big. Win the day.</h1>
-    <p class="sub">
-      Dunzo pairs a strategic planner and calendar for the big picture with a daily list that keeps
-      you focused on today. Finish it to earn XP, stars, and keep the streak alive.
-    </p>
-    <a class="cta" href="/app/login">Start free &rarr;</a>
-  </main>
+<Base title={`Dunzo — ${TAGLINE}`}>
+  <section class="hero">
+    <div class="container inner">
+      <h1>{TAGLINE}</h1>
+      <p class="sub">{SUBHEAD}</p>
+      <div class="ctas">
+        <a class="btn btn--primary" href={APP_URL}>Start free &rarr;</a>
+        <a class="btn btn--secondary" href="/how-it-works">See how it works</a>
+      </div>
+      <p class="trust">Free &middot; Works in your browser &middot; Your data exports</p>
+    </div>
+  </section>
 </Base>
 
 <style>
-  main {
-    min-height: 100dvh;
+  .hero {
+    padding-block: clamp(72px, 10vw, 140px) var(--section-y);
+  }
+
+  .inner {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     text-align: center;
-    gap: 20px;
-    padding: 24px;
-    max-width: 640px;
-    margin-inline: auto;
-  }
-
-  .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--fg-ghost);
-  }
-
-  h1 {
-    font-size: clamp(2.75rem, 8vw, 4.5rem);
-    font-weight: 700;
-    letter-spacing: -0.035em;
-    line-height: 0.98;
+    gap: var(--space-6);
   }
 
   .sub {
+    font-size: var(--text-deck);
     color: var(--fg-subtle);
-    max-width: 34ch;
+    max-width: var(--measure-sub);
   }
 
-  .cta {
-    margin-top: 8px;
-    background: var(--gold);
-    color: #111;
-    font-weight: 700;
-    text-decoration: none;
-    padding: 12px 22px;
-    border-radius: 10px;
-    box-shadow: 0 0 24px -6px rgb(255 205 78 / 0.5);
-    transition: opacity 160ms;
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
   }
 
-  .cta:hover {
-    opacity: 0.9;
-  }
-
-  .cta:active {
-    transform: scale(0.98);
+  .trust {
+    font-size: 13px;
+    color: var(--fg-ghost);
   }
 </style>

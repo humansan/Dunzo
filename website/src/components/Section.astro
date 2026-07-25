@@ -15,6 +15,13 @@ interface Props {
   id?: string;
   /** Visual treatment: flat canvas (default), a gold glow, or a --surface band. */
   variant?: 'plain' | 'lift' | 'band';
+  /**
+   * Heading level for `title`. Sections are h2 by default; the opening section of
+   * a page that has no separate hero passes `as="h1"` so the page isn't published
+   * without one. Styling is driven by the `.title` class, not the tag, so an h1
+   * here still reads at section scale.
+   */
+  as?: 'h1' | 'h2';
   class?: string;
 }
 
@@ -25,6 +32,7 @@ const {
   align = 'start',
   id,
   variant = 'plain',
+  as: Heading = 'h2',
   class: className = '',
 } = Astro.props;
 
@@ -42,7 +50,7 @@ const variantClass = variant === 'plain' ? '' : `section--${variant}`;
       hasHeader && (
         <header class="head" data-align={align}>
           {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-          {title && <h2>{title}</h2>}
+          {title && <Heading class="title">{title}</Heading>}
           {deck && <p class="deck">{deck}</p>}
         </header>
       )
@@ -68,8 +76,16 @@ const variantClass = variant === 'plain' ? '' : `section--${variant}`;
     margin-inline: auto;
   }
 
-  /* An H2 wants a tighter gap to its eyebrow than to its deck. */
-  .head .eyebrow + :global(h2) {
+  /* Section headings always read at section scale, whether they're h1 or h2 —
+     the tag carries document structure, the class carries size. */
+  .head :global(.title) {
+    font-size: var(--text-h2);
+    letter-spacing: var(--tracking-h2);
+    line-height: var(--leading-tight);
+  }
+
+  /* A heading wants a tighter gap to its eyebrow than to its deck. */
+  .head .eyebrow + :global(.title) {
     margin-top: calc(var(--space-2) * -1);
   }
 </style>

@@ -1,0 +1,114 @@
+---
+/**
+ * CtaBand — the closing panel on every page, and the second of the two structural
+ * placements of background.jpg (plan §3).
+ *
+ * Sharper and smaller than the hero's treatment: blur(28px) inside a 28px-radius
+ * panel. It echoes the app's sign-in screen, so the last thing a visitor sees
+ * before clicking matches the first thing they see after.
+ *
+ * The button is INVERTED here — solid dark on the colorful ground — so it reads
+ * differently from the gold nav CTA and feels like an ending.
+ */
+import { getImage } from 'astro:assets';
+import bgSource from '../assets/background.jpg';
+import { APP_URL } from '../config';
+
+interface Props {
+  title?: string;
+  sub?: string;
+  cta?: string;
+}
+
+const {
+  title = 'Start your streak today.',
+  sub = 'Free, in your browser. Your data is yours to export.',
+  cta = 'Start free →',
+} = Astro.props;
+
+// A 28px blur destroys detail no resolution can bring back, so this ships small
+// on purpose: 900w at q55 (~40KB vs the 424KB original). Upscaling to the panel
+// width is invisible once blurred.
+const bg = await getImage({ src: bgSource, width: 900, format: 'webp', quality: 55 });
+---
+
+<section class="cta-section">
+  <div class="container">
+    <div class="band">
+      <img class="bg" src={bg.src} alt="" aria-hidden="true" loading="lazy" decoding="async" />
+      <div class="scrim"></div>
+      <div class="inner">
+        <h2>{title}</h2>
+        <p class="sub">{sub}</p>
+        <a class="btn btn--inverted" href={APP_URL}>{cta}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-section {
+    padding-block: var(--section-y);
+  }
+
+  .band {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: var(--radius-frame);
+    min-height: 380px;
+    display: grid;
+    place-items: center;
+    padding: var(--space-16) var(--gutter);
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(28px) saturate(1.2);
+    /* Scale past the edges so the blur doesn't feather in from the corners. */
+    transform: scale(1.15);
+    z-index: -2;
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.35);
+    z-index: -1;
+  }
+
+  .inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    text-align: center;
+  }
+
+  .inner h2 {
+    color: #fff;
+    text-shadow: 0 2px 24px rgb(0 0 0 / 0.35);
+  }
+
+  .sub {
+    color: rgb(255 255 255 / 0.88);
+    font-size: var(--text-deck);
+    max-width: 44ch;
+    text-shadow: 0 1px 16px rgb(0 0 0 / 0.35);
+  }
+
+  .inner .btn {
+    margin-top: var(--space-2);
+  }
+
+  @media (max-width: 640px) {
+    .band {
+      min-height: 320px;
+      padding-inline: var(--space-6);
+    }
+  }
+</style>

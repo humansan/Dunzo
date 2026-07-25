@@ -1,0 +1,150 @@
+---
+/**
+ * Footer — three columns over a hairline. The logo is larger here than in the nav
+ * (32px vs 26px): the footer is where the mark gets to be a mark.
+ */
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.png';
+import { FOOTER_COLUMNS, APP_URL, TAGLINE } from '../config';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="container grid">
+    <div class="brand-col">
+      <a class="brand" href="/" aria-label="Dunzo — home">
+        <Image src={logo} alt="" width={64} height={64} loading="lazy" densities={[1, 2]} />
+        <span>Dunzo</span>
+      </a>
+      <p class="tagline">{TAGLINE}</p>
+      <a class="btn btn--primary btn--sm" href={APP_URL}>Start free &rarr;</a>
+    </div>
+
+    {
+      FOOTER_COLUMNS.map((col) => (
+        <nav class="col" aria-label={col.heading}>
+          <h2 class="heading">{col.heading}</h2>
+          <ul>
+            {col.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  target={'external' in link && link.external ? '_blank' : undefined}
+                  rel={'external' in link && link.external ? 'noopener noreferrer' : undefined}
+                >
+                  {link.label}
+                  {'external' in link && link.external && <span aria-hidden="true"> ↗</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))
+    }
+  </div>
+
+  <div class="container bottom">
+    <span>&copy; {year} Dunzo</span>
+    <span>Built by Anshuman Das</span>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: 1px solid var(--line);
+    padding-block: var(--space-16) var(--space-8);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: var(--space-12);
+  }
+
+  .brand-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    text-decoration: none;
+    font-weight: var(--weight-semi);
+    font-size: 22px;
+    letter-spacing: var(--tracking-wordmark);
+    color: var(--fg);
+  }
+
+  .brand :global(img) {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .tagline {
+    color: var(--fg-faint);
+    font-size: var(--text-caption);
+  }
+
+  .heading {
+    font-family: var(--font-mono);
+    font-size: var(--text-eyebrow);
+    font-weight: var(--weight-semi);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--fg-ghost);
+    margin-bottom: var(--space-4);
+  }
+
+  .col ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .col a {
+    color: var(--fg-faint);
+    text-decoration: none;
+    font-size: var(--text-caption);
+  }
+
+  .col a:hover {
+    color: var(--fg);
+  }
+
+  .bottom {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-top: var(--space-16);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--line-subtle);
+    color: var(--fg-ghost);
+    font-size: var(--text-caption);
+  }
+
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-10);
+    }
+
+    .brand-col {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .bottom {
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+  }
+</style>

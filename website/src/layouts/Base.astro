@@ -1,6 +1,6 @@
 ---
-// Nav, Footer, and CtaBand land in Phase 3; OG tags, JSON-LD, and canonical in
-// Phase 7.
+// The page shell: head, nav, content, CTA band, footer.
+// OG tags, JSON-LD, and canonical URLs land in Phase 7.
 //
 // `wght.css` rather than `index.css`: weight axis, normal style only — no italic
 // files in the build. Both families ship unicode-range'd subsets, so latin-ext
@@ -10,18 +10,21 @@ import '@fontsource-variable/space-grotesk/wght.css';
 import '../styles/tokens.css';
 import '../styles/global.css';
 
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import CtaBand from '../components/CtaBand.astro';
+import { SUBHEAD } from '../config';
+
 interface Props {
   title: string;
   description?: string;
   /** Keep a page out of search results (the kitchen sink). */
   noindex?: boolean;
+  /** Suppress the closing CTA band — utility pages only. */
+  noCta?: boolean;
 }
 
-const {
-  title,
-  description = 'Dunzo pairs a strategic planner and calendar for the big picture with a daily list that keeps you focused on today. Finish it to earn XP, stars, and keep the streak alive.',
-  noindex = false,
-} = Astro.props;
+const { title, description = SUBHEAD, noindex = false, noCta = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -32,10 +35,18 @@ const {
     <title>{title}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#111111" />
     <meta name="generator" content={Astro.generator} />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <slot />
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    {!noCta && <CtaBand />}
+    <Footer />
   </body>
 </html>
