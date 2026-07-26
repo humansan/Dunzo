@@ -29,7 +29,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
   children,
 }) => {
   const headerCellCls =
-    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-fg-muted hover:bg-canvas select-none';
+    'relative flex items-center px-2.5 text-xs font-bold text-fg-muted hover:bg-canvas select-none';
 
   const titleChrome = variant.chrome === 'title';
   const headerChrome = variant.chrome === 'header';

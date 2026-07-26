@@ -492,7 +492,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); } }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 resize-none field-sizing-content break-words py-0 pl-1 pr-1.5 text-sm text-fg focus:outline-none"
+                className="flex-1 min-w-0 resize-none field-sizing-content break-words py-0 pl-1 pr-1.5 text-sm text-fg font-medium focus:outline-none"
               />
             ) : (
               <input
@@ -503,14 +503,14 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onBlur={stopEdit}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                 placeholder="Untitled"
-                className="flex-1 min-w-0 h-full pl-1 pr-1.5 text-sm text-fg focus:outline-none"
+                className="flex-1 min-w-0 h-full pl-1 pr-1.5 text-sm text-fg font-medium focus:outline-none"
               />
             )
           ) : (
             <>
               <span
                 onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 min-w-0 pl-1 text-sm cursor-pointer ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg'}`}
+                className={`flex-1 min-w-0 pl-1 text-sm cursor-pointer ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
               >
                 {todo.text || <span className="text-fg-faint">Untitled</span>}
               </span>

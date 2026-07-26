@@ -11,7 +11,7 @@ import { ListSelect, textInputCls } from '@/common/ui';
 import { Switch } from '@/common/ui';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnNeutral } from '@/theme/buttons';
 
 type CountdownMode = 'off' | 'time' | 'percent';
 type Section = 'profile' | 'settings' | 'data';
@@ -470,7 +470,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={handleExport}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-fill-subtle py-2.5 text-sm font-bold text-fg-subtle transition-all hover:bg-fill hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          className={"flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold disabled:cursor-not-allowed " + btnNeutral}
         >
           <Download size={15} />
           {busy === 'export' ? 'Exporting…' : 'Export'}
@@ -479,7 +479,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={() => importRef.current?.click()}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-fill-subtle py-2.5 text-sm font-bold text-fg-subtle transition-all hover:bg-fill hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          className={"flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold disabled:cursor-not-allowed " + btnNeutral}
         >
           <Upload size={15} />
           {busy === 'import' ? 'Importing…' : 'Import'}
