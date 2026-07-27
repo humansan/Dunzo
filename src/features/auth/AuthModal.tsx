@@ -4,6 +4,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { authClient } from '@/lib/auth';
 import { withBase } from '@/lib/basePath';
 import { Checkbox } from '@/common/ui/Checkbox';
+import { OtpInput } from './OtpInput';
 import { apiFetch } from '@/lib/query/apiClient';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { applyTheme } from '@/theme/applyTheme';
@@ -17,11 +18,22 @@ interface AuthModalProps {
   onAuthenticated: () => void;
 }
 
-type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
+type AuthMode = 'login' | 'signup' | 'forgot' | 'reset' | 'verify';
 type SignupStep = 'email' | 'details';
+// Why we're showing the code screen - only the copy differs.
+type VerifyReason = 'signup' | 'unverified-login';
 
 function getResetToken(): string | null {
   return new URLSearchParams(window.location.search).get('token');
+}
+
+const RESEND_COOLDOWN_SECONDS = 60;
+
+// Better Auth rejects sign-in for an unconfirmed address with a 403 whose code is
+// EMAIL_NOT_VERIFIED; the message wording isn't guaranteed, so match the code first.
+function isEmailNotVerified(error: { code?: string; message?: string }): boolean {
+  if (error.code === 'EMAIL_NOT_VERIFIED') return true;
+  return /email.*not.*verified/i.test(error.message ?? '');
 }
 
 // A light draft (email + mode + signup step) persisted so a remount / hard refresh
@@ -100,7 +112,8 @@ const LoginScreen: React.FC<{
   const resetToken = getResetToken();
   const [draft] = useState(readAuthDraft);
   // Restore only a benign mode (never a stale forgot/reset flow) unless the URL
-  // carries a reset token.
+  // carries a reset token. `verify` is deliberately not restored: the password
+  // needed to finish the sign-in isn't persisted, so a refresh restarts at login.
   const [mode, setMode] = useState<AuthMode>(
     resetToken ? 'reset' : draft.mode === 'signup' ? 'signup' : 'login'
   );
@@ -119,11 +132,23 @@ const LoginScreen: React.FC<{
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [resetDone, setResetDone] = useState(false);
+  const [verifyReason, setVerifyReason] = useState<VerifyReason>('signup');
+  const [otp, setOtp] = useState('');
+  const [otpInvalid, setOtpInvalid] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Keep the draft in sync (email + mode + step only; never passwords).
   useEffect(() => {
     sessionStorage.setItem(AUTH_DRAFT_KEY, JSON.stringify({ email, mode, signupStep }));
   }, [email, mode, signupStep]);
+
+  // Tick down the resend cooldown so the button re-enables on its own.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = window.setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => window.clearTimeout(id);
+  }, [resendCooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +162,7 @@ const LoginScreen: React.FC<{
     setSubmitting(true);
     setError(null);
     try {
-      const { error } =
+      const { data, error } =
         mode === 'login'
           ? await authClient.signIn.email({ email, password, rememberMe })
           : await authClient.signUp.email({
@@ -146,7 +171,110 @@ const LoginScreen: React.FC<{
               // Fall back to the email local-part only if a name somehow wasn't collected.
               name: name.trim() || email.split('@')[0],
             });
-      if (error) throw new Error(error.message || 'Authentication failed');
+      if (error) {
+        // Signing in before confirming the address: send a fresh code and show the
+        // code screen instead of a dead-end error.
+        if (isEmailNotVerified(error)) {
+          await enterVerifyMode('unverified-login');
+          return;
+        }
+        throw new Error(error.message || 'Authentication failed');
+      }
+      // With email verification required, sign-up returns no session token - the
+      // account exists but stays unusable until the emailed code is entered.
+      if (mode === 'signup' && !(data as { token?: string | null } | null)?.token) {
+        await enterVerifyMode('signup');
+        return;
+      }
+      sessionStorage.removeItem(AUTH_DRAFT_KEY);
+      onAuthenticated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Send a code and switch to the code screen. Called right after a sign-up that
+  // needs verification, and when an unverified account tries to log in.
+  const enterVerifyMode = async (reason: VerifyReason) => {
+    setVerifyReason(reason);
+    setOtp('');
+    setOtpInvalid(false);
+    setResendSent(false);
+    setError(null);
+    setMode('verify');
+    const { error } = await sendOtp();
+    if (!error) setResendCooldown(RESEND_COOLDOWN_SECONDS);
+  };
+
+  const sendOtp = async (): Promise<{ error?: { message?: string } | null }> => {
+    try {
+      const { error } = await (authClient as any).emailOtp.sendVerificationOtp({
+        email: email.trim(),
+        type: 'email-verification',
+      });
+      if (error) throw new Error(error.message || 'Could not send verification code');
+      return {};
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      setError(message);
+      return { error: { message } };
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email.trim() || resendCooldown > 0 || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    setOtp('');
+    setOtpInvalid(false);
+    const { error } = await sendOtp();
+    if (!error) {
+      setResendSent(true);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    }
+    setSubmitting(false);
+  };
+
+  // Confirm the 6-digit code, then put the user straight into the app - no second
+  // trip through the login form. Better Auth may hand back a session itself
+  // (`token`), and because our auth calls go through the same-origin proxy that
+  // cookie is first-party; when it doesn't, we still hold the password they just
+  // typed, so we sign in with it. Only a page refresh (which drops the password)
+  // can land on the "log in to continue" fallback.
+  const handleVerifyOtp = async (code: string) => {
+    if (code.length !== 6 || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    setOtpInvalid(false);
+    try {
+      const { data, error } = await (authClient as any).emailOtp.verifyEmail({
+        email: email.trim(),
+        otp: code,
+      });
+      if (error) {
+        setOtpInvalid(true);
+        setOtp('');
+        throw new Error(error.message || 'That code is incorrect or has expired');
+      }
+
+      if (password) {
+        const { error: signInError } = await authClient.signIn.email({
+          email,
+          password,
+          rememberMe,
+        });
+        if (signInError) throw new Error(signInError.message || 'Could not sign you in');
+      } else if (!data?.token) {
+        const { data: session } = await authClient.getSession();
+        if (!session) {
+          switchMode('login');
+          // switchMode clears the error, so set the notice after it.
+          setError('Email verified. Log in to continue.');
+          return;
+        }
+      }
       sessionStorage.removeItem(AUTH_DRAFT_KEY);
       onAuthenticated();
     } catch (err) {
@@ -254,6 +382,7 @@ const LoginScreen: React.FC<{
     setEmailTaken(false);
     setForgotSent(false);
     setResetDone(false);
+    setResendSent(false);
   };
 
   // Login-specific field styling (kept local so the account modal is unaffected).
@@ -263,6 +392,79 @@ const LoginScreen: React.FC<{
     'block text-sm font-medium text-fg-muted';
 
   const renderForm = () => {
+    // ── Enter the 6-digit code from the verification email ───────────────────
+    if (mode === 'verify') {
+      return (
+        <>
+          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Enter your code</h2>
+          <p className="text-sm text-fg-subtle mb-6">
+            {verifyReason === 'unverified-login'
+              ? 'Your email address isn’t verified yet. We sent a 6-digit code to '
+              : 'Almost there. We sent a 6-digit code to '}
+            <span className="text-fg">{email}</span>. Enter it below to finish setting up
+            your account.
+          </p>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleVerifyOtp(otp);
+            }}
+            className="space-y-3.5"
+          >
+            <OtpInput
+              value={otp}
+              onChange={(v) => {
+                setOtp(v);
+                if (otpInvalid) setOtpInvalid(false);
+              }}
+              // Submit as soon as the sixth digit lands (typed or pasted).
+              onComplete={(code) => void handleVerifyOtp(code)}
+              disabled={submitting}
+              invalid={otpInvalid}
+              autoFocus
+            />
+            {resendSent && !error && (
+              <p className="text-xs text-fg-muted bg-fill-subtle rounded-lg px-3 py-2">
+                New code sent. Check your inbox (and spam folder).
+              </p>
+            )}
+            {error && (
+              <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>
+            )}
+            <button
+              type="submit"
+              disabled={submitting || otp.length !== 6}
+              className={`w-full h-9 rounded-lg cursor-pointer disabled:cursor-not-allowed ${btnAccent()}`}
+            >
+              {submitting ? 'Verifying…' : 'Verify'}
+            </button>
+          </form>
+
+          <p className="text-sm text-fg-muted mt-5">
+            Didn’t get it?{' '}
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={submitting || resendCooldown > 0}
+              className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer disabled:text-fg-faint disabled:cursor-not-allowed"
+            >
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+            </button>
+          </p>
+          <p className="text-sm text-fg-muted mt-2">
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
+            >
+              Back to log in
+            </button>
+          </p>
+        </>
+      );
+    }
+
     // ── Forgot password ──────────────────────────────────────────────────────
     if (mode === 'forgot') {
       if (forgotSent) {

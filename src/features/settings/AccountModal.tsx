@@ -99,32 +99,11 @@ const ProfilePane: React.FC<{
   name?: string;
   onLogout: () => void;
 }> = ({ email, name, onLogout }) => {
-  const [newEmail, setNewEmail] = useState('');
-  const [emailMsg, setEmailMsg] = useState<FormMsg>(null);
-  const [emailBusy, setEmailBusy] = useState(false);
-
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwMsg, setPwMsg] = useState<FormMsg>(null);
   const [pwBusy, setPwBusy] = useState(false);
-
-  const handleEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailMsg(null);
-    setEmailBusy(true);
-    try {
-      const { error } = await authClient.changeEmail({ newEmail });
-      if (error) throw new Error(error.message || 'Could not update email');
-      // better-auth sends a confirmation link when the current email is verified.
-      setEmailMsg({ kind: 'ok', text: 'Check your inbox to confirm the new email.' });
-      setNewEmail('');
-    } catch (err) {
-      setEmailMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong' });
-    } finally {
-      setEmailBusy(false);
-    }
-  };
 
   const handlePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,26 +147,19 @@ const ProfilePane: React.FC<{
         </div>
       </div>
 
-      {/* Change email */}
+      {/* Email - read only. Neon Auth (our auth provider) has no email-change
+          capability: `changeEmail` is disabled server-side and there's no config
+          flag to enable it, so the call could only ever fail. Rather than a form
+          that always errors, say so plainly. Revisit if Neon ships support. */}
       <div>
         <SectionHeader>Email</SectionHeader>
-        <form onSubmit={handleEmail} className="space-y-2">
-          <div>
-            <label className={fieldLabel}>New email</label>
-            <input
-              type="email"
-              required
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className={fieldInput}
-              placeholder={email ?? 'you@example.com'}
-            />
-          </div>
-          <button type="submit" disabled={emailBusy || !newEmail || newEmail === email} className={formButton}>
-            {emailBusy ? 'Updating…' : 'Update Email'}
-          </button>
-          <StatusLine msg={emailMsg} />
-        </form>
+        <div className="rounded-2xl border border-line bg-fill-subtle px-4 py-3.5">
+          <p className="text-[13px] text-fg-subtle">{email ?? 'Not set'}</p>
+          <p className="text-[11px] leading-relaxed text-fg-ghost mt-1.5">
+            Your email is set when you sign up and can’t be changed yet. To use a different
+            address, you’ll need a new account for now.
+          </p>
+        </div>
       </div>
 
       {/* Change password */}
