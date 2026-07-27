@@ -114,7 +114,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
             className="relative flex items-center justify-center min-w-12 h-13 rounded-full pl-4 pr-1.5"
             animate={{
               backgroundColor: maxed ? GOLD : GOLD_BG,
-              scale: streakPulse ? [1, 1.1, 0.9, 1] : 1,
+              scale: bursting ? [1, 1.1, 0.9, 1] : 1,
             }}
             transition={{
               backgroundColor: { duration: 0.4 },

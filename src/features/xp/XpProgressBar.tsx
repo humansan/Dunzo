@@ -43,12 +43,12 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const reachTarget = target >= avgValue ? target : avgValue;
   const reachText = target >= avgValue ? 'yesterday' : avgLabel;
   const remaining = reachTarget - earned;
-  const reachedTarget = earned >= reachTarget;
-  const percent = Math.min(100, (earned / reachTarget) * 100);
+  const reachedTarget = earned > 0 && earned >= reachTarget;
+  const percent = earned > 0 ? Math.min(100, (earned / reachTarget) * 100): 0;
 
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
-  const lit = reachedWeekBest ? VIOLET : earned >= reachTarget ? GOLD : null;
+  const lit = reachedWeekBest ? VIOLET : reachedTarget ? GOLD : null;
 
   // let targets: { label: string; value: number }[] = [
   //   { label: 'yesterday', value: target },

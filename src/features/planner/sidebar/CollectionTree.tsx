@@ -147,7 +147,7 @@ export const CollectionTree: React.FC<{
               
             </button>
           )}
-          {!checkMode && (
+          {!checkMode && onNewCollection && (
             <button
               type="button"
               onClick={onNewCollection}
@@ -162,6 +162,13 @@ export const CollectionTree: React.FC<{
 
       {/* Scrollable list of collections - nested tree, indented by depth. The drop is
           handled on the container (not per-row) so releases in the gaps still commit. */}
+
+      {visibleCollections.length === 0 && (
+        <div className="flex flex-col items-center py-4 px-8 text-center text-xs text-fg-faint gap-2">
+          <Shapes className="text-fg-faint" size={16}/>
+          No collections. Create one to get started.
+        </div>
+      )}
       <div
         ref={dnd?.sideScroll.ref}
         className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 "

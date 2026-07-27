@@ -68,6 +68,10 @@ export const DEFAULT_VISIBLE_COLS: ColKey[] = [
   'completedAt',
 ];
 
+export const DEFAULT_WRAP_COLS: ColKey[] = [
+  'title'
+];
+
 // The complement of the above - what a fresh view starts with hidden. Derived so
 // that adding a column to COLUMNS hides it by default until it's listed above.
 export const DEFAULT_HIDDEN_COLS: ColKey[] = COLUMNS.map((c) => c.key).filter(

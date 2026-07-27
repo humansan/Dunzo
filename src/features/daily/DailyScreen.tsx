@@ -394,7 +394,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
                   onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
                   className="flex flex-col items-center gap-1.5 group"
                 >
-                  <span className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-fg-ghost group-hover:text-fg-subtle'
+                  <span className={`text-xs font-bold transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-fg-ghost group-hover:text-fg-subtle'
                     }`}>
                     {format(day, 'EEE')}
                   </span>

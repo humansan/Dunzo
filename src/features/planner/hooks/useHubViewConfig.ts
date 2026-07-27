@@ -10,6 +10,7 @@ import {
   SectionsConfig,
   DEFAULT_SECTIONS_CONFIG,
   DEFAULT_HIDDEN_COLS,
+  DEFAULT_WRAP_COLS,
   MENU_SLICES,
   ToolbarMenuKey,
 } from '@/features/planner/types';
@@ -66,7 +67,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       )
     );
     const wrappedFields = new Set<ColKey>(
-      (Array.isArray(raw.wrappedFields) ? raw.wrappedFields : []).filter(
+      (Array.isArray(raw.wrappedFields) ? raw.wrappedFields : DEFAULT_WRAP_COLS).filter(
         (k: string): k is ColKey => allColKeys.includes(k as ColKey)
       )
     );

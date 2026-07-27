@@ -1020,12 +1020,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 key={day.toISOString()}
                 className="flex-1 text-center pb-3 border-l border-line-subtle"
               >
-                <div className="flex items-center justify-center gap-2">
-                  <span className={`text-sm font-bold uppercase tracking-wider ${today ? 'text-[var(--accent2)]' : 'text-fg-ghost'}`}>
+                <div className="flex items-center justify-center gap-1">
+                  <span className={`text-sm font-bold ${today ? 'text-accent2' : 'text-fg-ghost'}`}>
                     {format(day, 'EEE')}
                   </span>
-                  <span className={`text-sm font-bold px-1.5 py-1 rounded-md transition-all ${today
-                    ? 'bg-[var(--accent2)] text-canvas'
+                  <span className={`text-sm font-bold px-1.25 py-0.75 rounded-md transition-all ${today
+                    ? 'bg-accent2 text-canvas'
                     : 'text-fg-muted'
                     }`}>
                     {format(day, 'd')}
