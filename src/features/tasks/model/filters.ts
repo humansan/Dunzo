@@ -27,6 +27,27 @@ export {
   type ScheduleSide,
 } from '@shared/domain/todoSchedule';
 
+// ── Workspaces (currently disabled) ────────────────────────────────────────
+//
+// Workspaces are switched off: every todo the server hands back belongs to the
+// signed-in user (all /api/todos queries are scoped by userId), and that single
+// user-wide set is what the Task Planner shows. This predicate is the one place
+// that decides it, so turning workspaces back on means flipping the flag here
+// rather than re-deriving the rule at four call sites.
+//
+// It is off because scoping by `workspaceId ?? 'personal'` silently hid tasks:
+// only the planner stamps a workspaceId on creation, and since the seeded default
+// workspace now gets a RANDOM id (there is no fixed 'personal' id anymore), every
+// daily-list task fell back to a workspace that no account actually has. If this
+// is ever re-enabled, legacy rows with no workspaceId must be backfilled to the
+// user's first workspace first - the `?? 'personal'` fallback is not a safe default.
+export const WORKSPACES_ENABLED = false;
+
+export function inWorkspace(todo: Todo, workspaceId: string): boolean {
+  if (!WORKSPACES_ENABLED) return true;
+  return (todo.workspaceId ?? '') === workspaceId;
+}
+
 // A todo id together with every descendant id (subtasks, recursively), for
 // cascading hub operations like delete/archive.
 export function collectWithDescendants(todos: Todo[], rootId: string): Set<string> {
@@ -159,7 +180,7 @@ export function collectionOptions(
   for (const d of dayTodos || []) {
     for (const t of d.todos || []) {
       if (!t || !t.isCollection || t.archived === true) continue;
-      if (opts.workspaceId && (t.workspaceId ?? 'personal') !== opts.workspaceId) continue;
+      if (opts.workspaceId && !inWorkspace(t, opts.workspaceId)) continue;
       const path = collectionPath(t.id, byId).map((c) => ({
         id: c.id,
         name: c.text || 'Untitled',

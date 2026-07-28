@@ -35,6 +35,8 @@ import {
   resizeSpan,
   decomposeSpan,
   isRenderableSpan,
+  hasStartPoint,
+  hasDuePoint,
   type TodoSpan,
 } from './span';
 
@@ -189,25 +191,34 @@ const EventCard: React.FC<{
   // Only show a time that's actually set - never fabricate the missing side. When both
   // sides share a meridiem, drop the AM/PM from the start so it reads "9:00 – 10:30 AM".
   // A one-sided task shows just that time (no dash, no fabricated duration).
+  // A side counts only when it carries both a date and a time - the same rule
+  // todoSpan places the card by, so the label can't claim an edge the span doesn't have.
+  const hasStart = hasStartPoint(todo);
+  const hasDue = hasDuePoint(todo);
   const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
   const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
-  const bothTimes = !!todo.startTime && !!todo.dueTime;
+  const bothTimes = hasStart && hasDue;
   // % 1440 keeps a legacy "24:00" (=1440) classified as AM, matching how
   // formatTime12h renders it - otherwise it reads as PM here and the start time
   // below loses its meridiem, turning 22:00-midnight into "10:00 – 12:00 AM".
   const meridiemPm = (t: string) => timeToMinutes(t) % 1440 >= 720;
   const sameMeridiem =
     bothTimes && meridiemPm(todo.startTime!) === meridiemPm(todo.dueTime!);
-  // A span's segments each print only their own real edge, with an arrow toward the
-  // day the task continues into - the midnight seam isn't a time worth showing. A
-  // span with no time on a side is all-day there (00:00 / 23:59).
+  // A span's segments each print only their own real edge - the midnight seam isn't
+  // a time worth showing. A one-sided task's 30-minute block is only ever anchored on
+  // one of its edges, so it says which edge that is rather than showing a bare time
+  // the other half of which was invented.
   const timeRange = continuesAfter
-    ? `${startLabel || formatTime12h('00:00')}`
+    ? `starts ${startLabel}`
     : continuesBefore
-      ? `ends ${endLabel || formatTime12h('23:59')}`
+      ? `ends ${endLabel}`
       : bothTimes
         ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} - ${endLabel}`
-        : startLabel || endLabel;
+        : hasStart
+          ? `starts ${startLabel}`
+          : hasDue
+            ? `ends ${endLabel}`
+            : startLabel || endLabel;
   // Duration is the WHOLE task's length, never this segment's slice.
   const isSegment = continuesBefore || continuesAfter;
   const durationStr =
@@ -268,11 +279,13 @@ const EventCard: React.FC<{
           }}
         >
           {(isHovered && onToggle) ? (
-            <div className="absolute cursor-pointer flex items-center justify-center z-50">
+            // The accent lives on the plain wrapper below, not on the motion.div:
+            // handing motion a color via `style` makes it an animated value, and the
+            // inherited "white" it starts from isn't interpolatable, so motion warns.
+            <div className="absolute cursor-pointer flex items-center justify-center z-50" style={{ color: accent }}>
               <motion.div
                 initial={{ scale: 0.4, opacity: 0 }}
                 animate={{ scale: 0.8, opacity: 1 }}
-                style={{ color: accent }}
               >
                 {isDone(todo) ? <CheckCircle2 size={15} strokeWidth={2.5} /> : <Circle size={15} strokeWidth={2.5} />}
               </motion.div>
@@ -622,9 +635,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const map = new Map<string, { todo: Todo; span: TodoSpan }[]>();
     for (const day of dayTodos) {
       for (const t of day.todos || []) {
-        // Anything with a start OR an end time gets a block. The 30-minute default
-        // for a missing side is applied at render (kept off the todo) so the event
-        // card can tell which side was never set and omit it from the label.
+        // A task needs at least one time to be placeable at all; todoSpan applies the
+        // real rule (a side counts only with a date AND a time). The 30-minute default
+        // for a one-sided task is applied at render (kept off the todo) so the event
+        // card can tell which side was never set and label it "starts"/"ends".
         if (!t || !(t.startTime || t.dueTime)) continue;
         // Archived tasks are hidden entirely unless "show archived" is on; the gate
         // owns the archived exclusion, so the planner surface below uses raw

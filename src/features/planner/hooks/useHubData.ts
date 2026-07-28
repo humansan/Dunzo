@@ -7,6 +7,7 @@ import {
   todoIndex,
   collectionOf,
   collectionPath,
+  inWorkspace,
 } from '@/features/tasks/model';
 import { ColKey, COLUMNS, GroupRow, FilterRule, FilterMatch, SortRule, SectionsConfig } from '@/features/planner/types';
 import { PLANNER_VIEWS, resolveView, ViewCtx, ViewDef } from '@/features/planner/views';
@@ -58,15 +59,13 @@ export function useHubData(params: {
     showNesting,
   } = params;
 
-  // Only this workspace's todos/collections (undefined id ⇒ default 'personal').
+  // Every organizer todo the user owns, scoped by inWorkspace - a no-op while
+  // workspaces are disabled (see filters.ts), so this is the whole user-wide set.
   // Memoized so the whole downstream pipeline (byId, viewEntries, filtered/
   // processed entries, flattened, …) doesn't rebuild on every unrelated render
   // (hover, editing, menu open, each dragover frame).
   const entries = useMemo(
-    () =>
-      getOrganizerTodos(dayTodos).filter(
-        (e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId
-      ),
+    () => getOrganizerTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
 
@@ -75,9 +74,7 @@ export function useHubData(params: {
   // ancestor walks) is scoped to the non-archived organizer set.
   const archivedEntries = useMemo(
     () =>
-      getArchivedTodos(dayTodos).filter(
-        (e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId
-      ),
+      getArchivedTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
 

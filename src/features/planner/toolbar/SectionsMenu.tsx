@@ -72,8 +72,8 @@ export const SectionsMenu: React.FC<{
           </div>
         </div>
 
-        <div className={sectionCls}>
-          {/* Show leaf tasks */}
+        {/* <div className={sectionCls}>
+          { Show leaf tasks (comment this out)}
           <div className="space-y-1.5">
             <span className={labelCls}>Show ungrouped tasks</span>
             <Segment
@@ -86,7 +86,7 @@ export const SectionsMenu: React.FC<{
               onChange={(v) => set('showLeafTasks', v as SectionsConfig['showLeafTasks'])}
             />
           </div>
-        </div>
+        </div> */}
 
         <div className={sectionCls}>
           {/* Group by */}

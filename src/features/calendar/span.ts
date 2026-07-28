@@ -64,52 +64,60 @@ export function normalizeSpanEnd(span: TodoSpan): TodoSpan {
   return { absStart, absEnd };
 }
 
+// Whether a side carries a real point in time. A time needs its own date to be
+// placeable, and a date without a time is not a time - it says nothing about WHERE
+// on the grid that edge sits, so it's simply not one of the span's edges.
+export function hasStartPoint(todo: Todo): boolean {
+  return !!todo.startDate && !!todo.startTime;
+}
+
+export function hasDuePoint(todo: Todo): boolean {
+  return !!todo.dueDate && !!todo.dueTime;
+}
+
 // A todo's absolute bounds, or null when it can't be placed on the grid.
 //
-// Same-day tasks keep the long-standing 30-minute default for a missing side
-// (start-only → start..start+30, end-only → end-30..end) so a one-sided task still
-// gets a block. When startDate is an EARLIER day the task is a span, and a missing
-// time means that side is all-day: it runs from 00:00, or through the end of its day.
+// Only a side with BOTH a date and a time anchors an edge. With exactly one such
+// side the task is one-sided and draws a 30-minute block there (start → start+30,
+// end → end-30), whatever the other side holds: a bare date on the far side used to
+// be read as 00:00 / end-of-day, which stretched the task into a multi-day span and
+// then dropped it as unrenderable, so "starts today, due tomorrow 8am" vanished.
+// Only when both sides are complete is the task a real span between them - and one
+// of those over MAX_SPAN_MINS is the multi-day case that isRenderableSpan drops.
 export function todoSpan(todo: Todo): TodoSpan | null {
-  if (!todo.startTime && !todo.dueTime) return null;
+  const hasStart = hasStartPoint(todo);
+  const hasDue = hasDuePoint(todo);
 
-  // A task normally anchors on its due date. One with ONLY a start side - a start
-  // date and time, no due date at all - anchors on its START date instead, so it
-  // gets the same 30-minute block an end-only task gets. Anchoring solely on
-  // dueDate used to drop these entirely, which is why an end-only task drew a block
-  // but a start-only one silently didn't. The end is clamped to the end of its own
-  // day, mirroring how the end-only default clamps its start at 00:00: a task with
-  // no due side shouldn't spill a phantom segment into the next day.
-  if (!todo.dueDate) {
-    if (!todo.startDate || !todo.startTime) return null; // a time needs its own date
-    const base = dayIndex(todo.startDate) * MINS_PER_DAY;
-    const startMin = timeToMinutes(todo.startTime);
+  if (hasStart && !hasDue) {
+    const base = dayIndex(todo.startDate!) * MINS_PER_DAY;
+    const startMin = timeToMinutes(todo.startTime!);
+    // Clamped to the end of its own day: a one-sided task shouldn't spill a phantom
+    // segment into the next one.
     return normalizeSpanEnd({
       absStart: base + startMin,
       absEnd: base + Math.min(startMin + 30, MINS_PER_DAY),
     });
   }
 
-  const dueIdx = dayIndex(todo.dueDate);
-  const startIdx = todo.startDate ? dayIndex(todo.startDate) : dueIdx;
-  const diff = dueIdx - startIdx;
-  if (diff < 0) return null; // start after due - the schedule invariant forbids it
-
-  if (diff === 0) {
-    const startMin = todo.startTime
-      ? timeToMinutes(todo.startTime)
-      : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
-    let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
-    // Equal start/end is a real 0-minute task; only an inverted pair is corrected.
-    if (endMin < startMin) endMin = startMin;
-    const base = dueIdx * MINS_PER_DAY;
-    return normalizeSpanEnd({ absStart: base + startMin, absEnd: base + endMin });
+  if (hasDue && !hasStart) {
+    const base = dayIndex(todo.dueDate!) * MINS_PER_DAY;
+    const endMin = timeToMinutes(todo.dueTime!);
+    return normalizeSpanEnd({
+      absStart: base + Math.max(0, endMin - 30),
+      absEnd: base + endMin,
+    });
   }
 
-  return normalizeSpanEnd({
-    absStart: startIdx * MINS_PER_DAY + (todo.startTime ? timeToMinutes(todo.startTime) : 0),
-    absEnd: dueIdx * MINS_PER_DAY + (todo.dueTime ? timeToMinutes(todo.dueTime) : MINS_PER_DAY),
-  });
+  if (!hasStart && !hasDue) return null;
+
+  const startIdx = dayIndex(todo.startDate!);
+  const dueIdx = dayIndex(todo.dueDate!);
+  if (dueIdx < startIdx) return null; // start after due - the schedule invariant forbids it
+  const absStart = startIdx * MINS_PER_DAY + timeToMinutes(todo.startTime!);
+  let absEnd = dueIdx * MINS_PER_DAY + timeToMinutes(todo.dueTime!);
+  // Equal start/end is a real 0-minute task; only an inverted pair is corrected.
+  if (absEnd < absStart) absEnd = absStart;
+  return normalizeSpanEnd({ absStart, absEnd });
 }
 
 // How many day columns a span touches. Only 1 and 2 are renderable.
