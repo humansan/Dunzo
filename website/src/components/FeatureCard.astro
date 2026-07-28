@@ -1,0 +1,86 @@
+---
+/**
+ * FeatureCard — H9's grid unit. Gold icon, title, copy, and an optional small
+ * screenshot. Cards without media are text-only rather than padded out, so the
+ * grid stays honest about which features have something worth showing.
+ */
+import Icon from './Icon.astro';
+import DeviceFrame from './DeviceFrame.astro';
+
+interface Props {
+  icon: string;
+  title: string;
+  /** Placeholder asset id — omit for a text-only card. */
+  asset?: string;
+  assetNote?: string;
+}
+
+const { icon, title, asset, assetNote } = Astro.props;
+---
+
+<article class="card">
+  <span class="ico">
+    <Icon name={icon as any} size={20} />
+  </span>
+  <h3>{title}</h3>
+  <p><slot /></p>
+  {
+    asset && (
+      <div class="media">
+        <DeviceFrame type="placeholder" label={asset} note={assetNote} ratio="16/10" />
+      </div>
+    )
+  }
+</article>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-6);
+    transition:
+      transform var(--dur) var(--ease-out),
+      border-color var(--dur) var(--ease-out);
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: var(--line-strong);
+  }
+
+  .ico {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-chip);
+    background: rgb(255 205 78 / 0.1);
+  }
+
+  h3 {
+    font-size: var(--text-h3);
+    font-weight: var(--weight-semi);
+  }
+
+  p {
+    color: var(--fg-subtle);
+    font-size: var(--text-caption);
+  }
+
+  p :global(code) {
+    background: var(--fill-subtle);
+    padding: 1px 6px;
+    border-radius: 5px;
+    color: var(--fg-muted);
+    white-space: nowrap;
+  }
+
+  .media {
+    margin-top: auto;
+    padding-top: var(--space-4);
+  }
+</style>

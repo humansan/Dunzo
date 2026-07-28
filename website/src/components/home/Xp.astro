@@ -1,0 +1,249 @@
+---
+/**
+ * H7 — XP, stars, and the streak. The emotional peak: a --surface band that
+ * breaks the canvas rhythm, and the one section where gold is allowed to be loud.
+ *
+ * The stat row shows sample values from the product's own stats page. They are
+ * illustrative UI, framed as a screenshot-adjacent sample — not a claim about
+ * anyone's results.
+ */
+import Section from '../Section.astro';
+import XpTriptych from '../XpTriptych.astro';
+import DeviceFrame from '../DeviceFrame.astro';
+import Icon from '../Icon.astro';
+
+const stars = [
+  'Finish any one task',
+  'Match or beat yesterday’s XP',
+  'Match or beat your 7- or 30-day average',
+];
+
+const periods = [
+  { label: 'Last 7 days', value: '8', delta: 'vs 0 XP in previous 7d', dir: 'up' },
+  { label: 'Last 30 days', value: '13', delta: 'vs 486 XP in previous 30d', dir: 'down' },
+  { label: 'Last 365 days', value: '499', delta: 'vs 0 XP in previous 365d', dir: 'up' },
+];
+---
+
+<Section
+  id="xp"
+  eyebrow="Earn"
+  title="Your only competition is yesterday."
+  deck="Every task is worth 1 to 5 XP — you set it, or take the default. The day’s first target is whatever you earned yesterday. Meet it and the whole XP section turns gold. Beat your 7-day best and it turns purple."
+  align="center"
+  variant="band"
+  data-reveal
+>
+  <XpTriptych />
+
+  <div class="stars-block" data-reveal>
+    <h3 class="stars-head">Three stars a day</h3>
+    <ul class="stars">
+      {
+        stars.map((s, i) => (
+          <li style={`--i: ${i}`}>
+            <Icon name="star" size={22} />
+            <span>{s}</span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="streak">
+      <p>Two stars holds your streak. Three stars grows it.</p>
+      <DeviceFrame
+        type="placeholder"
+        label="S13"
+        note="Three lit stars + streak badge, tight crop"
+        ratio="5/2"
+        class="badge"
+      />
+    </div>
+  </div>
+
+  <div class="periods" data-reveal>
+    {
+      periods.map((p) => (
+        <div class="period">
+          <p class="plabel">{p.label}</p>
+          <p class="pvalue">
+            <span class:list={['arrow', p.dir]} aria-hidden="true">
+              {p.dir === 'up' ? '▲' : '▼'}
+            </span>
+            {p.value}
+            <span class="unit">XP</span>
+          </p>
+          <p class="pdelta">{p.delta}</p>
+        </div>
+      ))
+    }
+  </div>
+
+  <p class="footnote">
+    Only tasks in your daily list count toward XP — planning something doesn’t score. Finishing it
+    does.
+  </p>
+</Section>
+
+<style>
+  .stars-block {
+    margin-top: var(--space-16);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-6);
+  }
+
+  .stars-head {
+    font-family: var(--font-mono);
+    font-size: var(--text-eyebrow);
+    font-weight: var(--weight-semi);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    position: relative;
+    padding-inline: var(--space-6);
+  }
+
+  /* Hairlines either side of the header, as in the plan's sketch. */
+  .stars-head::before,
+  .stars-head::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 64px;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .stars-head::before {
+    right: 100%;
+  }
+
+  .stars-head::after {
+    left: 100%;
+  }
+
+  .stars {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .stars li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    color: var(--fg-muted);
+  }
+
+  .streak {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+  }
+
+  .streak p {
+    font-size: var(--text-deck);
+    color: var(--fg);
+    font-weight: var(--weight-semi);
+    text-align: center;
+  }
+
+  .streak :global(.badge) {
+    width: min(340px, 100%);
+  }
+
+  /* ── Period stats ──────────────────────────────────────────────────────── */
+
+  .periods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+    margin-top: var(--space-16);
+  }
+
+  .period {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-6);
+    text-align: left;
+  }
+
+  .plabel {
+    font-family: var(--font-mono);
+    font-size: var(--text-eyebrow);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--fg-ghost);
+  }
+
+  .pvalue {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    font-family: var(--font-mono);
+    font-feature-settings: 'tnum';
+    font-size: var(--text-stat);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    color: var(--fg);
+  }
+
+  .arrow {
+    font-size: 0.4em;
+  }
+
+  .arrow.up {
+    color: var(--emerald);
+  }
+
+  .arrow.down {
+    color: var(--red);
+  }
+
+  .unit {
+    font-size: 0.35em;
+    font-weight: var(--weight-medium);
+    color: var(--fg-faint);
+    letter-spacing: 0.04em;
+  }
+
+  .pdelta {
+    margin-top: var(--space-3);
+    font-size: var(--text-caption);
+    color: var(--fg-faint);
+  }
+
+  .footnote {
+    margin-top: var(--space-12);
+    font-size: var(--text-caption);
+    color: var(--fg-faint);
+    text-align: center;
+    max-width: 62ch;
+    margin-inline: auto;
+  }
+
+  @media (max-width: 900px) {
+    .periods {
+      grid-template-columns: 1fr;
+    }
+
+    .stars-head::before,
+    .stars-head::after {
+      width: 28px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .stars li {
+      align-items: flex-start;
+    }
+  }
+</style>

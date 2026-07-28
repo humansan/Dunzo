@@ -23,6 +23,8 @@ interface Props {
    */
   as?: 'h1' | 'h2';
   class?: string;
+  /** Any other attribute (notably `data-reveal`) lands on the <section>. */
+  [key: `data-${string}`]: unknown;
 }
 
 const {
@@ -34,6 +36,10 @@ const {
   variant = 'plain',
   as: Heading = 'h2',
   class: className = '',
+  // Astro does NOT forward unknown props to the root element, so they are
+  // captured and spread explicitly below. Without this, `<Section data-reveal>`
+  // silently does nothing.
+  ...rest
 } = Astro.props;
 
 const hasHeader = Boolean(eyebrow || title || deck);
@@ -44,6 +50,7 @@ const variantClass = variant === 'plain' ? '' : `section--${variant}`;
   id={id}
   class:list={['section', variantClass, className]}
   data-align={align}
+  {...rest}
 >
   <div class="container">
     {

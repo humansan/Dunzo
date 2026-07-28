@@ -208,6 +208,28 @@ kbd {
   border-block: 1px solid var(--line-subtle);
 }
 
+/* ── Scroll reveal ────────────────────────────────────────────────────────── */
+/* Opt in with `data-reveal`. The observer in Base.astro stamps `data-revealed`
+   once, on entry — elements never animate back out. Phase 7 tunes the timing
+   here; the mechanism is already applied across every section.
+
+   `.no-js` guards the whole thing: without the script the attribute is never
+   stamped, so content must not start invisible. The script removes `.no-js`
+   from <html> before paint, so this only ever applies when JS will run. */
+
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out);
+}
+
+.js [data-reveal][data-revealed] {
+  opacity: 1;
+  transform: none;
+}
+
 .skip-link {
   position: absolute;
   left: -9999px;

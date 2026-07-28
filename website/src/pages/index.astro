@@ -1,54 +1,33 @@
 ---
-// PHASE 3 shell. The real Home — ten sections, starting with the two-surface
-// split — is Phase 4. This is the hero's copy in the shell so the nav, CTA band,
-// and footer can be reviewed in place.
+/**
+ * Home — ten sections, in the order a visitor should meet them: hook, the core
+ * idea, each surface in the order you'd actually use them, the reward system,
+ * credibility, close.
+ *
+ * H10 (the closing CTA band) is rendered by Base.astro on every page.
+ * Section copy and layout: website/website plan.md §5.
+ */
 import Base from '../layouts/Base.astro';
-import { TAGLINE, SUBHEAD, APP_URL } from '../config';
+import Hero from '../components/home/Hero.astro';
+import TwoSurfaces from '../components/home/TwoSurfaces.astro';
+import Daily from '../components/home/Daily.astro';
+import Planner from '../components/home/Planner.astro';
+import Collections from '../components/home/Collections.astro';
+import Calendar from '../components/home/Calendar.astro';
+import Xp from '../components/home/Xp.astro';
+import Stats from '../components/home/Stats.astro';
+import Grid from '../components/home/Grid.astro';
+import { TAGLINE } from '../config';
 ---
 
 <Base title={`Dunzo — ${TAGLINE}`}>
-  <section class="hero">
-    <div class="container inner">
-      <h1>{TAGLINE}</h1>
-      <p class="sub">{SUBHEAD}</p>
-      <div class="ctas">
-        <a class="btn btn--primary" href={APP_URL}>Start free &rarr;</a>
-        <a class="btn btn--secondary" href="/how-it-works">See how it works</a>
-      </div>
-      <p class="trust">Free &middot; Works in your browser &middot; Your data exports</p>
-    </div>
-  </section>
+  <Hero />
+  <TwoSurfaces />
+  <Daily />
+  <Planner />
+  <Collections />
+  <Calendar />
+  <Xp />
+  <Stats />
+  <Grid />
 </Base>
-
-<style>
-  .hero {
-    padding-block: clamp(72px, 10vw, 140px) var(--section-y);
-  }
-
-  .inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: var(--space-6);
-  }
-
-  .sub {
-    font-size: var(--text-deck);
-    color: var(--fg-subtle);
-    max-width: var(--measure-sub);
-  }
-
-  .ctas {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--space-4);
-    margin-top: var(--space-2);
-  }
-
-  .trust {
-    font-size: 13px;
-    color: var(--fg-ghost);
-  }
-</style>

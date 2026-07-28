@@ -1,0 +1,250 @@
+---
+/**
+ * H2 — The two surfaces. Plan §5, the single most important section on the site:
+ * a split that visually IS the argument. Built first for that reason.
+ *
+ * Two equal --surface panels with a gold connector between them. Below 900px they
+ * stack and the connector rotates to a vertical hairline, so the "these are two
+ * views of one thing" reading survives on a phone.
+ */
+import Section from '../Section.astro';
+import DeviceFrame from '../DeviceFrame.astro';
+import SpecChip from '../SpecChip.astro';
+
+const panels = [
+  {
+    title: 'Planner & calendar',
+    sub: 'The big picture',
+    asset: { label: 'S5', note: 'Planner, table mode — grouped by collection, 3 nested levels' },
+    bullets: [
+      'Nested collections and subtasks',
+      'Group, filter, sort, and choose your fields',
+      'Drag it onto the calendar to give it time',
+    ],
+  },
+  {
+    title: 'Daily list',
+    sub: 'Today, and nothing else',
+    asset: { label: 'S2', note: 'Daily list, cropped — priority flag, XP chip, time chip' },
+    bullets: [
+      'One day at a time, in big readable type',
+      'Priority, XP, and a due-time chip on every row',
+      'Click the circle. That’s the whole interaction.',
+    ],
+  },
+];
+---
+
+<Section
+  id="two-surfaces"
+  eyebrow="The idea"
+  title="One set of tasks. Two surfaces."
+  deck="Plan in the wide view. Do in the narrow one. A task you plan on Tuesday shows up in Thursday’s list because that’s when it’s due — you don’t file it twice."
+  align="center"
+  data-reveal
+>
+  <div class="split">
+    {
+      panels.map((panel, i) => (
+        <>
+          {i === 1 && (
+            <div class="connector" aria-hidden="true">
+              <span class="rail" />
+              <span class="dot" />
+            </div>
+          )}
+          <article class="panel">
+            <header>
+              <h3>{panel.title}</h3>
+              <p class="caption">{panel.sub}</p>
+            </header>
+            <DeviceFrame
+              type="placeholder"
+              label={panel.asset.label}
+              note={panel.asset.note}
+              ratio="4/3"
+            />
+            <ul>
+              {panel.bullets.map((b) => (
+                <li>{b}</li>
+              ))}
+            </ul>
+          </article>
+        </>
+      ))
+    }
+  </div>
+
+  <div class="strip" data-reveal>
+    <p>
+      Every task carries two switches — <SpecChip mono={false}>Show in Task Planner</SpecChip> and
+      <SpecChip mono={false}>Show in Daily Tasks</SpecChip>. Both are on by default. Turn one off
+      when a quick errand doesn’t belong on the project board, or when a long-range plan shouldn’t
+      crowd today.
+    </p>
+  </div>
+</Section>
+
+<style>
+  .split {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: stretch;
+    gap: var(--space-6);
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-panel);
+    padding: var(--space-8);
+  }
+
+  .panel header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .panel ul {
+    list-style: none;
+    padding: 0;
+    margin-top: auto; /* keeps both panels' bullets bottom-aligned */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .panel li {
+    position: relative;
+    padding-left: var(--space-5);
+    color: var(--fg-subtle);
+    font-size: var(--text-caption);
+  }
+
+  .panel li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+  }
+
+  /* ── Connector ─────────────────────────────────────────────────────────── */
+  /* A dot travelling the rail left→right→left: the handoff, made literal. */
+
+  .connector {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 72px;
+  }
+
+  .rail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+  }
+
+  .dot {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: var(--glow-gold);
+    animation: travel 2.6s var(--ease-out) infinite;
+  }
+
+  @keyframes travel {
+    0%,
+    100% {
+      transform: translateX(-26px);
+      opacity: 0.35;
+    }
+    50% {
+      transform: translateX(26px);
+      opacity: 1;
+    }
+  }
+
+  /* Distinct name rather than redefining `travel` inside the media query —
+     re-declaring @keyframes under the same name does not reliably override. */
+  @keyframes travel-y {
+    0%,
+    100% {
+      transform: translateY(-18px);
+      opacity: 0.35;
+    }
+    50% {
+      transform: translateY(18px);
+      opacity: 1;
+    }
+  }
+
+  /* ── Strip ─────────────────────────────────────────────────────────────── */
+
+  .strip {
+    margin-top: var(--space-8);
+    background: var(--raised);
+    border: 1px solid var(--line-subtle);
+    border-radius: var(--radius-card);
+    padding: var(--space-6) var(--space-8);
+  }
+
+  .strip p {
+    max-width: 78ch;
+    margin-inline: auto;
+    text-align: center;
+    color: var(--fg-subtle);
+    /* Chips sit inline; give the line room so they don't crowd. */
+    line-height: 2.1;
+  }
+
+  @media (max-width: 900px) {
+    .split {
+      grid-template-columns: 1fr;
+    }
+
+    .connector {
+      width: auto;
+      height: 56px;
+    }
+
+    .rail {
+      left: 50%;
+      right: auto;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      height: auto;
+      background: linear-gradient(180deg, transparent, var(--line-strong), transparent);
+    }
+
+    .dot {
+      animation-name: travel-y;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .panel {
+      padding: var(--space-6);
+    }
+
+    .strip {
+      padding: var(--space-5);
+    }
+
+    .strip p {
+      line-height: 2.2;
+    }
+  }
+</style>

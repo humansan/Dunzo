@@ -1,0 +1,141 @@
+---
+/**
+ * H5 — Collections. A breather between two heavy sections: narrow, centered, no
+ * device frame in the main column. The eight swatches are rendered as real dots
+ * from the collection tokens rather than shown as an image.
+ */
+import Section from '../Section.astro';
+import DeviceFrame from '../DeviceFrame.astro';
+import Icon from '../Icon.astro';
+
+const cards = [
+  {
+    icon: 'folder-tree',
+    title: 'Nest freely',
+    copy: 'Collections hold tasks and other collections, as deep as you want.',
+  },
+  {
+    icon: 'palette',
+    title: 'Color-coded everywhere',
+    copy: 'Give one a color and it shows up that way on the calendar.',
+  },
+  {
+    icon: 'archive',
+    title: 'Archive the subtree',
+    copy: 'Archiving a collection takes its whole subtree with it.',
+  },
+];
+
+const swatches = [1, 2, 3, 4, 5, 6, 7, 8];
+---
+
+<Section
+  id="collections"
+  eyebrow="Organize"
+  title="Folders that nest, in eight colors."
+  align="center"
+  data-reveal
+>
+  <div class="body">
+    <p class="prose">
+      Collections hold tasks and other collections, as deep as you want. Give each one a color and
+      it shows up that way on the calendar. Drag them in the sidebar to reorder. Archive a
+      collection and its whole subtree goes with it — parents stay visible in the Archived view so
+      the hierarchy survives.
+    </p>
+
+    <div class="dots" aria-hidden="true">
+      {swatches.map((n) => <span class="dot" style={`background: var(--coll-${n});`} />)}
+    </div>
+  </div>
+
+  <div class="layout" data-reveal>
+    <DeviceFrame
+      type="placeholder"
+      label="S9"
+      note="Sidebar collections tree with counts and colors, context menu open"
+      ratio="4/5"
+      class="tree"
+    />
+
+    <div class="cards">
+      {
+        cards.map((c) => (
+          <article class="card">
+            <Icon name={c.icon as any} size={20} />
+            <h3>{c.title}</h3>
+            <p>{c.copy}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</Section>
+
+<style>
+  .body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-8);
+    text-align: center;
+  }
+
+  .prose {
+    color: var(--fg-subtle);
+    max-width: 64ch;
+  }
+
+  .dots {
+    display: flex;
+    gap: var(--space-3);
+  }
+
+  .dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: var(--space-12);
+    align-items: center;
+    margin-top: var(--space-16);
+  }
+
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: var(--space-6);
+  }
+
+  .card h3 {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semi);
+    color: var(--fg);
+  }
+
+  .card p {
+    font-size: var(--text-caption);
+    color: var(--fg-subtle);
+  }
+
+  @media (max-width: 900px) {
+    .layout {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+  }
+</style>

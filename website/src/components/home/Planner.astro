@@ -1,0 +1,64 @@
+---
+/**
+ * H4 — The planner. Media right, copy left: H3 mirrored, same components.
+ */
+import Section from '../Section.astro';
+import SplitSection from '../SplitSection.astro';
+import DeviceFrame from '../DeviceFrame.astro';
+import FeatureRow from '../FeatureRow.astro';
+---
+
+<Section
+  id="planner"
+  eyebrow="Plan"
+  title="A table that reshapes around the question."
+  deck="The planner holds projects — nested collections, subtasks under tasks, and a table you configure per view. Ask a different question, get a different table."
+  data-reveal
+>
+  <SplitSection reverse>
+    <Fragment slot="media">
+      <DeviceFrame
+        type="placeholder"
+        label="V4"
+        note="Reshape the table — group by collection → status → due date, then toggle two columns on"
+        ratio="16/10"
+        caption="Table mode shown. List mode strips it back to just the names."
+      />
+      <div class="insets">
+        <DeviceFrame type="placeholder" label="S6a" note="Grouped by status" ratio="4/3" />
+        <DeviceFrame type="placeholder" label="S6b" note="Grouped by due date" ratio="4/3" />
+      </div>
+    </Fragment>
+
+    <Fragment slot="copy">
+      <FeatureRow icon="layers" title="Group four ways.">
+        Collections by default. Switch to status, priority, or due date, ascending or descending.
+        Sections collapse.
+      </FeatureRow>
+      <FeatureRow icon="columns-3" title="Choose your columns.">
+        Show, hide, reorder, and word-wrap any field — including start and end time as a percentage
+        of the day.
+      </FeatureRow>
+      <FeatureRow icon="funnel" title="Filter like a database.">
+        Stack conditions with and/or: field, operator (is, is not, contains, greater than, less
+        than), value.
+      </FeatureRow>
+      <FeatureRow icon="bookmark-check" title="Views remember.">
+        Every collection and built-in view keeps its own sections, fields, filter, and sort. Set one
+        up once.
+      </FeatureRow>
+      <FeatureRow icon="folder-tree" title="Built-in views.">
+        All Planner Tasks, Also In Daily List, Uncategorized, Categorized, and Archived — each with
+        its own config.
+      </FeatureRow>
+    </Fragment>
+  </SplitSection>
+</Section>
+
+<style>
+  .insets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+</style>
