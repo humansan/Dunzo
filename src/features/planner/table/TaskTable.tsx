@@ -95,7 +95,7 @@ export function buildTreeModel(
 // Editing / menu / collapse state + the callbacks that change it.
 export interface TableInteraction {
   editing: EditState;
-  startEdit: (id: string, col: ColKey, e: React.MouseEvent) => void;
+  startEdit?: (id: string, col: ColKey, e: React.MouseEvent) => void;
   stopEdit: () => void;
   openMenu: (id: string, x: number, y: number) => void;
   toggleCollapse: (id: string) => void;
@@ -116,6 +116,8 @@ export interface TableRowHandlers {
   onQuickAddInGroup?: (groupValue: string) => void;
   // Omit on read-only surfaces (search) to drop the add-row + its empty state.
   onNewInView?: () => void;
+  // Open task in full view.
+  onOpenTask?: (id: string) => void;
 }
 
 export interface TaskTableProps {

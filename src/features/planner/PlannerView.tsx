@@ -746,6 +746,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               onQuickAddTask: viewAllowsNew ? handleQuickAddTask : undefined,
               onQuickAddInGroup: viewAllowsNew ? handleQuickAddInGroup : undefined,
               onNewInView: viewAllowsNew ? handleNewInView : undefined,
+              onOpenTask,
             }}
             dnd={dnd}
             bottomSpacer

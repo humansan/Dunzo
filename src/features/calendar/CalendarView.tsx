@@ -258,8 +258,8 @@ const EventCard: React.FC<{
         backgroundColor: isDone(todo)
           ? ((isHovered || isDragging) ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)')
           : ((isHovered || isDragging)
-            ? `color-mix(in srgb, ${accent} 40%, canvas 60%)`
-            : `color-mix(in srgb, ${accent} 30%, canvas 70%)`),
+            ? `color-mix(in srgb, ${accent} 50%, canvas 50%)`
+            : `color-mix(in srgb, ${accent} 40%, canvas 60%)`),
         // border: isDone(todo)
         //   ? '1px solid rgba(255,255,255,0.05)'
         //   : '1px solid color-mix(in srgb, var(--accent1), transparent 70%)',
@@ -303,15 +303,17 @@ const EventCard: React.FC<{
             {todo.text || 'Untitled'}
           </span>
           {isSmall && (
-            <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'}`}>
+            <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-fg-ghost' : ''}`}
+              style={!isDone(todo) ? { color: `color-mix(in srgb, ${accent} 30%, var(--color-fg))` } : undefined}>
               {fullTimeDisplay}
             </span>
           )}
         </div>
       </div>
       {!isSmall && (
-        <div className={`text-[10px] pl-4 ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
-          }`}>
+        <div className={`text-[10px] pl-4 ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost' : ''
+          }`}
+          style={!isDone(todo) ? { color: `color-mix(in srgb, ${accent} 30%, var(--color-fg))` } : undefined}>
           {fullTimeDisplay}
         </div>
       )}

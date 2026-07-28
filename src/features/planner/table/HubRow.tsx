@@ -30,7 +30,7 @@ interface HubRowProps {
   displayDepth: number;
   gridTemplateColumns: string;
   editing: EditState;
-  startEdit: (id: string, col: ColKey, e: React.MouseEvent) => void;
+  startEdit?: (id: string, col: ColKey, e: React.MouseEvent) => void;
   stopEdit: () => void;
   onSaveTodo: (updatedTodo: Todo) => void;
   onAddSubtask: (parentId: string) => string;
@@ -49,6 +49,8 @@ interface HubRowProps {
   taskCount?: number;
   // Quick-add a task under a collection: auto-expands and enters edit mode.
   onQuickAddTask?: (parentId: string) => void;
+  // Open task in full view (via clicking the surrounding area of the name cell).
+  onOpenTask?: (id: string) => void;
   // ── Finder-columns drill (columns view only) ────────────────────────────────
   // When set, a collection row "opens" (drills into a new column) on click via
   // onActivate instead of collapsing inline, showing a › affordance; isSelected
@@ -84,6 +86,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   hideDragHandle = false,
   taskCount,
   onQuickAddTask,
+  onOpenTask,
   onActivate,
   isSelected = false,
   isDragSource = false,
@@ -127,6 +130,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       <button
         type="button"
         draggable
+        onClick={(e) => e.stopPropagation()}
         onDragStart={(e) => {
           if (dragImageRef.current) e.dataTransfer.setDragImage(dragImageRef.current, 8, 8);
           e.dataTransfer.effectAllowed = 'move';
@@ -178,8 +182,8 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     const wrap = wrappedFields.has(col);
     return (
       <div
-        onClick={(e) => startEdit(todo.id, col, e)}
-        className={`flex items-start py-2 px-2.5 border-l border-line-subtle cursor-pointer hover:bg-fill-subtle overflow-hidden ${
+        onClick={(e) => startEdit?.(todo.id, col, e)}
+        className={`flex items-start py-2 px-2.5 border-l border-line-subtle ${startEdit ? 'cursor-pointer hover:bg-fill-subtle' : ''} overflow-hidden ${
           wrap ? '[&_.truncate]:whitespace-normal [&_.truncate]:break-words' : ''
         } ${
           active ? 'ring-2 ring-inset ring-(--accent2)' : ''
@@ -209,7 +213,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         label={todo.text || 'Untitled collection'}
         onActivate={drill ? () => onActivate!(todo.id) : undefined}
         isSelected={isSelected}
-        onPillClick={drill ? undefined : (e) => startEdit(todo.id, 'title', e)}
+        onPillClick={drill || !startEdit ? undefined : (e) => startEdit?.(todo.id, 'title', e)}
         pillOverride={!drill && isEditing('title') ? (
           <input
             type="text"
@@ -462,6 +466,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           className={`relative z-10 flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
             isEditing('title') && !titleWrapped ? 'h-9' : 'py-2'
           } `}
+          onClick={() => !isEditing('title') && onOpenTask?.(todo.id)}
         >
           {/* Collapse chevron (nesting variants only) - a spacer keeps the checkbox
               aligned when a row has no children. A flat variant drops both. */}
@@ -511,8 +516,8 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           ) : (
             <>
               <span
-                onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 min-w-0 pl-1 text-sm cursor-text rounded hover:bg-fill ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
+                onClick={(e) => { if (startEdit) e.stopPropagation(); startEdit?.(todo.id, 'title', e); }}
+                className={`flex-1 min-w-0 pl-1 text-sm rounded ${startEdit ? 'cursor-text hover:bg-fill' : ''} ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
               >
                 {todo.text || <span className="text-fg-faint">Untitled</span>}
               </span>
