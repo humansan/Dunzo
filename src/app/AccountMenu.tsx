@@ -17,7 +17,7 @@ const itemCls =
 const waveCell = (i: number): React.CSSProperties => ({
   color: '#f099c9',
   animation: 'premium-wave 4s linear infinite',
-  animationDelay: `${i * -0.12}s`,
+  animationDelay: `${i * -0.36}s`,
   display: 'inline-block',
 });
 
@@ -27,7 +27,7 @@ const PremiumItem: React.FC = () => (
   <>
     <span style={waveCell(0)}><Sparkles size={14} /></span>
     <span aria-label="Premium" className="font-bold">
-      {'Coming soon...'.split('').map((ch, i) => (
+      {'wip...'.split('').map((ch, i) => (
         <span key={i} style={waveCell(i + 1)}>{ch}</span>
       ))}
     </span>

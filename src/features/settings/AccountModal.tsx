@@ -22,6 +22,8 @@ interface AccountModalProps {
   email?: string;
   name?: string;
   onLogout: () => void;
+  /** Refetch the auth session after a profile edit (name), so it lands app-wide. */
+  onSessionChanged?: () => void;
   weekStartsOn: number;
   onUpdateWeekStartsOn: (val: number) => void;
   countdownMode: CountdownMode;
@@ -98,12 +100,46 @@ const ProfilePane: React.FC<{
   email?: string;
   name?: string;
   onLogout: () => void;
-}> = ({ email, name, onLogout }) => {
+  onSessionChanged?: () => void;
+}> = ({ email, name, onLogout, onSessionChanged }) => {
+  const [newName, setNewName] = useState(name ?? '');
+  const [nameMsg, setNameMsg] = useState<FormMsg>(null);
+  const [nameBusy, setNameBusy] = useState(false);
+
+  // Adopt the session's name once it arrives (or if it changes elsewhere), but
+  // never clobber what the user is currently typing.
+  useEffect(() => {
+    if (!nameBusy) setNewName(name ?? '');
+  }, [name]);
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwMsg, setPwMsg] = useState<FormMsg>(null);
   const [pwBusy, setPwBusy] = useState(false);
+
+  const handleName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNameMsg(null);
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      setNameMsg({ kind: 'err', text: 'Name cannot be empty.' });
+      return;
+    }
+    setNameBusy(true);
+    try {
+      const { error } = await authClient.updateUser({ name: trimmed });
+      if (error) throw new Error(error.message || 'Could not update name');
+      setNewName(trimmed);
+      // Pull the session again so the new name shows everywhere it's read from.
+      onSessionChanged?.();
+      setNameMsg({ kind: 'ok', text: 'Name updated.' });
+    } catch (err) {
+      setNameMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong' });
+    } finally {
+      setNameBusy(false);
+    }
+  };
 
   const handlePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,13 +183,38 @@ const ProfilePane: React.FC<{
         </div>
       </div>
 
-      {/* Email - read only. Neon Auth (our auth provider) has no email-change
-          capability: `changeEmail` is disabled server-side and there's no config
-          flag to enable it, so the call could only ever fail. Rather than a form
-          that always errors, say so plainly. Revisit if Neon ships support. */}
+      {/* Name is editable; email is not - Neon Auth (our auth provider) has no
+          email-change capability: `changeEmail` is disabled server-side and there's
+          no config flag to enable it, so the call could only ever fail. Rather than
+          a form that always errors, say so plainly. Revisit if Neon ships support. */}
       <div>
-        <SectionHeader>Email</SectionHeader>
-        <div className="rounded-2xl border border-line bg-fill-subtle px-4 py-3.5">
+        <SectionHeader>Name &amp; Email</SectionHeader>
+        <form onSubmit={handleName} className="space-y-2">
+          <div>
+            <label className={fieldLabel}>Display name</label>
+            <input
+              type="text"
+              required
+              value={newName}
+              onChange={(e) => {
+                setNewName(e.target.value);
+                if (nameMsg) setNameMsg(null);
+              }}
+              className={fieldInput}
+              placeholder="Your name"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={nameBusy || !newName.trim() || newName.trim() === (name ?? '')}
+            className={formButton}
+          >
+            {nameBusy ? 'Saving…' : 'Update Name'}
+          </button>
+          <StatusLine msg={nameMsg} />
+        </form>
+
+        <div className="mt-3 rounded-2xl border border-line bg-fill-subtle px-4 py-3.5">
           <p className="text-[13px] text-fg-subtle">{email ?? 'Not set'}</p>
           <p className="text-[11px] leading-relaxed text-fg-ghost mt-1.5">
             Your email is set when you sign up and can’t be changed yet. To use a different
@@ -486,6 +547,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   email,
   name,
   onLogout,
+  onSessionChanged,
   weekStartsOn,
   onUpdateWeekStartsOn,
   countdownMode,
@@ -603,7 +665,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 ))}
               </div>
 
-              {section === 'profile' && <ProfilePane email={email} name={name} onLogout={onLogout} />}
+              {section === 'profile' && (
+                <ProfilePane
+                  email={email}
+                  name={name}
+                  onLogout={onLogout}
+                  onSessionChanged={onSessionChanged}
+                />
+              )}
               {section === 'settings' && (
                 <SettingsPane
                   weekStartsOn={weekStartsOn}
