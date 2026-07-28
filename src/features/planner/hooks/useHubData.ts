@@ -265,19 +265,24 @@ export function useHubData(params: {
   }, [viewEntries, activeFilters, filterMatch, todoById]);
 
   // Hide collections that have no visible task descendants (optional section setting).
+  // The ancestor walk runs over `todoById`, not `byId`: `byId` covers the non-archived
+  // set only, so an archived collection would break the chain and read as empty in the
+  // Archived view (and swallow its children's contribution to live grandparents).
   const processedEntries = useMemo(() => {
     if (!sectionsConfig.hideEmptyCollections) return filteredEntries;
     const collWithTasks = new Set<string>();
     for (const e of filteredEntries) {
       if (e.todo.isCollection) continue;
       let p: string | null = e.todo.parentId ?? null;
-      while (p && byId.has(p)) {
+      const seen = new Set<string>();
+      while (p && todoById.has(p) && !seen.has(p)) {
+        seen.add(p);
         collWithTasks.add(p);
-        p = byId.get(p)!.todo.parentId ?? null;
+        p = todoById.get(p)!.parentId ?? null;
       }
     }
     return filteredEntries.filter((e) => !e.todo.isCollection || collWithTasks.has(e.todo.id));
-  }, [filteredEntries, sectionsConfig.hideEmptyCollections, byId]);
+  }, [filteredEntries, sectionsConfig.hideEmptyCollections, todoById]);
 
   // Build a sort comparator from the active sort rules.
   const sortFn = useMemo(() => {
@@ -294,20 +299,23 @@ export function useHubData(params: {
   }, [activeSorts, todoById]);
 
   // Visible (post-filter) task count per collection, used for the header chip counts.
+  // Walks `todoById` for the same reason as hideEmptyCollections above - an archived
+  // ancestor is absent from `byId`, which zeroed archived collections' header counts.
+  // Counts for collections that aren't rendered are simply never read.
   const visibleTaskCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const e of processedEntries) {
       if (e.todo.isCollection) continue;
       let p: string | null = e.todo.parentId ?? null;
       const seen = new Set<string>();
-      while (p && byId.has(p) && !seen.has(p)) {
+      while (p && todoById.has(p) && !seen.has(p)) {
         seen.add(p);
         counts.set(p, (counts.get(p) ?? 0) + 1);
-        p = byId.get(p)!.todo.parentId ?? null;
+        p = todoById.get(p)!.parentId ?? null;
       }
     }
     return counts;
-  }, [processedEntries, byId]);
+  }, [processedEntries, todoById]);
 
   // Grouped rows - only used when groupBy !== 'collection'.
   const groupedRows = useMemo((): GroupRow[] => {

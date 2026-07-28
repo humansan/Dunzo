@@ -374,12 +374,14 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const openMenu = useStableCallback((id: string, x: number, y: number, sidebar?: true) => { setMenu({ id, x, y, sidebar }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
 
-  // The todo the context menu currently targets (to branch task vs. collection
-  // items). Falls back to the archived set since a menu opened from the
-  // Archived view targets a todo not present in `entries`.
-  const menuEntry = menu
-    ? entries.find((e) => e.todo.id === menu.id) || archivedEntries.find((e) => e.todo.id === menu.id) || null
-    : null;
+  // Entry lookup spanning both sets. Anything reachable from the Archived view has
+  // to go through this rather than `byId`/`entries`, which cover the non-archived
+  // organizer set only and would silently miss the row the user is acting on.
+  const findEntry = (id: string): OrganizerEntry | null =>
+    byId.get(id) || archivedEntries.find((e) => e.todo.id === id) || null;
+
+  // The todo the context menu currently targets (to branch task vs. collection items).
+  const menuEntry = menu ? findEntry(menu.id) : null;
 
   // Convert a plain task into a top-level collection: flag it, give it a default
   // color, strip the task-only fields, and clear its due date (undated) so it
@@ -594,8 +596,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // Context-menu Delete: a non-empty collection prompts cascade-vs-promote;
   // empty collections and plain tasks delete straight away.
   const requestDeleteFromMenu = (id: string) => {
-    const entry = byId.get(id);
-    if (entry?.todo.isCollection && entries.some((e) => (e.todo.parentId ?? null) === id)) {
+    const entry = findEntry(id);
+    const hasChildren = (e: OrganizerEntry) => (e.todo.parentId ?? null) === id;
+    if (entry?.todo.isCollection && (entries.some(hasChildren) || archivedEntries.some(hasChildren))) {
       setDeleteCollId(id);
     } else {
       onDeleteTodo(id);
@@ -647,9 +650,14 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   });
 
   // The popover (tags/notes/status/priority) edits the entry currently being edited.
+  // Falls back to the archived set - like `menuEntry` - so cells stay editable in the
+  // Archived view. Without it the lookup misses, the popover never mounts, and only
+  // the Name cell (whose editor is inline in HubRow) appears to respond to a click.
   const editingEntry =
     editing && POPOVER_COLS.includes(editing.col)
-      ? entries.find((e) => e.todo.id === editing.id) || null
+      ? entries.find((e) => e.todo.id === editing.id) ||
+        archivedEntries.find((e) => e.todo.id === editing.id) ||
+        null
       : null;
 
 
@@ -874,9 +882,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
       {/* Delete-collection modal: cascade vs. move tasks up one level */}
       {deleteCollId && (() => {
-        const coll = entries.find((e) => e.todo.id === deleteCollId);
+        const coll = findEntry(deleteCollId);
         if (!coll) { setDeleteCollId(null); return null; }
-        const parentColl = coll.todo.parentId ? byId.get(coll.todo.parentId) : null;
+        const parentColl = coll.todo.parentId ? findEntry(coll.todo.parentId) : null;
         return createPortal(
           <DeleteCollectionModal
             name={coll.todo.text || 'Untitled collection'}
