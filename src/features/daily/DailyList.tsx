@@ -219,9 +219,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
       </button>
 
       <div className="min-w-0 cursor-default group/text" onClick={() => onEdit(todo)}>
-        <p className={`text-md leading-6 pt-0.75 transition duration-200 ease-out font-medium break-words [overflow-wrap:anywhere] ${isDone(todo)
+        <p className={`text-md leading-6 pt-0.75 transition duration-200 ease-out break-words font-medium [overflow-wrap:anywhere] cursor-pointer ${isDone(todo)
           ? 'text-fg-ghost line-through translate-x-[3px]'
-          : 'text-fg group-hover/text:text-accent2 cursor-pointer'
+          : 'text-fg group-hover/text:text-accent2'
         }`}>
           {todo.text || 'Untitled'}
         </p>

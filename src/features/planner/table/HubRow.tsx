@@ -143,7 +143,8 @@ const HubRowImpl: React.FC<HubRowProps> = ({
 
   // The drop indicator: a line at the target indent (before/after), or a ring on
   // the row (inside = nest under this row).
-  const indent = NAME_BASE_PAD + (dropIndicator?.depth ?? 0) * INDENT;
+  const indentLevels = Math.max((dropIndicator?.depth ?? 0) - 1, 0);
+  const indent = NAME_BASE_PAD + indentLevels * INDENT;
   const dropLine = (where: 'before' | 'after') =>
     dropIndicator?.pos === where ? (
       <div
@@ -283,7 +284,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'date':
         return (
           <DisplayCell col="date" active={isEditing('date')}>
-            <span className="truncate text-sm text-fg">
+            <span className="truncate text-sm text-fg-muted">
               {todo.dueDate ? format(parseISO(todo.dueDate), 'MMM d, yyyy') : muted}
             </span>
           </DisplayCell>
@@ -291,7 +292,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'startDate':
         return (
           <DisplayCell col="startDate" active={isEditing('startDate')}>
-            <span className="truncate text-sm text-fg">
+            <span className="truncate text-sm text-fg-muted">
               {todo.startDate ? format(parseISO(todo.startDate), 'MMM d, yyyy') : muted}
             </span>
           </DisplayCell>
@@ -299,13 +300,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'start':
         return (
           <DisplayCell col="start" active={isEditing('start')}>
-            <span className="truncate text-sm text-fg">{todo.startTime ? formatTime12h(todo.startTime) : muted}</span>
+            <span className="truncate text-sm text-fg-muted">{todo.startTime ? formatTime12h(todo.startTime) : muted}</span>
           </DisplayCell>
         );
       case 'end':
         return (
           <DisplayCell col="end" active={isEditing('end')}>
-            <span className="truncate text-sm text-fg">{todo.dueTime ? formatTime12h(todo.dueTime) : muted}</span>
+            <span className="truncate text-sm text-fg-muted">{todo.dueTime ? formatTime12h(todo.dueTime) : muted}</span>
           </DisplayCell>
         );
       case 'percent':
@@ -315,7 +316,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           </div>
         ) : (
           <DisplayCell col="percent">
-            <span className="truncate text-sm text-fg">
+            <span className="truncate text-sm text-fg-muted">
               {todo.duePercentage !== undefined ? `${todo.duePercentage}%` : muted}
             </span>
           </DisplayCell>
@@ -329,13 +330,13 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'xp':
         return (
           <DisplayCell col="xp">
-            <span className="truncate text-sm text-fg">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
+            <span className="truncate text-sm text-fg-muted">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
           </DisplayCell>
         );
       case 'notes':
         return (
           <DisplayCell col="notes">
-            {todo.notes ? <span className="truncate text-sm text-fg">{todo.notes}</span> : muted}
+            {todo.notes ? <span className="truncate text-sm text-fg-muted">{todo.notes}</span> : muted}
           </DisplayCell>
         );
       case 'startPercent':
@@ -345,7 +346,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           </div>
         ) : (
           <DisplayCell col="startPercent">
-            <span className="truncate text-sm text-fg">
+            <span className="truncate text-sm text-fg-muted">
               {todo.startPercentage !== undefined ? `${todo.startPercentage}%` : muted}
             </span>
           </DisplayCell>
@@ -372,7 +373,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           </div>
         ) : (
           <DisplayCell col="estimatedTime">
-            <span className="truncate text-sm text-fg">
+            <span className="truncate text-sm text-fg-muted">
               {todo.estimatedTime !== undefined ? formatMinutes(todo.estimatedTime) : muted}
             </span>
           </DisplayCell>
@@ -384,7 +385,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               col === lastColKey ? 'border-r border-line-subtle' : ''
             }`}
           >
-            <span className="truncate text-sm text-fg">
+            <span className="truncate text-sm text-fg-muted">
               {format(new Date(todo.createdAt), 'MMM d, yyyy')}
             </span>
           </div>
@@ -396,7 +397,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               col === lastColKey ? 'border-r border-line-subtle' : ''
             }`}
           >
-            <span className="truncate text-sm text-fg">
+            <span className="truncate text-sm text-fg-muted">
               {todo.completedAt ? format(new Date(todo.completedAt), 'MMM d, yyyy') : muted}
             </span>
           </div>
@@ -422,9 +423,11 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className={`group/name sticky left-0 z-20 flex items-start h-full overflow-hidden ${
+        className={`group/name sticky left-0 z-20 flex items-start h-full overflow-hidden cursor-pointer ${
           variant.columns === 'all' ? 'border-r border-line-subtle bg-canvas' : ''
-        }`}
+        }
+        ${isEditing('title') && "ring-2 ring-inset ring-[var(--accent2)]"}
+        `}
       >
         {/* The frozen Name cell needs an opaque bg so scrolled cells don't show through
             it - which also hides the row's translucent hover fill. These two overlays
@@ -455,11 +458,10 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             ring-1 ring-inset ring-[var(--accent2)]/60
             */}
         <div
-          style={{ paddingLeft: NAME_BASE_PAD + depth * INDENT }}
+          style={{ paddingLeft: NAME_BASE_PAD + Math.max(depth - 1, 0) * INDENT }}
           className={`relative z-10 flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
-            isEditing('title') && !titleWrapped ? 'h-9' : 'py-[8px]'
-          } ${isEditing('title') && "ring-2 ring-inset ring-[var(--accent2)]"}
-          `}
+            isEditing('title') && !titleWrapped ? 'h-9' : 'py-2'
+          } `}
         >
           {/* Collapse chevron (nesting variants only) - a spacer keeps the checkbox
               aligned when a row has no children. A flat variant drops both. */}
@@ -510,7 +512,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             <>
               <span
                 onClick={(e) => startEdit(todo.id, 'title', e)}
-                className={`flex-1 min-w-0 pl-1 text-sm cursor-pointer ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
+                className={`flex-1 min-w-0 pl-1 text-sm cursor-text rounded hover:bg-fill ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
               >
                 {todo.text || <span className="text-fg-faint">Untitled</span>}
               </span>

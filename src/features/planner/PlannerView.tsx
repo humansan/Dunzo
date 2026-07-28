@@ -351,7 +351,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
   // ── Row context menu & full-view ───────────────────────────────────────────
-  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number, sidebar?: true } | null>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false); // "Change color" sub-panel
   useLayoutEffect(() => {
     if (!menu || !menuRef.current) {
@@ -371,7 +371,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const [deleteCollId, setDeleteCollId] = useState<string | null>(null);
   // Task id being reparented via the "Move to…" picker (null = picker closed).
   const [reparentId, setReparentId] = useState<string | null>(null);
-  const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
+  const openMenu = useStableCallback((id: string, x: number, y: number, sidebar?: true) => { setMenu({ id, x, y, sidebar }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
 
   // The todo the context menu currently targets (to branch task vs. collection
@@ -451,10 +451,10 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // the parent is expanded so the new node is visible, then select it and open its
   // edit modal (mirrors the top-level New collection flow). Collapse state is
   // DB-synced, so it survives the remount that the navigation causes.
-  const handleNewNestedCollection = (parentId: string) => {
+  const handleNewNestedCollection = (parentId: string, sidebar?: true) => {
     const id = onAddCollection(parentId);
     setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
-    setSelectedView(id, { editCollection: id });
+    sidebar && setSelectedView(id, { editCollection: id });
   };
   // Seed patch derived from the view's active filters: any "is <value>" filter is
   // pre-applied to tasks created in this view, so a new task still satisfies the
@@ -515,9 +515,10 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
   // Context-menu "Create task inside": add a subtask, expand the parent so the
   // new row is visible, close the menu, and drop into its title field.
-  const createTaskInside = (parentId: string) => {
+  const createTaskInside = (parentId: string, sidebar?: true) => {
     const id = onAddSubtask(parentId);
     setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
+    sidebar && setSelectedView(parentId, { editCollection: undefined });
     closeMenu();
     setEditing({ id, col: 'title', rect: null });
   };
@@ -829,7 +830,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onClose={closeMenu}
           onEditCollection={(id) => { onEditCollection(id); closeMenu(); }}
           onCreateTaskInside={createTaskInside}
-          onCreateNestedCollection={(id) => { handleNewNestedCollection(id); closeMenu(); }}
+          onCreateNestedCollection={(id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); }}
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}

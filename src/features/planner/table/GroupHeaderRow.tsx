@@ -36,6 +36,7 @@ export const GroupHeaderRow: React.FC<{
       onToggleCollapse={() => onToggleCollapse(id)}
       toggleTitle={{ expand: 'Expand group', collapse: 'Collapse group' }}
       count={count}
+      leading={<span className="shrink-0 w-5.5" />}
       actions={onAddTask ? (
         <button
           type="button"

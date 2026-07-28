@@ -35,7 +35,7 @@ const PANEL_WIDTH = 240;  // CalendarInput / TimeInput are w-60
 const PANEL_HEIGHT = 420; // tall enough for the calendar; used for flip math only
 
 export const RowContextMenu: React.FC<{
-  menu: { id: string; x: number; y: number };
+  menu: { id: string; x: number; y: number, sidebar?: true };
   menuPos: { top: number; left: number } | null;
   menuRef: React.RefObject<HTMLDivElement | null>;
   entry: OrganizerEntry | null;
@@ -43,8 +43,8 @@ export const RowContextMenu: React.FC<{
   onToggleColorPicker: () => void;
   onClose: () => void;
   onEditCollection: (id: string) => void;
-  onCreateTaskInside: (parentId: string) => void;
-  onCreateNestedCollection: (parentId: string) => void;
+  onCreateTaskInside: (parentId: string, sidebar?: true) => void;
+  onCreateNestedCollection: (parentId: string, sidebar?: true) => void;
   onChangeColor: (entry: OrganizerEntry, color: string) => void;
   onMakeCollection: (entry: OrganizerEntry) => void;
   onMoveTo: (id: string) => void;
@@ -110,10 +110,10 @@ export const RowContextMenu: React.FC<{
             <button onClick={() => onEditCollection(menu.id)} className={itemCls}>
               <Pencil size={14} /> Edit
             </button>
-            <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
+            <button onClick={() => onCreateTaskInside(menu.id, menu.sidebar)} className={itemCls}>
               <CornerDownRight size={14} /> Create task inside
             </button>
-            <button onClick={() => onCreateNestedCollection(menu.id)} className={itemCls}>
+            <button onClick={() => onCreateNestedCollection(menu.id, menu.sidebar)} className={itemCls}>
               <FolderPlus size={14} /> Create collection inside
             </button>
             <button onClick={onToggleColorPicker} className={itemCls}>
