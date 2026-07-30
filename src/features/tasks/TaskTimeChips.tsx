@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { formatTime12h } from '@/common/lib/time';
+import { duePercent, percentLabel } from '@/features/tasks/model';
 
 export type CountdownMode = 'off' | 'time' | 'percent';
 
@@ -77,10 +78,12 @@ export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
 }) => {
   const inverted = variant === 'inverted';
   const textCls = done ? 'text-fg-ghost' : inverted ? 'text-canvas' : 'text-(--accent1)';
+  // Percent of day is a second reading of dueTime, not a value of its own.
+  const pct = percentLabel(duePercent(todo));
 
   return (
     <>
-      {(todo.dueTime || todo.duePercentage !== undefined) && (
+      {todo.dueTime && (
         <div
           className={`flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg transition ${
             done
@@ -90,21 +93,17 @@ export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
                 : 'bg-(--accent1)/6 shadow-none hover:bg-(--accent1)/15'
           }`}
         >
-          {todo.dueTime && (
-            <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium ${textCls}`}>
-              <Clock size={16} />
-              <span className="relative top-px">{formatTime12h(todo.dueTime)}</span>
-            </div>
-          )}
-          {todo.dueTime && todo.duePercentage !== undefined && (
-            <div className={`w-px h-4 ${done ? 'bg-fill' : inverted ? 'bg-black/20' : 'bg-(--accent1)/20'}`} />
-          )}
-          {todo.duePercentage !== undefined && (
-            <div className={`text-[13px] leading-none font-mono font-medium ${textCls}`}>
-              <span className="relative top-px">
-                {Number.isInteger(todo.duePercentage) ? todo.duePercentage : Math.round(todo.duePercentage)}%
-              </span>
-            </div>
+          <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium ${textCls}`}>
+            <Clock size={16} />
+            <span className="relative top-px">{formatTime12h(todo.dueTime)}</span>
+          </div>
+          {pct && (
+            <>
+              <div className={`w-px h-4 ${done ? 'bg-fill' : inverted ? 'bg-black/20' : 'bg-(--accent1)/20'}`} />
+              <div className={`text-[13px] leading-none font-mono font-medium ${textCls}`}>
+                <span className="relative top-px">{pct}</span>
+              </div>
+            </>
           )}
         </div>
       )}

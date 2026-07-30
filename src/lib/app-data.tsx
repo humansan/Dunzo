@@ -15,7 +15,6 @@ import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
 import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule } from '@/features/tasks/model';
 import { format } from 'date-fns';
-import { timeToPercentage } from '@/common/lib/time';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from '@/features/tasks/api';
@@ -392,9 +391,7 @@ function useProvideAppData() {
         // time never sits without its date (the schedule invariant).
         startDate: date,
         startTime,
-        startPercentage: timeToPercentage(startTime),
         dueTime,
-        duePercentage: timeToPercentage(dueTime),
         showInDatabase: true,
         showInDailyList: true,
       },
@@ -412,9 +409,7 @@ function useProvideAppData() {
         // Start and due both live on the drawn day (see handleCalendarAddTodo).
         startDate: date,
         startTime,
-        startPercentage: timeToPercentage(startTime),
         dueTime,
-        duePercentage: timeToPercentage(dueTime),
         showInDailyList: true,
         showInDatabase: dailyTasksInPlanner,
         autoMoveDate: defaultAutoMoveDate,

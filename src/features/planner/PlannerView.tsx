@@ -36,7 +36,6 @@ import { RowContextMenu } from '@/features/planner/table/RowContextMenu';
 import { DeleteCollectionModal } from '@/features/planner/sidebar/DeleteCollectionModal';
 import { useStableCallback } from '@/common/hooks/useStableCallback';
 import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
-import { timeToPercentage } from '@/common/lib/time';
 
 interface PlannerViewProps {
   dayTodos: DayTodos[];
@@ -394,7 +393,6 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
       parentId: null,
       status: undefined,
       dueDate: undefined,
-      duePercentage: undefined,
       startTime: undefined,
       dueTime: undefined,
       xp: undefined,
@@ -577,8 +575,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     closeMenu();
   };
 
-  // Context-menu Set date / Set time. Clearing the end time drops the derived
-  // percentage and the start time with it (a start with no end is meaningless).
+  // Context-menu Set date / Set time. Clearing the end time drops the start time
+  // with it (a start with no end is meaningless).
   const setTaskDate = (date: string) => {
     if (!menuEntry) return;
     onSaveTodo({ ...menuEntry.todo, dueDate: date || undefined });
@@ -588,7 +586,6 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     onSaveTodo({
       ...menuEntry.todo,
       dueTime: time || undefined,
-      duePercentage: time ? timeToPercentage(time) : undefined,
       startTime: time ? menuEntry.todo.startTime : undefined,
     });
   };

@@ -18,7 +18,7 @@ import { INDENT, NAME_BASE_PAD, cellEditCls } from '@/features/planner/constants
 import { pill } from '@/theme/pill';
 import { SectionHeader } from '@/features/planner/table/SectionHeader';
 import { useTableVariant } from '@/features/planner/variant';
-import { isDone } from '@/features/tasks/model';
+import { isDone, startPercent, duePercent, percentLabel } from '@/features/tasks/model';
 
 // Where the dragged row will land relative to this row: a line before/after it
 // (reorder) or nested inside it. `indent` is the indent level to draw the line at.
@@ -316,12 +316,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'percent':
         return isEditing('percent') ? (
           <div className={editCellWrap}>
-            <PercentField kind="due" value={todo.duePercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
+            <PercentField kind="due" value={duePercent(todo)} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="percent">
             <span className="truncate text-sm text-fg-muted">
-              {todo.duePercentage !== undefined ? `${todo.duePercentage}%` : muted}
+              {percentLabel(duePercent(todo)) || muted}
             </span>
           </DisplayCell>
         );
@@ -346,12 +346,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'startPercent':
         return isEditing('startPercent') ? (
           <div className={editCellWrap}>
-            <PercentField kind="start" value={todo.startPercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
+            <PercentField kind="start" value={startPercent(todo)} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="startPercent">
             <span className="truncate text-sm text-fg-muted">
-              {todo.startPercentage !== undefined ? `${todo.startPercentage}%` : muted}
+              {percentLabel(startPercent(todo)) || muted}
             </span>
           </DisplayCell>
         );

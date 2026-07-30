@@ -57,8 +57,6 @@ export const TODO_FIELDS = [
   'dueDate',
   'startTime',
   'dueTime',
-  'startPercentage',
-  'duePercentage',
   'estimatedTime',
   'countCompletion',
   'repeatInterval',

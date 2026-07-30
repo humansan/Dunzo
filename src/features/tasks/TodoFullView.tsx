@@ -193,8 +193,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     updateSchedule(val ? {} : { showInDatabase: true }, 'due', val);
   };
 
-  // Each time carries a percent-of-day twin; patchFromTime writes both (and clears
-  // both), the same way the Planner's cells do.
+  // The time is the whole value (its % readout is derived), so these just write it.
   const handleStartTimeChange = (val: string) => updateSchedule(patchFromTime('start', val), 'start');
   const handleDueTimeChange = (val: string) => updateSchedule(patchFromTime('due', val), 'due');
   const handleStartDateChange = (val: string) => updateSchedule({ startDate: val || undefined }, 'start');
@@ -329,7 +328,6 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                   />
                   <TimeChip
                     value={draft.startTime}
-                    percent={draft.startPercentage}
                     onChange={handleStartTimeChange}
                     disabled={!draft.startDate}
                   />
@@ -355,7 +353,6 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                   />
                   <TimeChip
                     value={draft.dueTime}
-                    percent={draft.duePercentage}
                     onChange={handleDueTimeChange}
                     disabled={!dateStr}
                   />

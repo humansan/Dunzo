@@ -50,6 +50,13 @@
       "when": 1784931831760,
       "tag": "0006_backfill_hub_order",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785425774690,
+      "tag": "0007_minor_turbo",
+      "breakpoints": true
     }
   ]
 }
