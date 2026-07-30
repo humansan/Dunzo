@@ -884,7 +884,7 @@ const LoginScreen: React.FC<{
         {/* ── Brand panel ── */}
         <div className="flex-1 flex flex-col justify-center items-end px-16 pt-14 pb-6 md:pr-20 md:pb-25 font-jakarta">
           <div className="max-w-sm">
-            <div className="flex items-center gap-4 md:h-24 md:w-24 mb-2">
+            <div className="flex items-center gap-3 md:h-24 md:w-24 mb-2">
               <img
                 src={logoUrl}
                 alt="Dunzo"

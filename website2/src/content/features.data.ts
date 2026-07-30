@@ -59,7 +59,7 @@ export const RAIL = [
 export const TASKS = {
   id: 'tasks',
   eyebrow: 'Tasks',
-  heading: 'One task, every field it needs.',
+  heading: 'One task, many fields',
   body:
     'A task is a title and a checkbox until you need more from it. Then it’s a start date, a due time, a priority, an XP value, a collection, a parent, and notes as long as you like — all in one window you can link straight to.',
   chips: [

@@ -526,15 +526,21 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // Splice `id` in next to `anchorId` among its siblings and persist the whole
   // tree order (same mechanism the row drag-and-drop commit uses). A freshly
   // created task starts at the bottom, so this is what moves it into place.
-  const placeRelative = (
-    id: string,
-    anchorId: string,
-    pos: 'above' | 'below',
-    parentId: string | null,
-  ) => {
+  //
+  // The new node MUST take its parent from the anchor's node in this flat list,
+  // not from the anchor todo's real parentId. In a collection view the collection
+  // node itself is excluded from the entries, so flattenTree reads its direct
+  // children as parentId null (see useHubData's 'subtree' scaffold) - handing in
+  // the real collection id would file the new node under a parent that has no
+  // node here, orderFromFlat's walk would never reach it, and its unreachable-node
+  // fallback would append it at the very end. That is the bug this comment exists
+  // to prevent a repeat of. The `selectedCollectionId` re-anchor below turns the
+  // null back into the collection on save, exactly as it does for every other row.
+  const placeRelative = (id: string, anchorId: string, pos: 'above' | 'below') => {
     const full = flattenTree(processedEntries).map((n) => ({ id: n.id, parentId: n.parentId }));
     const at = full.findIndex((n) => n.id === anchorId);
     if (at === -1) return;
+    const parentId = full[at].parentId;
     full.splice(pos === 'above' ? at : at + 1, 0, { id, parentId });
     let order = orderFromFlat(full);
     // In a collection view the collection node is hidden, so its direct children
@@ -548,11 +554,13 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const addTaskRelative = (anchorId: string, pos: 'above' | 'below') => {
     const anchor = byId.get(anchorId);
     if (!anchor) return;
+    // Create it under the anchor's REAL parent (so it's genuinely nested where the
+    // anchor is); placeRelative works out where it sits in the rendered order.
     const parentId = anchor.todo.parentId ?? null;
     // Seed the view predicate + filters so the sibling stays visible; keep the
     // anchor's own date (don't force the view seed's date) so it lands in place.
     const id = onAddTodo({ parentId, patch: viewCreateArgs().patch });
-    placeRelative(id, anchorId, pos, parentId);
+    placeRelative(id, anchorId, pos);
     closeMenu();
     setEditing({ id, col: 'title', rect: null });
   };
@@ -571,7 +579,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     delete fields.deletedAt;
     const parentId = todo.parentId ?? null;
     const copyId = onAddTodo({ parentId, patch: fields });
-    placeRelative(copyId, id, 'below', parentId);
+    placeRelative(copyId, id, 'below');
     closeMenu();
   };
 
