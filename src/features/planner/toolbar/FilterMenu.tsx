@@ -45,7 +45,7 @@ export const FilterMenu: React.FC<{
       anchor={anchor}
       title="Filters"
       onClose={onClose}
-      className="w-[500px] p-2 space-y-2.5"
+      className="w-130 p-2 space-y-2.5"
       headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="filters" />}
     >
         {filters.length === 0 ? (
@@ -59,11 +59,11 @@ export const FilterMenu: React.FC<{
                   {/* Conjunction: the first row is a static "Where"; every later row picks
                       And/Or. It's one per-view choice, so changing any row flips them all. */}
                   {i === 0 ? (
-                    <span className="w-[62px] shrink-0 px-2 text-[13px] text-fg-faint">Where</span>
+                    <span className="w-20 shrink-0 px-2 text-[13px] text-fg-faint">Where</span>
                   ) : (
                     <ListSelect
                       ariaLabel="Match"
-                      className="w-[62px] shrink-0"
+                      className="w-20 shrink-0"
                       value={match}
                       onChange={(v) => onChangeMatch(v as FilterMatch)}
                       options={[

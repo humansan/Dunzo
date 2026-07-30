@@ -434,7 +434,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
             onUpdateTodos(selectedDate, [...newTodos, ...hidden]);
           }}
         />
-        <div className="h-24 shrink-0" />
+        <div className="h-26 shrink-0" />
       </div>
 
       {/* Right side: 1-Day Calendar */}
