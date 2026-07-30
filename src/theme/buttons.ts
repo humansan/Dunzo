@@ -30,7 +30,7 @@ export type Accent = 'accent1' | 'accent2';
 // Static (Tailwind-detectable) accent fills + matching glow, per accent. Text is
 // `text-canvas` (inverts with the page per theme) to match btnAccent.
 const accentFill: Record<Accent, string> = {
-  accent1: 'bg-[var(--accent1)] text-canvas',
+  accent1: 'bg-[var(--xp-tier1)] text-canvas',
   accent2: 'bg-[var(--accent2)] text-canvas',
 };
 
@@ -47,4 +47,4 @@ export const btnToggle = (active = false, accent: Accent = 'accent2'): string =>
 
 // 4 - Accent: always an accent fill. Primary/confirm actions.
 export const btnAccent = (accent: Accent = 'accent1'): string =>
-  `${base} ${accent === 'accent1' ? 'bg-[var(--accent1)]' : 'bg-[var(--accent2)]'} text-canvas font-bold hover:opacity-90 active:scale-[0.98]`;
+  `${base} ${accent === 'accent1' ? 'bg-[var(--xp-tier1)]' : 'bg-[var(--accent2)]'} text-canvas font-bold hover:opacity-90 active:scale-[0.98]`;

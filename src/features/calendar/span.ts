@@ -1,6 +1,6 @@
 import { format, addDays, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Todo } from '@shared/types';
-import { minutesToTime, timeToPercentage } from '@/common/lib/time';
+import { minutesToTime } from '@/common/lib/time';
 
 // ── The calendar's absolute-minute timeline ─────────────────────────────────
 //
@@ -180,7 +180,7 @@ export function resizeSpan(span: TodoSpan, edge: 'top' | 'bottom', delta: number
   return { absStart: span.absStart, absEnd };
 }
 
-// Absolute span → the six persisted schedule fields.
+// Absolute span → the four persisted schedule fields.
 export function decomposeSpan(span: TodoSpan): Partial<Todo> {
   const { absStart, absEnd } = normalizeSpanEnd(span);
   const sIdx = Math.floor(absStart / MINS_PER_DAY);
@@ -190,9 +190,7 @@ export function decomposeSpan(span: TodoSpan): Partial<Todo> {
   return {
     startDate: dateStrFromIndex(sIdx),
     startTime,
-    startPercentage: timeToPercentage(startTime),
     dueDate: dateStrFromIndex(eIdx),
     dueTime,
-    duePercentage: timeToPercentage(dueTime),
   };
 }

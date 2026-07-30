@@ -1,6 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Maximize2, CircleDot, Flag } from 'lucide-react';
-import { timeToPercentage } from '@/common/lib/time';
 import { CollectionOption } from '@/features/tasks/model';
 import { TodoStatus, TodoPriority } from '@shared/types';
 import { btnAccent, btnNeutral } from '@/theme/buttons';
@@ -21,8 +20,7 @@ export interface QuickEditValues {
   notes: string;
   date: string;            // YYYY-MM-DD - the due date (drives the daily-list day)
   startTime?: string;      // HH:MM (carried through; cleared alongside the end time)
-  dueTime?: string;        // HH:MM
-  duePercentage?: number;
+  dueTime?: string;        // HH:MM (its % readout is derived - see model/percent.ts)
   xp?: number;
   status?: TodoStatus;
   priority?: TodoPriority;
@@ -38,7 +36,6 @@ interface QuickEditTodoProps {
   initialDate: string;
   initialStartTime?: string;
   initialTime?: string;
-  initialPercent?: number;
   initialXp?: number;
   initialStatus?: TodoStatus;
   initialPriority?: TodoPriority;
@@ -60,7 +57,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   initialDate,
   initialStartTime,
   initialTime,
-  initialPercent,
   initialXp,
   initialStatus,
   initialPriority,
@@ -98,7 +94,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   // through so the Clear button can wipe both (and not silently keep a start).
   const [startTime, setStartTime] = useState(initialStartTime || '');
   const [time, setTime] = useState(initialTime || '');    // due time
-  const [percentStr, setPercentStr] = useState(initialPercent?.toString() ?? '');
   const [xpStr, setXpStr] = useState(seededXp?.toString() ?? '');
   const [status, setStatus] = useState<TodoStatus | undefined>(initialStatus);
   const [priority, setPriority] = useState<TodoPriority | undefined>(initialPriority);
@@ -134,7 +129,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     date,
     startTime: startTime || undefined,
     dueTime: time || undefined,
-    duePercentage: percentStr ? parseFloat(percentStr) : undefined,
     xp: xpStr ? Math.max(0, parseInt(xpStr) || 0) : undefined,
     status,
     priority,
@@ -152,14 +146,13 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setDate(initialDate);
     setStartTime(initialStartTime || '');
     setTime(initialTime || '');
-    setPercentStr(initialPercent?.toString() ?? '');
     setXpStr(seededXp?.toString() ?? '');
     setStatus(initialStatus);
     setPriority(initialPriority);
     setParentId(initialParentId ?? null);
     setAutoMoveDate(seededAutoMove);
     committedRef.current = false;
-  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, initialPercent, seededXp, initialStatus, initialPriority, initialParentId, seededAutoMove]);
+  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, seededXp, initialStatus, initialPriority, initialParentId, seededAutoMove]);
 
   // On unmount, if an edit panel is force-closed (not via Save/Cancel), persist
   // its current values so switching panels doesn't lose changes.
@@ -173,18 +166,18 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Clearing the end time drops the start time with it (a start with no end is
+  // meaningless here); the % readout follows the time on its own.
   const handleTimeChange = (val: string) => {
     setTime(val);
-    if (!val) { setPercentStr(''); setStartTime(''); return; }
-    const p = timeToPercentage(val);
-    if (p !== undefined) setPercentStr(p.toString());
+    if (!val) setStartTime('');
   };
 
   // A due time can't exist without a due date; clearing the date clears the time
-  // (and its percent + carried start time) so the form never holds a dateless time.
+  // (and the carried start time) so the form never holds a dateless time.
   const handleDateChange = (val: string) => {
     setDate(val);
-    if (!val) { setTime(''); setPercentStr(''); setStartTime(''); }
+    if (!val) { setTime(''); setStartTime(''); }
   };
 
   const canSubmit = text.trim().length > 0;
@@ -199,7 +192,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       setNotes('');
       setStartTime('');
       setTime('');
-      setPercentStr('');
       setXpStr(seededXp?.toString() ?? '');
       setStatus(undefined);
       setPriority(undefined);
@@ -267,7 +259,6 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
         />
         <TimeChip
           value={time}
-          percent={percentStr === '' ? undefined : parseFloat(percentStr)}
           onChange={handleTimeChange}
           disabled={!date}
         />

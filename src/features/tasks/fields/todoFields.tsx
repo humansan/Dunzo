@@ -1,8 +1,8 @@
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Circle, Check, ChevronRight } from 'lucide-react';
 import CheckCircleCutout from '@/assets/CheckCircleCutout';
-import { percentageToTime, timeToPercentage } from '@/common/lib/time';
+import { percentageToTime } from '@/common/lib/time';
 import { TodoStatus, TodoPriority } from '@shared/types';
 import { pill } from '@/theme/pill';
 import { collectionColor } from '@/theme/collectionColor';
@@ -15,41 +15,25 @@ import { collectionColor } from '@/theme/collectionColor';
 // Patch shape emitted by the time/percent fields (a subset of Todo).
 export interface TimePatch {
   startTime?: string;
-  startPercentage?: number;
   dueTime?: string;
-  duePercentage?: number;
 }
 
-// Which of the two time/percent pairs an edit targets.
+// Which of the two times an edit targets.
 export type TimeKind = 'start' | 'due';
 
-// A time and its percent-of-day are two views of one value, so an edit to either
-// must write BOTH keys - including the cleared case, where omitting the sibling
-// key leaves it stranded (the patch is spread over the todo, so an absent key
-// means "keep"). The counterpart is dropped only when it can't be derived: an
-// unparseable time or an out-of-range percent leaves the other side as it was.
-export const patchFromTime = (kind: TimeKind, time: string): TimePatch => {
-  const pct = time ? timeToPercentage(time) : undefined;
-  if (kind === 'start') {
-    return time && pct === undefined
-      ? { startTime: time }
-      : { startTime: time || undefined, startPercentage: pct };
-  }
-  return time && pct === undefined
-    ? { dueTime: time }
-    : { dueTime: time || undefined, duePercentage: pct };
-};
+// The time is the only stored value; its percent-of-day is derived for display
+// (see model/percent.ts). So both editors emit the same one-key patch, and there
+// is nothing left that can fall out of sync. '' clears.
+export const patchFromTime = (kind: TimeKind, time: string): TimePatch =>
+  kind === 'start' ? { startTime: time || undefined } : { dueTime: time || undefined };
 
+// A percent edit is a time edit expressed differently: it snaps to the nearest
+// minute (33% → 07:55). An out-of-range percent has no time to snap to, so it's
+// a no-op - an empty patch leaves the time exactly as it was.
 export const patchFromPercent = (kind: TimeKind, pct: number | undefined): TimePatch => {
-  const time = pct === undefined ? undefined : percentageToTime(pct);
-  if (kind === 'start') {
-    return pct !== undefined && time === undefined
-      ? { startPercentage: pct }
-      : { startPercentage: pct, startTime: time };
-  }
-  return pct !== undefined && time === undefined
-    ? { duePercentage: pct }
-    : { duePercentage: pct, dueTime: time };
+  if (pct === undefined) return patchFromTime(kind, '');
+  const time = percentageToTime(pct);
+  return time === undefined ? {} : patchFromTime(kind, time);
 };
 
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
@@ -76,7 +60,11 @@ export const CompletedToggle: React.FC<{
   </button>
 );
 
-// ── Percent goal (keeps its paired time in sync) ─────────────────────────────
+// ── Percent of day (an editor for the time, in percent form) ─────────────────
+// `value` is the DERIVED percent (see model/percent.ts), so a keystroke round-trips
+// through the time: 33 → 07:55 → 32.99. Echoing that straight back into the box
+// would rewrite the digits under the caret mid-typing, so the field keeps its own
+// draft text while focused and re-syncs from `value` only once it's left alone.
 export const PercentField: React.FC<{
   kind: TimeKind;
   value?: number;
@@ -85,25 +73,31 @@ export const PercentField: React.FC<{
   autoFocus?: boolean;
   onBlur?: () => void;
   placeholder?: string;
-}> = ({ kind, value, onChange, className, autoFocus, onBlur, placeholder = 'e.g. 50' }) => (
-  <input
-    type="number"
-    min="0"
-    max="100"
-    step="any"
-    value={value ?? ''}
-    autoFocus={autoFocus}
-    onBlur={onBlur}
-    onChange={(e) => {
-      const val = e.target.value;
-      if (val === '') { onChange(patchFromPercent(kind, undefined)); return; }
-      const num = parseFloat(val);
-      if (!isNaN(num)) onChange(patchFromPercent(kind, num));
-    }}
-    placeholder={placeholder}
-    className={className ?? fieldInputClass}
-  />
-);
+}> = ({ kind, value, onChange, className, autoFocus, onBlur, placeholder = 'e.g. 50' }) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (value === undefined ? '' : String(Math.round(value)));
+
+  return (
+    <input
+      type="number"
+      min="0"
+      max="100"
+      step="any"
+      value={shown}
+      autoFocus={autoFocus}
+      onBlur={() => { setDraft(null); onBlur?.(); }}
+      onChange={(e) => {
+        const val = e.target.value;
+        setDraft(val);
+        if (val === '') { onChange(patchFromPercent(kind, undefined)); return; }
+        const num = parseFloat(val);
+        if (!isNaN(num)) onChange(patchFromPercent(kind, num));
+      }}
+      placeholder={placeholder}
+      className={className ?? fieldInputClass}
+    />
+  );
+};
 
 // ── Notes (auto-growing textarea) ────────────────────────────────────────────
 export const NotesField: React.FC<{

@@ -4,7 +4,6 @@ import {
   text,
   boolean,
   integer,
-  real,
   doublePrecision,
   bigint,
   date,
@@ -67,8 +66,9 @@ export const todos = pgTable(
     dueDate: date('due_date', { mode: 'string' }),
     startTime: text('start_time'),
     dueTime: text('due_time'),
-    startPercentage: real('start_percentage'),
-    duePercentage: real('due_percentage'),
+    // No start/due percentage columns: the "%" readouts are derived from the two
+    // times above (src/features/tasks/model/percent.ts). Storing them was storing
+    // the same value twice, and the copies drifted.
     estimatedTime: integer('estimated_time'),
     countCompletion: integer('count_completion'),
     repeatInterval: integer('repeat_interval'),

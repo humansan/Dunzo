@@ -18,7 +18,6 @@ import {
 import { btnNeutral, btnToggle } from '@/theme/buttons';
 import { Todo, DayTodos, Tracker } from '@shared/types';
 import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '@/features/tasks/model';
-import { timeToPercentage } from '@/common/lib/time';
 
 import { TrackerCard } from '@/features/trackers';
 import { CalendarView } from '@/features/calendar';
@@ -164,7 +163,6 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     notes: vals.notes || undefined,
     startTime: vals.startTime,
     dueTime: vals.dueTime,
-    duePercentage: vals.duePercentage,
     xp: vals.xp,
     status: vals.status ?? "todo",
     priority: vals.priority,
@@ -241,7 +239,6 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       notes: vals.notes || undefined,
       startTime: vals.startTime,
       dueTime: vals.dueTime,
-      duePercentage: vals.duePercentage,
       xp: vals.xp,
       status: vals.status,
       priority: vals.priority,
@@ -265,7 +262,6 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     date: selectedDate,
     startTime: todo.startTime,
     dueTime: todo.dueTime,
-    duePercentage: todo.duePercentage,
     xp: todo.xp,
     status: todo.status,
     priority: todo.priority,
@@ -288,12 +284,12 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     patchTodo(id, () => ({ date }));
   };
 
-  // Clearing the end time drops the derived percentage and the start time with
-  // it, mirroring the quick editor (a start with no end is meaningless).
+  // Clearing the end time drops the start time with it, mirroring the quick editor
+  // (a start with no end is meaningless).
   const setTodoTime = (id: string, time: string) =>
     patchTodo(id, (todo) => time
-      ? { dueTime: time, duePercentage: timeToPercentage(time), startTime: todo.startTime }
-      : { dueTime: undefined, duePercentage: undefined, startTime: undefined });
+      ? { dueTime: time, startTime: todo.startTime }
+      : { dueTime: undefined, startTime: undefined });
 
   const setTodoParent = (id: string, parentId: string | null) =>
     patchTodo(id, () => ({ parentId }));

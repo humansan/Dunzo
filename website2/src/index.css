@@ -86,7 +86,7 @@ body {
 }
 
 .word-blur-enter {
-  animation: wordBlurFocus 0.7s ease-out both;
+  animation: wordBlurFocus 0.8s ease-out both;
 }
 
 /* Fade Slide Up Entrance */

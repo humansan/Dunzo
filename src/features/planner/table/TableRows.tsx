@@ -56,7 +56,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
         <HubRow
           key={node.id}
           node={node}
-          displayDepth={node.depth}
+          displayIndent={node.indent}
           gridTemplateColumns={effectiveGrid}
           editing={editing}
           startEdit={startEdit}
@@ -78,7 +78,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
           onActivate={onActivate}
           isSelected={selectedId === node.id}
           isDragSource={dnd?.rowDragId === node.id}
-          dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === node.id ? { pos: dnd.rowDrop.pos, depth: dnd.rowDrop.depth } : null}
+          dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === node.id ? { pos: dnd.rowDrop.pos, indent: dnd.rowDrop.indent } : null}
           onRowDragStart={dnd?.onRowDragStart}
           onRowDragOver={dnd?.onRowDragOver}
           onRowDrop={dnd?.onRowDrop}
@@ -102,7 +102,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
           <HubRow
             key={row.node.id}
             node={row.node}
-            displayDepth={row.node.depth}
+            displayIndent={row.node.indent}
             gridTemplateColumns={effectiveGrid}
             editing={editing}
             startEdit={startEdit}
@@ -123,7 +123,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
             onActivate={onActivate}
             isSelected={selectedId === row.node.id}
             isDragSource={dnd?.rowDragId === row.node.id}
-            dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === row.node.id ? { pos: dnd.rowDrop.pos, depth: dnd.rowDrop.depth } : null}
+            dropIndicator={dnd?.rowDrop && dnd.rowDrop.id === row.node.id ? { pos: dnd.rowDrop.pos, indent: dnd.rowDrop.indent } : null}
             onRowDragStart={dnd?.onRowDragStart}
             onRowDragOver={dnd?.onRowDragOver}
             onRowDrop={dnd?.onRowDrop}

@@ -18,16 +18,17 @@ import { INDENT, NAME_BASE_PAD, cellEditCls } from '@/features/planner/constants
 import { pill } from '@/theme/pill';
 import { SectionHeader } from '@/features/planner/table/SectionHeader';
 import { useTableVariant } from '@/features/planner/variant';
-import { isDone } from '@/features/tasks/model';
+import { isDone, startPercent, duePercent, percentLabel } from '@/features/tasks/model';
 
 // Where the dragged row will land relative to this row: a line before/after it
-// (reorder) or nested inside it. `depth` is the indent level to draw the line at.
-export type DropIndicator = { pos: 'before' | 'inside' | 'after'; depth: number } | null;
+// (reorder) or nested inside it. `indent` is the indent level to draw the line at.
+export type DropIndicator = { pos: 'before' | 'inside' | 'after'; indent: number } | null;
 
 // ── Row ──────────────────────────────────────────────────────────────────────
 interface HubRowProps {
   node: FlatNode;
-  displayDepth: number;
+  // Indent steps to draw this row at (FlatNode.indent), not its structural depth.
+  displayIndent: number;
   gridTemplateColumns: string;
   editing: EditState;
   startEdit?: (id: string, col: ColKey, e: React.MouseEvent) => void;
@@ -68,7 +69,7 @@ interface HubRowProps {
 
 const HubRowImpl: React.FC<HubRowProps> = ({
   node,
-  displayDepth,
+  displayIndent,
   gridTemplateColumns,
   editing,
   startEdit,
@@ -102,7 +103,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // A non-nesting variant (the flat search list) drops the indent + collapse
   // affordance even if handed hierarchical data; both live variants nest.
   const nested = variant.showNesting;
-  const depth = nested ? displayDepth : 0;
+  const indent = nested ? displayIndent : 0;
   // The name cell doubles as the drag image so the cursor carries a readable chip.
   const dragImageRef = useRef<HTMLDivElement>(null);
   const style: React.CSSProperties = { gridTemplateColumns };
@@ -147,13 +148,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
 
   // The drop indicator: a line at the target indent (before/after), or a ring on
   // the row (inside = nest under this row).
-  const indentLevels = Math.max((dropIndicator?.depth ?? 0) - 1, 0);
-  const indent = NAME_BASE_PAD + indentLevels * INDENT;
+  const dropIndent = NAME_BASE_PAD + (dropIndicator?.indent ?? 0) * INDENT;
   const dropLine = (where: 'before' | 'after') =>
     dropIndicator?.pos === where ? (
       <div
         className="pointer-events-none absolute left-0 right-0 z-30 h-0.5 rounded-full bg-[var(--accent2)]"
-        style={{ [where === 'before' ? 'top' : 'bottom']: -1, marginLeft: indent }}
+        style={{ [where === 'before' ? 'top' : 'bottom']: -1, marginLeft: dropIndent }}
       />
     ) : null;
   // 'inside' (nest) highlight: an overlay so it sits ABOVE the sticky Name cell
@@ -233,7 +233,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         hasToggle={nested && hasChildren}
         toggleTitle={{ expand: 'Expand collection', collapse: 'Collapse collection' }}
         count={taskCount}
-        depth={depth}
+        depth={indent}
         leading={dragHandle('mr-1')}
         actions={
           <>
@@ -316,12 +316,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'percent':
         return isEditing('percent') ? (
           <div className={editCellWrap}>
-            <PercentField kind="due" value={todo.duePercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
+            <PercentField kind="due" value={duePercent(todo)} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="percent">
             <span className="truncate text-sm text-fg-muted">
-              {todo.duePercentage !== undefined ? `${todo.duePercentage}%` : muted}
+              {percentLabel(duePercent(todo)) || muted}
             </span>
           </DisplayCell>
         );
@@ -346,12 +346,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       case 'startPercent':
         return isEditing('startPercent') ? (
           <div className={editCellWrap}>
-            <PercentField kind="start" value={todo.startPercentage} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
+            <PercentField kind="start" value={startPercent(todo)} autoFocus onBlur={stopEdit} onChange={saveField} className={cellEditCls} />
           </div>
         ) : (
           <DisplayCell col="startPercent">
             <span className="truncate text-sm text-fg-muted">
-              {todo.startPercentage !== undefined ? `${todo.startPercentage}%` : muted}
+              {percentLabel(startPercent(todo)) || muted}
             </span>
           </DisplayCell>
         );
@@ -462,7 +462,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             ring-1 ring-inset ring-[var(--accent2)]/60
             */}
         <div
-          style={{ paddingLeft: NAME_BASE_PAD + Math.max(depth - 1, 0) * INDENT }}
+          style={{ paddingLeft: NAME_BASE_PAD + indent * INDENT }}
           className={`relative z-10 flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
             isEditing('title') && !titleWrapped ? 'h-9' : 'py-2'
           } `}

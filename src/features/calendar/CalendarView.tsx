@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
-import { timeToPercentage, formatTime12h, minutesToTime } from '@/common/lib/time';
+import { formatTime12h, minutesToTime } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
 import { collectionOf, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Astroid, GitBranch } from 'lucide-react';
 import { formatTime12h } from '@/common/lib/time';
-import { collectionOf } from '@/features/tasks/model';
+import { collectionOf, percentOfDay, percentLabel } from '@/features/tasks/model';
 import { Todo } from '@shared/types';
 import {
   OptionSelectField,
@@ -198,8 +198,6 @@ export const DateChip: React.FC<{
 // ── Time (+ optional percent-of-day readout) ─────────────────────────────────
 export const TimeChip: React.FC<{
   value?: string;
-  /** Percent of day; rendered after a divider when provided. */
-  percent?: number;
   onChange: (val: string) => void;
   placeholder?: string;
   /** A time can't exist without a date on its side; the caller disables the chip
@@ -208,8 +206,10 @@ export const TimeChip: React.FC<{
   /** Drops the accent tint but stays clickable - the daily list uses it to grey
    *  the chip on a completed task. */
   muted?: boolean;
-}> = ({ value, percent, onChange, placeholder = 'Time', disabled = false, muted = false }) => {
-  const pct = percent === undefined ? null : Number.isInteger(percent) ? percent : Math.round(percent);
+}> = ({ value, onChange, placeholder = 'Time', disabled = false, muted = false }) => {
+  // The percent half is derived here rather than passed in: it IS the time, shown
+  // differently, so there's no second value for a caller to get wrong.
+  const pct = percentLabel(percentOfDay(value));
   const tone = muted ? 'text-fg-ghost' : 'text-[var(--accent1)]';
   if (disabled) {
     return (
@@ -233,28 +233,24 @@ export const TimeChip: React.FC<{
           type="button"
           onClick={open}
           className={`${chipBase} ${
-            muted || !(value || pct !== null)
+            muted || !value
               ? 'bg-fill-subtle hover:bg-fill'
               : 'bg-[var(--accent1)]/7 hover:bg-[var(--accent1)]/15'
           }`}
         >
-          {/* A percentage can outlive its time (the daily list shows either), so
-              this keys off both rather than on `value` alone. */}
-          {value || pct !== null ? (
+          {value ? (
             <>
-              {value && (
-                <span className={`${chipText} ${tone}`}>
-                  <Clock size={16} />
-                  <span className="relative top-px">{formatTime12h(value)}</span>
-                </span>
-              )}
-              {value && pct !== null && (
-                <div className={`w-px h-4 ${muted ? 'bg-fill' : 'bg-[var(--accent1)]/20'}`} />
-              )}
-              {pct !== null && (
-                <span className={`${chipText} ${tone}`}>
-                  <span className="relative top-px">{pct}%</span>
-                </span>
+              <span className={`${chipText} ${tone}`}>
+                <Clock size={16} />
+                <span className="relative top-px">{formatTime12h(value)}</span>
+              </span>
+              {pct && (
+                <>
+                  <div className={`w-px h-4 ${muted ? 'bg-fill' : 'bg-[var(--accent1)]/20'}`} />
+                  <span className={`${chipText} ${tone}`}>
+                    <span className="relative top-px">{pct}</span>
+                  </span>
+                </>
               )}
             </>
           ) : (

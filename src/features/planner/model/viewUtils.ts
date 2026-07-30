@@ -1,5 +1,5 @@
 import { format, parse, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
-import { OrganizerEntry, collectionOf, collectionPath } from '@/features/tasks/model';
+import { OrganizerEntry, collectionOf, collectionPath, startPercent, duePercent, percentLabel } from '@/features/tasks/model';
 import { Todo, TodoStatus, TodoPriority } from '@shared/types';
 import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/features/tasks/fields';
@@ -27,14 +27,14 @@ export function getFieldDisplayValue(
     }
     case 'start': return todo.startTime ? formatTime12h(todo.startTime) : '';
     case 'end': return todo.dueTime ? formatTime12h(todo.dueTime) : '';
-    case 'percent': return todo.duePercentage !== undefined ? `${todo.duePercentage}%` : '';
+    case 'percent': return percentLabel(duePercent(todo));
     case 'collection': {
       const coll = collectionOf(todo, todoById);
       return collectionPath(coll, todoById).map((c) => c.text || 'Untitled').join(' / ');
     }
     case 'xp': return todo.xp !== undefined ? String(todo.xp) : '';
     case 'notes': return todo.notes || '';
-    case 'startPercent': return todo.startPercentage !== undefined ? `${todo.startPercentage}%` : '';
+    case 'startPercent': return percentLabel(startPercent(todo));
     case 'estimatedTime': return todo.estimatedTime !== undefined ? formatMinutes(todo.estimatedTime) : '';
     case 'createdAt': {
       try { return format(new Date(todo.createdAt), 'MMM d, yyyy'); }
@@ -69,9 +69,11 @@ export function getFieldRawValue(
     case 'startDate': return todo.startDate || '';
     case 'start': return todo.startTime || '';
     case 'end': return todo.dueTime || '';
-    case 'percent': return todo.duePercentage !== undefined ? String(todo.duePercentage) : '';
+    // The percent columns sort on the derived value - monotonic with their time
+    // column, which is the point: they're the same value in another unit.
+    case 'percent': return String(duePercent(todo) ?? '');
     case 'xp': return todo.xp !== undefined ? String(todo.xp) : '';
-    case 'startPercent': return todo.startPercentage !== undefined ? String(todo.startPercentage) : '';
+    case 'startPercent': return String(startPercent(todo) ?? '');
     case 'estimatedTime': return todo.estimatedTime !== undefined ? String(todo.estimatedTime) : '';
     case 'createdAt': return String(todo.createdAt);
     case 'completedAt': return todo.completedAt !== undefined ? String(todo.completedAt) : '';
@@ -322,7 +324,8 @@ export function buildGroupedItems(
     if (!entry) return [];
     const children = doSort(childrenInGroup.get(taskId) ?? []);
     const hasChildren = children.length > 0;
-    const node: FlatNode = { id: taskId, parentId, depth, entry, hasChildren };
+    // No collections in grouped mode - every parent is a task, so indent == depth.
+    const node: FlatNode = { id: taskId, parentId, depth, indent: depth, entry, hasChildren };
     const rows: GroupRow[] = [{ type: 'task', node, group }];
     if (hasChildren && !collapsed.has(taskId)) {
       for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1, group, taskId));

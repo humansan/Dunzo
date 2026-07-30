@@ -57,10 +57,14 @@ export interface Todo {
   urgency?: TodoUrgency;   // How soon it needs to be done.
   startDate?: string;      // YYYY-MM-DD start date
   startTime?: string;      // HH:MM format for calendar/start time
-  startPercentage?: number; // Derived from startTime (percent of day elapsed)
   dueDate?: string;        // YYYY-MM-DD due date
   dueTime?: string;        // HH:MM format for due time (was endTime)
-  duePercentage?: number;  // Derived from dueTime (was percentageGoal)
+                           // NOTE: the percent-of-day readouts ("Start %" / "End %") are
+                           // DERIVED from these two times, never stored - see
+                           // src/features/tasks/model/percent.ts. The former
+                           // startPercentage/duePercentage columns were a second copy of
+                           // the same value and drifted whenever a write path updated one
+                           // without the other.
   estimatedTime?: number;  // Estimated minutes to complete
   countCompletion?: number; // How many times this must be done to count complete (default 1)
   repeatInterval?: number; // Days between repeats (0 = no repeat)

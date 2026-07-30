@@ -8,12 +8,13 @@ import { useDragAutoScroll } from '@/common/hooks/useDragAutoScroll';
 import { useStableCallback } from '@/common/hooks/useStableCallback';
 
 // The dragged row's resolved drop: which row, whether it lands before/after
-// (reorder) or inside (nest), the resolved parent + indent depth (to draw the
-// line), and - in attribute-grouped mode - the destination section.
+// (reorder) or inside (nest), the resolved parent + the indent level the dropped
+// row will render at (to draw the line where the row actually lands - see
+// FlatNode.indent), and - in attribute-grouped mode - the destination section.
 export type RowDrop = {
   id: string;
   pos: 'before' | 'inside' | 'after';
-  depth: number;
+  indent: number;
   parentId: string | null;
   group?: string;
 };
@@ -146,21 +147,23 @@ export function useRowDnD(params: {
         : 'before';
 
     let parentId: string | null;
-    let depth: number;
+    let indent: number;
     if (pos === 'inside') {
       parentId = targetId;
-      depth = target.depth + 1;
+      // Same rule as the tree walk: nesting under a task steps in a level, but a
+      // task nested into a collection sits at the collection's own indent.
+      indent = targetIsColl && !draggedIsColl ? target.indent : target.indent + 1;
     } else {
       parentId = target.parentId;
-      depth = target.depth;
+      indent = target.indent; // lands as a sibling → same indent as the target
       // A collection sibling must still sit under a collection (or root); snap up.
       if (draggedIsColl && parentId && !byId.get(parentId)?.todo.isCollection) {
         parentId = nearestCollectionId(parentId);
-        depth = parentId ? (flatById.get(parentId)?.depth ?? 0) + 1 : 0;
+        indent = parentId ? (flatById.get(parentId)?.indent ?? 0) + 1 : 0;
       }
     }
 
-    return { id: targetId, pos, depth, parentId };
+    return { id: targetId, pos, indent, parentId };
   };
 
   // Resolve the drop for attribute-grouped mode. Structurally identical to
@@ -181,14 +184,14 @@ export function useRowDnD(params: {
     const pos: RowDrop['pos'] = r < 0.3 ? 'before' : afterAllowed && r > 0.7 ? 'after' : 'inside';
 
     const parentId = pos === 'inside' ? targetId : target.parentId;
-    const depth = pos === 'inside' ? target.depth + 1 : target.depth;
+    const indent = pos === 'inside' ? target.indent + 1 : target.indent;
     // A node and its parent always share a section, so the target's own section is
     // the section the drop lands in.
-    return { id: targetId, pos, depth, parentId, group: groupOf.get(targetId) ?? '' };
+    return { id: targetId, pos, indent, parentId, group: groupOf.get(targetId) ?? '' };
   };
 
   const sameDrop = (a: RowDrop | null, b: RowDrop | null) =>
-    (!a && !b) || (!!a && !!b && a.id === b.id && a.pos === b.pos && a.depth === b.depth);
+    (!a && !b) || (!!a && !!b && a.id === b.id && a.pos === b.pos && a.indent === b.indent);
 
   const onRowDragStart = useStableCallback((id: string) => {
     // Defer the state update: setting React state synchronously inside dragstart
@@ -217,7 +220,8 @@ export function useRowDnD(params: {
     if (!rowDragId || sectionsConfig.groupBy === 'collection') return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const next: RowDrop = { id: headerId, pos: 'inside', depth: 1, parentId: null, group };
+    // A section root renders flush (indent 0), so the line is drawn there.
+    const next: RowDrop = { id: headerId, pos: 'inside', indent: 0, parentId: null, group };
     setRowDrop((prev) => (sameDrop(prev, next) ? prev : next));
   };
 

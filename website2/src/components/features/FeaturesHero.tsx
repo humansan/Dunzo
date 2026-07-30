@@ -29,7 +29,7 @@ export const FeaturesHero: React.FC = () => (
       <div className="mb-6 fade-slide-up" style={{ animationDelay: '100ms' }}>
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
           <Sparkles className="w-3.5 h-3.5 fill-gold text-gold" />
-          <span>Free while in early access</span>
+          <span>Free in early access</span>
         </div>
       </div>
 

@@ -170,7 +170,6 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialDate={date}
           initialStartTime={todo.startTime}
           initialTime={todo.dueTime}
-          initialPercent={todo.duePercentage}
           initialXp={todo.xp}
           initialStatus={todo.status}
           initialPriority={todo.priority}
@@ -272,10 +271,9 @@ const TodoItem: React.FC<TodoItemProps> = ({
           <XpChip value={todo.xp} muted={isDone(todo)} onChange={(val) => onSetXp(todo.id, val)} />
         )}
 
-        {(todo.dueTime || todo.duePercentage !== undefined) && (
+        {todo.dueTime && (
           <TimeChip
             value={todo.dueTime}
-            percent={todo.duePercentage}
             muted={isDone(todo)}
             onChange={(val) => onSetTime(todo.id, val)}
           />

@@ -2,11 +2,11 @@
 
 <img src="src/assets/icon-invert2.png" alt="Dunzo logo" width="120" />
 
-# Dunzo
+# Dunzo ([dunzo.work](https://dunzo.work/))
 
 ### Strategize, plan your day, see your time, and make progress feel like a game.
 
-A full-stack productivity app that combines a **Notion-style task planner**, a focused **daily checklist**, live **time-progress trackers**, and **XP & streak gamification** - all synced to the cloud across your devices.
+A full-stack productivity app that combines a **database-style task planner**, a focused **daily checklist**, live **time-progress trackers**, and **XP & streak gamification** - all synced to the cloud across your devices.
 
 <br/>
 
@@ -22,71 +22,49 @@ A full-stack productivity app that combines a **Notion-style task planner**, a f
 
 ## ✨ Why Dunzo?
 
-- 🗂️ **Plan like Notion** - a full table view with nesting, collections, grouping, and drag-and-drop.
+- 🗂️ **Plan with a database** - a full table view with nesting, collections, grouping, and drag-and-drop.
 - ✅ **Work like a checklist** - a distraction-free daily list for what's due today.
 - ⏳ **Stay aware of time** - live widgets showing how much of the day, week, month, or year is left.
 - 🎮 **Stay motivated** - XP, daily goals, star ratings, and streaks built from your real history.
 - ☁️ **Everywhere you are** - multi-user, cloud-synced, with instant optimistic updates.
 
 
-## 🎯 Features
-
-### 🗂️ Notion-style Task Planner
-A spreadsheet-style table of everything you're planning, with configurable columns (status, priority, urgency, dates, estimated time, XP, notes, collection), inline cell editing, resizable columns, saved views, and filtering & sorting.
-
-- **Unlimited nesting** - subtasks nest to any depth; deleting or archiving a parent cascades to its children.
-- **Custom drag-and-drop** - a hand-built engine (no library) lets you **reorder**, **nest**, and **regroup** in one gesture. Drop a task into a *Status* or *Priority* or *Date* group and it takes on that attribute; drop it onto another task and it becomes a subtask.
-- **Group by anything** - collection, status, priority, or smart date buckets (Today / Tomorrow / Next 7 Days / …), interactive in every mode.
-- **Collections & Workspaces** - organize tasks into nestable collections and split your life into independent workspaces (separate task databases).
-
-### ✅ Daily Checklist
-A focused, per-day list of what's due - independent from the planner. A task can live in the planner only, the daily list only, or both, so big-picture planning and day-to-day execution stay separated and focused.
-
-### 📅 Calendar
-See your tasks laid out by due date and time across the week.
-
-### ⏳ Time-Progress Trackers
-Live widgets that show how much of a **day, week, month, year**, or any **custom date range** has elapsed or remains - with customizable optoins. Includes a stopwatch with a fullscreen focus mode.
-
-### 🎮 XP, Stars & Streaks
-Completing tasks earns XP, and Dunzo turns that into motivation:
-- **Progressive daily goals** - beat yesterday → beat your best of the last 7 days → beat your all-time best.
-- **Star ratings and streak** - earn up to 3 stars a day for showing up, holding your average, and improving. Improvement increases your streak score.
-
-You can also see charts of your XP over time, broken down by collection, so you can see where your effort actually goes.
-
 ## 📸 Screenshots
 
 <div align="left">
 
 ### Daily Checklist Dashboard
-<img src="src/assets/screenshots/daily.png" alt="Daily checklist" width="100%" />
+<img src="website2/media/s1.png" alt="Daily checklist" width="100%" />
 
 ### Task Planner
-<img src="src/assets/screenshots/planner2.png" alt="Task Planner - Notion-style table view" width="100%" />
+<img src="website2/media/s5.png" alt="Task Planner - database-style table view" width="100%" />
 
 You can change grouping mode, set filters/sorts, and control field visibility and order:
 <br>
-<img src="src/assets/screenshots/groupbystatus-fields.png" alt="Task Planner with group by status and fields menu" width="100%" />
+<img src="website2/media/planner_triple.png" alt="Task Planner with group by status and fields menu" width="100%" />
 
-NOTE: List View and Timeline View are currently work in progress
+NOTE: Timeline View is currently work in progress
 
 
-### Calendar and Stopwatch
-<img src="src/assets/screenshots/calendar.png" alt="Calendar page" width="49%" />
-<img src="src/assets/screenshots/stopwatch.png" alt="Stopwatch" width="49%" />
+### Calendar
+<img src="website2/media/calendar_no_ribbon.png" alt="Calendar page" width="100%" />
 
-### Time Progress Widgets
-<img src="src/assets/screenshots/trackers.png" alt="Time-progress trackers" width="49%" />
-<img src="src/assets/screenshots/widget-creator.png" alt="Widget creator" width="49%" />
+### Time Widgets and Stopwatch/Pomodoro
+<img src="website2/media/v2/widgets_main.png" alt="Time-progress trackers" height="73%" />
+<img src="website2/media/v2/widget_editor.png" alt="Widget creator" width="26%" />
+<img src="website2/media/s16.png" alt="Stopwatch" width="49%" />
+<img src="website2/media/s16b.png" alt="Stopwatch in min mode" width="49%" />
 
 
 ### Stats & More
-<img src="src/assets/screenshots/stats.png" alt="Stats and XP dashboard" width="49%" />
-<img src="src/assets/screenshots/data-options.png" alt="Stats and XP dashboard" width="49%" />
-<img src="src/assets/screenshots/collection-breakdown.png" alt="Collection breakdown" width="49%" />
+<img src="website2/media/s14.png" alt="Stats and XP dashboard" width="100%" />
+<img src="website2/media/s14b.png" alt="Collection breakdown" width="100%" />
+<img src="website2/media/s18b.png" alt="App settings" width="100%" />
 
 </div>
+
+## 🎯 For detailed features, see [[dunzo.work/features] ](https://dunzo.work/features)
+
 
 <div id="technical" align="center">
 

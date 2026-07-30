@@ -2,10 +2,11 @@ import { Todo } from '../types';
 
 // ── Task schedule invariant (start/due dates + times) ───────────────────────────
 //
-// A todo carries two temporal sides, start and due, each a date + time (+ a
-// percent-of-day twin of the time). `dueDate` is the scheduling anchor - it drives
-// the daily-list day - while `startDate` is descriptive. Two rules keep the pair
-// coherent everywhere they can be edited:
+// A todo carries two temporal sides, start and due, each a date + time. `dueDate`
+// is the scheduling anchor - it drives the daily-list day - while `startDate` is
+// descriptive. (The "%" readouts in the UI are derived from the times, not stored
+// alongside them - see src/features/tasks/model/percent.ts.) Two rules keep the
+// pair coherent everywhere they can be edited:
 //
 //   1. A TIME requires a DATE on its own side. There are no dateless-but-timed
 //      tasks: a start time only exists with a start date, a due time only with a
@@ -30,10 +31,8 @@ export type ScheduleSide = 'start' | 'due';
 export const SCHEDULE_KEYS = [
   'startDate',
   'startTime',
-  'startPercentage',
   'dueDate',
   'dueTime',
-  'duePercentage',
 ] as const;
 
 export function touchesSchedule(patch: object): boolean {
@@ -64,8 +63,8 @@ export function startAfterDue(t: Todo): boolean {
   return s !== undefined && d !== undefined && s > d;
 }
 
-// Rule 1 on its own: drop an orphan time (and its percent twin) whose side has no
-// date. Split out of reconcileSchedule so the interactive editors can build the
+// Rule 1 on its own: drop an orphan time whose side has no date. Split out of
+// reconcileSchedule so the interactive editors can build the
 // candidate an edit produces WITHOUT Rule 2's nudge - they reject an out-of-order
 // pair instead of moving the untouched side to meet it. Clearing a due date still
 // has to drop the orphan due time, which is why this half stays automatic.
@@ -73,12 +72,8 @@ export function normalizeScheduleTimes(todo: Todo): Todo {
   if (todo.isCollection) return todo;
 
   let t = todo;
-  if (!t.startDate && (t.startTime !== undefined || t.startPercentage !== undefined)) {
-    t = { ...t, startTime: undefined, startPercentage: undefined };
-  }
-  if (!t.dueDate && (t.dueTime !== undefined || t.duePercentage !== undefined)) {
-    t = { ...t, dueTime: undefined, duePercentage: undefined };
-  }
+  if (!t.startDate && t.startTime !== undefined) t = { ...t, startTime: undefined };
+  if (!t.dueDate && t.dueTime !== undefined) t = { ...t, dueTime: undefined };
   return t;
 }
 
@@ -111,11 +106,11 @@ export function reconcileSchedule(todo: Todo, editedSide?: ScheduleSide): Todo {
   if (startAfterDue(t)) {
     if (editedSide === 'start') {
       t = { ...t, dueDate: t.startDate };
-      if (startAfterDue(t)) t = { ...t, dueTime: t.startTime, duePercentage: t.startPercentage };
+      if (startAfterDue(t)) t = { ...t, dueTime: t.startTime };
     } else {
       // 'due' or backstop: pull start down to due.
       t = { ...t, startDate: t.dueDate };
-      if (startAfterDue(t)) t = { ...t, startTime: t.dueTime, startPercentage: t.duePercentage };
+      if (startAfterDue(t)) t = { ...t, startTime: t.dueTime };
     }
   }
 

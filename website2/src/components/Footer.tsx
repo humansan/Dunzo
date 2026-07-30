@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Github } from 'lucide-react';
+import { Disc, Github } from 'lucide-react';
 import { APP_URL, DEMO_HASH, GITHUB_URL } from '../config';
 
 export const Footer: React.FC = () => {
@@ -46,6 +46,15 @@ export const Footer: React.FC = () => {
               >
                 <Github className="w-4 h-4" />
               </a>
+              <button
+                type="button"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="p-1.5 rounded-lg bg-canvas border border-line-subtle text-fg-muted hover:text-fg transition-colors"
+                aria-label="Back to top"
+                title="Back to top"
+              >
+                <Disc className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
