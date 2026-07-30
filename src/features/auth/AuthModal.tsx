@@ -11,7 +11,7 @@ import { applyTheme } from '@/theme/applyTheme';
 import { btnAccent } from '@/theme/buttons';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import backgroundUrl from '@/assets/background.jpg';
-import logoUrl from '@/assets/icon.svg';
+import logoUrl from '@/assets/icon-invert2.png';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -452,7 +452,7 @@ const LoginScreen: React.FC<{
 
   // Login-specific field styling (kept local so the account modal is unaffected).
   const fieldClass =
-    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:ring-2 focus:ring-(--accent1) transition-all';
+    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:ring-2 focus:ring-xp-tier1 transition-all';
   const fieldLabel =
     'block text-sm font-medium text-fg-muted';
 
@@ -514,7 +514,7 @@ const LoginScreen: React.FC<{
               type="button"
               onClick={handleResend}
               disabled={submitting || resendCooldown > 0}
-              className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer disabled:text-fg-faint disabled:cursor-not-allowed"
+              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer disabled:text-fg-faint disabled:cursor-not-allowed"
             >
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
             </button>
@@ -523,7 +523,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
+              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
             >
               Back to log in
             </button>
@@ -546,7 +546,7 @@ const LoginScreen: React.FC<{
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
+                className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
               >
                 Back to log in
               </button>
@@ -588,7 +588,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
+              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
             >
               Back to log in
             </button>
@@ -710,7 +710,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-              className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] transition-colors cursor-pointer"
+              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
             >
               {mode === 'login' ? 'Create an account' : 'Log in'}
             </button>
@@ -828,7 +828,7 @@ const LoginScreen: React.FC<{
                   <button
                     type="button"
                     onClick={() => switchMode('login')}
-                    className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] underline transition-colors cursor-pointer"
+                    className="font-bold text-[var(--accent2)] hover:text-xp-tier1 underline transition-colors cursor-pointer"
                   >
                     Log in instead
                   </button>
@@ -842,7 +842,7 @@ const LoginScreen: React.FC<{
                     type="button"
                     onClick={() => void enterVerifyMode('unverified-login')}
                     disabled={submitting}
-                    className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] underline transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    className="font-bold text-[var(--accent2)] hover:text-xp-tier1 underline transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     send me a code
                   </button>
@@ -871,26 +871,29 @@ const LoginScreen: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[70] overflow-hidden">
+    <div className="fixed inset-0 z-[70] overflow-hidden bg-canvas">
       {/* Full-bleed background */}
       <img
         src={backgroundUrl}
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover blur-lg scale-120 saturate-110 brightness-110"
+        className="absolute inset-0 h-full w-full object-cover opacity-40 blur-2xl scale-140"
       />
 
       <div className="relative h-full w-full flex flex-col md:flex-row">
         {/* ── Brand panel ── */}
-        <div className="flex-1 flex flex-col justify-center items-end px-16 pt-14 pb-6 md:pr-20 md:py-0">
+        <div className="flex-1 flex flex-col justify-center items-end px-16 pt-14 pb-6 md:pr-20 md:pb-25 font-jakarta">
           <div className="max-w-sm">
-            <img
-              src={logoUrl}
-              alt="Dunzo"
-              className="h-16 w-16 md:h-24 md:w-24 mb-5 md:mb-7 drop-shadow-sm"
-            />
-            <h1 className="text-3xl tracking-tight md:text-5xl font-bold text-neutral-900 leading-[1.05]">
-              Dunzo is where stuff gets done.
+            <div className="flex items-center gap-4 md:h-24 md:w-24 mb-2">
+              <img
+                src={logoUrl}
+                alt="Dunzo"
+                className="h-12 w-12"
+              />
+              <span className="font-bold text-[33px]">Dunzo</span>
+            </div>
+            <h1 className="text-2xl md:text-5xl font-bold text-white leading-[1.05]">
+              A <span className="text-xp-tier1">calmer</span> way to get things done
             </h1>
           </div>
         </div>

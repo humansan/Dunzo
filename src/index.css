@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Noto+Color+Emoji&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Noto+Color+Emoji&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 
 
@@ -13,6 +13,7 @@
   --font-mono: "Space Grotesk", "DM Mono", ui-monospace, SFMono-Regular, monospace;
   --font-mono--font-feature-settings: "tnum";
   --font-emoji: "Noto Color Emoji";
+  --font-jakarta: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
 
   /* ── Theme roles (see src/theme/) ──────────────────────────────────────────
      Declaring one --color-<role> per RoleName makes `bg-<role>`, `text-<role>`,
@@ -66,7 +67,7 @@
   --color-date-next30: #0ea5e9;
   --color-date-next3m: #f59e0b;
   --color-date-nextyear: #64748b;
-  --color-xp-tier1: #ffba44;
+  --color-xp-tier1: #ffcd4e;
   --color-xp-tier2: #8b5cf6;
   --color-xp-bar: #ff723a;
   --color-collection-1: #9ca3af;
@@ -87,6 +88,7 @@
 :root {
   --accent1: #e1e354;
   --accent2: #c6dabe;
+  --xp-tier1: #ffcd4e;
 }
 
 body {
