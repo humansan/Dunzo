@@ -322,7 +322,8 @@ export function buildGroupedItems(
     if (!entry) return [];
     const children = doSort(childrenInGroup.get(taskId) ?? []);
     const hasChildren = children.length > 0;
-    const node: FlatNode = { id: taskId, parentId, depth, entry, hasChildren };
+    // No collections in grouped mode - every parent is a task, so indent == depth.
+    const node: FlatNode = { id: taskId, parentId, depth, indent: depth, entry, hasChildren };
     const rows: GroupRow[] = [{ type: 'task', node, group }];
     if (hasChildren && !collapsed.has(taskId)) {
       for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1, group, taskId));

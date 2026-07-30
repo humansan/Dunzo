@@ -174,7 +174,13 @@ export type GroupRow =
 export interface FlatNode {
   id: string;
   parentId: string | null;
+  // True structural depth (ancestors in the rendered tree). Used for subtree /
+  // sibling reasoning during drag-and-drop, NOT for indentation.
   depth: number;
+  // How far the row is drawn in, in indent steps. Deliberately distinct from
+  // `depth`: a collection doesn't cost its tasks a level (see flattenTree), so
+  // a collection's tasks line up with uncategorized root tasks.
+  indent: number;
   entry: OrganizerEntry;
   hasChildren: boolean;
 }

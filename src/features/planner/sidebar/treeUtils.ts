@@ -47,6 +47,7 @@ export function flattenTree(
         id: e.todo.id,
         parentId: null,
         depth: 0,
+        indent: 0,
         entry: e,
         hasChildren: false,
       }));
@@ -62,16 +63,36 @@ export function flattenTree(
   }
   for (const list of byParent.values()) list.sort(cmp);
   const out: FlatNode[] = [];
-  const walk = (pid: string | null, depth: number) => {
+  // The indent policy, stated once, where the parent is in hand: every task parent
+  // costs its children a level, but a collection costs a level only for nested
+  // collections - the tasks it holds sit at the collection's own indent. That way a
+  // collection's direct tasks line up with uncategorized root tasks, while subtasks
+  // still step in one level from their parent task at any depth.
+  const indentOf = (parent: FlatNode | null, e: OrganizerEntry): number => {
+    if (!parent) return 0;
+    if (!parent.entry.todo.isCollection) return parent.indent + 1;
+    return e.todo.isCollection ? parent.indent + 1 : parent.indent;
+  };
+
+  const walk = (parent: FlatNode | null) => {
+    const pid = parent?.id ?? null;
     for (const e of byParent.get(pid) ?? []) {
       const id = e.todo.id;
       const hasChildren = (byParent.get(id)?.length ?? 0) > 0;
-      out.push({ id, parentId: pid, depth, entry: e, hasChildren });
+      const node: FlatNode = {
+        id,
+        parentId: pid,
+        depth: parent ? parent.depth + 1 : 0,
+        indent: indentOf(parent, e),
+        entry: e,
+        hasChildren,
+      };
+      out.push(node);
       const skip = opts.collapsed?.has(id) || opts.excludeId === id;
-      if (!skip) walk(id, depth + 1);
+      if (!skip) walk(node);
     }
   };
-  walk(null, 0);
+  walk(null);
   return out;
 }
 

@@ -28,7 +28,7 @@ export const Hero: React.FC = () => {
   const taglineWords = taglineText.split(" ");
 
   return (
-    <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-canvas">
+    <section className="relative pt-26 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-canvas">
       {/* Background image blur effect */}
       <div className="absolute inset-0 opacity-25 pointer-events-none mix-blend-screen overflow-hidden">
         <img
