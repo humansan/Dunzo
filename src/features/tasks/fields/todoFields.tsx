@@ -63,7 +63,7 @@ export const CompletedToggle: React.FC<{
   size?: number;
   className?: string;
 }> = ({ completed, onToggle, size = 22, className = '' }) => (
-  <button onClick={onToggle} className={`shrink-0 cursor-pointer ${className}`}>
+  <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className={`shrink-0 cursor-pointer ${className}`}>
     <motion.div
       animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
       transition={{ duration: 0.3 }}
@@ -136,12 +136,20 @@ export const NotesField: React.FC<{
     el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
   };
 
-  useLayoutEffect(resize, [value]);
+  // Mount-only sizing pass; further growth while typing comes from onInput.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(resize, []);
 
   return (
     <textarea
       ref={ref}
-      value={value}
+      // Uncontrolled on purpose: `value` is saved via an optimistic mutation
+      // (see useOptimisticListMutation), which lands a render tick after the
+      // keystroke. A controlled textarea would briefly re-sync to the stale
+      // prop in between, and a JS-set `.value` always snaps the caret to the
+      // end - invisible when typing at the end, but every mid-string edit
+      // would get bounced there. Same fix as the title editor in HubRow.
+      defaultValue={value}
       autoFocus={autoFocus}
       onBlur={onBlur}
       onChange={(e) => onChange(e.target.value)}

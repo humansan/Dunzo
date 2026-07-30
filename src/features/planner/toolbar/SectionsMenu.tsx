@@ -4,6 +4,7 @@ import { SectionsConfig } from '@/features/planner/types';
 import { PopoverMenu } from '@/common/ui';
 import { ListSelect } from '@/common/ui';
 import { Switch } from '@/common/ui';
+import { SetForAllButton } from '@/features/planner/toolbar/SetForAllButton';
 
 
 // Three-way segmented control for showLeafTasks.
@@ -36,8 +37,9 @@ export const SectionsMenu: React.FC<{
   anchor: { right: number; top: number };
   config: SectionsConfig;
   onChange: (config: SectionsConfig) => void;
+  onSetForAll?: () => void;
   onClose: () => void;
-}> = ({ anchor, config, onChange, onClose }) => {
+}> = ({ anchor, config, onChange, onSetForAll, onClose }) => {
   const set = <K extends keyof SectionsConfig>(key: K, val: SectionsConfig[K]) =>
     onChange({ ...config, [key]: val });
 
@@ -46,8 +48,9 @@ export const SectionsMenu: React.FC<{
       anchor={anchor}
       title="Sections"
       onClose={onClose}
-      className="w-[280px] p-3 space-y-3"
-      headerClassName="px-0.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-fg-ghost"
+      className="w-[280px] p-3 space-y-2"
+      headerClassName="pb-1 text-xs font-bold text-fg"
+      headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="section settings" />}
     >
         <div className={sectionCls}>
           {/* Auto-archive */}
@@ -69,8 +72,8 @@ export const SectionsMenu: React.FC<{
           </div>
         </div>
 
-        <div className={sectionCls}>
-          {/* Show leaf tasks */}
+        {/* <div className={sectionCls}>
+          { Show leaf tasks (comment this out)}
           <div className="space-y-1.5">
             <span className={labelCls}>Show ungrouped tasks</span>
             <Segment
@@ -83,7 +86,7 @@ export const SectionsMenu: React.FC<{
               onChange={(v) => set('showLeafTasks', v as SectionsConfig['showLeafTasks'])}
             />
           </div>
-        </div>
+        </div> */}
 
         <div className={sectionCls}>
           {/* Group by */}

@@ -34,6 +34,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { pillBg, pillBorder } from '@/theme/pill';
 import { collectionColor } from '@/theme/collectionColor';
 import { useThemeColor } from '@/theme/useThemeColor';
+import fireUrl from '@/assets/Fire.svg';
+import fireAnimUrl from '@/assets/Fire.gif';
 
 interface StatsViewProps {
   dayTodos: DayTodos[];
@@ -47,6 +49,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   // XP stars/streak keep their fixed signature colors (gold/purple) across themes; the
   // chart grid/axis follow the theme (resolved to concrete colors for recharts SVG).
   const GOLD = useThemeColor('xp-tier1');
+  const DIMGOLD = useThemeColor('warning-tint');
   const CORAL = useThemeColor('xp-bar');
   const VIOLET = useThemeColor('xp-tier2');
   const FG = useThemeColor('fg');
@@ -442,7 +445,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
   };
 
   return (
-    <div className="py-8 max-w-5xl mx-auto px-4">
+    <div className="py-2 max-w-5xl mx-auto px-4">
       {/* Page Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent1)] text-canvas shadow-lg shadow-[var(--accent1)]/10">
@@ -458,13 +461,23 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
         <div className="flex flex-col sm:flex-row items-center gap-8 text-center sm:text-left">
           {/* Filled Circle badge */}
           <div 
-            className="min-w-24 h-24 pl-9 pr-5 rounded-full flex items-center justify-center shrink-0 text-black text-4xl font-extrabold font-mono tracking-tighter"
+            className="min-w-24 h-20 pl-7 pr-3 rounded-full flex items-center justify-center shrink-0 text-4xl font-extrabold font-mono tracking-tighter"
             style={{
-              backgroundColor: GOLD,
-              boxShadow: `0 0 25px color-mix(in srgb, ${GOLD} 31%, transparent)`,
+              color: streakInfo.current > 0 ? "black" : GOLD,
+              backgroundColor: streakInfo.current > 0 ? GOLD : DIMGOLD,
+              boxShadow: streakInfo.current > 0 ? `0 0 25px color-mix(in srgb, ${GOLD} 31%, transparent)` : "",
             }}
           >
-            {streakInfo.current}🔥
+            {streakInfo.current}
+            {streakInfo.current > 0 ? (
+                <picture className="pb-0.5 px-0.75">
+                  <img src={fireAnimUrl} alt="🔥" width="48" height="48" />
+                </picture>
+              ):(
+                <picture className="pb-0.5 px-0.75">
+                  <img src={fireUrl} alt="🔥" width="48" height="48" />
+                </picture>
+            )}
           </div>
           
           {/* Records Text Block */}
@@ -505,7 +518,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
             <span className={`text-xl font-bold ${comparativeStats.isUp7 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {comparativeStats.isUp7 ? '⏶' : '⏷'}
             </span>
-            <span className="text-3xl font-bold tracking-tight text-fg">
+            <span className="text-3xl font-bold tracking-tight text-fg font-mono">
               {comparativeStats.xp7}
             </span>
             <span className="text-xs font-medium text-fg-ghost font-mono ml-0.5">XP</span>
@@ -522,7 +535,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
             <span className={`text-xl font-bold ${comparativeStats.isUp30 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {comparativeStats.isUp30 ? '⏶' : '⏷'}
             </span>
-            <span className="text-3xl font-bold tracking-tight text-fg">
+            <span className="text-3xl font-bold tracking-tight text-fg font-mono">
               {comparativeStats.xp30}
             </span>
             <span className="text-xs font-medium text-fg-ghost font-mono ml-0.5">XP</span>
@@ -539,7 +552,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
             <span className={`text-xl font-bold ${comparativeStats.isUp365 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {comparativeStats.isUp365 ? '⏶' : '⏷'}
             </span>
-            <span className="text-3xl font-bold tracking-tight text-fg">
+            <span className="text-3xl font-bold tracking-tight text-fg font-mono">
               {comparativeStats.xp365}
             </span>
             <span className="text-xs font-medium text-fg-ghost font-mono ml-0.5">XP</span>

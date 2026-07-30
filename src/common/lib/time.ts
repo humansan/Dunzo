@@ -117,7 +117,12 @@ export function timeToPercentage(time: string): number | undefined {
   if (!match) return undefined;
   const hours = parseInt(match[1]);
   const minutes = parseInt(match[2]);
-  if (hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) return undefined;
+  if (hours < 0 || minutes < 0 || minutes >= 60) return undefined;
+  // "24:00" resolves to 100% rather than undefined. New writes clamp end-of-day
+  // to 23:59 (see minutesToTime), but an older calendar build wrote "24:00" for a
+  // block dragged to the bottom of the grid, and returning undefined for those is
+  // what made the daily-list time chip silently drop the % on midnight tasks.
+  if (hours > 24 || (hours === 24 && minutes > 0)) return undefined;
   return parseFloat(((hours * 60 + minutes) / (24 * 60) * 100).toFixed(2));
 }
 
@@ -138,10 +143,29 @@ export function percentageToTime(percentage: number): string | undefined {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Minutes-from-midnight → "HH:MM", clamped to 23:59.
+ *
+ * "24:00" is not a representable time here: hours are 0-23 everywhere else in the
+ * app, so a stray "24:00" formats as "12:00 PM" and used to yield no percentage
+ * at all. The calendar grid runs to minute 1440 (its bottom edge), so a block
+ * dragged/resized to end at midnight lands exactly there - this is the boundary
+ * that keeps that geometry from leaking into the data. Same clamp percentageToTime
+ * already applies for 100%.
+ */
+export function minutesToTime(mins: number): string {
+  const clamped = Math.max(0, Math.min(Math.round(mins), 1439));
+  const hours = Math.floor(clamped / 60);
+  const minutes = clamped % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
 export function formatTime12h(time: string): string {
   const match = time.match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return time;
-  let hours = parseInt(match[1]);
+  // % 24 so a legacy "24:00" reads as midnight ("12:00 AM") instead of falling
+  // into the >= 12 branch below and rendering as "12:00 PM".
+  let hours = parseInt(match[1]) % 24;
   const minutes = parseInt(match[2]);
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;

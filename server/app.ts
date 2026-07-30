@@ -72,29 +72,33 @@ app.get('/api/me', requireAuth, (req, res) => {
   res.json({ userId: req.userId });
 });
 
-// Public: does an account already exist for this email? Used by the email-first
-// signup step to steer existing users to log in instead of creating a duplicate.
+// Public: does an account already exist for this email, and is it verified? Used
+// by the email-first signup step to steer existing users to log in instead of
+// creating a duplicate - and, when the account exists but was never verified, to
+// drop them straight into the code screen so an abandoned signup can be finished.
 // Reads Neon Auth's (Better Auth) `neon_auth."user"` table - `user` is a reserved
 // word so it must be quoted. Fail-open: if the table/query is unavailable, report
 // `exists: false` so signup is never wrongly blocked (Better Auth still rejects a
-// true duplicate at signUp time).
+// true duplicate at signUp time), and `verified: true` so nobody is pushed into a
+// verification flow on the strength of a failed lookup.
 app.get(
   '/api/auth/email-exists',
   asyncHandler(async (req, res) => {
     const email = String(req.query.email ?? '').trim().toLowerCase();
     if (!email) {
-      res.json({ exists: false });
+      res.json({ exists: false, verified: true });
       return;
     }
     try {
       const result: any = await db.execute(
-        sql`select 1 from neon_auth."user" where lower(email) = ${email} limit 1`
+        sql`select "emailVerified" from neon_auth."user" where lower(email) = ${email} limit 1`
       );
       const rows = result?.rows ?? result ?? [];
-      res.json({ exists: Array.isArray(rows) ? rows.length > 0 : Boolean(rows) });
+      const row = Array.isArray(rows) ? rows[0] : undefined;
+      res.json({ exists: Boolean(row), verified: row ? row.emailVerified === true : true });
     } catch (err) {
       console.warn('[api] email-exists check failed:', err);
-      res.json({ exists: false });
+      res.json({ exists: false, verified: true });
     }
   })
 );

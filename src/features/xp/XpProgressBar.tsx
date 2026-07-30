@@ -43,12 +43,12 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const reachTarget = target >= avgValue ? target : avgValue;
   const reachText = target >= avgValue ? 'yesterday' : avgLabel;
   const remaining = reachTarget - earned;
-  const reachedTarget = earned >= reachTarget;
-  const percent = Math.min(100, (earned / reachTarget) * 100);
+  const reachedTarget = earned > 0 && earned >= reachTarget;
+  const percent = earned > 0 ? Math.min(100, (earned / reachTarget) * 100): 0;
 
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
-  const lit = reachedWeekBest ? VIOLET : earned >= reachTarget ? GOLD : null;
+  const lit = reachedWeekBest ? VIOLET : reachedTarget ? GOLD : null;
 
   // let targets: { label: string; value: number }[] = [
   //   { label: 'yesterday', value: target },
@@ -59,16 +59,16 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   let status: string;
 
   if (!reachedTarget) {
-    status = reachTarget === 0 ? `Any XP beats ${reachText}` : `${remaining} XP to reach ${reachText}`;
+    status = reachTarget === 0 ? `Any xp beats ${reachText}` : `${remaining} xp to reach ${reachText}`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
-    status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} XP to 7-day best`;
+    status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} xp to 7-day best`;
   } else if (!reachedAllTimeBest) {
     // 7-day best cleared (violet). Point at the all-time best.
-    status = `🎊🔥On a roll!! ⬩ ${bestAllTime - earned} XP to all-time best`;
+    status = `🎊🔥On a roll!! ⬩ ${bestAllTime - earned} xp to all-time best`;
   } else {
     const over = earned - bestAllTime;
-    status = over > 0 ? `🥳😭🏆New all-time best!!! ⬩ +${over} XP` : 'All-time best matched!!';
+    status = over > 0 ? `🥳😭🏆New all-time best!!! ⬩ +${over} xp` : 'All-time best matched!!';
   }
 
   const pctLabel = `${Math.round(percent)}%`;

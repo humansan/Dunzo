@@ -12,7 +12,7 @@
 // and each feature reads its own queries directly.
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
-import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos } from '@/features/tasks/model';
+import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
 import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { timeToPercentage } from '@/common/lib/time';
@@ -506,22 +506,22 @@ function useProvideAppData() {
   );
 
   // ── Global task search (⌘/Ctrl+K or the ribbon Search button) ────────────────
-  // Search lives at the app level so it's reachable from every view. It scopes to
-  // the active workspace's tasks; opening a result shows its full view (rendered
-  // by AppShell).
+  // Search lives at the app level so it's reachable from every view. It covers the
+  // user's whole task set (inWorkspace is a no-op while workspaces are disabled -
+  // see filters.ts); opening a result shows its full view (rendered by AppShell).
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // Organizer-scoped set: the two-pane (table) search view groups tasks by their
   // collection, and the reparent/parent pickers choose a Planner task - both want
   // only tasks that live in the Task Planner.
   const searchEntries = useMemo(
-    () => getOrganizerTodos(dayTodos).filter((e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId),
+    () => getOrganizerTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
   // Broad set: the flat (list) search view searches every unarchived task, whether
   // it lives in the Planner, the daily list, or both - so a daily-list-only task is
   // still findable via ⌘/Ctrl+K.
   const searchFlatEntries = useMemo(
-    () => getSearchableTodos(dayTodos).filter((e) => (e.todo.workspaceId ?? 'personal') === activeWorkspaceId),
+    () => getSearchableTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
   useEffect(() => {

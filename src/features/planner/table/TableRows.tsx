@@ -31,7 +31,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
   effectiveGrid,
 }) => {
   const { editing, startEdit, stopEdit, openMenu, toggleCollapse, onActivate, selectedId } = interaction;
-  const { onSaveTodo, onToggleTodo, onAddSubtask, onQuickAddTask, onQuickAddInGroup, onNewInView } = rowHandlers;
+  const { onSaveTodo, onToggleTodo, onAddSubtask, onQuickAddTask, onQuickAddInGroup, onNewInView, onOpenTask } = rowHandlers;
   const {
     sectionsConfig,
     flattened,
@@ -74,6 +74,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
           wrappedFields={wrappedFields}
           taskCount={node.entry.todo.isCollection ? (visibleTaskCounts.get(node.id) ?? 0) : undefined}
           hideDragHandle={!dnd}
+          onOpenTask={onOpenTask}
           onActivate={onActivate}
           isSelected={selectedId === node.id}
           isDragSource={dnd?.rowDragId === node.id}
@@ -118,6 +119,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
             lastColKey={lastColKey}
             wrappedFields={wrappedFields}
             hideDragHandle={!dnd}
+            onOpenTask={onOpenTask}
             onActivate={onActivate}
             isSelected={selectedId === row.node.id}
             isDragSource={dnd?.rowDragId === row.node.id}

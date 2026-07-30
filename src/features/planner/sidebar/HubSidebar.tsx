@@ -31,7 +31,7 @@ export const HubSidebar: React.FC<{
   collectionCount: (cid: string) => number;
   collapsedColls: Set<string>;
   toggleCollColl: (id: string) => void;
-  openMenu: (id: string, x: number, y: number) => void;
+  openMenu: (id: string, x: number, y: number, sidebar?: true) => void;
   onNewCollection: () => void;
   // Collection drag-and-drop (reorder + nest)
   dnd: ReturnType<typeof useCollectionDnD>;

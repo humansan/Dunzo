@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { TaskOverlay } from '@/features/tasks';
+import { withBase } from '@/lib/basePath';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 
 // Standalone /task/$taskId route - only reached by a cold deep-link (reloading the
@@ -17,6 +18,6 @@ function TaskRoute() {
   // This route only mounts on a cold deep-link, so there is no in-app history
   // entry behind it - history.back() would leave the app (to the new-tab page).
   // The in-app overlay close (AppShell.closeOverlay) is the one that pops.
-  const close = () => router.history.push('/today');
+  const close = () => router.history.push(withBase('/today'));
   return <TaskOverlay taskId={taskId} onClose={close} />;
 }

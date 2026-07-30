@@ -1,8 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run vercel-build",
+  "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/today", "destination": "/app/today" },
+    { "source": "/planner/:path*", "destination": "/app/planner/:path*" },
+    { "source": "/calendar", "destination": "/app/calendar" },
+    { "source": "/trackers", "destination": "/app/trackers" },
+    { "source": "/stats", "destination": "/app/stats" },
+    { "source": "/settings", "destination": "/app/settings" },
+    { "source": "/task/:path*", "destination": "/app/task/:path*" },
+    { "source": "/login", "destination": "/app/login" }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/", "destination": "/landing/index.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/app", "destination": "/app/index.html" },
+    { "source": "/app/(.*)", "destination": "/app/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

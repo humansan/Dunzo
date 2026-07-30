@@ -12,6 +12,7 @@ import { SettingsOverlay } from '@/features/settings';
 import { TaskOverlay } from '@/features/tasks';
 import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '@/lib/app-data';
+import { withBase } from '@/lib/basePath';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 import { useStopwatch } from '@/features/stopwatch';
 
@@ -89,7 +90,7 @@ export const AppShell: React.FC = () => {
   // window-focus revalidation - routes back to /login. This replaces the old
   // `!isAuthenticated → AuthModal` render gate that used to live here.
   useEffect(() => {
-    if (!sessionPending && !isAuthenticated) router.history.push('/login');
+    if (!sessionPending && !isAuthenticated) router.history.push(withBase('/login'));
   }, [sessionPending, isAuthenticated, router]);
 
   // ── Auth bootstrap: the beforeLoad guard already proved a session, so this only

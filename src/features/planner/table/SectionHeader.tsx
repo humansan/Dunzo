@@ -77,7 +77,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       onClick={onPillClick}
       style={chipStyle(color)}
       className={`min-w-0 max-w-full truncate rounded-full px-2.5 py-px font-medium ${
-        onPillClick ? 'cursor-text' : ''
+        onPillClick ? 'cursor-pointer' : ''
       } ${mode === 'list' ? 'text-base' : 'text-sm'}`}
     >
       {label}
@@ -100,8 +100,8 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         mode === 'column'
           ? 'items-center min-h-[36px]'
           : mode === 'list'
-            ? 'items-end min-h-10 mt-5'
-            : 'items-end min-h-12 pt-4'
+            ? 'items-end min-h-10 mt-6'
+            : 'items-end min-h-8 mt-5'
       } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-fill' : ''} ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}

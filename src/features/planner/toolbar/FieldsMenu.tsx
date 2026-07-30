@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GripVertical, Eye, EyeOff, Lock, WrapText } from 'lucide-react';
 import { ColDef, ColKey, NAME_COL_KEY } from '@/features/planner/types';
 import { PopoverMenu } from '@/common/ui';
+import { SetForAllButton } from '@/features/planner/toolbar/SetForAllButton';
 
 // ── Fields menu ──────────────────────────────────────────────────────────────
 // Dropdown listing every column. Name is pinned first and locked; the rest can
@@ -17,8 +18,9 @@ export const FieldsMenu: React.FC<{
   onMove: (dragKey: ColKey, targetKey: ColKey, pos: 'before' | 'after') => void;
   onToggle: (key: ColKey) => void;
   onToggleWrap: (key: ColKey) => void;
+  onSetForAll?: () => void;
   onClose: () => void;
-}> = ({ anchor, order, colByKey, hidden, wrapped, onMove, onToggle, onToggleWrap, onClose }) => {
+}> = ({ anchor, order, colByKey, hidden, wrapped, onMove, onToggle, onToggleWrap, onSetForAll, onClose }) => {
   const [dragKey, setDragKey] = useState<ColKey | null>(null);
   const [dropInfo, setDropInfo] = useState<{ key: ColKey; pos: 'before' | 'after' } | null>(null);
 
@@ -37,7 +39,13 @@ export const FieldsMenu: React.FC<{
   };
 
   return (
-    <PopoverMenu anchor={anchor} title="Fields" onClose={onClose} className="w-60 p-1">
+    <PopoverMenu
+      anchor={anchor}
+      title="Fields"
+      onClose={onClose}
+      className="w-60 p-1 space-y-2.5"
+      headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="fields" />}
+    >
         <div
           className="space-y-0.5"
           onDragOver={(e) => { if (dragKey) e.preventDefault(); }}

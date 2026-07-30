@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Astroid } from 'lucide-react';
 import { useThemeColor } from '@/theme/useThemeColor';
 import { ParticleBurst } from '@/common/ui';
+// import fireUrl from '@/assets/fire-svg.svg';
+import fireUrl from '@/assets/Fire.svg';
+import fireAnimUrl from '@/assets/Fire.gif';
+
 
 interface StarStreakProps {
   // The three goal flags in slot order: completed a task, beat yesterday, beat the
@@ -61,7 +65,7 @@ const StarIcon = React.memo(
         transition={{ duration: 1.1, ease: POP }}
         className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
       >
-        <Astroid size={32} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
+        <Astroid size={34} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>
       <AnimatePresence>{burst && <ParticleBurst />}</AnimatePresence>
     </div>
@@ -110,7 +114,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
             className="relative flex items-center justify-center min-w-12 h-13 rounded-full pl-4 pr-1.5"
             animate={{
               backgroundColor: maxed ? GOLD : GOLD_BG,
-              scale: streakPulse ? [1, 1.1, 0.9, 1] : 1,
+              scale: bursting ? [1, 1.1, 0.9, 1] : 1,
             }}
             transition={{
               backgroundColor: { duration: 0.4 },
@@ -119,12 +123,21 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
           >
             <motion.span
               key={streak}
-              className="text-3xl font-bold leading-none"
+              className="text-3xl font-bold leading-none flex items-center"
               style={{ fontVariantNumeric: 'tabular-nums' }}
               animate={{ color: maxed ? '#000000' : ["white", GOLD_TEXT], scale: maxed ? [1, 1.25, 1] : 1}}
               transition={{ scale: { duration: 0.6, ease: POP }, color: { duration: 0.4 } }}
             >
-              {streak}🔥
+              {streak}
+              {maxed ? (
+                <picture className="pb-0.5 px-0.75">
+                  <img src={fireAnimUrl} alt="🔥" width="34" height="34" />
+                </picture>
+              ):(
+                <picture className="pb-0.5 px-0.75">
+                  <img src={fireUrl} alt="🔥" width="34" height="34" />
+                </picture>
+              )}
             </motion.span>
           </motion.div>
         </div>

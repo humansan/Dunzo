@@ -29,11 +29,9 @@ export const TwoPaneResults: React.FC<{
   const { visibleCollections, allCount, uncategorizedCount, collectionCount, bodyModel } =
     useTaskFinderData({ entries, todoById, matches, selectedView, collapsed, collapsedColls });
 
-  // Clicking any cell picks the task (startEdit is repurposed as the row's choose
-  // action, as in the flat view); the checkbox still toggles completion.
+  // Clicking the cell picks the task via onOpenTask; the checkbox still toggles completion.
   const interaction: TableInteraction = {
     editing: null,
-    startEdit: (id) => onPick(id),
     stopEdit: NOOP,
     openMenu: NOOP,
     toggleCollapse: toggleId(setCollapsed),
@@ -44,6 +42,7 @@ export const TwoPaneResults: React.FC<{
     onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
+    onOpenTask: onPick,
   };
 
   return (

@@ -4,6 +4,7 @@ import { ColDef, ColKey, FilterRule, FilterCondition, FilterMatch, FILTER_CONDIT
 import { btnGhost } from '@/theme/buttons';
 import { PopoverMenu } from '@/common/ui';
 import { ListSelect } from '@/common/ui';
+import { SetForAllButton } from '@/features/planner/toolbar/SetForAllButton';
 
 export const FilterMenu: React.FC<{
   anchor: { right: number; top: number };
@@ -14,8 +15,9 @@ export const FilterMenu: React.FC<{
   uniqueValues: Map<ColKey, string[]>;
   onChange: (filters: FilterRule[]) => void;
   onChangeMatch: (match: FilterMatch) => void;
+  onSetForAll?: () => void;
   onClose: () => void;
-}> = ({ anchor, filters, match, allColumns, uniqueValues, onChange, onChangeMatch, onClose }) => {
+}> = ({ anchor, filters, match, allColumns, uniqueValues, onChange, onChangeMatch, onSetForAll, onClose }) => {
   const addFilter = () => {
     const defaultField = allColumns[0]?.key ?? 'status';
     onChange([
@@ -39,7 +41,13 @@ export const FilterMenu: React.FC<{
   const remove = (id: string) => onChange(filters.filter((f) => f.id !== id));
 
   return (
-    <PopoverMenu anchor={anchor} title="Filters" onClose={onClose} className="w-[500px] p-2">
+    <PopoverMenu
+      anchor={anchor}
+      title="Filters"
+      onClose={onClose}
+      className="w-130 p-2 space-y-2.5"
+      headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="filters" />}
+    >
         {filters.length === 0 ? (
           <p className="px-2 py-2.5 text-[13px] text-fg-ghost text-center">No filters applied</p>
         ) : (
@@ -51,11 +59,11 @@ export const FilterMenu: React.FC<{
                   {/* Conjunction: the first row is a static "Where"; every later row picks
                       And/Or. It's one per-view choice, so changing any row flips them all. */}
                   {i === 0 ? (
-                    <span className="w-[62px] shrink-0 px-2 text-[13px] text-fg-faint">Where</span>
+                    <span className="w-20 shrink-0 px-2 text-[13px] text-fg-faint">Where</span>
                   ) : (
                     <ListSelect
                       ariaLabel="Match"
-                      className="w-[62px] shrink-0"
+                      className="w-20 shrink-0"
                       value={match}
                       onChange={(v) => onChangeMatch(v as FilterMatch)}
                       options={[
@@ -110,7 +118,7 @@ export const FilterMenu: React.FC<{
         <button
           type="button"
           onClick={addFilter}
-          className={`flex items-center gap-1.5 w-full px-2 py-1.5 mt-0.5 rounded-md text-[13px] ${btnGhost()}`}
+          className={`flex items-center gap-1.5 w-full px-2 py-1.5 mt-2 rounded-md text-[13px] ${btnGhost()}`}
         >
           <Plus size={13} />
           Add filter

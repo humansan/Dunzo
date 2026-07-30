@@ -11,7 +11,7 @@ import { ListSelect, textInputCls } from '@/common/ui';
 import { Switch } from '@/common/ui';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnNeutral } from '@/theme/buttons';
 
 type CountdownMode = 'off' | 'time' | 'percent';
 type Section = 'profile' | 'settings' | 'data';
@@ -22,6 +22,8 @@ interface AccountModalProps {
   email?: string;
   name?: string;
   onLogout: () => void;
+  /** Refetch the auth session after a profile edit (name), so it lands app-wide. */
+  onSessionChanged?: () => void;
   weekStartsOn: number;
   onUpdateWeekStartsOn: (val: number) => void;
   countdownMode: CountdownMode;
@@ -98,10 +100,17 @@ const ProfilePane: React.FC<{
   email?: string;
   name?: string;
   onLogout: () => void;
-}> = ({ email, name, onLogout }) => {
-  const [newEmail, setNewEmail] = useState('');
-  const [emailMsg, setEmailMsg] = useState<FormMsg>(null);
-  const [emailBusy, setEmailBusy] = useState(false);
+  onSessionChanged?: () => void;
+}> = ({ email, name, onLogout, onSessionChanged }) => {
+  const [newName, setNewName] = useState(name ?? '');
+  const [nameMsg, setNameMsg] = useState<FormMsg>(null);
+  const [nameBusy, setNameBusy] = useState(false);
+
+  // Adopt the session's name once it arrives (or if it changes elsewhere), but
+  // never clobber what the user is currently typing.
+  useEffect(() => {
+    if (!nameBusy) setNewName(name ?? '');
+  }, [name]);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -109,20 +118,26 @@ const ProfilePane: React.FC<{
   const [pwMsg, setPwMsg] = useState<FormMsg>(null);
   const [pwBusy, setPwBusy] = useState(false);
 
-  const handleEmail = async (e: React.FormEvent) => {
+  const handleName = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEmailMsg(null);
-    setEmailBusy(true);
+    setNameMsg(null);
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      setNameMsg({ kind: 'err', text: 'Name cannot be empty.' });
+      return;
+    }
+    setNameBusy(true);
     try {
-      const { error } = await authClient.changeEmail({ newEmail });
-      if (error) throw new Error(error.message || 'Could not update email');
-      // better-auth sends a confirmation link when the current email is verified.
-      setEmailMsg({ kind: 'ok', text: 'Check your inbox to confirm the new email.' });
-      setNewEmail('');
+      const { error } = await authClient.updateUser({ name: trimmed });
+      if (error) throw new Error(error.message || 'Could not update name');
+      setNewName(trimmed);
+      // Pull the session again so the new name shows everywhere it's read from.
+      onSessionChanged?.();
+      setNameMsg({ kind: 'ok', text: 'Name updated.' });
     } catch (err) {
-      setEmailMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong' });
+      setNameMsg({ kind: 'err', text: err instanceof Error ? err.message : 'Something went wrong' });
     } finally {
-      setEmailBusy(false);
+      setNameBusy(false);
     }
   };
 
@@ -168,26 +183,44 @@ const ProfilePane: React.FC<{
         </div>
       </div>
 
-      {/* Change email */}
+      {/* Name is editable; email is not - Neon Auth (our auth provider) has no
+          email-change capability: `changeEmail` is disabled server-side and there's
+          no config flag to enable it, so the call could only ever fail. Rather than
+          a form that always errors, say so plainly. Revisit if Neon ships support. */}
       <div>
-        <SectionHeader>Email</SectionHeader>
-        <form onSubmit={handleEmail} className="space-y-2">
+        <SectionHeader>Name &amp; Email</SectionHeader>
+        <form onSubmit={handleName} className="space-y-2">
           <div>
-            <label className={fieldLabel}>New email</label>
+            <label className={fieldLabel}>Display name</label>
             <input
-              type="email"
+              type="text"
               required
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
+              value={newName}
+              onChange={(e) => {
+                setNewName(e.target.value);
+                if (nameMsg) setNameMsg(null);
+              }}
               className={fieldInput}
-              placeholder={email ?? 'you@example.com'}
+              placeholder="Your name"
             />
           </div>
-          <button type="submit" disabled={emailBusy || !newEmail || newEmail === email} className={formButton}>
-            {emailBusy ? 'Updating…' : 'Update Email'}
+          <button
+            type="submit"
+            disabled={nameBusy || !newName.trim() || newName.trim() === (name ?? '')}
+            className={formButton}
+          >
+            {nameBusy ? 'Saving…' : 'Update Name'}
           </button>
-          <StatusLine msg={emailMsg} />
+          <StatusLine msg={nameMsg} />
         </form>
+
+        <div className="mt-3 rounded-2xl border border-line bg-fill-subtle px-4 py-3.5">
+          <p className="text-[13px] text-fg-subtle">{email ?? 'Not set'}</p>
+          <p className="text-[11px] leading-relaxed text-fg-ghost mt-1.5">
+            Your email is set when you sign up and can’t be changed yet. To use a different
+            address, you’ll need a new account for now.
+          </p>
+        </div>
       </div>
 
       {/* Change password */}
@@ -470,7 +503,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={handleExport}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-fill-subtle py-2.5 text-sm font-bold text-fg-subtle transition-all hover:bg-fill hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          className={"flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold disabled:cursor-not-allowed " + btnNeutral}
         >
           <Download size={15} />
           {busy === 'export' ? 'Exporting…' : 'Export'}
@@ -479,7 +512,7 @@ const DataPane: React.FC = () => {
           type="button"
           onClick={() => importRef.current?.click()}
           disabled={busy !== null}
-          className="flex items-center justify-center gap-2 rounded-xl bg-fill-subtle py-2.5 text-sm font-bold text-fg-subtle transition-all hover:bg-fill hover:text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          className={"flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold disabled:cursor-not-allowed " + btnNeutral}
         >
           <Upload size={15} />
           {busy === 'import' ? 'Importing…' : 'Import'}
@@ -514,6 +547,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   email,
   name,
   onLogout,
+  onSessionChanged,
   weekStartsOn,
   onUpdateWeekStartsOn,
   countdownMode,
@@ -631,7 +665,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 ))}
               </div>
 
-              {section === 'profile' && <ProfilePane email={email} name={name} onLogout={onLogout} />}
+              {section === 'profile' && (
+                <ProfilePane
+                  email={email}
+                  name={name}
+                  onLogout={onLogout}
+                  onSessionChanged={onSessionChanged}
+                />
+              )}
               {section === 'settings' && (
                 <SettingsPane
                   weekStartsOn={weekStartsOn}

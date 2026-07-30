@@ -15,15 +15,30 @@ import {
 } from 'lucide-react';
 import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
-import { timeToPercentage, formatTime12h } from '@/common/lib/time';
+import { timeToPercentage, formatTime12h, minutesToTime } from '@/common/lib/time';
 import { isDone, toggledStatus } from '@/features/tasks/model';
-import { collectionOf, showsOnDailyChecklist, todoIndex } from '@/features/tasks/model';
+import { collectionOf, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
 import { Checkbox } from '@/common/ui/Checkbox';
 import { useSyncedCalendarFilter } from '@/lib/query/settings';
 import { CollectionTree } from '@/features/planner/sidebar/CollectionTree';
 import { useCollectionTree, taskCollectionAncestors } from './useCollectionTree';
+import {
+  MINS_PER_DAY,
+  dayIndex,
+  dateStrFromIndex,
+  timeToMinutes,
+  todoSpan,
+  segmentFor,
+  shiftSpan,
+  resizeSpan,
+  decomposeSpan,
+  isRenderableSpan,
+  hasStartPoint,
+  hasDuePoint,
+  type TodoSpan,
+} from './span';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -39,27 +54,10 @@ const INDENT_STEP_PCT = 15;  // % of the column each indent level shifts right
 const MAX_LEVELS = 5;       // cap so deep stacks stop indenting instead of overflowing
 const Z_EVENT_BASE = 10;    // resting z for a level-0 card (matches the old flat z-10)
 const Z_EVENT_HOVER = 40;   // hovered card jumps here - above siblings, below the drag ghost (z-50)
-const HOVER_RAISE_DELAY_MS = 250; // dwell before a hovered card lifts, so passing over one doesn't bury an indented card
-
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + (m || 0);
-}
+const HOVER_RAISE_DELAY_MS = 400; // dwell before a hovered card lifts, so passing over one doesn't bury an indented card
 
 function minutesToPx(mins: number): number {
   return (mins / 60) * HOUR_HEIGHT;
-}
-
-// A timed task's vertical bounds in minutes. A missing side defaults to a 30-min
-// block (start-only → start..start+30; end-only → end-30..end); the calendar's
-// filter guarantees at least one time is set, so the opposite field is present.
-function eventBounds(todo: Todo): { startMin: number; endMin: number } {
-  const startMin = todo.startTime
-    ? timeToMinutes(todo.startTime)
-    : Math.max(0, timeToMinutes(todo.dueTime!) - 30);
-  let endMin = todo.dueTime ? timeToMinutes(todo.dueTime) : startMin + 30;
-  if (endMin <= startMin) endMin = startMin + 30;
-  return { startMin, endMin };
 }
 
 // Assign each event a cascade indent lane, Notion-style: the smallest lane not
@@ -98,8 +96,8 @@ function formatHour(h: number): string {
 
 
 
-function formatDuration(startMin: number, endMin: number): string {
-  const duration = endMin - startMin;
+function formatDuration(totalMins: number): string {
+  const duration = Math.max(0, totalMins);
   const hours = Math.floor(duration / 60);
   const mins = duration % 60;
 
@@ -155,7 +153,17 @@ const EventCard: React.FC<{
   onResizeStart?: (e: React.MouseEvent, edge: 'top' | 'bottom') => void;
   isDragging?: boolean;
   onToggle?: (e: React.MouseEvent) => void;
-}> = ({ todo, startMin, endMin, accent, indentLevel = 0, onMouseDown, onResizeStart, isDragging, onToggle }) => {
+  // Set on a 2-day span's segments: this card runs off the top/bottom of its column
+  // into the adjacent day. Squares that corner and removes the resize handle there,
+  // since the midnight seam isn't a real edge of the task.
+  continuesBefore?: boolean;
+  continuesAfter?: boolean;
+  // The whole task's length. Segments show the total, not their own slice.
+  durationMins?: number;
+}> = ({
+  todo, startMin, endMin, accent, indentLevel = 0, onMouseDown, onResizeStart, isDragging, onToggle,
+  continuesBefore = false, continuesAfter = false, durationMins,
+}) => {
   const [isHovered, setIsHovered] = useState(false);
   // The z-lift is deliberately lagged behind the hover: a card the cursor is only
   // passing through on its way to an indented one shouldn't jump in front of it.
@@ -183,15 +191,38 @@ const EventCard: React.FC<{
   // Only show a time that's actually set - never fabricate the missing side. When both
   // sides share a meridiem, drop the AM/PM from the start so it reads "9:00 – 10:30 AM".
   // A one-sided task shows just that time (no dash, no fabricated duration).
+  // A side counts only when it carries both a date and a time - the same rule
+  // todoSpan places the card by, so the label can't claim an edge the span doesn't have.
+  const hasStart = hasStartPoint(todo);
+  const hasDue = hasDuePoint(todo);
   const startLabel = todo.startTime ? formatTime12h(todo.startTime) : '';
   const endLabel = todo.dueTime ? formatTime12h(todo.dueTime) : '';
-  const bothTimes = !!todo.startTime && !!todo.dueTime;
+  const bothTimes = hasStart && hasDue;
+  // % 1440 keeps a legacy "24:00" (=1440) classified as AM, matching how
+  // formatTime12h renders it - otherwise it reads as PM here and the start time
+  // below loses its meridiem, turning 22:00-midnight into "10:00 – 12:00 AM".
+  const meridiemPm = (t: string) => timeToMinutes(t) % 1440 >= 720;
   const sameMeridiem =
-    bothTimes && (timeToMinutes(todo.startTime!) >= 720) === (timeToMinutes(todo.dueTime!) >= 720);
-  const timeRange = bothTimes
-    ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} – ${endLabel}`
-    : startLabel || endLabel;
-  const durationStr = bothTimes ? `(${formatDuration(startMin, endMin)})` : '';
+    bothTimes && meridiemPm(todo.startTime!) === meridiemPm(todo.dueTime!);
+  // A span's segments each print only their own real edge - the midnight seam isn't
+  // a time worth showing. A one-sided task's 30-minute block is only ever anchored on
+  // one of its edges, so it says which edge that is rather than showing a bare time
+  // the other half of which was invented.
+  const timeRange = continuesAfter
+    ? `starts ${startLabel}`
+    : continuesBefore
+      ? `ends ${endLabel}`
+      : bothTimes
+        ? `${sameMeridiem ? startLabel.replace(/\s*(AM|PM)$/i, '') : startLabel} - ${endLabel}`
+        : hasStart
+          ? `starts ${startLabel}`
+          : hasDue
+            ? `ends ${endLabel}`
+            : startLabel || endLabel;
+  // Duration is the WHOLE task's length, never this segment's slice.
+  const isSegment = continuesBefore || continuesAfter;
+  const durationStr =
+    bothTimes || isSegment ? `(${formatDuration(durationMins ?? endMin - startMin)})` : '';
   const fullTimeDisplay = durationStr ? `${timeRange} ${durationStr}` : timeRange;
 
   return (
@@ -209,6 +240,7 @@ const EventCard: React.FC<{
       }}
       className={`absolute left-1 right-1 rounded-md px-2 overflow-hidden cursor-pointer transition-opacity flex flex-col ${isSmall ? 'justify-center' : 'justify-start'
         } ${isDone(todo) ? 'opacity-40' : 'opacity-100'
+        } ${continuesBefore ? 'rounded-t-none' : ''} ${continuesAfter ? 'rounded-b-none' : ''
         } ${isDragging ? 'z-50' : 'ring-1 ring-canvas'}
       `}
       style={{
@@ -226,8 +258,8 @@ const EventCard: React.FC<{
         backgroundColor: isDone(todo)
           ? ((isHovered || isDragging) ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)')
           : ((isHovered || isDragging)
-            ? `color-mix(in srgb, ${accent} 40%, canvas 60%)`
-            : `color-mix(in srgb, ${accent} 30%, canvas 70%)`),
+            ? `color-mix(in srgb, ${accent} 50%, canvas 50%)`
+            : `color-mix(in srgb, ${accent} 40%, canvas 60%)`),
         // border: isDone(todo)
         //   ? '1px solid rgba(255,255,255,0.05)'
         //   : '1px solid color-mix(in srgb, var(--accent1), transparent 70%)',
@@ -247,11 +279,13 @@ const EventCard: React.FC<{
           }}
         >
           {(isHovered && onToggle) ? (
-            <div className="absolute cursor-pointer flex items-center justify-center z-50">
+            // The accent lives on the plain wrapper below, not on the motion.div:
+            // handing motion a color via `style` makes it an animated value, and the
+            // inherited "white" it starts from isn't interpolatable, so motion warns.
+            <div className="absolute cursor-pointer flex items-center justify-center z-50" style={{ color: accent }}>
               <motion.div
                 initial={{ scale: 0.4, opacity: 0 }}
                 animate={{ scale: 0.8, opacity: 1 }}
-                style={{ color: accent }}
               >
                 {isDone(todo) ? <CheckCircle2 size={15} strokeWidth={2.5} /> : <Circle size={15} strokeWidth={2.5} />}
               </motion.div>
@@ -269,15 +303,17 @@ const EventCard: React.FC<{
             {todo.text || 'Untitled'}
           </span>
           {isSmall && (
-            <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'}`}>
+            <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-fg-ghost' : ''}`}
+              style={!isDone(todo) ? { color: `color-mix(in srgb, ${accent} 30%, var(--color-fg))` } : undefined}>
               {fullTimeDisplay}
             </span>
           )}
         </div>
       </div>
       {!isSmall && (
-        <div className={`text-[10px] pl-4 ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost' : 'text-fg-muted'
-          }`}>
+        <div className={`text-[10px] pl-4 ${height < 50 ? 'truncate' : ''} ${isDone(todo) ? 'text-fg-ghost' : ''
+          }`}
+          style={!isDone(todo) ? { color: `color-mix(in srgb, ${accent} 30%, var(--color-fg))` } : undefined}>
           {fullTimeDisplay}
         </div>
       )}
@@ -287,14 +323,18 @@ const EventCard: React.FC<{
       {/* Resize handles */}
       {!isDone(todo) && onResizeStart && (
         <>
-          <div
-            className="absolute top-0 left-0 right-0 h-1 cursor-ns-resize z-20 border-transparent"
-            onMouseDown={(e) => onResizeStart(e, 'top')}
-          />
-          <div
-            className="absolute bottom-0 left-0 right-0 h-1 cursor-ns-resize z-20 border-transparent"
-            onMouseDown={(e) => onResizeStart(e, 'bottom')}
-          />
+          {!continuesBefore && (
+            <div
+              className="absolute top-0 left-0 right-0 h-1 cursor-ns-resize z-20 border-transparent"
+              onMouseDown={(e) => onResizeStart(e, 'top')}
+            />
+          )}
+          {!continuesAfter && (
+            <div
+              className="absolute bottom-0 left-0 right-0 h-1 cursor-ns-resize z-20 border-transparent"
+              onMouseDown={(e) => onResizeStart(e, 'bottom')}
+            />
+          )}
         </>
       )}
     </div>
@@ -410,28 +450,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     startY: number;
   } | null>(null);
 
-  // Moving/Resizing State
+  // Moving/Resizing State. Both track the task as an absolute span rather than
+  // per-day minutes plus a pinned column, so an edge can cross midnight by plain
+  // arithmetic and the ghost can be re-segmented into whichever columns it covers.
   const [draggingEvent, setDraggingEvent] = useState<{
     todo: Todo;
-    initialDateStr: string;
-    origStartMins: number;
-    origEndMins: number;
-    startOffsetPx: number; // offset from mouse Y to top of card
-    currentMins: number;   // currently dragged start time
-    currentDateStr: string;
+    origSpan: TodoSpan;
+    curSpan: TodoSpan;
+    grabAbsMins: number;   // absolute minute under the cursor when the drag began
+    grabDateStr: string;   // column grabbed in (to measure horizontal column delta)
     startX: number;        // where drag started (to calculate col offset)
     startY: number;        // where drag started Y
   } | null>(null);
 
   const [resizingEvent, setResizingEvent] = useState<{
     todo: Todo;
-    dateStr: string;
     edge: 'top' | 'bottom';
-    origStartMins: number;
-    origEndMins: number;
-    startY: number;
-    currentStartMins: number;
-    currentEndMins: number;
+    origSpan: TodoSpan;
+    curSpan: TodoSpan;
+    grabAbsMins: number;   // absolute minute under the cursor when the resize began
+    grabDateStr: string;   // column the handle was grabbed in
   } | null>(null);
 
   // Post-drop "settling" ghost. onUpdateTodos writes the new time through react-query's
@@ -444,9 +482,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // preview-until-echo trick TimeInput uses for its rails.
   const [settling, setSettling] = useState<{
     id: string;
-    dateStr: string;
-    startMins: number;
-    endMins: number;
+    span: TodoSpan;
+    // The bucket we committed into (the NEW dueDate), which is where the echo lands.
+    dueDate: string;
     // The exact HH:MM we committed; the ghost lifts once the prop echoes both back.
     expectStart: string;
     expectEnd: string;
@@ -475,6 +513,39 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     );
     onUpdateTodos(dateStr, newTodos);
   }, [dayTodos, onUpdateTodos]);
+
+  // Persist a task's new span after a move or resize, and hold the settling ghost.
+  //
+  // Buckets are keyed by dueDate, and a 2-day task renders in a column that is NOT
+  // its dueDate - so the write has to target the task's NEW dueDate bucket and clear
+  // it out of the old one. This is the sharp edge: handleUpdateTodos DELETES any todo
+  // missing from the list it's handed, so writing to the column the user happened to
+  // drag in would delete the task outright.
+  const commitSpan = useCallback((todo: Todo, span: TodoSpan) => {
+    const patch = decomposeSpan(span);
+    const updated = { ...todo, ...patch } as Todo;
+    const oldDue = todo.dueDate;
+    const newDue = patch.dueDate!;
+
+    if (oldDue === newDue) {
+      const bucket = dayTodos.find(d => d.date === newDue);
+      onUpdateTodos(newDue, (bucket?.todos || []).map(t => (t && t.id === todo.id ? updated : t)));
+    } else {
+      const from = dayTodos.find(d => d.date === oldDue);
+      const to = dayTodos.find(d => d.date === newDue);
+      if (oldDue) onUpdateTodos(oldDue, (from?.todos || []).filter(t => t && t.id !== todo.id));
+      onUpdateTodos(newDue, [...(to?.todos || []), updated]);
+    }
+
+    setSettling({
+      id: todo.id,
+      span,
+      dueDate: newDue,
+      expectStart: patch.startTime!,
+      expectEnd: patch.dueTime!,
+      accent: accentForTodo(todo),
+    });
+  }, [dayTodos, onUpdateTodos, accentForTodo]);
 
   // const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -547,26 +618,63 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [showUncategorized, checkedColls, byId]
   );
 
-  const getTodosForDate = useCallback(
-    (dateStr: string): Todo[] => {
-      const dayData = dayTodos.find((d) => d.date === dateStr);
-      return (dayData?.todos || []).filter((t) => {
-        // Anything with a start OR an end time gets a block. The 30-minute default
-        // for a missing side is applied at render (kept off the todo) so the event
-        // card can tell which side was never set and omit it from the label.
-        if (!t || !(t.startTime || t.dueTime)) return false;
+  // Every renderable task, expanded into each day column its span touches.
+  //
+  // A task used to be read straight out of the dueDate bucket matching the column,
+  // which is exactly why one starting the previous day drew as a single short block
+  // on its due day. The SPAN picks the columns now: a 2-day task is emitted into
+  // both. Anything longer is dropped entirely - the all-day header bar those want
+  // isn't built yet.
+  //
+  // The span is resolved BEFORE the surface filters, because it is what decides
+  // whether a task is placeable at all. The Daily surface then reads the raw
+  // showInDailyList flag rather than showsOnDailyChecklist: that helper keys on
+  // dueDate because the daily CHECKLIST is dueDate-driven, but the calendar places a
+  // task by its span - so a start-only task (no dueDate) still belongs under the
+  // Daily surface when it carries the flag. Filtering per column would also hide a
+  // span's first day, since its dueDate only matches the second.
+  const todosByDate = useMemo(() => {
+    const map = new Map<string, { todo: Todo; span: TodoSpan }[]>();
+    for (const day of dayTodos) {
+      for (const t of day.todos || []) {
+        // A task needs at least one time to be placeable at all; todoSpan applies the
+        // real rule (a side counts only with a date AND a time). The 30-minute default
+        // for a one-sided task is applied at render (kept off the todo) so the event
+        // card can tell which side was never set and label it "starts"/"ends".
+        if (!t || !(t.startTime || t.dueTime)) continue;
         // Archived tasks are hidden entirely unless "show archived" is on; the gate
         // owns the archived exclusion, so the planner surface below uses raw
         // showInDatabase (equivalent to showsInOrganizer for non-archived tasks).
-        if (t.archived && !showArchived) return false;
+        if (t.archived && !showArchived) continue;
+
+        const span = todoSpan(t);
+        // A null span means there's no real date to place the task on. Over 24h is a
+        // multi-day task: it belongs in the all-day header bar rather than the time
+        // grid, and that isn't built yet - so it isn't drawn at all.
+        if (!span || !isRenderableSpan(span)) continue;
+
         // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
         const inSet =
-          (showDaily && showsOnDailyChecklist(t, dateStr)) || (showPlanner && t.showInDatabase === true);
+          (showDaily && t.showInDailyList === true) || (showPlanner && t.showInDatabase === true);
         // Stage 2 - the uncategorized/collection filters narrow that base set.
-        return inSet && passesCollectionFilter(t);
-      });
-    },
-    [dayTodos, showDaily, showPlanner, showArchived, passesCollectionFilter]
+        if (!inSet || !passesCollectionFilter(t)) continue;
+
+        const firstIdx = Math.floor(span.absStart / MINS_PER_DAY);
+        const lastIdx = Math.floor(span.absEnd / MINS_PER_DAY);
+        for (let i = firstIdx; i <= lastIdx; i++) {
+          const key = dateStrFromIndex(i);
+          const arr = map.get(key);
+          if (arr) arr.push({ todo: t, span });
+          else map.set(key, [{ todo: t, span }]);
+        }
+      }
+    }
+    return map;
+  }, [dayTodos, showDaily, showPlanner, showArchived, passesCollectionFilter]);
+
+  const getTodosForDate = useCallback(
+    (dateStr: string) => todosByDate.get(dateStr) ?? [],
+    [todosByDate]
   );
 
   // --- Drag Selection for Creation --- //
@@ -609,14 +717,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const handleMouseUp = () => {
       if (!dragSelection) return;
 
-      // Calculate start and end HH:MM
-      const startH = Math.floor(dragSelection.startMins / 60);
-      const startM = dragSelection.startMins % 60;
-      const endH = Math.floor(dragSelection.endMins / 60);
-      const endM = dragSelection.endMins % 60;
-
-      const startTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
-      const dueTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+      // Calculate start and end HH:MM (end-of-day clamps to 23:59, not "24:00")
+      const startTime = minutesToTime(dragSelection.startMins);
+      const dueTime = minutesToTime(dragSelection.endMins);
 
       // The drawn block *is* the task - create it with those times and hand the
       // user straight to the full view to name it and fill in the rest.
@@ -634,23 +737,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [dragSelection, onCreateTask, onOpenTask]);
 
   // --- Drag & Drop Moving --- //
-  const handleEventMouseDown = (e: React.MouseEvent, todo: Todo, dateStr: string, startMin: number, endMin: number) => {
+  const handleEventMouseDown = (e: React.MouseEvent, todo: Todo, span: TodoSpan, dateStr: string) => {
     // Left click only
     if (e.button !== 0) return;
     e.stopPropagation(); // prevent drag selection
+    if (!scrollContainerRef.current) return;
 
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const startOffsetPx = e.clientY - rect.top;
+    // Anchor the drag on the absolute minute under the cursor, not the card's top:
+    // grabbing either segment of a span then moves the whole task by the same
+    // pointer delta, with no need to know which half was grabbed.
+    const containerRect = scrollContainerRef.current.getBoundingClientRect();
+    const relativeY = e.clientY - containerRect.top + scrollContainerRef.current.scrollTop;
+    const grabAbsMins = dayIndex(dateStr) * MINS_PER_DAY + (relativeY / HOUR_HEIGHT) * 60;
 
     setSettling(null); // a fresh grab supersedes any in-flight settle
     setDraggingEvent({
       todo,
-      initialDateStr: dateStr,
-      origStartMins: startMin,
-      origEndMins: endMin,
-      startOffsetPx,
-      currentMins: startMin,
-      currentDateStr: dateStr,
+      origSpan: span,
+      curSpan: span,
+      grabAbsMins,
+      grabDateStr: dateStr,
       startX: e.clientX,
       startY: e.clientY,
     });
@@ -666,30 +772,23 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const deltaX = Math.abs(e.clientX - draggingEvent.startX);
       if (deltaY < 3 && deltaX < 3) return; // ignore minimal twitch
 
-      // Calculate new time
       const containerRect = scrollContainerRef.current.getBoundingClientRect();
       const relativeY = e.clientY - containerRect.top + scrollContainerRef.current.scrollTop;
-      const cardTopY = relativeY - draggingEvent.startOffsetPx;
 
-      const rawMins = (cardTopY / HOUR_HEIGHT) * 60;
-      let newMins = Math.round(rawMins / 15) * 15;
-
-      const duration = draggingEvent.origEndMins - draggingEvent.origStartMins;
-      newMins = Math.max(0, Math.min(newMins, 1440 - duration));
-
-      // Calculate new date based on X movement
-      // Assume equal column widths. We find the index of the column
+      // Which column the pointer is over (clamped to the visible window). Assumes
+      // equal column widths, as before.
       const colWidth = containerRect.width / visibleDays.length;
-      const initialColIndex = visibleDays.findIndex(d => format(d, 'yyyy-MM-dd') === draggingEvent.initialDateStr);
+      const grabColIndex = visibleDays.findIndex(d => format(d, 'yyyy-MM-dd') === draggingEvent.grabDateStr);
+      const colsMoved = Math.round((e.clientX - draggingEvent.startX) / colWidth);
+      const colIndex = Math.max(0, Math.min(grabColIndex + colsMoved, visibleDays.length - 1));
 
-      const deltaMoveX = e.clientX - draggingEvent.startX;
-      const colsMoved = Math.round(deltaMoveX / colWidth);
-      let newColIndex = initialColIndex + colsMoved;
-      newColIndex = Math.max(0, Math.min(newColIndex, visibleDays.length - 1));
+      // Whole-task move = pointer delta on the absolute timeline, snapped to 15min.
+      const pointerAbs =
+        dayIndex(format(visibleDays[colIndex], 'yyyy-MM-dd')) * MINS_PER_DAY +
+        (relativeY / HOUR_HEIGHT) * 60;
+      const delta = Math.round((pointerAbs - draggingEvent.grabAbsMins) / 15) * 15;
 
-      const newDateStr = format(visibleDays[newColIndex], 'yyyy-MM-dd');
-
-      setDraggingEvent(prev => prev ? { ...prev, currentMins: newMins, currentDateStr: newDateStr } : null);
+      setDraggingEvent(prev => (prev ? { ...prev, curSpan: shiftSpan(prev.origSpan, delta) } : null));
     };
 
     const handleMouseUp = (e: MouseEvent) => {
@@ -703,56 +802,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         return;
       }
 
-      const { todo, initialDateStr, currentDateStr, currentMins, origStartMins, origEndMins } = draggingEvent;
-      const duration = origEndMins - origStartMins;
-
-      const startH = Math.floor(currentMins / 60);
-      const startM = currentMins % 60;
-      const endMins = currentMins + duration;
-      const endH = Math.floor(endMins / 60);
-      const endM = endMins % 60;
-
-      const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
-      const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
-
-      // Update the todo. The block is single-day: pin BOTH start and due date to
-      // the (possibly new) column so a cross-day move doesn't leave startDate on
-      // the old day - which would read as a stale multi-day span.
-      const updatedTodo = {
-        ...todo,
-        startDate: currentDateStr,
-        startTime: newStartTime,
-        startPercentage: timeToPercentage(newStartTime),
-        dueTime: newEndTime,
-        duePercentage: timeToPercentage(newEndTime),
-      };
-
-      if (initialDateStr === currentDateStr) {
-        // Same day update - preserve original order in the array
-        const dayData = dayTodos.find(d => d.date === initialDateStr);
-        const newTodos = (dayData?.todos || []).map(t => t.id === todo.id ? updatedTodo : t);
-        onUpdateTodos(currentDateStr, newTodos);
-      } else {
-        // Move across days
-        const sourceData = dayTodos.find(d => d.date === initialDateStr);
-        const targetData = dayTodos.find(d => d.date === currentDateStr);
-
-        const sourceFiltered = (sourceData?.todos || []).filter(t => t.id !== todo.id);
-        onUpdateTodos(initialDateStr, sourceFiltered);
-        onUpdateTodos(currentDateStr, [...(targetData?.todos || []), updatedTodo]);
-      }
-
-      // Keep the card painted at its dropped spot until the prop echoes the new time
-      // (see `settling`), then hand off to the real card without a flash.
-      setSettling({
-        id: todo.id,
-        dateStr: currentDateStr,
-        startMins: currentMins,
-        endMins: currentMins + duration,
-        expectStart: newStartTime,
-        expectEnd: newEndTime,
-        accent: accentForTodo(todo),
-      });
+      // commitSpan owns the write, including routing the task into its NEW dueDate
+      // bucket, and keeps the card painted at its dropped spot until the prop echoes
+      // back (see `settling`) so it doesn't flash to the old position first.
+      commitSpan(draggingEvent.todo, draggingEvent.curSpan);
       setDraggingEvent(null);
     };
 
@@ -765,20 +818,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [draggingEvent, dayTodos, onUpdateTodos, visibleDays, onOpenTask]);
 
   // --- Drag Resizing --- //
-  const handleEventResizeStart = (e: React.MouseEvent, todo: Todo, dateStr: string, edge: 'top' | 'bottom', startMin: number, endMin: number) => {
+  const handleEventResizeStart = (
+    e: React.MouseEvent,
+    todo: Todo,
+    span: TodoSpan,
+    dateStr: string,
+    edge: 'top' | 'bottom',
+  ) => {
     if (e.button !== 0) return;
     e.stopPropagation();
+    if (!scrollContainerRef.current) return;
+
+    // Anchor on the pointer's ABSOLUTE grid position, exactly like the move handler.
+    // This used to be a viewport-space delta (clientY - startY), which silently
+    // desyncs by however much the grid scrolls mid-drag - and reaching the small
+    // hours means dragging to the very top of the grid, precisely where that
+    // overshoot pushes the edge past midnight and onto the wrong day.
+    const containerRect = scrollContainerRef.current.getBoundingClientRect();
+    const relativeY = e.clientY - containerRect.top + scrollContainerRef.current.scrollTop;
+    const grabAbsMins = dayIndex(dateStr) * MINS_PER_DAY + (relativeY / HOUR_HEIGHT) * 60;
 
     setSettling(null); // a fresh resize supersedes any in-flight settle
     setResizingEvent({
       todo,
-      dateStr,
       edge,
-      origStartMins: startMin,
-      origEndMins: endMin,
-      startY: e.clientY,
-      currentStartMins: startMin,
-      currentEndMins: endMin,
+      origSpan: span,
+      curSpan: span,
+      grabAbsMins,
+      grabDateStr: dateStr,
     });
   };
 
@@ -786,62 +853,29 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     if (!resizingEvent) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - resizingEvent.startY;
-      const deltaMins = Math.round((deltaY / HOUR_HEIGHT) * 60 / 15) * 15;
+      if (!scrollContainerRef.current) return;
 
-      setResizingEvent(prev => {
-        if (!prev) return null;
-        let newStart = prev.origStartMins;
-        let newEnd = prev.origEndMins;
+      // Scroll-proof: derive the pointer's absolute minute the same way the move
+      // handler does, then take the delta from where the handle was grabbed. A
+      // pointer above/below the column simply reads past that day's bounds, which is
+      // what lets an edge cross midnight into the neighbouring day.
+      const containerRect = scrollContainerRef.current.getBoundingClientRect();
+      const relativeY = e.clientY - containerRect.top + scrollContainerRef.current.scrollTop;
+      const pointerAbs =
+        dayIndex(resizingEvent.grabDateStr) * MINS_PER_DAY + (relativeY / HOUR_HEIGHT) * 60;
+      const deltaMins = Math.round((pointerAbs - resizingEvent.grabAbsMins) / 15) * 15;
 
-        if (prev.edge === 'top') {
-          newStart = Math.max(0, Math.min(prev.origStartMins + deltaMins, prev.origEndMins - 15));
-        } else {
-          newEnd = Math.max(prev.origStartMins + 15, Math.min(prev.origEndMins + deltaMins, 1440));
-        }
-
-        return { ...prev, currentStartMins: newStart, currentEndMins: newEnd };
-      });
+      // Only the dragged edge moves (see resizeSpan), so a resize writes back just
+      // that one side - and working in absolute minutes lets the edge cross midnight,
+      // turning a same-day task into a 2-day span and back.
+      setResizingEvent(prev =>
+        prev ? { ...prev, curSpan: resizeSpan(prev.origSpan, prev.edge, deltaMins) } : null
+      );
     };
 
     const handleMouseUp = () => {
       if (!resizingEvent) return;
-      const { todo, dateStr, currentStartMins, currentEndMins } = resizingEvent;
-
-      const startH = Math.floor(currentStartMins / 60);
-      const startM = currentStartMins % 60;
-      const endH = Math.floor(currentEndMins / 60);
-      const endM = currentEndMins % 60;
-
-      const newStartTime = `${startH.toString().padStart(2, '0')}:${startM.toString().padStart(2, '0')}`;
-      const newEndTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
-
-      // Single-day block: keep start's date pinned to this column too, so setting a
-      // start time never leaves it dateless (the schedule invariant).
-      const updatedTodo = {
-        ...todo,
-        startDate: dateStr,
-        startTime: newStartTime,
-        startPercentage: timeToPercentage(newStartTime),
-        dueTime: newEndTime,
-        duePercentage: timeToPercentage(newEndTime),
-      };
-
-      const dayData = dayTodos.find(d => d.date === dateStr);
-      const newTodos = (dayData?.todos || []).map(t => t.id === todo.id ? updatedTodo : t);
-      onUpdateTodos(dateStr, newTodos);
-
-      // Hold the resized card at its new bounds until the prop echoes back (see
-      // `settling` / the move handler) so it doesn't flash to the old size first.
-      setSettling({
-        id: todo.id,
-        dateStr,
-        startMins: currentStartMins,
-        endMins: currentEndMins,
-        expectStart: newStartTime,
-        expectEnd: newEndTime,
-        accent: accentForTodo(todo),
-      });
+      commitSpan(resizingEvent.todo, resizingEvent.curSpan);
       setResizingEvent(null);
     };
 
@@ -859,7 +893,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // echo even for a no-op drop.
   useEffect(() => {
     if (!settling) return;
-    const day = dayTodos.find(d => d.date === settling.dateStr);
+    // The echo lands in the bucket we wrote into - the task's NEW dueDate.
+    const day = dayTodos.find(d => d.date === settling.dueDate);
     const t = day?.todos.find(x => x?.id === settling.id);
     if (t && t.startTime === settling.expectStart && t.dueTime === settling.expectEnd) {
       setSettling(null);
@@ -894,7 +929,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           {/* Which surfaces' tasks get blocked out on the grid. Sits flush under the mini
               calendar; row rhythm (space-y-0.5) matches the collection rows below. */}
           <div className="shrink-0 my-2 mx-3 border-t border-line"></div>
-          <div className="shrink-0 px-2.5">
+          <div className="shrink-0 px-4">
             <SurfaceCheck label="Show daily tasks" checked={showDaily} onChange={setShowDaily} />
             <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
             <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
@@ -1001,12 +1036,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 key={day.toISOString()}
                 className="flex-1 text-center pb-3 border-l border-line-subtle"
               >
-                <div className="flex items-center justify-center gap-2">
-                  <span className={`text-sm font-bold uppercase tracking-wider ${today ? 'text-[var(--accent2)]' : 'text-fg-ghost'}`}>
+                <div className="flex items-center justify-center gap-1">
+                  <span className={`text-sm font-bold ${today ? 'text-accent2' : 'text-fg-ghost'}`}>
                     {format(day, 'EEE')}
                   </span>
-                  <span className={`text-sm font-bold px-1.5 py-1 rounded-md transition-all ${today
-                    ? 'bg-[var(--accent2)] text-canvas'
+                  <span className={`text-sm font-bold px-1.25 py-0.75 rounded-md transition-all ${today
+                    ? 'bg-accent2 text-canvas'
                     : 'text-fg-muted'
                     }`}>
                     {format(day, 'd')}
@@ -1059,10 +1094,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             {/* Day columns */}
             {visibleDays.map((day) => {
               const dateStr = format(day, 'yyyy-MM-dd');
-              const todos = getTodosForDate(dateStr);
+              // Each entry's slice of THIS column - a 2-day task appears in both,
+              // as its tail on the first day and its head on the second.
+              const segments = getTodosForDate(dateStr).flatMap(({ todo, span }) => {
+                const seg = segmentFor(span, dateStr);
+                return seg ? [{ todo, span, seg }] : [];
+              });
               // Cascade indent levels for this column's overlapping events.
               const overlapLayout = computeOverlapLayout(
-                todos.map((t) => ({ id: t.id, ...eventBounds(t) })),
+                segments.map(({ todo, seg }) => ({ id: todo.id, startMin: seg.startMin, endMin: seg.endMin })),
               );
               const today = isToday(day);
 
@@ -1099,14 +1139,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   ))}
 
                   {/* Event cards */}
-                  {todos.map((todo) => {
-                    const { startMin, endMin } = eventBounds(todo);
+                  {segments.map(({ todo, span, seg }) => {
                     const indentLevel = overlapLayout.get(todo.id) ?? 0;
 
                     const isDraggingThis = draggingEvent?.todo.id === todo.id;
                     const isResizingThis = resizingEvent?.todo.id === todo.id;
                     // Stay hidden through the settle window too, so the settling ghost
-                    // (not this card at its stale position) is what's on screen.
+                    // (not this card at its stale position) is what's on screen. This
+                    // matches on id, so BOTH segments of a span hide together.
                     const isSettlingThis = settling?.id === todo.id;
 
                     return (
@@ -1117,54 +1157,89 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       >
                         <EventCard
                           todo={todo}
-                          startMin={startMin}
-                          endMin={endMin}
+                          startMin={seg.startMin}
+                          endMin={seg.endMin}
+                          continuesBefore={seg.continuesBefore}
+                          continuesAfter={seg.continuesAfter}
+                          durationMins={span.absEnd - span.absStart}
                           indentLevel={indentLevel}
                           accent={accentForTodo(todo)}
-                          onMouseDown={(e) => handleEventMouseDown(e, todo, dateStr, startMin, endMin)}
-                          onResizeStart={(e, edge) => handleEventResizeStart(e, todo, dateStr, edge, startMin, endMin)}
-                          onToggle={() => handleToggleTodo(dateStr, todo.id)}
+                          onMouseDown={(e) => handleEventMouseDown(e, todo, span, dateStr)}
+                          onResizeStart={(e, edge) => handleEventResizeStart(e, todo, span, dateStr, edge)}
+                          // Toggle writes through the task's own bucket (its dueDate),
+                          // which is NOT this column for a span's first day.
+                          onToggle={() => handleToggleTodo(todo.dueDate ?? dateStr, todo.id)}
                         />
                       </div>
                     );
                   })}
 
-                  {/* Active Dragging Event - keep the card's cascade indent while it moves. */}
-                  {draggingEvent && draggingEvent.currentDateStr === dateStr && (
-                    <EventCard
-                      todo={draggingEvent.todo}
-                      accent={accentForTodo(draggingEvent.todo)}
-                      startMin={draggingEvent.currentMins}
-                      endMin={draggingEvent.currentMins + (draggingEvent.origEndMins - draggingEvent.origStartMins)}
-                      indentLevel={overlapLayout.get(draggingEvent.todo.id) ?? 0}
-                      isDragging={true}
-                    />
-                  )}
+                  {/* Ghosts are re-segmented per column from their live span, so one
+                      that now crosses midnight previews across both days. */}
+                  {(() => {
+                    const ghosts: React.ReactNode[] = [];
 
-                  {/* Active Resizing Event */}
-                  {resizingEvent && resizingEvent.dateStr === dateStr && (
-                    <EventCard
-                      todo={resizingEvent.todo}
-                      accent={accentForTodo(resizingEvent.todo)}
-                      startMin={resizingEvent.currentStartMins}
-                      endMin={resizingEvent.currentEndMins}
-                      indentLevel={overlapLayout.get(resizingEvent.todo.id) ?? 0}
-                      isDragging={true} // reuse styling for visual feedback
-                    />
-                  )}
+                    // Active Dragging Event - keeps the card's cascade indent while it moves.
+                    if (draggingEvent) {
+                      const seg = segmentFor(draggingEvent.curSpan, dateStr);
+                      if (seg) ghosts.push(
+                        <EventCard
+                          key="drag"
+                          todo={draggingEvent.todo}
+                          accent={accentForTodo(draggingEvent.todo)}
+                          startMin={seg.startMin}
+                          endMin={seg.endMin}
+                          continuesBefore={seg.continuesBefore}
+                          continuesAfter={seg.continuesAfter}
+                          durationMins={draggingEvent.curSpan.absEnd - draggingEvent.curSpan.absStart}
+                          indentLevel={overlapLayout.get(draggingEvent.todo.id) ?? 0}
+                          isDragging={true}
+                        />
+                      );
+                    }
 
-                  {/* Settling ghost: covers the drop until the prop echoes the new
-                      time. Rendered in the resting (non-drag) style so the handoff to
-                      the real card is invisible. */}
-                  {settling && settling.dateStr === dateStr && byId.get(settling.id) && (
-                    <EventCard
-                      todo={byId.get(settling.id)!}
-                      accent={settling.accent}
-                      startMin={settling.startMins}
-                      endMin={settling.endMins}
-                      indentLevel={overlapLayout.get(settling.id) ?? 0}
-                    />
-                  )}
+                    // Active Resizing Event
+                    if (resizingEvent) {
+                      const seg = segmentFor(resizingEvent.curSpan, dateStr);
+                      if (seg) ghosts.push(
+                        <EventCard
+                          key="resize"
+                          todo={resizingEvent.todo}
+                          accent={accentForTodo(resizingEvent.todo)}
+                          startMin={seg.startMin}
+                          endMin={seg.endMin}
+                          continuesBefore={seg.continuesBefore}
+                          continuesAfter={seg.continuesAfter}
+                          durationMins={resizingEvent.curSpan.absEnd - resizingEvent.curSpan.absStart}
+                          indentLevel={overlapLayout.get(resizingEvent.todo.id) ?? 0}
+                          isDragging={true} // reuse styling for visual feedback
+                        />
+                      );
+                    }
+
+                    // Settling ghost: covers the drop until the prop echoes the new
+                    // time. Rendered in the resting (non-drag) style so the handoff to
+                    // the real card is invisible.
+                    const settlingTodo = settling ? byId.get(settling.id) : undefined;
+                    if (settling && settlingTodo) {
+                      const seg = segmentFor(settling.span, dateStr);
+                      if (seg) ghosts.push(
+                        <EventCard
+                          key="settle"
+                          todo={settlingTodo}
+                          accent={settling.accent}
+                          startMin={seg.startMin}
+                          endMin={seg.endMin}
+                          continuesBefore={seg.continuesBefore}
+                          continuesAfter={seg.continuesAfter}
+                          durationMins={settling.span.absEnd - settling.span.absStart}
+                          indentLevel={overlapLayout.get(settling.id) ?? 0}
+                        />
+                      );
+                    }
+
+                    return ghosts;
+                  })()}
 
                   {/* Active Drag Selection / Creation Preview */}
                   {dragSelection && dragSelection.dateStr === dateStr && (
@@ -1176,9 +1251,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       }}
                     >
                       <div className="p-1 px-2 text-[10px] font-bold text-collection-1">
-                        {`${Math.floor(dragSelection.startMins / 60).toString().padStart(2, '0')}:${(dragSelection.startMins % 60).toString().padStart(2, '0')}`}
+                        {minutesToTime(dragSelection.startMins)}
                         {' – '}
-                        {`${Math.floor(dragSelection.endMins / 60).toString().padStart(2, '0')}:${(dragSelection.endMins % 60).toString().padStart(2, '0')}`}
+                        {minutesToTime(dragSelection.endMins)}
                       </div>
                     </div>
                   )}
@@ -1190,7 +1265,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           {/* Ending line marking the bottom of the day - mirrors the top header border */}
           <div className="border-t border-line-subtle" />
           {/* Breathing room so the final hours scroll clear of the fixed XP progress bar */}
-          <div className="h-24 shrink-0" />
+          <div className="h-26 shrink-0" />
         </div>
       </div>
     </div>

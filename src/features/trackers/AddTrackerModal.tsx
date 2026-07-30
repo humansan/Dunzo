@@ -176,7 +176,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-fg-subtle  mb-1.5">Precision</label>
+                <label className="block text-xs font-medium text-fg-subtle  mb-1.5">Precision (for %)</label>
                 <ListSelect
                   ariaLabel="Precision"
                   className="w-full"

@@ -29,17 +29,17 @@ export interface ColDef {
 
 export const COLUMNS: ColDef[] = [
   { key: 'title', label: 'Name', defaultWidth: 320 },
-  { key: 'status', label: 'Status', defaultWidth: 140 },
   { key: 'priority', label: 'Priority', defaultWidth: 120 },
+  { key: 'notes', label: 'Notes', defaultWidth: 280 },
   { key: 'startDate', label: 'Start Date', defaultWidth: 150 },
-  { key: 'date', label: 'Due Date', defaultWidth: 150 },
   { key: 'start', label: 'Start Time', defaultWidth: 110 },
+  { key: 'startPercent', label: 'Start %', defaultWidth: 90 },
+  { key: 'date', label: 'End Date', defaultWidth: 150 },
   { key: 'end', label: 'End Time', defaultWidth: 110 },
   { key: 'percent', label: 'End %', defaultWidth: 90 },
+  { key: 'status', label: 'Status', defaultWidth: 140 },
   { key: 'collection', label: 'Collection', defaultWidth: 240 },
-  { key: 'xp', label: 'XP', defaultWidth: 80 },
-  { key: 'notes', label: 'Notes', defaultWidth: 280 },
-  { key: 'startPercent', label: 'Start %', defaultWidth: 90 },
+  { key: 'xp', label: 'xp', defaultWidth: 80 },
   { key: 'estimatedTime', label: 'Est. Time', defaultWidth: 110 },
   { key: 'createdAt', label: 'Created At', defaultWidth: 150 },
   { key: 'completedAt', label: 'Completed At', defaultWidth: 150 },
@@ -49,7 +49,59 @@ export const COLUMNS: ColDef[] = [
 // can be reordered and toggled via the Fields menu.
 export const NAME_COL_KEY: ColKey = 'title';
 
+// What a view shows before anyone touches its Fields menu. Everything else in
+// COLUMNS starts hidden and can be switched back on from that menu; Name is
+// always visible regardless, since NAME_COL_KEY is pinned.
+//
+// This is a DEFAULT, not a restriction: it only applies to a view with no saved
+// field config. Once a view's config has been written, its stored set wins.
+export const DEFAULT_VISIBLE_COLS: ColKey[] = [
+  'title',
+  'priority',
+  'notes',
+  'date',
+  'end',
+  'status',
+  'collection',
+  'xp',
+  'createdAt',
+  'completedAt',
+];
+
+export const DEFAULT_WRAP_COLS: ColKey[] = [
+  'title'
+];
+
+// The complement of the above - what a fresh view starts with hidden. Derived so
+// that adding a column to COLUMNS hides it by default until it's listed above.
+export const DEFAULT_HIDDEN_COLS: ColKey[] = COLUMNS.map((c) => c.key).filter(
+  (k) => !DEFAULT_VISIBLE_COLS.includes(k)
+);
+
 export type EditState = { id: string; col: ColKey; rect: DOMRect | null } | null;
+
+// ── Toolbar menus ────────────────────────────────────────────────────────────
+export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
+
+// The stored per-view config fields (see useHubViewConfig's hubViews records).
+export type ViewConfigField =
+  | 'fieldOrder'
+  | 'hiddenFields'
+  | 'wrappedFields'
+  | 'filters'
+  | 'filterMatch'
+  | 'sorts'
+  | 'sections';
+
+// Which stored fields each toolbar menu owns. This is the unit "Set for all"
+// broadcasts to the workspace default and clears from every per-view record, so
+// broadcasting one menu never disturbs the others' per-view settings.
+export const MENU_SLICES: Record<ToolbarMenuKey, readonly ViewConfigField[]> = {
+  sections: ['sections'],
+  fields: ['fieldOrder', 'hiddenFields', 'wrappedFields'],
+  filter: ['filters', 'filterMatch'],
+  sort: ['sorts'],
+};
 
 // ── View filter / sort rules ──────────────────────────────────────────────────
 export type FilterCondition = 'is' | 'is_not' | 'contains' | 'greater_than' | 'less_than';
@@ -101,7 +153,7 @@ export interface SectionsConfig {
 }
 
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
-  autoArchive: false,
+  autoArchive: true,
   showLeafTasks: 'top',
   hideEmptyCollections: false,
   hideSubcollections: false,

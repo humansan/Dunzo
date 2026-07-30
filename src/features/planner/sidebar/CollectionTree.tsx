@@ -35,7 +35,7 @@ export const CollectionTree: React.FC<{
   // Opt-in collection drag-and-drop (reorder + nest); omit to disable.
   dnd?: ReturnType<typeof useCollectionDnD>;
   // Opt-in right-click context menu on a collection row.
-  onOpenMenu?: (id: string, x: number, y: number) => void;
+  onOpenMenu?: (id: string, x: number, y: number, sidebar?: true) => void;
   // Checkbox / multi-select mode (used by the Calendar's collection filter). When
   // `onToggleChecked` is provided the tree drops the nav pseudo-views, shows only an
   // "Uncategorized" row plus the collection tree, and each row becomes a toggle: its
@@ -134,8 +134,8 @@ export const CollectionTree: React.FC<{
 
       {/* Section 3: user collections */}
       <div className="shrink-0 px-1 pb-0">
-        <div className="px-2.5 py-1 flex items-center justify-between gap-2">
-          <span className="text-xs font-bold text-fg-muted">Collections</span>
+        <div className="px-2.5 pb-1 flex items-center justify-between gap-2">
+          <span className="text-xs font-bold text-fg-muted truncate flex-1">Collections</span>
           {checkMode && onToggleAll && (
             <button
               type="button"
@@ -147,7 +147,7 @@ export const CollectionTree: React.FC<{
               
             </button>
           )}
-          {!checkMode && (
+          {!checkMode && onNewCollection && (
             <button
               type="button"
               onClick={onNewCollection}
@@ -162,6 +162,13 @@ export const CollectionTree: React.FC<{
 
       {/* Scrollable list of collections - nested tree, indented by depth. The drop is
           handled on the container (not per-row) so releases in the gaps still commit. */}
+
+      {visibleCollections.length === 0 && (
+        <div className="flex flex-col items-center py-4 px-8 text-center text-xs text-fg-faint gap-2">
+          <Shapes className="text-fg-faint" size={16}/>
+          No collections. Create one to get started.
+        </div>
+      )}
       <div
         ref={dnd?.sideScroll.ref}
         className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 "
@@ -194,7 +201,7 @@ export const CollectionTree: React.FC<{
             <button
               type="button"
               onClick={onRowClick}
-              onContextMenu={onOpenMenu ? (e) => { e.preventDefault(); onOpenMenu(c.todo.id, e.clientX, e.clientY); } : undefined}
+              onContextMenu={onOpenMenu ? (e) => { e.preventDefault(); onOpenMenu(c.todo.id, e.clientX, e.clientY, true); } : undefined}
               style={{ paddingLeft: 6 + indent }}
               className={`${rowCls} ${dnd?.dragCollId === c.todo.id ? 'opacity-40' : ''} ${
                 drop === 'inside' ? 'ring-2 ring-inset ring-[var(--accent2)] bg-[var(--accent2)]/10' : ''

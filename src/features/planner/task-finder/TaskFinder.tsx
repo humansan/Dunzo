@@ -123,15 +123,13 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
 
   const model = useMemo(() => buildTreeModel(entrySet, todoById, { collapsed }), [entrySet, todoById, collapsed]);
 
-  // Clicking a result's title fires onPick (startEdit is repurposed as the row's
-  // choose action); the expand/collapse chevron uses toggleCollapse.
+  // Clicking the cell picks the task via onOpenTask; expand/collapse uses toggleCollapse.
   const interaction = useMemo<TableInteraction>(() => ({
     editing: null,
-    startEdit: (id) => onPick(id),
     stopEdit: NOOP,
     openMenu: NOOP,
     toggleCollapse,
-  }), [onPick]);
+  }), []);
 
   const rowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
@@ -139,8 +137,9 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
     onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
+    onOpenTask: onPick,
     // onNewInView omitted → no add-row in the results list.
-  }), [onSaveTodo, onToggleTodo]);
+  }), [onSaveTodo, onToggleTodo, onPick]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };

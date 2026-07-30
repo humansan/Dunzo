@@ -27,7 +27,7 @@ export const DeleteCollectionModal: React.FC<{
         Delete “{name}”
       </h2>
       <p className="mt-1.5 text-sm text-fg-subtle">
-        This collection contains tasks. What should happen to them?
+        This collection contains items. What should happen to them?
       </p>
       <div className="mt-4 space-y-2">
         <button
@@ -37,7 +37,7 @@ export const DeleteCollectionModal: React.FC<{
         >
           <Inbox size={18} className="shrink-0 mt-0.5 text-[var(--accent2)]" />
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-fg">Move tasks up one level</span>
+            <span className="block text-sm font-semibold text-fg">Move nested items up one level</span>
             <span className="block text-xs text-fg-subtle">
               Keep them - move into <span className="text-fg-muted font-medium">{promoteTarget}</span> and delete only the collection.
             </span>
@@ -50,9 +50,9 @@ export const DeleteCollectionModal: React.FC<{
         >
           <Trash2 size={18} className="shrink-0 mt-0.5 text-red-400" />
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-red-300">Delete all tasks</span>
+            <span className="block text-sm font-semibold text-red-300">Delete all</span>
             <span className="block text-xs text-fg-subtle">
-              Permanently remove the collection and everything nested inside it.
+              Permanently remove the collection and all items nested inside.
             </span>
           </span>
         </button>

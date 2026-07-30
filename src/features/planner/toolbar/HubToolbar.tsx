@@ -15,7 +15,10 @@ import { collectionPath } from '@/features/tasks/model';
 import { btnGhost } from '@/theme/buttons';
 import { CollectionBreadcrumb } from '@/features/tasks/fields';
 
-export type ToolbarMenuKey = 'sections' | 'fields' | 'filter' | 'sort';
+// Lives in the planner's model layer (it keys MENU_SLICES there); re-exported
+// here so the existing `from '.../toolbar/HubToolbar'` import sites still work.
+export type { ToolbarMenuKey } from '@/features/planner/types';
+import type { ToolbarMenuKey } from '@/features/planner/types';
 
 // The right pane's header (sidebar toggle + breadcrumb/title + item count) and
 // the view toolbar (Table/List/Timeline tabs + the Sections/Fields/Filter/Sort

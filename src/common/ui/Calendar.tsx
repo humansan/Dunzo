@@ -13,6 +13,7 @@ import {
   isToday,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { btnGhost } from '@/theme/buttons';
 
 interface CalendarProps {
   currentMonth: Date;
@@ -40,14 +41,14 @@ export const Calendar: React.FC<CalendarProps> = ({
       <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => onMonthChange(subDays(monthStart, 1))}
-          className="p-1 text-fg-faint hover:text-fg transition-colors"
+          className={"p-1 rounded-md " + btnGhost()}
         >
           <ChevronLeft size={16} />
         </button>
         <span className="text-sm font-bold text-fg-muted">{format(currentMonth, 'MMMM yyyy')}</span>
         <button
           onClick={() => onMonthChange(addDays(monthEnd, 1))}
-          className="p-1 text-fg-faint hover:text-fg transition-colors"
+          className={"p-1 rounded-md " + btnGhost()}
         >
           <ChevronRight size={16} />
         </button>

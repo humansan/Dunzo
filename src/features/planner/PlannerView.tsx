@@ -162,6 +162,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     activeSorts,
     sectionsConfig,
     updateViewState,
+    applyToAllViews,
     colByKey,
     toggleField,
     toggleWrap,
@@ -350,7 +351,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
 
   // ── Row context menu & full-view ───────────────────────────────────────────
-  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number, sidebar?: true } | null>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false); // "Change color" sub-panel
   useLayoutEffect(() => {
     if (!menu || !menuRef.current) {
@@ -370,15 +371,17 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   const [deleteCollId, setDeleteCollId] = useState<string | null>(null);
   // Task id being reparented via the "Move to…" picker (null = picker closed).
   const [reparentId, setReparentId] = useState<string | null>(null);
-  const openMenu = useStableCallback((id: string, x: number, y: number) => { setMenu({ id, x, y }); setColorPickerOpen(false); });
+  const openMenu = useStableCallback((id: string, x: number, y: number, sidebar?: true) => { setMenu({ id, x, y, sidebar }); setColorPickerOpen(false); });
   const closeMenu = () => { setMenu(null); setColorPickerOpen(false); };
 
-  // The todo the context menu currently targets (to branch task vs. collection
-  // items). Falls back to the archived set since a menu opened from the
-  // Archived view targets a todo not present in `entries`.
-  const menuEntry = menu
-    ? entries.find((e) => e.todo.id === menu.id) || archivedEntries.find((e) => e.todo.id === menu.id) || null
-    : null;
+  // Entry lookup spanning both sets. Anything reachable from the Archived view has
+  // to go through this rather than `byId`/`entries`, which cover the non-archived
+  // organizer set only and would silently miss the row the user is acting on.
+  const findEntry = (id: string): OrganizerEntry | null =>
+    byId.get(id) || archivedEntries.find((e) => e.todo.id === id) || null;
+
+  // The todo the context menu currently targets (to branch task vs. collection items).
+  const menuEntry = menu ? findEntry(menu.id) : null;
 
   // Convert a plain task into a top-level collection: flag it, give it a default
   // color, strip the task-only fields, and clear its due date (undated) so it
@@ -450,10 +453,10 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // the parent is expanded so the new node is visible, then select it and open its
   // edit modal (mirrors the top-level New collection flow). Collapse state is
   // DB-synced, so it survives the remount that the navigation causes.
-  const handleNewNestedCollection = (parentId: string) => {
+  const handleNewNestedCollection = (parentId: string, sidebar?: true) => {
     const id = onAddCollection(parentId);
     setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
-    setSelectedView(id, { editCollection: id });
+    sidebar && setSelectedView(id, { editCollection: id });
   };
   // Seed patch derived from the view's active filters: any "is <value>" filter is
   // pre-applied to tasks created in this view, so a new task still satisfies the
@@ -514,9 +517,10 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
   // Context-menu "Create task inside": add a subtask, expand the parent so the
   // new row is visible, close the menu, and drop into its title field.
-  const createTaskInside = (parentId: string) => {
+  const createTaskInside = (parentId: string, sidebar?: true) => {
     const id = onAddSubtask(parentId);
     setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
+    sidebar && setSelectedView(parentId, { editCollection: undefined });
     closeMenu();
     setEditing({ id, col: 'title', rect: null });
   };
@@ -592,8 +596,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // Context-menu Delete: a non-empty collection prompts cascade-vs-promote;
   // empty collections and plain tasks delete straight away.
   const requestDeleteFromMenu = (id: string) => {
-    const entry = byId.get(id);
-    if (entry?.todo.isCollection && entries.some((e) => (e.todo.parentId ?? null) === id)) {
+    const entry = findEntry(id);
+    const hasChildren = (e: OrganizerEntry) => (e.todo.parentId ?? null) === id;
+    if (entry?.todo.isCollection && (entries.some(hasChildren) || archivedEntries.some(hasChildren))) {
       setDeleteCollId(id);
     } else {
       onDeleteTodo(id);
@@ -645,9 +650,14 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   });
 
   // The popover (tags/notes/status/priority) edits the entry currently being edited.
+  // Falls back to the archived set - like `menuEntry` - so cells stay editable in the
+  // Archived view. Without it the lookup misses, the popover never mounts, and only
+  // the Name cell (whose editor is inline in HubRow) appears to respond to a click.
   const editingEntry =
     editing && POPOVER_COLS.includes(editing.col)
-      ? entries.find((e) => e.todo.id === editing.id) || null
+      ? entries.find((e) => e.todo.id === editing.id) ||
+        archivedEntries.find((e) => e.todo.id === editing.id) ||
+        null
       : null;
 
 
@@ -736,6 +746,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               onQuickAddTask: viewAllowsNew ? handleQuickAddTask : undefined,
               onQuickAddInGroup: viewAllowsNew ? handleQuickAddInGroup : undefined,
               onNewInView: viewAllowsNew ? handleNewInView : undefined,
+              onOpenTask,
             }}
             dnd={dnd}
             bottomSpacer
@@ -748,6 +759,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           anchor={sectionsMenu}
           config={sectionsConfig}
           onChange={(cfg) => updateViewState({ sections: cfg })}
+          onSetForAll={() => applyToAllViews('sections')}
           onClose={() => setSectionsMenu(null)}
         />,
         document.body
@@ -764,6 +776,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onMove={moveField}
           onToggle={toggleField}
           onToggleWrap={toggleWrap}
+          onSetForAll={() => applyToAllViews('fields')}
           onClose={() => setFieldsMenu(null)}
         />,
         document.body
@@ -779,6 +792,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           uniqueValues={uniqueValues}
           onChange={(f) => updateViewState({ filters: f })}
           onChangeMatch={(m) => updateViewState({ filterMatch: m })}
+          onSetForAll={() => applyToAllViews('filter')}
           onClose={() => setFilterMenu(null)}
         />,
         document.body
@@ -791,6 +805,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           sorts={activeSorts}
           allColumns={COLUMNS}
           onChange={(s) => updateViewState({ sorts: s })}
+          onSetForAll={() => applyToAllViews('sort')}
           onClose={() => setSortMenu(null)}
         />,
         document.body
@@ -824,7 +839,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onClose={closeMenu}
           onEditCollection={(id) => { onEditCollection(id); closeMenu(); }}
           onCreateTaskInside={createTaskInside}
-          onCreateNestedCollection={(id) => { handleNewNestedCollection(id); closeMenu(); }}
+          onCreateNestedCollection={(id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); }}
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
@@ -868,9 +883,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
       {/* Delete-collection modal: cascade vs. move tasks up one level */}
       {deleteCollId && (() => {
-        const coll = entries.find((e) => e.todo.id === deleteCollId);
+        const coll = findEntry(deleteCollId);
         if (!coll) { setDeleteCollId(null); return null; }
-        const parentColl = coll.todo.parentId ? byId.get(coll.todo.parentId) : null;
+        const parentColl = coll.todo.parentId ? findEntry(coll.todo.parentId) : null;
         return createPortal(
           <DeleteCollectionModal
             name={coll.todo.text || 'Untitled collection'}

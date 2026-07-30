@@ -394,7 +394,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
                   onClick={() => setSelectedDate(format(day, 'yyyy-MM-dd'))}
                   className="flex flex-col items-center gap-1.5 group"
                 >
-                  <span className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-fg-ghost group-hover:text-fg-subtle'
+                  <span className={`text-xs font-bold transition-colors ${isSelected ? 'text-[var(--accent2)]' : 'text-fg-ghost group-hover:text-fg-subtle'
                     }`}>
                     {format(day, 'EEE')}
                   </span>
@@ -434,11 +434,11 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
             onUpdateTodos(selectedDate, [...newTodos, ...hidden]);
           }}
         />
-        <div className="h-24 shrink-0" />
+        <div className="h-26 shrink-0" />
       </div>
 
       {/* Right side: 1-Day Calendar */}
-      <div className="max-w-90 w-[25%] shrink-0 hidden lg:block h-full">
+      <div className="max-w-110 w-[24%] shrink-0 hidden lg:block h-full">
         <div className="h-full overflow-hidden flex flex-col">
           <CalendarView
             dayTodos={dayTodos}

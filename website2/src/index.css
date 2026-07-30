@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #111111;
+  --color-surface: #1a1a1a;
+  --color-raised: #1f1f1f;
+  --color-overlay: #2a2a2a;
+
+  --color-fg: #ffffff;
+  --color-fg-muted: #9ca3af;
+  --color-fg-subtle: #6b7280;
+  --color-fg-faint: rgba(255, 255, 255, 0.64);
+  --color-fg-ghost: rgba(255, 255, 255, 0.40);
+
+  --color-fill: rgba(255, 255, 255, 0.10);
+  --color-fill-subtle: rgba(255, 255, 255, 0.05);
+  --color-fill-strong: rgba(255, 255, 255, 0.15);
+  --color-fill-stronger: rgba(255, 255, 255, 0.20);
+
+  --color-line: rgba(255, 255, 255, 0.10);
+  --color-line-subtle: rgba(255, 255, 255, 0.06);
+  --color-line-strong: rgba(255, 255, 255, 0.20);
+  --color-line-stronger: rgba(255, 255, 255, 0.40);
+
+  --color-gold: #ffcd4e;
+  --color-gold-hover: #f7bd2d;
+  --color-gold-deep: #d99a18;
+
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  --canvas: #111111;
+  --surface: #1a1a1a;
+  --raised: #1f1f1f;
+  --overlay: #2a2a2a;
+  --fg: #ffffff;
+  --fg-muted: #9ca3af;
+  --fg-subtle: #6b7280;
+  --accent1: #ffcd4e;
+  --accent2: #c6dabe;
+  --xp-gold: #ffcd4e;
+  --xp-violet: #a78bfa;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+/* Minimalist Button Recipes */
+@layer components {
+  /* 1. Ghost - transparent until hover */
+  .btn-ghost {
+    @apply transition-all duration-150 disabled:opacity-50 cursor-pointer text-fg-subtle hover:text-fg hover:bg-fill-subtle rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2;
+  }
+
+  /* 2. Neutral - minimal gray fill */
+  .btn-neutral {
+    @apply transition-all duration-150 disabled:opacity-50 cursor-pointer bg-fill-subtle text-fg-faint hover:bg-fill hover:text-fg rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 border border-line-subtle;
+  }
+
+  /* 4. Accent - Flat Gold Fill */
+  .btn-accent {
+    @apply transition-all duration-100 disabled:opacity-50 cursor-pointer bg-gold text-canvas font-bold hover:bg-gold-hover active:scale-[0.98] rounded-lg px-4 py-2 text-sm flex items-center justify-center gap-2 inset-shadow-sm/40 inset-shadow-white active:inset-shadow-none;
+  }
+
+  .btn-accent-lg {
+    @apply transition-all duration-100 disabled:opacity-50 cursor-pointer bg-gold text-canvas font-extrabold hover:bg-gold-hover active:scale-[0.98] rounded-xl px-5 h-13 text-lg flex items-center justify-center gap-2.5 inset-shadow-sm/40 inset-shadow-white active:inset-shadow-none;
+  }
+}
+
+/* Single-phase smooth word blur-to-focus transition */
+@keyframes wordBlurFocus {
+  0% {
+    opacity: 0;
+    filter: blur(24px);
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0);
+  }
+}
+
+.word-blur-enter {
+  animation: wordBlurFocus 0.7s ease-out both;
+}
+
+/* Fade Slide Up Entrance */
+.fade-slide-up {
+  animation: fadeSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -29,7 +29,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
   children,
 }) => {
   const headerCellCls =
-    'relative flex items-center px-2.5 text-xs font-semibold tracking-wide text-fg-muted hover:bg-canvas select-none';
+    'relative flex items-center px-2.5 text-xs font-bold text-fg-muted hover:bg-canvas select-none';
 
   const titleChrome = variant.chrome === 'title';
   const headerChrome = variant.chrome === 'header';
@@ -55,7 +55,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
       {titleChrome ? (
         <div className="max-w-3xl mx-auto w-full text-fg">
           {/* Project-style title - the selected collection's name, else the view label. */}
-          <div className="pt-3 mb-5">
+          <div className="mb-5">
             <h1 className="text-3xl font-bold text-fg truncate">
               {model.selectedCollectionId ? (model.todoById.get(model.selectedCollectionId)?.text || 'Untitled') : model.viewLabel}
             </h1>

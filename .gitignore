@@ -14,4 +14,12 @@ server/app.bundle.js
 .tanstack/
 # One-off theming codemods; build/lint scripts in scripts/ are tracked
 scripts/theming/
-website/doc
+# website2/ holds the marketing site source and IS tracked (Vercel builds it).
+# website/ is the superseded Astro site - no longer built, pending deletion.
+website/
+# website2 reference material: raw captures live in website2/media, only the
+# subset actually referenced is copied into website2/public/media and shipped.
+website2/media/
+website2/inspiration/
+website2/scratch.txt
+**/dunzo features markdown/

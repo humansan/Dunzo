@@ -14,6 +14,7 @@ export const SettingsOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) 
       email={d.authSession.data?.user?.email}
       name={d.authSession.data?.user?.name}
       onLogout={d.logout}
+      onSessionChanged={() => void d.authSession.refetch()}
       weekStartsOn={d.weekStartsOn}
       onUpdateWeekStartsOn={d.setWeekStartsOn}
       countdownMode={d.countdownMode}

@@ -20,7 +20,7 @@ const XP_MS = 600;       // wait out the XP count-up before the popup appears
 // charge window - the star stays dark while gold light gathers behind it - so it
 // tracks STAR_BLOOM_MS rather than being tuned independently.
 const BURST_LEAD = STAR_BLOOM_MS;
-const VISIBLE_MS = 1800; // how long the popup stays up (measured from when it appears)
+const VISIBLE_MS = 2100; // how long the popup stays up (measured from when it appears)
 
 // The corner widget (DailyScreen) lags its data by this much so it reflects the new
 // total right as the popup lights up - "the pop plays, then the corner catches up".
