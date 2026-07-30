@@ -21,7 +21,9 @@ interface AuthModalProps {
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset' | 'verify';
 type SignupStep = 'email' | 'details';
 // Why we're showing the code screen - only the copy differs.
-type VerifyReason = 'signup' | 'unverified-login';
+// `resume` = the account exists but was never verified, and the user came back
+// through signup (or the "verify your email" link) rather than a full log in.
+type VerifyReason = 'signup' | 'unverified-login' | 'resume';
 
 function getResetToken(): string | null {
   return new URLSearchParams(window.location.search).get('token');
@@ -36,10 +38,20 @@ function isEmailNotVerified(error: { code?: string; message?: string }): boolean
   return /email.*not.*verified/i.test(error.message ?? '');
 }
 
-// A light draft (email + mode + signup step) persisted so a remount / hard refresh
-// doesn't wipe typed input on the login screen. Passwords are deliberately never persisted.
+// A light draft (email + mode + signup step + pending verification) persisted so a
+// remount / hard refresh doesn't wipe typed input on the login screen. Passwords are
+// deliberately never persisted.
 const AUTH_DRAFT_KEY = 'dun-auth-draft';
-function readAuthDraft(): { email?: string; mode?: AuthMode; signupStep?: SignupStep } {
+interface AuthDraft {
+  email?: string;
+  mode?: AuthMode;
+  signupStep?: SignupStep;
+  verifyReason?: VerifyReason;
+  // Epoch ms until which "Resend code" stays disabled; survives a refresh so the
+  // cooldown can't be reset by reloading the page.
+  resendUntil?: number;
+}
+function readAuthDraft(): AuthDraft {
   try {
     return JSON.parse(sessionStorage.getItem(AUTH_DRAFT_KEY) || '{}');
   } catch {
@@ -112,10 +124,17 @@ const LoginScreen: React.FC<{
   const resetToken = getResetToken();
   const [draft] = useState(readAuthDraft);
   // Restore only a benign mode (never a stale forgot/reset flow) unless the URL
-  // carries a reset token. `verify` is deliberately not restored: the password
-  // needed to finish the sign-in isn't persisted, so a refresh restarts at login.
+  // carries a reset token. `verify` is restored when we know which email it was
+  // for: verifying no longer needs the (unpersisted) password, so a refresh mid-
+  // verification lands back on the code screen instead of dumping the user at login.
   const [mode, setMode] = useState<AuthMode>(
-    resetToken ? 'reset' : draft.mode === 'signup' ? 'signup' : 'login'
+    resetToken
+      ? 'reset'
+      : draft.mode === 'signup'
+        ? 'signup'
+        : draft.mode === 'verify' && draft.email
+          ? 'verify'
+          : 'login'
   );
   const [signupStep, setSignupStep] = useState<SignupStep>(
     draft.mode === 'signup' && draft.signupStep === 'details' ? 'details' : 'email'
@@ -128,25 +147,43 @@ const LoginScreen: React.FC<{
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Non-error status line (e.g. "Email verified") - styled as a neutral notice so
+  // a success message never shows up in the red error treatment.
+  const [notice, setNotice] = useState<string | null>(null);
   const [emailTaken, setEmailTaken] = useState(false);
+  // Login was rejected because the address was never verified - the error box then
+  // offers a link into the code screen to finish signing up.
+  const [unverifiedEmail, setUnverifiedEmail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [resetDone, setResetDone] = useState(false);
-  const [verifyReason, setVerifyReason] = useState<VerifyReason>('signup');
+  const [verifyReason, setVerifyReason] = useState<VerifyReason>(draft.verifyReason ?? 'signup');
   const [otp, setOtp] = useState('');
   const [otpInvalid, setOtpInvalid] = useState(false);
   const [resendSent, setResendSent] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  // Cooldown is held as an absolute deadline (not a countdown) so it survives a
+  // refresh; `nowTick` just re-renders the remaining seconds.
+  const [resendUntil, setResendUntil] = useState(draft.resendUntil ?? 0);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const resendCooldown = Math.max(0, Math.ceil((resendUntil - nowTick) / 1000));
 
-  // Keep the draft in sync (email + mode + step only; never passwords).
+  const startResendCooldown = () => {
+    setResendUntil(Date.now() + RESEND_COOLDOWN_SECONDS * 1000);
+    setNowTick(Date.now());
+  };
+
+  // Keep the draft in sync (email + mode + step + pending verification; never passwords).
   useEffect(() => {
-    sessionStorage.setItem(AUTH_DRAFT_KEY, JSON.stringify({ email, mode, signupStep }));
-  }, [email, mode, signupStep]);
+    sessionStorage.setItem(
+      AUTH_DRAFT_KEY,
+      JSON.stringify({ email, mode, signupStep, verifyReason, resendUntil })
+    );
+  }, [email, mode, signupStep, verifyReason, resendUntil]);
 
   // Tick down the resend cooldown so the button re-enables on its own.
   useEffect(() => {
     if (resendCooldown <= 0) return;
-    const id = window.setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    const id = window.setTimeout(() => setNowTick(Date.now()), 1000);
     return () => window.clearTimeout(id);
   }, [resendCooldown]);
 
@@ -161,6 +198,7 @@ const LoginScreen: React.FC<{
     }
     setSubmitting(true);
     setError(null);
+    setUnverifiedEmail(false);
     try {
       const { data, error } =
         mode === 'login'
@@ -172,18 +210,21 @@ const LoginScreen: React.FC<{
               name: name.trim() || email.split('@')[0],
             });
       if (error) {
-        // Signing in before confirming the address: send a fresh code and show the
-        // code screen instead of a dead-end error.
+        // Signing in before confirming the address. Say so plainly and offer the
+        // way out (finish signing up = enter the emailed code) rather than sending
+        // a code the user didn't ask for.
         if (isEmailNotVerified(error)) {
-          await enterVerifyMode('unverified-login');
+          setUnverifiedEmail(true);
+          setError('This email address hasn’t been verified yet.');
           return;
         }
         throw new Error(error.message || 'Authentication failed');
       }
       // With email verification required, sign-up returns no session token - the
-      // account exists but stays unusable until the emailed code is entered.
+      // account exists but stays unusable until the emailed code is entered. Neon
+      // has already sent that code as part of sign-up, so don't send another.
       if (mode === 'signup' && !(data as { token?: string | null } | null)?.token) {
-        await enterVerifyMode('signup');
+        await enterVerifyMode('signup', { send: false });
         return;
       }
       sessionStorage.removeItem(AUTH_DRAFT_KEY);
@@ -195,17 +236,30 @@ const LoginScreen: React.FC<{
     }
   };
 
-  // Send a code and switch to the code screen. Called right after a sign-up that
-  // needs verification, and when an unverified account tries to log in.
-  const enterVerifyMode = async (reason: VerifyReason) => {
+  // Switch to the code screen, optionally sending a code first.
+  //
+  // `send: false` is for the path right after `signUp.email`, where Neon Auth has
+  // already emailed a code itself. Its `send_verification_email_on_sign_up` flag
+  // reads `false` via the API yet it sends anyway, so we can't turn that off - we
+  // just don't add a second send of our own (which produced two emails with two
+  // different codes ~1s apart, and users would often type the stale one). Every
+  // other entry point has no sign-up behind it and must send: resuming an
+  // abandoned signup, the unverified-login link, and Resend.
+  const enterVerifyMode = async (reason: VerifyReason, { send = true } = {}) => {
     setVerifyReason(reason);
     setOtp('');
     setOtpInvalid(false);
     setResendSent(false);
     setError(null);
+    setNotice(null);
     setMode('verify');
+    if (!send) {
+      // Still start the cooldown: a code *was* just sent, just not by us.
+      startResendCooldown();
+      return;
+    }
     const { error } = await sendOtp();
-    if (!error) setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    if (!error) startResendCooldown();
   };
 
   const sendOtp = async (): Promise<{ error?: { message?: string } | null }> => {
@@ -232,7 +286,7 @@ const LoginScreen: React.FC<{
     const { error } = await sendOtp();
     if (!error) {
       setResendSent(true);
-      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      startResendCooldown();
     }
     setSubmitting(false);
   };
@@ -269,9 +323,11 @@ const LoginScreen: React.FC<{
       } else if (!data?.token) {
         const { data: session } = await authClient.getSession();
         if (!session) {
+          // No password in hand (a resumed signup, or a refresh mid-verification):
+          // the account is now verified, so hand them to the login form.
           switchMode('login');
-          // switchMode clears the error, so set the notice after it.
-          setError('Email verified. Log in to continue.');
+          // switchMode clears messages, so set the notice after it.
+          setNotice('Email verified. Log in to continue.');
           return;
         }
       }
@@ -285,16 +341,23 @@ const LoginScreen: React.FC<{
   };
 
   // Signup step 1 → step 2. Before collecting name/password, check the email
-  // isn't already registered so we can steer existing users to log in.
+  // isn't already registered so we can steer existing users to log in - and so
+  // an account that exists but was never verified can pick up where it left off
+  // instead of dead-ending on "already exists".
   const handleEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setEmailTaken(false);
     setSubmitting(true);
     try {
-      const { exists } = await apiFetch<{ exists: boolean }>(
+      const { exists, verified } = await apiFetch<{ exists: boolean; verified?: boolean }>(
         `/auth/email-exists?email=${encodeURIComponent(email.trim())}`
       );
+      if (exists && verified === false) {
+        await enterVerifyMode('resume');
+        return;
+      }
       if (exists) {
         setEmailTaken(true);
         setError('An account with this email already exists.');
@@ -379,7 +442,9 @@ const LoginScreen: React.FC<{
     setName('');
     setPassword('');
     setError(null);
+    setNotice(null);
     setEmailTaken(false);
+    setUnverifiedEmail(false);
     setForgotSent(false);
     setResetDone(false);
     setResendSent(false);
@@ -400,7 +465,9 @@ const LoginScreen: React.FC<{
           <p className="text-sm text-fg-subtle mb-6">
             {verifyReason === 'unverified-login'
               ? 'Your email address isn’t verified yet. We sent a 6-digit code to '
-              : 'Almost there. We sent a 6-digit code to '}
+              : verifyReason === 'resume'
+                ? 'You already started signing up with this email but never verified it. We sent a fresh 6-digit code to '
+                : 'Almost there. We sent a 6-digit code to '}
             <span className="text-fg">{email}</span>. Enter it below to finish setting up
             your account.
           </p>
@@ -675,9 +742,11 @@ const LoginScreen: React.FC<{
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  // Editing the email invalidates a prior "already taken" result.
-                  if (emailTaken) {
+                  // Editing the email invalidates a prior "already taken" /
+                  // "not verified" result.
+                  if (emailTaken || unverifiedEmail) {
                     setEmailTaken(false);
+                    setUnverifiedEmail(false);
                     setError(null);
                   }
                 }}
@@ -746,6 +815,10 @@ const LoginScreen: React.FC<{
             </div>
           )}
 
+          {notice && !error && (
+            <p className="text-xs text-fg-muted bg-fill-subtle rounded-lg px-3 py-2">{notice}</p>
+          )}
+
           {error && (
             <div className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">
               {error}
@@ -758,6 +831,20 @@ const LoginScreen: React.FC<{
                     className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] underline transition-colors cursor-pointer"
                   >
                     Log in instead
+                  </button>
+                </>
+              )}
+              {unverifiedEmail && (
+                <>
+                  {' '}
+                  Finish signing up to verify it -{' '}
+                  <button
+                    type="button"
+                    onClick={() => void enterVerifyMode('unverified-login')}
+                    disabled={submitting}
+                    className="font-bold text-[var(--accent2)] hover:text-[var(--accent1)] underline transition-colors cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    send me a code
                   </button>
                 </>
               )}
