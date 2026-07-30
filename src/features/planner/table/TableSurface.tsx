@@ -29,7 +29,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
   children,
 }) => {
   const headerCellCls =
-    'relative flex items-center px-2.5 text-xs font-bold text-fg-muted hover:bg-canvas select-none';
+    'relative flex items-center px-2.5 text-xs font-bold text-fg-muted hover:bg-canvas select-none group';
 
   const titleChrome = variant.chrome === 'title';
   const headerChrome = variant.chrome === 'header';
@@ -86,7 +86,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
                 {/* Resize handle on the right edge */}
                 <div
                   onMouseDown={(e) => model.startResize(c.key, e)}
-                  className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-[var(--accent2)]/40"
+                  className="absolute top-0 right-0 h-full w-1 cursor-col-resize transition-colors group-hover:bg-(--accent2)/60"
                 />
               </div>
             ))}

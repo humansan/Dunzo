@@ -7,7 +7,7 @@ export const FinalCta: React.FC = () => (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
       <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 text-xs font-semibold text-gold">
         <Sparkles className="w-3.5 h-3.5 fill-gold text-gold" />
-        <span>Free while in early access</span>
+        <span>Free in early access</span>
       </div>
 
       <h2 className="mt-6 text-3xl md:text-5xl font-extrabold tracking-tight text-fg leading-[1.1]">
