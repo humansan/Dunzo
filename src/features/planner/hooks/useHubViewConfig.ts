@@ -46,8 +46,14 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     // view's own record on top. A field absent from the view record falls
     // through to the default, which is what lets one broadcast reach views that
     // have never been visited (they have no record at all).
-    const defRaw = viewsConfig[defaultConfigKey] ?? {};
+    const defRawAll = viewsConfig[defaultConfigKey] ?? {};
     const viewRaw = viewsConfig[viewConfigKey] ?? {};
+    // A view may opt out of the INHERITED filters (Archived, Completed - see
+    // ViewDef.ignoresDefaultFilters). Only the filter slice is dropped, and only
+    // from the default layer: fields, sorts and sections still inherit, and a
+    // filter set explicitly on this view still wins below.
+    const { filters: _df, filterMatch: _dm, ...defRest } = defRawAll;
+    const defRaw = resolveView(selectedView).ignoresDefaultFilters ? defRest : defRawAll;
     const raw = { ...defRaw, ...viewRaw };
     let fieldOrder: ColKey[] = Array.isArray(raw.fieldOrder)
       ? raw.fieldOrder.filter((k: string): k is ColKey => allColKeys.includes(k as ColKey))

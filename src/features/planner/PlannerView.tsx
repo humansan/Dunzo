@@ -199,6 +199,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     categorizedCount,
     inDailyListCount,
     archivedCount,
+    completedCount,
     currentCount,
     viewLabel,
   } = useHubData({
@@ -693,6 +694,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           allCount={allCount}
           uncategorizedCount={uncategorizedCount}
           archivedCount={archivedCount}
+          completedCount={completedCount}
           inDailyListCount={inDailyListCount}
           categorizedCount={categorizedCount}
           visibleCollections={visibleCollections}

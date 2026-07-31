@@ -163,7 +163,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
         </button>
       )}
 
-      {isEmpty && (onNewInView || selectedView === 'archived') && (
+      {isEmpty && (onNewInView || selectedView === 'archived' || selectedView === 'completed') && (
         <div className="px-3 py-6 text-xs text-fg-subtle">
           {selectedCollectionId
             ? 'No tasks in this collection yet. Click “New” to add one.'
@@ -175,7 +175,9 @@ export const TableRows: React.FC<TableRowsProps> = ({
                   ? 'No tasks in your daily list yet.'
                   : selectedView === 'archived'
                     ? 'No archived tasks.'
-                    : <>No todos yet. Click “+ New”.</>}
+                    : selectedView === 'completed'
+                      ? 'No completed tasks yet.'
+                      : <>No todos yet. Click “+ New”.</>}
         </div>
       )}
     </>

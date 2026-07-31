@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Inbox, Archive, Shapes, ChevronRight, ChevronDown, CalendarCheck, FolderCheck, Eye, EyeOff, Plus } from 'lucide-react';
+import { Layers, Inbox, Archive, CircleCheckBig, Shapes, ChevronRight, ChevronDown, CalendarCheck, FolderCheck, Eye, EyeOff, Plus } from 'lucide-react';
 import { OrganizerEntry } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { SIDEBAR_INDENT } from '@/features/planner/constants';
@@ -24,6 +24,8 @@ export const CollectionTree: React.FC<{
   // Omit to hide the "Archived" pseudo-view (the Task Finder's picker doesn't
   // support it - its data layer only knows 'all' / 'uncategorized' / a collection id).
   archivedCount?: number;
+  // Omit to hide the "Completed" pseudo-view (same reason as Archived).
+  completedCount?: number;
   // Omit to hide the "In Daily List" / "Categorized" pseudo-views (same reason as
   // Archived - the Task Finder only navigates all / uncategorized / a collection).
   inDailyListCount?: number;
@@ -56,6 +58,7 @@ export const CollectionTree: React.FC<{
   allCount,
   uncategorizedCount,
   archivedCount,
+  completedCount,
   inDailyListCount,
   categorizedCount,
   visibleCollections,
@@ -83,7 +86,7 @@ export const CollectionTree: React.FC<{
 
   return (
     <div className="group/pane flex-1 min-h-0 flex flex-col">
-      {/* Section 1: All Tasks · Archived (nav mode only) */}
+      {/* Section 1: All Tasks · Archived · Completed (nav mode only) */}
       {!checkMode && (
         <div className="shrink-0 p-2 pb-0 space-y-0.5">
           <button type="button" onClick={() => onSelectView?.('all')} className={itemCls('all')} title="All Planner Tasks">
@@ -96,6 +99,13 @@ export const CollectionTree: React.FC<{
               <Archive size={15} className="shrink-0 text-fg-subtle" />
               <span className="flex-1 truncate">Archived</span>
               <span className="text-xs text-fg-faint font-mono mr-1.5">{archivedCount}</span>
+            </button>
+          )}
+          {completedCount !== undefined && (
+            <button type="button" onClick={() => onSelectView?.('completed')} className={itemCls('completed')} title="Completed">
+              <CircleCheckBig size={15} className="shrink-0 text-fg-subtle" />
+              <span className="flex-1 truncate">Completed</span>
+              <span className="text-xs text-fg-faint font-mono mr-1.5">{completedCount}</span>
             </button>
           )}
         </div>

@@ -63,10 +63,9 @@ export function buildSeedViewsConfig(workspaceId: string): NonNullable<UserSetti
       filters: [{ id: newId(), field: 'status', condition: 'is_not', value: 'Completed' }],
       filterMatch: 'and',
     },
-    // The Archived view is exempt: archived tasks are usually completed ones, so
-    // the default filter would render that view permanently empty. An explicit
-    // per-view record shadows the workspace default. (Using "Set for all" on
-    // filters later clears this, by design - that action means all.)
-    [`${workspaceId}:archived`]: { filters: [], filterMatch: 'and' },
+    // Views that exist to show what this filter excludes (Archived, Completed)
+    // opt out of it via ViewDef.ignoresDefaultFilters - no per-view record needed
+    // here, and unlike a seeded record that opt-out survives a later "Set for all"
+    // and applies to accounts that predate this seed.
   };
 }

@@ -373,6 +373,7 @@ export function useHubData(params: {
   const categorizedCount = countLeaves(PLANNER_VIEWS.categorized);
   const inDailyListCount = countLeaves(PLANNER_VIEWS['in-daily-list']);
   const archivedCount = countLeaves(PLANNER_VIEWS.archived);
+  const completedCount = countLeaves(PLANNER_VIEWS.completed);
   // Task-descendant count per collection (every non-collection descendant,
   // ignoring filters), precomputed in one ancestor walk instead of re-filtering
   // all entries for each sidebar row.
@@ -428,6 +429,7 @@ export function useHubData(params: {
     categorizedCount,
     inDailyListCount,
     archivedCount,
+    completedCount,
     currentCount,
     viewLabel,
   };
