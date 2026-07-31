@@ -225,7 +225,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             placeholder="Collection name"
             size={1}
             style={pill(color)}
-            className={`w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px font-medium focus:outline-none placeholder:text-fg-faint animate-[ring-grow_75ms_linear_both] ${variant.mode === 'list' ? 'text-base' : 'text-sm'}`}
+            className={`w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px font-medium focus:outline-none placeholder:text-fg-faint animate-[ring-grow_150ms_linear_both] ${variant.mode === 'list' ? 'text-base' : 'text-sm'}`}
           />
         ) : undefined}
         isCollapsed={isCollapsed}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { NAME_BASE_PAD, INDENT } from '@/features/planner/constants';
 import { pill as chipStyle } from '@/theme/pill';
@@ -72,13 +72,26 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   onDrop,
 }) => {
   const { mode } = useTableVariant();
+
+  // Leaving inline edit swaps the ringed editor back for the plain pill, which
+  // would snap. Detect that transition in a layout effect (a render-body ref
+  // can't: StrictMode's double render clears it before the committed pass) and
+  // run the mirror of the editor's mount animation on the pill instead.
+  const wasEditing = useRef(false);
+  const [shrink, setShrink] = useState(false);
+  useLayoutEffect(() => {
+    const editing = !!pillOverride;
+    if (wasEditing.current && !editing) setShrink(true);
+    wasEditing.current = editing;
+  }, [pillOverride]);
+
   const pill = pillOverride ?? (
     <span
       onClick={onPillClick}
       style={chipStyle(color)}
+      onAnimationEnd={() => setShrink(false)}
       className={`min-w-0 max-w-full truncate rounded-full px-2.5 py-px font-medium ${
-        onPillClick ? 'cursor-pointer' : ''
-      } ${mode === 'list' ? 'text-base' : 'text-sm'}`}
+        shrink && 'animate-[ring-shrink_150ms_linear_both]'} ${onPillClick ? 'cursor-pointer' : ''} ${mode === 'list' ? 'text-base' : 'text-sm'}`}
     >
       {label}
     </span>

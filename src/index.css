@@ -145,6 +145,11 @@ body {
   to { box-shadow: 0 0 0 2px; }
 }
 
+@keyframes ring-shrink {
+  from { box-shadow: 0 0 0 2px; }
+  to { box-shadow: 0 0 0 0; }
+}
+
 @layer utilities {
 
   /* Hide scrollbar for Chrome, Safari and Opera */
