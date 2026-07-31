@@ -24,6 +24,7 @@ import { useSettings, useUpdateSettings } from '@/lib/query/settings';
 import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
+import { buildSeedTrackers, buildSeedViewsConfig } from '@/lib/onboarding';
 
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
@@ -146,6 +147,9 @@ function useProvideAppData() {
   const setActiveWorkspaceId = (id: string) => updateSettings({ activeWorkspaceId: id });
 
   // First-run seeding + keep activeWorkspaceId valid once data has loaded.
+  // "No workspace at all" is the one signal that means a genuinely new account:
+  // every other collection is user-deletable, so seeding off an empty todo or
+  // tracker list would resurrect content the user threw away.
   const seededRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated) { seededRef.current = false; return; }
@@ -156,19 +160,32 @@ function useProvideAppData() {
     // duplicate empty "Personal" workspace every time. isSuccess is only true once
     // the server actually returned a list (and stays true with retained data
     // across background refetches), so we never seed off an unconfirmed empty.
-    if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess) return;
+    // The trackers query is gated on too (not just used) so the seed below can
+    // trust `trackers`: a still-loading list also reads as `[]`, and seeding off
+    // that would duplicate the widgets on an account whose workspace create failed.
+    if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess || !trackersQuery.isSuccess) return;
     if (workspaces.length === 0) {
       if (seededRef.current) return;
       seededRef.current = true;
       const id = Math.random().toString(36).substr(2, 9);
       createWorkspace.mutate({ id, name: 'Personal' });
       setActiveWorkspaceId(id);
+      // Onboarding content for a brand-new account (see @/lib/onboarding): the
+      // starter time widgets, so the app isn't blank on first sign-in.
+      if (trackers.length === 0) for (const t of buildSeedTrackers()) createTracker.mutate(t);
+      // ...and the planner's default view config, which is what keeps completed
+      // tasks out of every view (and every collection made later) now that
+      // auto-archive is off. Merged over whatever is stored: a first-run account
+      // has no hubViews, but never clobber another workspace's record.
+      updateSettings({
+        hubViews: { ...(settings?.hubViews ?? {}), ...buildSeedViewsConfig(id) },
+      });
       return;
     }
     if (!workspaces.some(w => w.id === activeWorkspaceId)) {
       setActiveWorkspaceId(workspaces[0].id);
     }
-  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, workspaces, activeWorkspaceId]);
+  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, trackersQuery.isSuccess, workspaces, trackers, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
     const id = Math.random().toString(36).substr(2, 9);

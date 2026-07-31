@@ -1,17 +1,16 @@
 import { MENU_SLICES, ToolbarMenuKey, ColKey } from '@/features/planner/types';
+import { defaultKeyFor } from '@/lib/query/settings';
 
 // Pure transformations over the `hubViews` blob (the DB-synced record of every
 // planner view's config, keyed `${workspaceId}:${viewId}`). Kept out of
 // useHubViewConfig so the part that rewrites EVERY stored record can be reasoned
 // about - and tested - without React or the settings pipeline.
 
-// The reserved view-id slot holding a workspace's "Set for all" defaults. Real
-// view ids are either a pseudo-view name or a collection id, and every id in the
-// app is Math.random().toString(36).substr(2, 9) - 9 chars of [0-9a-z], never an
-// underscore - so this can't collide.
-export const DEFAULT_VIEW_ID = '__default__';
-
-export const defaultKeyFor = (workspaceId: string) => `${workspaceId}:${DEFAULT_VIEW_ID}`;
+// The reserved view-id slot holding a workspace's defaults - written by "Set for
+// all" here, and by the first-run seed in @/lib/onboarding. Defined with the
+// settings blob it keys into (see @/lib/query/settings) and re-exported here so
+// planner code keeps importing it from its own model layer.
+export { DEFAULT_VIEW_ID, defaultKeyFor } from '@/lib/query/settings';
 
 export type ViewsConfig = Record<string, any>;
 

@@ -153,7 +153,14 @@ export interface SectionsConfig {
 }
 
 export const DEFAULT_SECTIONS_CONFIG: SectionsConfig = {
-  autoArchive: true,
+  // Off by default: it only fires on the Planner's own checkbox (see
+  // handleToggleTodo), so completing the same task from the daily list or the
+  // calendar left it un-archived - the same task behaving two different ways
+  // depending on where it was ticked. Hiding completed tasks is now the job of
+  // the seeded "Status is not Completed" view filter (@/lib/onboarding), which
+  // works no matter where the task was completed. Anyone who wants the archiving
+  // behaviour can still switch it on per view.
+  autoArchive: false,
   showLeafTasks: 'top',
   hideEmptyCollections: false,
   hideSubcollections: false,
