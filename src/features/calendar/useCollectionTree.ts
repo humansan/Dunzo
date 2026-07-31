@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import type { Todo, DayTodos } from '@shared/types';
-import { todoIndex, type OrganizerEntry } from '@/features/tasks/model';
+import { todoIndex, collectionAncestors, type OrganizerEntry } from '@/features/tasks/model';
 
 // Same shape as the planner's VisibleCollection (structurally assignable to
 // CollectionTree's prop). Kept local so this hook doesn't reach into planner internals.
@@ -69,14 +69,7 @@ export function useCollectionTree(dayTodos: DayTodos[], includeArchived: boolean
     const counts = new Map<string, number>();
     for (const t of byId.values()) {
       if (t.isCollection) continue;
-      let p: string | null = t.parentId ?? null;
-      const seen = new Set<string>();
-      while (p && byId.has(p) && !seen.has(p)) {
-        seen.add(p);
-        const pe = byId.get(p)!;
-        if (pe.isCollection) counts.set(p, (counts.get(p) ?? 0) + 1);
-        p = pe.parentId ?? null;
-      }
+      for (const cid of collectionAncestors(t, byId)) counts.set(cid, (counts.get(cid) ?? 0) + 1);
     }
     return counts;
   }, [byId]);
@@ -90,7 +83,7 @@ export function useCollectionTree(dayTodos: DayTodos[], includeArchived: boolean
     let n = 0;
     for (const t of byId.values()) {
       if (t.isCollection) continue;
-      if (taskCollectionAncestors(t, byId).size === 0) n++;
+      if (collectionAncestors(t, byId).size === 0) n++;
     }
     return n;
   }, [byId]);
@@ -129,17 +122,7 @@ export function useCollectionTree(dayTodos: DayTodos[], includeArchived: boolean
   };
 }
 
-// The set of collection ids `todo` belongs to - every isCollection ancestor along the
-// parentId chain (root → nearest). Empty when the task is uncategorized.
-export function taskCollectionAncestors(todo: Todo, byId: Map<string, Todo>): Set<string> {
-  const out = new Set<string>();
-  let pid = todo.parentId ?? null;
-  const seen = new Set<string>();
-  while (pid && byId.has(pid) && !seen.has(pid)) {
-    seen.add(pid);
-    const p = byId.get(pid)!;
-    if (p.isCollection) out.add(p.id);
-    pid = p.parentId ?? null;
-  }
-  return out;
-}
+// The set of collection ids `todo` belongs to. Kept as the calendar's local name
+// for the shared helper (see @/features/tasks/model/ancestry), which is now the
+// single implementation of every parentId walk in the app.
+export { collectionAncestors as taskCollectionAncestors } from '@/features/tasks/model';

@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
-import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
@@ -390,7 +390,15 @@ function useProvideAppData() {
       ...(opts?.patch ?? {}),
       ...(dueDate !== undefined ? { dueDate } : {}),
     };
-    createTodo.mutate(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))));
+    // reconcileArchived: a task created inside an archived parent is archived with
+    // it, so it can never be a live child of an archived row (see
+    // shared/domain/todoArchive). The server enforces the same rule authoritatively;
+    // doing it here keeps the optimistic row honest instead of showing it live for
+    // a beat and then having it change under the user.
+    const parent = parentId ? todoById.get(parentId) : undefined;
+    createTodo.mutate(
+      reconcileArchived(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))), parent)
+    );
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>

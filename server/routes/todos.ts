@@ -4,6 +4,7 @@ import { db } from '../db';
 import { todos, type NewTodoRow } from '../../shared/db/schema';
 import {
   asyncHandler,
+  enforceArchive,
   enforceSchedule,
   enforceSchedulePatch,
   enforceVisibility,
@@ -14,8 +15,22 @@ import {
   TODO_UPDATE_FIELDS,
 } from '../http';
 import { SCHEDULE_KEYS, touchesSchedule } from '../../shared/domain/todoSchedule';
+import { touchesArchive } from '../../shared/domain/todoArchive';
 
 export const todosRouter = Router();
+
+// The archive invariant is checked against the DIRECT parent only (see
+// shared/domain/todoArchive) - one row, not a recursive ancestor walk. Used by the
+// single-row routes; the batch route preloads its parents in one query instead.
+// Returns undefined for a root todo or a parent the user doesn't own.
+async function parentRow(userId: string, parentId: unknown) {
+  if (typeof parentId !== 'string' || !parentId) return undefined;
+  const [row] = await db
+    .select()
+    .from(todos)
+    .where(and(eq(todos.userId, userId), eq(todos.id, parentId)));
+  return row;
+}
 
 // GET /api/todos - all of the user's todos (client groups by workspace/date).
 todosRouter.get(
@@ -44,6 +59,30 @@ todosRouter.post(
     );
 
     await db.transaction(async (tx) => {
+      // Every parent this batch points at, preloaded in ONE query. The archive
+      // check needs the parent row, and a Planner reorder patches `parentId` on
+      // every row in the tree - a SELECT per row would turn one drag into hundreds
+      // of round trips inside this transaction. Rows written by the batch are
+      // folded back in as we go, so a child processed after its parent sees the
+      // parent's new state rather than the preloaded one.
+      const parentIds = new Set<string>();
+      for (const r of [...upserts, ...patches]) {
+        const pid = (r as { parentId?: unknown })?.parentId;
+        if (typeof pid === 'string' && pid) parentIds.add(pid);
+      }
+      const known = new Map<string, Record<string, unknown>>();
+      if (parentIds.size > 0) {
+        const rows = await tx
+          .select()
+          .from(todos)
+          .where(and(eq(todos.userId, userId), inArray(todos.id, [...parentIds])));
+        for (const r of rows) known.set(r.id, r as Record<string, unknown>);
+      }
+      // A patch carries only the fields it changes, so a parent's archived state is
+      // only known here when the patch actually sets it.
+      const parentOf = (row: Record<string, unknown>) =>
+        typeof row.parentId === 'string' ? known.get(row.parentId) : undefined;
+
       for (const u of upserts) {
         const insertData = pick<NewTodoRow>(u, TODO_FIELDS);
         if (!insertData.id) continue;
@@ -74,6 +113,11 @@ todosRouter.post(
           const reconciled = insertRec[k] === undefined ? null : insertRec[k];
           if (reconciled !== (setRec[k] ?? null)) setRec[k] = reconciled;
         }
+        // Archive invariant, mirrored onto the conflict-update set the same way.
+        enforceArchive(insertRec, parentOf(insertRec));
+        if (insertRec.archived !== (setRec.archived ?? null)) setRec.archived = insertRec.archived ?? null;
+        // This row may itself be some later row's parent.
+        known.set(insertRow.id, insertRec);
 
         // `where` on the conflict update prevents hijacking a row owned by
         // another user (PK `id` is global; only own rows get updated).
@@ -91,8 +135,8 @@ todosRouter.post(
         const id = (p as { id?: unknown })?.id;
         if (typeof id !== 'string') continue;
         const patch = pick<Partial<NewTodoRow>>(p, TODO_UPDATE_FIELDS);
-        // Status stamping and the visibility/schedule backstops all need the existing row.
-        if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch)) {
+        // Status stamping and the visibility/schedule/archive backstops all need the existing row.
+        if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch) || touchesArchive(patch)) {
           const [existing] = await tx
             .select()
             .from(todos)
@@ -111,6 +155,14 @@ todosRouter.post(
           }
           if (existing && touchesSchedule(patch)) {
             enforceSchedulePatch(patch as Record<string, unknown>, existing as Record<string, unknown>);
+          }
+          if (existing && touchesArchive(patch)) {
+            const merged = { ...existing, ...patch } as Record<string, unknown>;
+            enforceArchive(merged, parentOf(merged));
+            if (merged.archived !== ((patch as Record<string, unknown>).archived ?? existing.archived)) {
+              (patch as Record<string, unknown>).archived = merged.archived;
+            }
+            known.set(id, merged);
           }
         }
         if (Object.keys(patch).length === 0) continue;
@@ -143,6 +195,9 @@ todosRouter.post(
     stampCompletion(row as { status?: string | null; completedAt?: number | null });
     enforceVisibility(row as Record<string, unknown>);
     enforceSchedule(row as Record<string, unknown>);
+    // A todo created inside an archived parent is archived with it, rather than
+    // becoming a live child of an archived row (see shared/domain/todoArchive).
+    enforceArchive(row as Record<string, unknown>, await parentRow(req.userId!, row.parentId));
     const [inserted] = await db.insert(todos).values(row).returning();
     res.status(201).json(inserted);
   })
@@ -155,8 +210,8 @@ todosRouter.patch(
     const { id } = req.params;
     const userId = req.userId!;
     const patch = pick<Partial<NewTodoRow>>(req.body, TODO_UPDATE_FIELDS);
-    // Status stamping and the visibility/schedule backstops all need the existing row.
-    if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch)) {
+    // Status stamping and the visibility/schedule/archive backstops all need the existing row.
+    if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch) || touchesArchive(patch)) {
       const [existing] = await db
         .select()
         .from(todos)
@@ -175,6 +230,15 @@ todosRouter.patch(
       }
       if (existing && touchesSchedule(patch)) {
         enforceSchedulePatch(patch as Record<string, unknown>, existing as Record<string, unknown>);
+      }
+      // Re-parenting under an archived todo, or un-archiving a row whose parent is
+      // still archived, both have to fold `archived: true` back into the patch.
+      if (existing && touchesArchive(patch)) {
+        const merged = { ...existing, ...patch } as Record<string, unknown>;
+        enforceArchive(merged, await parentRow(userId, merged.parentId));
+        if (merged.archived !== ((patch as Record<string, unknown>).archived ?? existing.archived)) {
+          (patch as Record<string, unknown>).archived = merged.archived;
+        }
       }
     }
     if (Object.keys(patch).length === 0) {

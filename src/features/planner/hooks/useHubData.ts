@@ -7,6 +7,10 @@ import {
   todoIndex,
   collectionOf,
   collectionPath,
+  ancestorsOf,
+  collectionAncestors,
+  hasCollectionAncestor as hasCollAncestor,
+  isDescendantOf as isDescendantOfId,
   inWorkspace,
 } from '@/features/tasks/model';
 import { ColKey, COLUMNS, GroupRow, FilterRule, FilterMatch, SortRule, SectionsConfig } from '@/features/planner/types';
@@ -115,37 +119,21 @@ export function useHubData(params: {
     const byIdInTree = new Map<string, OrganizerEntry>();
     for (const e of archivedEntries) {
       byIdInTree.set(e.todo.id, e);
-      let pid = e.todo.parentId ?? null;
-      const seen = new Set<string>();
-      while (pid && todoById.has(pid) && !seen.has(pid)) {
-        seen.add(pid);
-        if (!byIdInTree.has(pid)) byIdInTree.set(pid, { todo: todoById.get(pid)! });
-        pid = todoById.get(pid)!.parentId ?? null;
+      for (const a of ancestorsOf(e.todo, todoById)) {
+        if (!byIdInTree.has(a.id)) byIdInTree.set(a.id, { todo: a });
       }
     }
     return [...byIdInTree.values()];
   }, [archivedEntries, todoById]);
-  const hasCollectionAncestor = (e: OrganizerEntry): boolean => {
-    let p = e.todo.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && byId.has(p) && !seen.has(p)) {
-      seen.add(p);
-      const pe = byId.get(p)!;
-      if (pe.todo.isCollection) return true;
-      p = pe.todo.parentId ?? null;
-    }
-    return false;
-  };
-  const isDescendantOf = (e: OrganizerEntry, cid: string): boolean => {
-    let p = e.todo.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && byId.has(p) && !seen.has(p)) {
-      if (p === cid) return true;
-      seen.add(p);
-      p = byId.get(p)!.todo.parentId ?? null;
-    }
-    return false;
-  };
+  // Ancestry questions all run over `todoById` - the FULL index, archived rows
+  // included. See @/features/tasks/model/ancestry: walking the live-only `byId`
+  // instead is what let a task read as uncategorized while its Collection cell
+  // named a collection. `byId` stays for "is this row in the current entry set"
+  // lookups, which is a different question.
+  const hasCollectionAncestor = (e: OrganizerEntry): boolean =>
+    hasCollAncestor(e.todo, todoById);
+  const isDescendantOf = (e: OrganizerEntry, cid: string): boolean =>
+    isDescendantOfId(e.todo, cid, todoById);
   // Collections list for the sidebar (top-level sections, in hub order).
   const collections = useMemo(
     () =>
@@ -216,21 +204,23 @@ export function useHubData(params: {
     const out = new Map<string, OrganizerEntry>();
     // Leaf tasks + each leaf's parent-task chain (collections are added below, so
     // the walk only re-attaches missing task parents to keep subtrees intact).
+    //
+    // This one walks `byId`, not the full index, and that IS the right domain here:
+    // the question isn't "what are this task's ancestors" but "which rows may I add
+    // to a live view", and an archived ancestor is not one of them. Entries carry
+    // view state, so the walk yields OrganizerEntry rather than Todo.
     for (const e of entries) {
       if (e.todo.isCollection || !v.leaf(e, ctx)) continue;
       out.set(e.todo.id, e);
-      let pid = e.todo.parentId ?? null;
-      const seen = new Set<string>();
-      while (pid && byId.has(pid) && !seen.has(pid)) {
-        seen.add(pid);
-        const pe = byId.get(pid)!;
-        if (!pe.todo.isCollection && !out.has(pid)) out.set(pid, pe);
-        pid = pe.todo.parentId ?? null;
+      for (const a of ancestorsOf(e.todo, todoById)) {
+        const pe = byId.get(a.id);
+        if (!pe) break; // archived (or otherwise not live) - the live chain ends here
+        if (!a.isCollection && !out.has(a.id)) out.set(a.id, pe);
       }
     }
     if (v.scaffold === 'tree') for (const c of collections) out.set(c.todo.id, c);
     return [...out.values()];
-  }, [entries, collections, archivedTreeEntries, selectedView, byId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [entries, collections, archivedTreeEntries, selectedView, byId, todoById]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unique display values per field, computed from un-filtered view entries.
   // Used to populate the filter value dropdown.
@@ -273,13 +263,7 @@ export function useHubData(params: {
     const collWithTasks = new Set<string>();
     for (const e of filteredEntries) {
       if (e.todo.isCollection) continue;
-      let p: string | null = e.todo.parentId ?? null;
-      const seen = new Set<string>();
-      while (p && todoById.has(p) && !seen.has(p)) {
-        seen.add(p);
-        collWithTasks.add(p);
-        p = todoById.get(p)!.parentId ?? null;
-      }
+      for (const a of ancestorsOf(e.todo, todoById)) collWithTasks.add(a.id);
     }
     return filteredEntries.filter((e) => !e.todo.isCollection || collWithTasks.has(e.todo.id));
   }, [filteredEntries, sectionsConfig.hideEmptyCollections, todoById]);
@@ -306,13 +290,7 @@ export function useHubData(params: {
     const counts = new Map<string, number>();
     for (const e of processedEntries) {
       if (e.todo.isCollection) continue;
-      let p: string | null = e.todo.parentId ?? null;
-      const seen = new Set<string>();
-      while (p && todoById.has(p) && !seen.has(p)) {
-        seen.add(p);
-        counts.set(p, (counts.get(p) ?? 0) + 1);
-        p = todoById.get(p)!.parentId ?? null;
-      }
+      for (const a of ancestorsOf(e.todo, todoById)) counts.set(a.id, (counts.get(a.id) ?? 0) + 1);
     }
     return counts;
   }, [processedEntries, todoById]);
@@ -381,17 +359,12 @@ export function useHubData(params: {
     const counts = new Map<string, number>();
     for (const e of entries) {
       if (e.todo.isCollection) continue;
-      let p: string | null = e.todo.parentId ?? null;
-      const seen = new Set<string>();
-      while (p && byId.has(p) && !seen.has(p)) {
-        seen.add(p);
-        const pe = byId.get(p)!;
-        if (pe.todo.isCollection) counts.set(p, (counts.get(p) ?? 0) + 1);
-        p = pe.todo.parentId ?? null;
+      for (const cid of collectionAncestors(e.todo, todoById)) {
+        counts.set(cid, (counts.get(cid) ?? 0) + 1);
       }
     }
     return counts;
-  }, [entries, byId]);
+  }, [entries, todoById]);
   const collectionCount = (cid: string) => collectionCounts.get(cid) ?? 0;
 
   const currentCount = selectedCollectionId

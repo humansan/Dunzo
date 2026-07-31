@@ -834,7 +834,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         />
       )}
 
-      {/* Right-click / 3-dot context menu */}
+      {/* Right-click / 3-dot context menu. The four create actions are passed only
+          when the view supports creation (viewAllowsNew) - an undefined handler
+          renders no item. In Archived that isn't cosmetic: the new child would
+          inherit its parent's archived state (shared/domain/todoArchive) and vanish
+          into the row it was created under. */}
       {menu && (
         <RowContextMenu
           menu={menu}
@@ -845,17 +849,17 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onToggleColorPicker={() => setColorPickerOpen((v) => !v)}
           onClose={closeMenu}
           onEditCollection={(id) => { onEditCollection(id); closeMenu(); }}
-          onCreateTaskInside={createTaskInside}
-          onCreateNestedCollection={(id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); }}
+          onCreateTaskInside={viewAllowsNew ? createTaskInside : undefined}
+          onCreateNestedCollection={viewAllowsNew ? ((id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); }) : undefined}
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { onOpenTask(id); closeMenu(); }}
-          onDuplicate={duplicateTask}
+          onDuplicate={viewAllowsNew ? duplicateTask : undefined}
           onSetDate={(_id, date) => setTaskDate(date)}
           onSetTime={(_id, time) => setTaskTime(time)}
-          onAddTaskAbove={(id) => addTaskRelative(id, 'above')}
-          onAddTaskBelow={(id) => addTaskRelative(id, 'below')}
+          onAddTaskAbove={viewAllowsNew ? ((id) => addTaskRelative(id, 'above')) : undefined}
+          onAddTaskBelow={viewAllowsNew ? ((id) => addTaskRelative(id, 'below')) : undefined}
           onArchive={(id) => {
             if (menuEntry?.todo.archived) onSaveTodo({ ...menuEntry.todo, archived: false });
             else onArchiveTodo(id);

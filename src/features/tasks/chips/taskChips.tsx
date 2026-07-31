@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Astroid, GitBranch } from 'lucide-react';
 import { formatTime12h } from '@/common/lib/time';
-import { collectionOf, percentOfDay, percentLabel } from '@/features/tasks/model';
+import { collectionOf, isDescendantOf, percentOfDay, percentLabel } from '@/features/tasks/model';
 import { Todo } from '@shared/types';
 import {
   OptionSelectField,
@@ -340,17 +340,12 @@ export const ParentTaskButton: React.FC<{
   const parentTodo = parentId ? todoById.get(parentId) ?? null : null;
   const parentTaskName = parentTodo && !parentTodo.isCollection ? (parentTodo.text || 'Untitled') : null;
 
+  // A task can't be nested under itself or one of its own descendants.
   const isDisabled = (id: string): boolean => {
     if (!todoId) return false;
     if (id === todoId) return true;
-    let p = todoById.get(id)?.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && todoById.has(p) && !seen.has(p)) {
-      if (p === todoId) return true;
-      seen.add(p);
-      p = todoById.get(p)!.parentId ?? null;
-    }
-    return false;
+    const candidate = todoById.get(id);
+    return !!candidate && isDescendantOf(candidate, todoId, todoById);
   };
 
   return (

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '@/features/tasks/model';
+import { OrganizerEntry, nearestCollectionAt } from '@/features/tasks/model';
 import { FlatNode, GroupRow, SectionsConfig } from '@/features/planner/types';
 import { flattenTree, orderFromFlat } from '@/features/planner/sidebar/treeUtils';
 import { groupAssignmentPatch, groupCreateSpec } from '@/features/planner/model/viewUtils';
@@ -62,19 +62,16 @@ export function useRowDnD(params: {
 
   const resetDrag = useStableCallback(() => { setRowDragId(null); setRowDrop(null); tableScroll.stop(); });
 
-  // Nearest collection ancestor id (or null) - collections may only nest under
-  // collections, so a collection drag snaps its parent up to one.
-  const nearestCollectionId = (startId: string | null): string | null => {
-    let cur = startId;
-    const seen = new Set<string>();
-    while (cur && byId.has(cur) && !seen.has(cur)) {
-      seen.add(cur);
-      const e = byId.get(cur)!;
-      if (e.todo.isCollection) return cur;
-      cur = e.todo.parentId ?? null;
-    }
-    return null;
-  };
+  // Nearest collection at or above `startId` (or null) - collections may only nest
+  // under collections, so a collection drag snaps its parent up to one. Runs over
+  // the live entry set rather than the full index: this resolves a DROP TARGET, and
+  // an archived collection isn't one.
+  const liveIndex = useMemo(
+    () => new Map([...byId.values()].map((e) => [e.todo.id, e.todo])),
+    [byId]
+  );
+  const nearestCollectionId = (startId: string | null): string | null =>
+    nearestCollectionAt(startId, liveIndex);
 
   // Grouped-mode task rows as a flat tree (real parentId/depth, render order), plus
   // each row's section key - the attribute-grouped analogue of `flattened`.

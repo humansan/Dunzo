@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
+import { isDescendantOf } from '@/features/tasks/model';
 import { CalendarInput } from '@/common/ui';
 import { TimeInput } from '@/common/ui';
 import { TaskFinder } from '@/features/planner/task-finder';
@@ -97,14 +98,8 @@ export const DailyRowContextMenu: React.FC<{
   // A task can't be nested under itself or one of its own descendants.
   const isDisabled = (id: string): boolean => {
     if (id === todo.id) return true;
-    let p = todoById.get(id)?.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && todoById.has(p) && !seen.has(p)) {
-      if (p === todo.id) return true;
-      seen.add(p);
-      p = todoById.get(p)!.parentId ?? null;
-    }
-    return false;
+    const candidate = todoById.get(id);
+    return !!candidate && isDescendantOf(candidate, todo.id, todoById);
   };
 
   const toggleSub = (which: 'date' | 'time') => setSub((cur) => (cur === which ? null : which));

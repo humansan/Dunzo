@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import type { Todo } from '../shared/types';
 import { normalizeVisibility } from '../shared/domain/todoVisibility';
 import { reconcileSchedule, SCHEDULE_KEYS } from '../shared/domain/todoSchedule';
+import { reconcileArchived } from '../shared/domain/todoArchive';
 
 // Wrap an async route handler so thrown/rejected errors reach the error
 // middleware instead of crashing the process or hanging the request.
@@ -179,6 +180,24 @@ export function enforceSchedulePatch(
     const fixed = merged[k] === undefined ? null : merged[k];
     if (fixed !== (intended ?? null)) patch[k] = fixed;
   }
+}
+
+// Server-side backstop mirroring the client's reconcileArchived: a todo whose
+// parent is archived must itself be archived, so no write can leave a live row
+// dangling under an archived one (the state that made a task read as
+// uncategorized while its Collection cell still resolved through the archived
+// ancestor). `parent` is the todo's current parent row, or null/undefined when it
+// has none or it couldn't be resolved - in which case the row is left alone.
+// Mutates `row` (only when a correction is needed) and returns it.
+export function enforceArchive<T extends Record<string, unknown>>(
+  row: T,
+  parent: Record<string, unknown> | null | undefined
+): T {
+  const fixed = reconcileArchived(row as unknown as Todo, parent as unknown as Todo | null);
+  if (fixed.archived !== (row as { archived?: boolean | null }).archived) {
+    (row as { archived?: boolean }).archived = fixed.archived;
+  }
+  return row;
 }
 
 // The server owns completion stamping so it can't drift: completed_at is set

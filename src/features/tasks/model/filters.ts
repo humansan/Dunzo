@@ -1,4 +1,5 @@
 import { Todo, DayTodos } from '@shared/types';
+import { collectionPath } from './ancestry';
 import {
   hasDate,
   showsInOrganizer,
@@ -26,6 +27,14 @@ export {
   touchesSchedule,
   type ScheduleSide,
 } from '@shared/domain/todoSchedule';
+
+// The archive invariant (an archived parent's children are archived too) is
+// likewise shared with the server; same rationale, same entry point.
+export {
+  reconcileArchived,
+  archiveConsistent,
+  touchesArchive,
+} from '@shared/domain/todoArchive';
 
 // ── Workspaces (currently disabled) ────────────────────────────────────────
 //
@@ -134,33 +143,20 @@ export function todoIndex(dayTodos: DayTodos[]): Map<string, Todo> {
   return m;
 }
 
-// The id of the nearest collection ancestor of `todo`, or null if none.
-export function collectionOf(todo: Todo, byId: Map<string, Todo>): string | null {
-  let pid = todo.parentId ?? null;
-  const seen = new Set<string>();
-  while (pid && byId.has(pid) && !seen.has(pid)) {
-    seen.add(pid);
-    const p = byId.get(pid)!;
-    if (p.isCollection) return p.id;
-    pid = p.parentId ?? null;
-  }
-  return null;
-}
-
-// Root → leaf chain of collections ending at `collId` (for breadcrumb display).
-export function collectionPath(collId: string | null, byId: Map<string, Todo>): Todo[] {
-  const out: Todo[] = [];
-  let id: string | null = collId;
-  const seen = new Set<string>();
-  while (id && byId.has(id) && !seen.has(id)) {
-    seen.add(id);
-    const c = byId.get(id)!;
-    if (!c.isCollection) break;
-    out.unshift(c);
-    id = c.parentId ?? null;
-  }
-  return out;
-}
+// Every ancestry question - collectionOf, collectionPath, hasCollectionAncestor,
+// isDescendantOf - is one upward walk with a different stopping condition, so they
+// all live in ./ancestry over a single implementation. Re-exported here because
+// this module is the client's entry point to the todo domain.
+export {
+  ancestorsOf,
+  collectionOf,
+  collectionPath,
+  collectionAncestors,
+  hasCollectionAncestor,
+  isDescendantOf,
+  nearestCollectionAt,
+  type TodoIndex,
+} from './ancestry';
 
 export interface CollectionOption {
   id: string;
