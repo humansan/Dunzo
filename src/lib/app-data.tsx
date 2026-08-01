@@ -256,25 +256,40 @@ function useProvideAppData() {
   // a section's "+" drop the new task above such tasks instead of at the end.
   const nextHubOrder = () => todos.reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0) + 1;
 
-  // Replace the whole set of todos scheduled on `date` with `todosForDate` (the
-  // daily/calendar views hand back the full day in its new order). Other days are
-  // left untouched; the provided todos are pinned to `date` via dueDate.
-  // Replace the set of todos scheduled on `date`. Existing todos for that day
-  // that are no longer present are deleted; the rest are upserted with the new
-  // dueDate/order. Server stamps completedAt from status.
-  const handleUpdateTodos = (date: string, todosForDate: Todo[]) => {
+  // ── Daily-list writes ───────────────────────────────────────────────────────
+  // These replaced a single `handleUpdateTodos(date, todos[])` that re-saved a
+  // whole day at once. That signature made the array authoritative, so ANY todo on
+  // that day missing from it was deleted - which meant a field edit carried an
+  // implicit "and delete anything I didn't mention", and every caller had to
+  // remember to pass rows it wasn't even editing (see the daily reorder, which
+  // hand-appended the day's hidden planner tasks purely to keep them alive). Each
+  // operation now says what it is: save one row, create one row, order the day,
+  // delete one row. Nothing deletes by omission.
+
+  // Set the within-day order. Ids only - this never touches a task's fields, so it
+  // can't collide with an edit in flight.
+  const handleReorderDay = (orderedIds: string[]) => {
+    if (!orderedIds.length) return;
+    batchTodos.mutate({ patches: orderedIds.map((id, i) => ({ id, dailyOrder: i })) });
+  };
+
+  // Create `todo` on `date` and set the day's order, in ONE batch. The row goes as
+  // an upsert and the order as patches; the server applies upserts before patches
+  // inside one transaction, so the ordering can never reference a row that doesn't
+  // exist yet (the create-then-reorder race that a second request would open).
+  const handleCreateInDay = (date: string, todo: Todo, orderedIds: string[]) => {
     const dueDate = date && date !== UNDATED ? date : undefined;
-    const newIds = new Set(todosForDate.map(t => t.id));
-    const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
-    // Persist within-day position: the array order the daily/calendar view hands
-    // back becomes each task's dailyOrder.
-    // A task created on the Daily page is built here, not by addHubTodo, so it
-    // arrives without a Planner order - hand out the next ones so it lands at the
-    // end of the Planner (see nextHubOrder). Existing orders are left alone.
-    let hubOrder = nextHubOrder();
-    const upserts = todosForDate.map((t, i) => reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i, hubOrder: t.hubOrder ?? hubOrder++ }))));
-    batchTodos.mutate({ upserts, deletes });
-    if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
+    // Daily-created tasks are built by the daily screen, not addHubTodo, so they
+    // arrive without a Planner order - hand out the next one (see nextHubOrder).
+    const upsert = reconcileSchedule(
+      normalizeCompletion(
+        normalizeVisibility({ ...todo, dueDate, hubOrder: todo.hubOrder ?? nextHubOrder() })
+      )
+    );
+    batchTodos.mutate({
+      upserts: [upsert],
+      patches: orderedIds.map((id, i) => ({ id, dailyOrder: i })),
+    });
   };
 
   // Move a todo to a new scheduled day (its dueDate). fromDate is no longer
@@ -396,10 +411,15 @@ function useProvideAppData() {
     // the optimistic cache (the server corrects the write, but onSettled doesn't
     // refetch, so the wrong row would stay on screen until some later refetch).
     const parent = updatedTodo.parentId ? todoById.get(updatedTodo.parentId) : undefined;
+    // Hand out a Planner order if the task somehow lacks one. Daily-created tasks
+    // used to get theirs from handleUpdateTodos' whole-day pass, which a field edit
+    // no longer goes through; a null hubOrder sorts by createdAt on a different
+    // scale entirely, which is the bug 0006_backfill_hub_order existed to clean up.
+    const hubOrder = updatedTodo.hubOrder ?? nextHubOrder();
     updateTodo.mutate({
       id: updatedTodo.id,
       patch: reconcileArchived(
-        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate }))),
+        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, hubOrder }))),
         parent
       ),
     });
@@ -677,7 +697,8 @@ function useProvideAppData() {
     // active todo tracker
     activeTodoId, setActiveTodoId, activeTodo,
     // todo/hub handlers
-    handleUpdateTodos,
+    handleReorderDay,
+    handleCreateInDay,
     handleMoveTodo,
     handleToggleTodo,
     handleToggleAndClose,

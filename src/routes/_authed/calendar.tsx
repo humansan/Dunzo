@@ -23,7 +23,9 @@ function CalendarRoute() {
       <div>
         <CalendarView
           dayTodos={d.dayTodos}
-          onUpdateTodos={d.handleUpdateTodos}
+          onSaveTodo={d.handleHubSaveTodo}
+          onMoveTodo={d.handleMoveTodo}
+          onToggleTodo={d.handleToggleTodo}
           initialDate={date}
           onFocusDateChange={(next) => navigate({ search: { date: next } })}
           onCreateTask={d.handleCalendarAddTodo}

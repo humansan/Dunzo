@@ -31,7 +31,14 @@ import { DatePickerPopover } from '@/common/ui';
 
 interface DailyScreenProps {
   dayTodos: DayTodos[];
-  onUpdateTodos: (date: string, todos: Todo[]) => void;
+  // Per-row save - the same handler the Task Planner and the full view use, so a
+  // field edited here gets identical normalization and the same subtask prompts.
+  onSaveTodo: (todo: Todo) => void;
+  // Create one task on `date`, with the day's resulting order (ids, in order).
+  onCreateInDay: (date: string, todo: Todo, orderedIds: string[]) => void;
+  // Set the within-day order. Ids only - never touches a task's fields.
+  onReorderDay: (orderedIds: string[]) => void;
+  onDeleteTodo: (id: string) => void;
   onMoveTodo: (fromDate: string, toDate: string, updatedTodo: Todo) => void;
   // Currently unwired: the daily list's time chip used to start the tracker, but
   // it is now a time picker (matching the quick-edit panel), so nothing in this
@@ -64,7 +71,10 @@ interface DailyScreenProps {
 // ─── DailyScreen ────────────────────────────────────────────────────────────────
 export const DailyScreen: React.FC<DailyScreenProps> = ({
   dayTodos,
-  onUpdateTodos,
+  onSaveTodo,
+  onCreateInDay,
+  onReorderDay,
+  onDeleteTodo,
   onMoveTodo,
   onStartTracking,
   activeTodoId,
@@ -152,6 +162,10 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   }, [selectedDate, weekStartsOn]);
 
   const newTodoId = () => Math.random().toString(36).substr(2, 9);
+  // The day's order is expressed as a list of ids; the writes below never carry
+  // field data alongside it.
+  const idsOf = (list: (Todo | null | undefined)[]) =>
+    list.filter(Boolean).map((t) => t!.id);
 
   const buildTodo = (vals: QuickEditValues): Todo => ({
     id: newTodoId(),
@@ -176,17 +190,15 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
 
     const newTodo = buildTodo(vals);
     const target = vals.date;
-    if (target === selectedDate) {
-      onUpdateTodos(selectedDate, [...currentDayData.todos, newTodo]);
-    } else {
-      const targetDayData = dayTodos.find(d => d.date === target) || { date: target, todos: [] };
-      onUpdateTodos(target, [...targetDayData.todos, newTodo]);
-    }
+    const day = target === selectedDate
+      ? currentDayData.todos
+      : (dayTodos.find(d => d.date === target)?.todos ?? []);
+    onCreateInDay(target, newTodo, [...idsOf(day), newTodo.id]);
     // Panel stays open (QuickEditTodo resets itself) for rapid entry.
   };
 
-  // "Add task above/below": land the new task next to its anchor in the day's
-  // array, which handleUpdateTodos turns back into dailyOrder. A task dated to
+  // "Add task above/below": the new task's place in the day's order is its index in
+  // this array, which onCreateInDay writes back as dailyOrder. A task dated to
   // another day can't be positioned here, so it just joins that day's bucket.
   const addTodoAt = (vals: QuickEditValues, anchorId: string, pos: 'above' | 'below') => {
     if (!vals.text.trim()) return;
@@ -200,9 +212,10 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       handleAddTodo(vals);
       return;
     }
-    const next = [...all];
-    next.splice(pos === 'above' ? idx : idx + 1, 0, buildTodo(vals));
-    onUpdateTodos(selectedDate, next);
+    const newTodo = buildTodo(vals);
+    const order = idsOf(all);
+    order.splice(pos === 'above' ? idx : idx + 1, 0, newTodo.id);
+    onCreateInDay(selectedDate, newTodo, order);
   };
 
   // Copy a task's fields under a fresh id, placed directly below the original.
@@ -218,15 +231,14 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       completedAt: undefined,
       trackingStartedAt: undefined,
     };
-    const next = [...all];
-    next.splice(idx + 1, 0, copy);
-    onUpdateTodos(selectedDate, next);
+    const order = idsOf(all);
+    order.splice(idx + 1, 0, copy.id);
+    onCreateInDay(selectedDate, copy, order);
   };
 
-  const deleteTodo = (id: string) => {
-    const newTodos = (currentDayData.todos || []).filter(t => t && t.id !== id);
-    onUpdateTodos(selectedDate, newTodos);
-  };
+  // Deleting is its own operation now - it used to be expressed as "save the day
+  // without this row", which only worked because the day array was authoritative.
+  const deleteTodo = (id: string) => onDeleteTodo(id);
 
   // Persist edits without closing the panel (used by Save and the unmount flush).
   const persistEdit = (id: string, vals: QuickEditValues) => {
@@ -246,11 +258,17 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       autoMoveDate: vals.autoMoveDate,
     };
 
+    // A field edit is a one-row write, so it takes the same handler the Planner and
+    // the full view use. It used to re-save the WHOLE day through onUpdateTodos,
+    // which meant editing one XP chip rewrote every task on that day (and every
+    // dailyOrder with it), skipped reconcileArchived, and - because that array is
+    // authoritative - carried an implicit "delete anything not in this list".
+    // A changed date still routes through onMoveTodo, which additionally lands the
+    // task at the bottom of its new day; onSaveTodo doesn't compute dailyOrder.
     if (vals.date !== selectedDate) {
       onMoveTodo(selectedDate, vals.date, updatedTodo);
     } else {
-      const newTodos = currentDayData.todos.map(t => t && t.id === id ? updatedTodo : t);
-      onUpdateTodos(selectedDate, newTodos);
+      onSaveTodo(updatedTodo);
     }
   };
 
@@ -424,10 +442,12 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
           collectionOptions={collOptions}
           onCreateCollection={onCreateCollection}
           onReorder={(newTodos) => {
-            // DailyList only sees the daily-visible subset; keep the day's hidden
-            // (dated planner) todos so handleUpdateTodos doesn't delete them.
+            // DailyList only sees the daily-visible subset. The day's hidden (dated
+            // planner) tasks are appended so they keep a defined place in the order
+            // rather than interleaving with stale indexes - they used to be passed
+            // for a sharper reason, to stop the whole-day write from deleting them.
             const hidden = (currentDayData.todos || []).filter(t => t && !showsOnDailyChecklist(t, selectedDate));
-            onUpdateTodos(selectedDate, [...newTodos, ...hidden]);
+            onReorderDay([...idsOf(newTodos), ...idsOf(hidden)]);
           }}
         />
         <div className="h-26 shrink-0" />
@@ -438,7 +458,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
         <div className="h-full overflow-hidden flex flex-col">
           <CalendarView
             dayTodos={dayTodos}
-            onUpdateTodos={onUpdateTodos}
+            onSaveTodo={onSaveTodo}
+            onMoveTodo={onMoveTodo}
+            onToggleTodo={onToggleTodo}
             initialDate={selectedDate}
             initialDays={1}
             hideHeader={true}
