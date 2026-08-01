@@ -134,7 +134,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   const interaction = useMemo<TableInteraction>(() => ({
     editing: null,
     stopEdit: NOOP,
-    openMenu: NOOP,
+    // openMenu omitted - the Finder hosts no RowContextMenu, so its rows show no ⋯.
     toggleCollapse,
   }), []);
 

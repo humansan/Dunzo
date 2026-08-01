@@ -305,7 +305,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     editing: subEditing,
     startEdit: (id, col) => setSubEditing({ id, col, rect: null }),
     stopEdit: () => setSubEditing(null),
-    openMenu: () => {},
+    // openMenu omitted - no RowContextMenu in this modal, so no ⋯ button.
     toggleCollapse: (id) =>
       setSubCollapsed((prev) => {
         const next = new Set(prev);
@@ -480,7 +480,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 to the leftover space and scroll inside itself. Wrapped in a block
                 element, flex-1 is inert and the list grows with the pane. */}
             <div className="mt-8">
-              <div className="ml-3 mb-1.5 flex items-baseline gap-2">
+              <div className="ml-8.5 my-1.5 flex items-center gap-2">
                 <span className="text-basae font-medium text-fg-muted">Subtasks</span>
                 {subtaskEntries.length > 0 && (
                   <span className="text-xs text-fg-faint font-mono">{subtaskEntries.length}</span>

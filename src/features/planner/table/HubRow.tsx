@@ -37,7 +37,11 @@ interface HubRowProps {
   onAddSubtask: (parentId: string) => string;
   // Omitted → the completion check is read-only (like `startEdit` for the title).
   onToggleTodo?: (id: string) => void;
-  openMenu: (id: string, x: number, y: number) => void;
+  // Omitted → no row menu on this surface: the ⋯ button isn't rendered and
+  // right-click falls through to the browser's own menu. Surfaces that don't host
+  // a RowContextMenu (the Task Finder, the full view's Subtasks list) leave it out
+  // rather than passing a no-op that renders a button doing nothing.
+  openMenu?: (id: string, x: number, y: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: (id: string) => void;
   collPath: { id: string; name: string; color?: string }[];
@@ -122,6 +126,11 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     onDragOver: (e: React.DragEvent) => onRowDragOver?.(todo.id, e),
     onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); onRowDrop?.(); },
   };
+
+  // undefined on a surface with no row menu, so right-click keeps the browser's own.
+  const handleContextMenu = openMenu
+    ? (e: React.MouseEvent) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }
+    : undefined;
 
   // The grip - the only draggable element, so cell clicks/edits stay intact.
   // NOTE: this must be a plain function call (not an inner <Component/>), or each
@@ -238,18 +247,20 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         leading={dragHandle('mr-1')}
         actions={
           <>
-            <button
-              type="button"
-              title="Options"
-              onClick={(e) => {
-                e.stopPropagation();
-                const r = e.currentTarget.getBoundingClientRect();
-                openMenu(todo.id, r.left, r.bottom + 4);
-              }}
-              className={`shrink-0 mr-0.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
-            >
-              <MoreHorizontal size={18} />
-            </button>
+            {openMenu && (
+              <button
+                type="button"
+                title="Options"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const r = e.currentTarget.getBoundingClientRect();
+                  openMenu(todo.id, r.left, r.bottom + 4);
+                }}
+                className={`shrink-0 mr-0.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
+              >
+                <MoreHorizontal size={18} />
+              </button>
+            )}
             <button
               type="button"
               title="Add task"
@@ -263,7 +274,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         dropDecorations={<>{dropLine('before')}{dropLine('after')}{insideOverlay}</>}
         isDragSource={isDragSource}
         dragImageRef={dragImageRef}
-        onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
+        onContextMenu={handleContextMenu}
         onDragOver={dropProps.onDragOver}
         onDrop={dropProps.onDrop}
       />
@@ -422,7 +433,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     <div
       style={style}
       {...dropProps}
-      onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
+      onContextMenu={handleContextMenu}
       className={`relative grid items-stretch min-h-[36px] border-b border-line-subtle group/row transition-opacity ${
         isDragSource ? 'opacity-40' : `hover:bg-fill-subtle ${contextDim}`
       }`}
@@ -434,11 +445,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className={`group/name sticky left-0 z-20 flex items-start h-full overflow-hidden cursor-pointer ${
+        className={`group/name sticky left-0 z-20 flex items-start h-full overflow-hidden cursor-pointer pr-1.5 ${
           variant.columns === 'all' ? 'border-r border-line-subtle bg-canvas' : ''
         }
         ${isEditing('title') && "ring-2 ring-inset ring-[var(--accent2)]"}
         `}
+        onClick={() => !isEditing('title') && onOpenTask?.(todo.id)}
       >
         {/* The frozen Name cell needs an opaque bg so scrolled cells don't show through
             it - which also hides the row's translucent hover fill. These two overlays
@@ -473,7 +485,6 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           className={`relative z-10 flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
             isEditing('title') && !titleWrapped ? 'h-9' : 'py-2'
           } `}
-          onClick={() => !isEditing('title') && onOpenTask?.(todo.id)}
         >
           {/* Collapse chevron (nesting variants only) - a spacer keeps the checkbox
               aligned when a row has no children. A flat variant drops both. */}
@@ -528,18 +539,20 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               >
                 {todo.text || <span className="text-fg-faint">Untitled</span>}
               </span>
-              <button
-                type="button"
-                title="Options"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const r = e.currentTarget.getBoundingClientRect();
-                  openMenu(todo.id, r.left, r.bottom + 4);
-                }}
-                className={`shrink-0 mr-1.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
-              >
-                <MoreHorizontal size={16} />
-              </button>
+              {openMenu && (
+                <button
+                  type="button"
+                  title="Options"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const r = e.currentTarget.getBoundingClientRect();
+                    openMenu(todo.id, r.left, r.bottom + 4);
+                  }}
+                  className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+              )}
             </>
           )}
         </div>

@@ -183,6 +183,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
             variant.mode === 'table' ? 'border-b border-line-subtle bg-canvas' : 'border-b border-line-subtle'
           }`}
         >
+          <div className="w-9"></div>
           <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
             <Plus size={15} />
             <span>New</span>

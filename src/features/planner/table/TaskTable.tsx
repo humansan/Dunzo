@@ -97,7 +97,9 @@ export interface TableInteraction {
   editing: EditState;
   startEdit?: (id: string, col: ColKey, e: React.MouseEvent) => void;
   stopEdit: () => void;
-  openMenu: (id: string, x: number, y: number) => void;
+  // Omitted on surfaces that host no RowContextMenu (Task Finder, the full view's
+  // Subtasks list): rows then render no ⋯ button and leave right-click alone.
+  openMenu?: (id: string, x: number, y: number) => void;
   toggleCollapse: (id: string) => void;
   // Finder-columns drill: `onActivate` "opens" a collection row (a new column to
   // its right) instead of collapsing its children inline; `selectedId` marks the

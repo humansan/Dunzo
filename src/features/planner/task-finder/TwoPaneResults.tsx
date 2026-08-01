@@ -33,7 +33,7 @@ export const TwoPaneResults: React.FC<{
   const interaction: TableInteraction = {
     editing: null,
     stopEdit: NOOP,
-    openMenu: NOOP,
+    // openMenu omitted - same as the flat Finder list: no row menu here.
     toggleCollapse: toggleId(setCollapsed),
   };
   const rowHandlers: TableRowHandlers = {
