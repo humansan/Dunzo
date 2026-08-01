@@ -150,7 +150,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       onMouseDown={onClose}
     >
       <div
-        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-xl'} max-h-[70vh] flex flex-col rounded-xl border border-line bg-canvas shadow-2xl overflow-hidden`}
+        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-2xl'} transition-all max-h-[70vh] flex flex-col rounded-xl border border-line bg-canvas shadow-2xl overflow-hidden`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {title && (
@@ -215,9 +215,9 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
               onSaveTodo={onSaveTodo}
             />
           ) : !q ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by any field.</div>
+            <div className="px-4 py-4 text-xs text-fg-faint">Type to search tasks by name, notes, collection, status, priority, or date.</div>
           ) : matches.length === 0 ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
+            <div className="px-4 py-4 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
           ) : (
             <TaskTable
               variant={VARIANTS.search}

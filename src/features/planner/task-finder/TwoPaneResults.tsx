@@ -11,7 +11,7 @@ const toggleId = (set: (fn: (prev: Set<string>) => Set<string>) => void) => (id:
   set((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
 // The Task Finder's two-pane result view: a collection list (left) scoping a
-// TABLE-variant TaskTable of the selected view's matching tasks (right). Reuses the
+// SEARCHTABLE-variant TaskTable of the selected view's matching tasks (right). Reuses the
 // full planner table for the right pane; clicking a row picks the task. Owns its own
 // view-selection + collapse state (ephemeral to the finder session).
 export const TwoPaneResults: React.FC<{
@@ -62,7 +62,7 @@ export const TwoPaneResults: React.FC<{
         {bodyModel.flattened.length === 0 ? (
           <div className="px-4 py-6 text-xs text-fg-faint">No matching tasks in this collection.</div>
         ) : (
-          <TaskTable variant={VARIANTS.table} model={bodyModel} interaction={interaction} rowHandlers={rowHandlers} />
+          <TaskTable variant={VARIANTS.searchtable} model={bodyModel} interaction={interaction} rowHandlers={rowHandlers} />
         )}
       </div>
     </div>

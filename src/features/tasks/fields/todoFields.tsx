@@ -50,7 +50,7 @@ export const CompletedToggle: React.FC<{
 }> = ({ completed, onToggle, size = 22, className = '' }) => (
   <button
     onClick={onToggle ? (e) => { e.stopPropagation(); onToggle(); } : undefined}
-    className={`shrink-0 ${onToggle ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+    className={`shrink-0 cursor-pointer ${className}`}
   >
     <motion.div
       animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
