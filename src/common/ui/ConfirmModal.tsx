@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
 import { btnGhost } from '@/theme/buttons';
+import type { RoleName } from '@/theme/roles';
 import { Checkbox } from '@/common/ui/Checkbox';
 
 // The shared confirmation dialog: a title, a line of explanation, and one or more
@@ -14,10 +15,26 @@ export interface ConfirmAction {
   /** Second line under the label. Optional for a plain one-line choice. */
   description?: React.ReactNode;
   icon?: React.ReactNode;
-  /** 'danger' tints the card red - reserve it for destructive, unrecoverable work. */
-  tone?: 'default' | 'danger';
+  /**
+   * Any theme role (see src/theme/roles.ts) - 'danger' for destructive work,
+   * 'warning', 'accent2', 'xp-tier1', … Tints the card's border, hover fill, icon
+   * and label. Omit for the neutral card.
+   *
+   * NOTE for future edits: the class names below cannot be built by interpolating
+   * this value (`text-${tone}`). Tailwind scans source files as plain text and
+   * only generates utilities it finds spelled out, so an interpolated name yields
+   * no CSS at all. What makes an arbitrary role work here is that the role is
+   * passed as a CSS variable at runtime (`--tone`) while the classes referencing
+   * that variable stay literal - dynamic value, static class.
+   */
+  tone?: RoleName;
   onSelect: () => void;
 }
+
+// Literal (so Tailwind emits them), parameterised by the --tone variable set inline.
+const TONED_CARD =
+  'border-[color-mix(in_srgb,var(--tone)_30%,transparent)] hover:bg-[color-mix(in_srgb,var(--tone)_10%,transparent)]';
+const PLAIN_CARD = 'border-line hover:bg-fill-subtle';
 
 export const ConfirmModal: React.FC<{
   title: React.ReactNode;
@@ -70,26 +87,27 @@ export const ConfirmModal: React.FC<{
               key={a.label}
               type="button"
               onClick={() => select(a)}
+              // The role becomes a local CSS variable; every class that reads it is
+              // spelled out above (see ConfirmAction.tone).
+              style={
+                a.tone
+                  ? ({ ['--tone']: `var(--color-${a.tone})` } as React.CSSProperties)
+                  : undefined
+              }
               className={`w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
-                a.tone === 'danger'
-                  ? 'border-red-500/20 hover:bg-danger-tint'
-                  : 'border-line hover:bg-fill-subtle'
+                a.tone ? TONED_CARD : PLAIN_CARD
               }`}
             >
               {a.icon && (
                 <span
-                  className={`shrink-0 mt-0.5 ${
-                    a.tone === 'danger' ? 'text-red-400' : 'text-[var(--accent2)]'
-                  }`}
+                  className={`shrink-0 mt-0.5 ${a.tone ? 'text-(--tone)' : 'text-(--accent2)'}`}
                 >
                   {a.icon}
                 </span>
               )}
               <span className="min-w-0">
                 <span
-                  className={`block text-sm font-semibold ${
-                    a.tone === 'danger' ? 'text-red-300' : 'text-fg'
-                  }`}
+                  className={`block text-sm font-semibold ${a.tone ? 'text-(--tone)' : 'text-fg'}`}
                 >
                   {a.label}
                 </span>
