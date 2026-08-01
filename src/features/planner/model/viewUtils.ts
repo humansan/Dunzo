@@ -153,11 +153,20 @@ export function getGroupKey(
   return getFieldDisplayValue(entry, field, todoById);
 }
 
-// Human-readable header text for a group key. The empty key is the catch-all for
-// tasks with no value for the grouping field - it has no label of its own, so it
-// gets a name here rather than rendering as a blank pill.
+// Header text for the catch-all section: the empty key, holding tasks with no
+// value for the grouping field. Named per field so the header says what is
+// actually missing rather than describing the grouping. Not derived from the
+// column label - that would read "No End Date" for the date grouping. The generic
+// fallback covers a field becoming groupable without a phrase here.
+const UNGROUPED_LABEL: Partial<Record<ColKey, string>> = {
+  status: 'No status',
+  priority: 'No priority',
+  date: 'No date',
+};
+
+// Human-readable header text for a group key.
 function getGroupLabel(field: ColKey, key: string): string {
-  if (!key) return 'Ungrouped';
+  if (!key) return UNGROUPED_LABEL[field] ?? 'Ungrouped';
   if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.label ?? key;
   return key;
 }
