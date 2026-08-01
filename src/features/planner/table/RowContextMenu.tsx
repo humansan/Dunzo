@@ -20,6 +20,7 @@ import { OrganizerEntry } from '@/features/tasks/model';
 import { CalendarInput } from '@/common/ui';
 import { TimeInput } from '@/common/ui';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
+import { useAppData } from '@/lib/app-data';
 
 // Right-click / 3-dot row menu. Branches on whether the target row is a
 // collection (Edit / nested collection / recolor) or a task - the task items
@@ -88,6 +89,8 @@ export const RowContextMenu: React.FC<{
   onArchive,
   onDelete,
 }) => {
+  const { handleHubSaveTodo } = useAppData();
+
   // Which date/time flyout is open beside the menu, if any.
   const [sub, setSub] = useState<'date' | 'time' | null>(null);
   useEffect(() => { setSub(null); }, [menu.id]);
@@ -119,14 +122,14 @@ export const RowContextMenu: React.FC<{
             <button onClick={() => onEditCollection(menu.id)} className={itemCls}>
               <Pencil size={14} /> Edit
             </button>
-            {onCreateTaskInside && (
-              <button onClick={() => onCreateTaskInside(menu.id, menu.sidebar)} className={itemCls}>
-                <CornerDownRight size={14} /> Create task inside
-              </button>
-            )}
             {onCreateNestedCollection && (
               <button onClick={() => onCreateNestedCollection(menu.id, menu.sidebar)} className={itemCls}>
                 <FolderPlus size={14} /> Create collection inside
+              </button>
+            )}
+            {onCreateTaskInside && (
+              <button onClick={() => onCreateTaskInside(menu.id, menu.sidebar)} className={itemCls}>
+                <CornerDownRight size={14} /> Create task inside
               </button>
             )}
             <button onClick={onToggleColorPicker} className={itemCls}>
@@ -156,9 +159,9 @@ export const RowContextMenu: React.FC<{
             <button onClick={() => onExpand(menu.id)} className={itemCls}>
               <Maximize2 size={14} /> Show in full view
             </button>
-            {onDuplicate && (
-              <button onClick={() => onDuplicate(menu.id)} className={itemCls}>
-                <Copy size={14} /> Duplicate
+            {onCreateTaskInside && (
+              <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
+                <CornerDownRight size={14} /> Create task inside
               </button>
             )}
             <button
@@ -167,14 +170,24 @@ export const RowContextMenu: React.FC<{
             >
               <CalendarDays size={14} /> Set date
             </button>
-            <button
-              onClick={() => entry?.todo.dueDate && toggleSub('time')}
-              disabled={!entry?.todo.dueDate}
-              title={entry?.todo.dueDate ? undefined : 'Add a date first'}
-              className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${entry?.todo.dueDate ? '' : 'opacity-40 cursor-not-allowed'}`}
-            >
-              <Clock size={14} /> Set time
+            {entry?.todo.dueDate && (
+              <button
+                onClick={() => entry?.todo.dueDate && toggleSub('time')}
+                disabled={!entry?.todo.dueDate}
+                title={entry?.todo.dueDate ? undefined : 'Add a date first'}
+                className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${entry?.todo.dueDate ? '' : 'opacity-40 cursor-not-allowed'}`}
+              >
+                <Clock size={14} /> Set time
+              </button>
+            )}
+            <button onClick={() => onMoveTo(menu.id)} className={itemCls}>
+              <GitBranch size={14} /> Set parent task
             </button>
+            {onDuplicate && (
+              <button onClick={() => onDuplicate(menu.id)} className={itemCls}>
+                <Copy size={14} /> Duplicate
+              </button>
+            )}
             {onAddTaskAbove && (
               <button onClick={() => onAddTaskAbove(menu.id)} className={itemCls}>
                 <ArrowUp size={14} /> Add task above
@@ -183,14 +196,6 @@ export const RowContextMenu: React.FC<{
             {onAddTaskBelow && (
               <button onClick={() => onAddTaskBelow(menu.id)} className={itemCls}>
                 <ArrowDown size={14} /> Add task below
-              </button>
-            )}
-            <button onClick={() => onMoveTo(menu.id)} className={itemCls}>
-              <GitBranch size={14} /> Set parent task
-            </button>
-            {onCreateTaskInside && (
-              <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
-                <CornerDownRight size={14} /> Create task inside
               </button>
             )}
             {/* <button onClick={() => entry && onMakeCollection(entry)} className={itemCls}>
@@ -217,6 +222,10 @@ export const RowContextMenu: React.FC<{
               <CalendarInput
                 value={entry.todo.dueDate ?? ''}
                 autoFocus
+                showInDailyList={entry.todo.showInDatabase !== false ? (entry.todo.showInDailyList ?? false) : undefined}
+                onShowInDailyListChange={entry.todo.showInDatabase !== false ? ((val) => handleHubSaveTodo({ ...entry.todo, showInDailyList: val })) : undefined}
+                autoMoveDate={entry.todo.autoMoveDate ?? false}
+                onAutoMoveDateChange={(val) => handleHubSaveTodo({ ...entry.todo, autoMoveDate: val })}
                 onChange={(val) => onSetDate(menu.id, val)}
               />
             ) : (

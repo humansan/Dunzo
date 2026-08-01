@@ -119,31 +119,33 @@ export const DailyRowContextMenu: React.FC<{
         <button onClick={() => { onOpenFull(todo.id); onClose(); }} className={itemCls}>
           <Maximize2 size={14} /> Show in full view
         </button>
-        <button onClick={() => { onDuplicate(todo.id); onClose(); }} className={itemCls}>
-          <Copy size={14} /> Duplicate
-        </button>
         <button
           onClick={() => toggleSub('date')}
           className={`${itemCls} ${sub === 'date' ? 'bg-fill text-fg' : ''}`}
         >
           <CalendarDays size={14} /> Set date
         </button>
-        <button
-          onClick={() => date && toggleSub('time')}
-          disabled={!date}
-          title={date ? undefined : 'Add a date first'}
-          className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${date ? '' : 'opacity-40 cursor-not-allowed'}`}
-        >
-          <Clock size={14} /> Set time
+        {date && (
+          <button
+            onClick={() => date && toggleSub('time')}
+            disabled={!date}
+            title={date ? undefined : 'Add a date first'}
+            className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${date ? '' : 'opacity-40 cursor-not-allowed'}`}
+          >
+            <Clock size={14} /> Set time
+          </button>
+        )}
+        <button onClick={() => setParentPickerOpen(true)} className={itemCls}>
+          <GitBranch size={14} /> Set parent task
+        </button>
+        <button onClick={() => { onDuplicate(todo.id); onClose(); }} className={itemCls}>
+          <Copy size={14} /> Duplicate
         </button>
         <button onClick={() => { onAddAbove(todo.id); onClose(); }} className={itemCls}>
           <ArrowUp size={14} /> Add task above
         </button>
         <button onClick={() => { onAddBelow(todo.id); onClose(); }} className={itemCls}>
           <ArrowDown size={14} /> Add task below
-        </button>
-        <button onClick={() => setParentPickerOpen(true)} className={itemCls}>
-          <GitBranch size={14} /> Set parent task
         </button>
         <button
           onClick={() => { onDelete(todo.id); onClose(); }}
@@ -163,6 +165,10 @@ export const DailyRowContextMenu: React.FC<{
                 // A daily-list-only task has nowhere to live once undated, so it
                 // can't clear its date; one that's also in the planner can.
                 showClear={!!todo.showInDatabase}
+                showInDailyList={todo.showInDatabase ? (todo.showInDailyList ?? false) : undefined}
+                onShowInDailyListChange={todo.showInDatabase ? ((val) => handleHubSaveTodo({ ...todo, showInDailyList: val })) : undefined}
+                autoMoveDate={todo.autoMoveDate ?? false}
+                onAutoMoveDateChange={(val) => handleHubSaveTodo({ ...todo, autoMoveDate: val })}
                 onChange={(val) => onSetDate(todo.id, val)}
               />
             ) : (
