@@ -104,10 +104,42 @@ export function descendantsToArchive(todos: Todo[], rootId: string): string[] {
   return out;
 }
 
+// `rootId` plus every ARCHIVED descendant - what unarchiving the root MAY also
+// unarchive, if the user asks for it. Unlike the ancestor lift this is optional:
+// an archived child under a live parent is a legal, ordinary state (it's how you
+// archive a single subtask), so restoring a parent does not have to drag its
+// subtree out with it. Already-live descendants are left out - they're untouched
+// either way.
+export function descendantsToUnarchive(todos: Todo[], rootId: string): string[] {
+  const childrenOf = new Map<string, string[]>();
+  for (const t of todos) {
+    if (!t?.parentId) continue;
+    const arr = childrenOf.get(t.parentId) ?? [];
+    arr.push(t.id);
+    childrenOf.set(t.parentId, arr);
+  }
+  const byId = new Map(todos.filter(Boolean).map((t) => [t.id, t]));
+  const out: string[] = [];
+  const seen = new Set<string>([rootId]);
+  const stack = [rootId];
+  while (stack.length) {
+    const id = stack.pop()!;
+    const t = byId.get(id);
+    if (t && t.archived === true) out.push(id);
+    for (const c of childrenOf.get(id) ?? []) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      stack.push(c);
+    }
+  }
+  return out;
+}
+
 // `rootId` plus every ARCHIVED ancestor - what unarchiving the root must also
 // unarchive, because a live todo may not sit under an archived one. Live ancestors
 // are already fine and are left out; the walk continues past them so an archived
-// grandparent above a live parent is still caught.
+// grandparent above a live parent is still caught. Unlike the descendant lift
+// above, this one is mandatory - it's the invariant, not a preference.
 export function ancestorsToUnarchive(todos: Todo[], rootId: string): string[] {
   const byId = new Map(todos.filter(Boolean).map((t) => [t.id, t]));
   const out: string[] = [];

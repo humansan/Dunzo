@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
-import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive, descendantsToUnarchive } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
@@ -507,10 +507,17 @@ function useProvideAppData() {
     batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, archived: true })) });
   };
 
-  const handleUnarchiveTodo = (id: string) => {
-    const ids = ancestorsToUnarchive(todos.filter(Boolean) as Todo[], id);
-    if (!ids.length) return;
-    batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, archived: false })) });
+  // `mode` decides what happens BELOW the todo, which is a preference rather than
+  // an invariant: 'self' restores just this row (its archived subtree stays put -
+  // a legal state), 'subtree' restores everything archived inside it too. What
+  // happens ABOVE is not a choice - the archived ancestors always come back, or
+  // the result would be a live todo inside an archived one.
+  const handleUnarchiveTodo = (id: string, mode: 'self' | 'subtree' = 'self') => {
+    const all = todos.filter(Boolean) as Todo[];
+    const ids = new Set(ancestorsToUnarchive(all, id));
+    if (mode === 'subtree') for (const d of descendantsToUnarchive(all, id)) ids.add(d);
+    if (!ids.size) return;
+    batchTodos.mutate({ patches: [...ids].map((tid) => ({ id: tid, archived: false })) });
   };
 
   // Delete a collection. 'cascade' removes the collection and its whole subtree.

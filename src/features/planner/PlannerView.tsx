@@ -63,7 +63,7 @@ interface PlannerViewProps {
   // Archive takes the whole subtree; unarchive lifts the archived ancestors with
   // it (shared/domain/todoArchive). useArchiveConfirm decides when to warn first.
   onArchiveTodo: (id: string) => void;
-  onUnarchiveTodo: (id: string) => void;
+  onUnarchiveTodo: (id: string, mode: 'self' | 'subtree') => void;
   // Persist hub order + nesting (position = hubOrder, parentId = nesting).
   onReorder: (items: { id: string; parentId: string | null }[]) => void;
   onToggleTodo: (id: string) => void;

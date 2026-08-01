@@ -36,6 +36,7 @@ export {
   touchesArchive,
   descendantsToArchive,
   ancestorsToUnarchive,
+  descendantsToUnarchive,
 } from '@shared/domain/todoArchive';
 
 // ── Workspaces (currently disabled) ────────────────────────────────────────

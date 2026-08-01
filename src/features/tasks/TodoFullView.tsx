@@ -49,7 +49,7 @@ interface TodoFullViewProps {
   // handlers rather than a plain `archived` edit - a single-row write here used to
   // leave live children under an archived parent (shared/domain/todoArchive).
   onArchive: (id: string) => void;
-  onUnarchive: (id: string) => void;
+  onUnarchive: (id: string, mode: 'self' | 'subtree') => void;
   showXpChips: boolean; // hide the XP property when the settings toggle is off
 }
 
