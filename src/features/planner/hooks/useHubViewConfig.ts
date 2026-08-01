@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ColKey,
   ColDef,
@@ -16,7 +16,7 @@ import {
 } from '@/features/planner/types';
 import { MIN_COL_WIDTH } from '@/features/planner/constants';
 import { resolveView } from '@/features/planner/views';
-import { broadcastMenuConfig, defaultKeyFor } from '@/features/planner/model/viewConfigStore';
+import { broadcastMenuConfig, defaultKeyFor, resolveViewFilters } from '@/features/planner/model/viewConfigStore';
 import { useSyncedSetting } from '@/lib/query/settings';
 
 // Owns the table's per-view layout: column widths (persisted globally) and the
@@ -48,13 +48,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     // have never been visited (they have no record at all).
     const defRawAll = viewsConfig[defaultConfigKey] ?? {};
     const viewRaw = viewsConfig[viewConfigKey] ?? {};
-    // A view may opt out of the INHERITED filters (Archived, Completed - see
-    // ViewDef.ignoresDefaultFilters). Only the filter slice is dropped, and only
-    // from the default layer: fields, sorts and sections still inherit, and a
-    // filter set explicitly on this view still wins below.
-    const { filters: _df, filterMatch: _dm, ...defRest } = defRawAll;
-    const defRaw = resolveView(selectedView).ignoresDefaultFilters ? defRest : defRawAll;
-    const raw = { ...defRaw, ...viewRaw };
+    const raw = { ...defRawAll, ...viewRaw };
     let fieldOrder: ColKey[] = Array.isArray(raw.fieldOrder)
       ? raw.fieldOrder.filter((k: string): k is ColKey => allColKeys.includes(k as ColKey))
       : [];
@@ -81,7 +75,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     // per-view record may hold only `{ groupBy }` (see applyToAllViews' guard),
     // and a blanket spread would drop the other five fields back to the hardcoded
     // defaults instead of the workspace ones.
-    const raw_sections = { ...(defRaw.sections ?? {}), ...(viewRaw.sections ?? {}) };
+    const raw_sections = { ...(defRawAll.sections ?? {}), ...(viewRaw.sections ?? {}) };
     // A view may declare its own default grouping (e.g. In Daily List is a daily
     // lens, so it defaults to date grouping). Precedence, highest first:
     //   1. an explicit choice made while on this view
@@ -93,7 +87,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     const groupBy =
       viewRaw.sections?.groupBy ??
       viewDefaultGroupBy ??
-      defRaw.sections?.groupBy ??
+      defRawAll.sections?.groupBy ??
       DEFAULT_SECTIONS_CONFIG.groupBy;
     const sections: SectionsConfig = {
       autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
@@ -103,16 +97,39 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       groupBy,
       groupSortDirection:   raw_sections.groupSortDirection   ?? DEFAULT_SECTIONS_CONFIG.groupSortDirection,
     };
+    // Filters resolve through the shared per-view-id helper - the same one the
+    // sidebar counts every OTHER tab with - so the visible view and the badges can
+    // never disagree about what a view's filters are. It also owns the
+    // ignoresDefaultFilters opt-out (Archived / Completed).
+    const { filters, filterMatch } = resolveViewFilters(
+      viewsConfig,
+      activeWorkspaceId,
+      selectedView,
+      resolveView(selectedView).ignoresDefaultFilters
+    );
     return {
       fieldOrder,
       hiddenFields,
       wrappedFields,
-      filters: (Array.isArray(raw.filters) ? raw.filters : []) as FilterRule[],
-      filterMatch: (raw.filterMatch === 'or' ? 'or' : 'and') as FilterMatch,
+      filters,
+      filterMatch,
       sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
       sections,
     };
-  }, [viewsConfig, viewConfigKey, defaultConfigKey, selectedView]);
+  }, [viewsConfig, viewConfigKey, defaultConfigKey, selectedView, activeWorkspaceId]);
+
+  // Any view's resolved filters, for the sidebar counts (which have to run each
+  // tab's OWN filters, not the visible tab's). Same helper as above.
+  const filtersFor = useCallback(
+    (viewId: string) =>
+      resolveViewFilters(
+        viewsConfig,
+        activeWorkspaceId,
+        viewId,
+        resolveView(viewId).ignoresDefaultFilters
+      ),
+    [viewsConfig, activeWorkspaceId]
+  );
 
   const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, filterMatch, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
 
@@ -238,6 +255,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     wrappedFields,
     activeFilters,
     filterMatch,
+    filtersFor,
     activeSorts,
     sectionsConfig,
     updateViewState,

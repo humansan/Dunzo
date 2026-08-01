@@ -3,7 +3,7 @@ import { OrganizerEntry, collectionOf, collectionPath, startPercent, duePercent,
 import { Todo, TodoStatus, TodoPriority } from '@shared/types';
 import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/features/tasks/fields';
-import { ColKey, FilterRule, FlatNode, GroupRow } from '@/features/planner/types';
+import { ColKey, FilterRule, FilterMatch, FlatNode, GroupRow } from '@/features/planner/types';
 
 // Returns a display-formatted string for a field - what the user sees in the
 // table cell. This is used for the filter value dropdown and for filter matching.
@@ -378,6 +378,75 @@ export function buildGroupedItems(
   return showLeafTasks === 'top'
     ? [...ungroupedRows, ...groupRows]
     : [...groupRows, ...ungroupedRows];
+}
+
+// Apply a view's filter rules to its entries.
+//
+// A task is kept only when it matches AND every task ancestor of it in this set
+// matches too - so a row that fails takes its whole subtree with it. That mirrors
+// how grouping treats a subtree as one unit (getOwningGroup above: the parent's
+// value decides for everything under it), and it is what keeps the tree intact:
+// under the old row-by-row filter a surviving child of a filtered-out parent lost
+// its parent from the set, and flattenTree - which links a node only to a parent
+// that is present - re-parented it to the root of the view. Nothing can be
+// orphaned that way now, because a survivor's ancestors are survivors by
+// definition.
+//
+// Collections are exempt: they are structural, never filtered, and so never break
+// a chain. Unset (empty-value) rules are dropped first - matchesFilter treats them
+// as "match all", a harmless no-op under AND but one that would make OR pass
+// everything.
+//
+// Pure, and shared by the rendered rows and the sidebar counts, so the two can't
+// disagree about what a view contains.
+export function applyFilters(
+  entries: OrganizerEntry[],
+  filters: FilterRule[],
+  filterMatch: FilterMatch,
+  todoById: Map<string, Todo>
+): OrganizerEntry[] {
+  const rules = filters.filter((f) => f.value);
+  if (!rules.length) return entries;
+
+  const byId = new Map(entries.map((e) => [e.todo.id, e]));
+  const selfMatches = (e: OrganizerEntry) =>
+    filterMatch === 'or'
+      ? rules.some((f) => matchesFilter(e, f, todoById))
+      : rules.every((f) => matchesFilter(e, f, todoById));
+
+  // Kept = self matches && nearest task ancestor present in this set is kept.
+  // Memoized per id. A parentId cycle (corrupt data) is broken by treating the
+  // re-entered node as non-blocking rather than as a failure: the row then stands
+  // on its own match, which degrades to the old row-by-row behaviour. Resolving a
+  // cycle to "hidden" instead would make those rows disappear from the Planner
+  // entirely, with nothing on screen to explain why.
+  const verdict = new Map<string, boolean>();
+  const visiting = new Set<string>();
+  const isKept = (e: OrganizerEntry): boolean => {
+    const cached = verdict.get(e.todo.id);
+    if (cached !== undefined) return cached;
+    if (visiting.has(e.todo.id)) return true;
+    visiting.add(e.todo.id);
+    let kept = selfMatches(e);
+    if (kept) {
+      // Walk to the nearest ancestor that is a TASK in this set; collections are
+      // exempt and pass through. An ancestor outside the set ends the chain.
+      let pid = e.todo.parentId ?? null;
+      const seen = new Set<string>();
+      while (pid && !seen.has(pid)) {
+        seen.add(pid);
+        const parent = byId.get(pid);
+        if (!parent) break;
+        if (!parent.todo.isCollection) { kept = isKept(parent); break; }
+        pid = parent.todo.parentId ?? null;
+      }
+    }
+    visiting.delete(e.todo.id);
+    verdict.set(e.todo.id, kept);
+    return kept;
+  };
+
+  return entries.filter((e) => e.todo.isCollection || isKept(e));
 }
 
 // Returns true if the entry's field value satisfies the filter rule.

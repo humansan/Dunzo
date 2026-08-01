@@ -46,7 +46,7 @@ export const SectionsMenu: React.FC<{
   return (
     <PopoverMenu
       anchor={anchor}
-      title="Sections"
+      title="Settings"
       onClose={onClose}
       className="w-[280px] p-3 space-y-2"
       headerClassName="pb-1 text-xs font-bold text-fg"

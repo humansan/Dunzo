@@ -110,7 +110,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
           aria-label={`Digit ${i + 1}`}
           className={`w-full min-w-0 h-12 rounded-lg bg-fill-subtle ring text-center text-lg font-semibold text-fg
             focus:outline-none focus:ring-2 transition-all disabled:opacity-50
-            ${invalid ? 'ring-red-500/60 focus:ring-red-500' : 'ring-line focus:ring-(--accent1)'}`}
+            ${invalid ? 'ring-red-500/60 focus:ring-red-500' : 'ring-line focus:ring-xp-tier1'}`}
         />
       ))}
     </div>

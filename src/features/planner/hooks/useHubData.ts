@@ -19,7 +19,7 @@ import {
   getFieldDisplayValue,
   getFieldRawValue,
   compareRawValues,
-  matchesFilter,
+  applyFilters,
   buildGroupedItems,
 } from '@/features/planner/model/viewUtils';
 import { flattenTree } from '@/features/planner/sidebar/treeUtils';
@@ -41,6 +41,9 @@ export function useHubData(params: {
   collapsedColls: Set<string>;
   activeFilters: FilterRule[];
   filterMatch: FilterMatch;
+  // Any view's resolved filters, by view id (see useHubViewConfig). The sidebar
+  // counts need every tab's own rules, not just the visible tab's.
+  filtersFor: (viewId: string) => { filters: FilterRule[]; filterMatch: FilterMatch };
   activeSorts: SortRule[];
   sectionsConfig: SectionsConfig;
   // Whether the current view variant shows the collection/subtask hierarchy. When
@@ -58,6 +61,7 @@ export function useHubData(params: {
     collapsedColls,
     activeFilters,
     filterMatch,
+    filtersFor,
     activeSorts,
     sectionsConfig,
     showNesting,
@@ -238,21 +242,13 @@ export function useHubData(params: {
     return map;
   }, [viewEntries, todoById]);
 
-  // Apply active filters: collections are never filtered out (they're structural).
-  // Rules combine per `filterMatch` - 'and' = match every rule, 'or' = match any.
-  // Unset (empty-value) rules are dropped first: matchesFilter treats them as "match
-  // all", which is a harmless no-op under AND but would make OR pass everything.
-  const filteredEntries = useMemo(() => {
-    const rules = activeFilters.filter((f) => f.value);
-    if (!rules.length) return viewEntries;
-    return viewEntries.filter(
-      (e) =>
-        e.todo.isCollection ||
-        (filterMatch === 'or'
-          ? rules.some((f) => matchesFilter(e, f, todoById))
-          : rules.every((f) => matchesFilter(e, f, todoById)))
-    );
-  }, [viewEntries, activeFilters, filterMatch, todoById]);
+  // Apply the active filters. A failing row takes its subtree with it - see
+  // applyFilters, which the sidebar counts below run too so the badges can't
+  // disagree with the rows.
+  const filteredEntries = useMemo(
+    () => applyFilters(viewEntries, activeFilters, filterMatch, todoById),
+    [viewEntries, activeFilters, filterMatch, todoById]
+  );
 
   // Hide collections that have no visible task descendants (optional section setting).
   // The ancestor walk runs over `todoById`, not `byId`: `byId` covers the non-archived
@@ -338,38 +334,68 @@ export function useHubData(params: {
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 
-  // Sidebar counts (tasks only, collections never counted). Each tab's count runs
-  // the same `leaf` predicate the tab renders from, so a count can never disagree
-  // with its contents.
+  // ── Sidebar counts ─────────────────────────────────────────────────────────
+  // Tasks only; collections are never counted. Each tab's count runs the same
+  // `leaf` predicate AND the same filters the tab renders with (resolved per view
+  // id - a tab counted with the VISIBLE tab's filters would just be a different
+  // wrong answer), through the same applyFilters the rows go through. A badge can
+  // no longer disagree with the list it labels.
+  //
+  // Most tabs inherit the one workspace-default filter, so the filtered sets are
+  // cached by config signature: what looks like 5 + one-per-collection passes over
+  // the entry set collapses to one or two in practice.
   const countCtx: ViewCtx = { hasCollectionAncestor, isDescendantOf };
-  const countLeaves = (v: ViewDef) =>
-    (v.source === 'archived' ? archivedEntries : entries).filter(
-      (e) => !e.todo.isCollection && v.leaf(e, countCtx)
-    ).length;
-  const allCount = countLeaves(PLANNER_VIEWS.all);
-  const uncategorizedCount = countLeaves(PLANNER_VIEWS.uncategorized);
-  const categorizedCount = countLeaves(PLANNER_VIEWS.categorized);
-  const inDailyListCount = countLeaves(PLANNER_VIEWS['in-daily-list']);
-  const archivedCount = countLeaves(PLANNER_VIEWS.archived);
-  const completedCount = countLeaves(PLANNER_VIEWS.completed);
-  // Task-descendant count per collection (every non-collection descendant,
-  // ignoring filters), precomputed in one ancestor walk instead of re-filtering
-  // all entries for each sidebar row.
-  const collectionCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const e of entries) {
-      if (e.todo.isCollection) continue;
-      for (const cid of collectionAncestors(e.todo, todoById)) {
-        counts.set(cid, (counts.get(cid) ?? 0) + 1);
+  const counts = useMemo(() => {
+    const cache = new Map<string, OrganizerEntry[]>();
+    const filteredFor = (viewId: string, source: OrganizerEntry[]) => {
+      const { filters, filterMatch: match } = filtersFor(viewId);
+      const key = `${source === archivedEntries ? 'a' : 'o'}|${match}|${JSON.stringify(
+        filters.filter((f) => f.value).map((f) => [f.field, f.condition, f.value])
+      )}`;
+      let out = cache.get(key);
+      if (!out) {
+        out = applyFilters(source, filters, match, todoById);
+        cache.set(key, out);
       }
+      return out;
+    };
+    const countLeaves = (v: ViewDef) => {
+      const source = v.source === 'archived' ? archivedEntries : entries;
+      // Filter first, then apply the leaf predicate: filtering is what the subtree
+      // rule needs the full parent chain for, and the predicate is per-row anyway.
+      return filteredFor(v.id, source).filter(
+        (e) => !e.todo.isCollection && v.leaf(e, countCtx)
+      ).length;
+    };
+    // Task-descendant count per collection, computed in one ancestor walk over the
+    // collection view's filtered set instead of re-filtering per sidebar row.
+    const perCollection = new Map<string, number>();
+    for (const c of collections) {
+      const cid = c.todo.id;
+      let n = 0;
+      for (const e of filteredFor(cid, entries)) {
+        if (e.todo.isCollection) continue;
+        if (collectionAncestors(e.todo, todoById).has(cid)) n++;
+      }
+      perCollection.set(cid, n);
     }
-    return counts;
-  }, [entries, todoById]);
-  const collectionCount = (cid: string) => collectionCounts.get(cid) ?? 0;
+    const perView = new Map<string, number>();
+    for (const v of Object.values(PLANNER_VIEWS)) perView.set(v.id, countLeaves(v));
+    return { perView, perCollection };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, archivedEntries, collections, todoById, filtersFor]);
+
+  const allCount = counts.perView.get('all') ?? 0;
+  const uncategorizedCount = counts.perView.get('uncategorized') ?? 0;
+  const categorizedCount = counts.perView.get('categorized') ?? 0;
+  const inDailyListCount = counts.perView.get('in-daily-list') ?? 0;
+  const archivedCount = counts.perView.get('archived') ?? 0;
+  const completedCount = counts.perView.get('completed') ?? 0;
+  const collectionCount = (cid: string) => counts.perCollection.get(cid) ?? 0;
 
   const currentCount = selectedCollectionId
     ? collectionCount(selectedCollectionId)
-    : countLeaves(view);
+    : counts.perView.get(view.id) ?? 0;
   const selectedCollectionEntry = selectedCollectionId ? byId.get(selectedCollectionId) || null : null;
   const viewLabel = selectedCollectionId
     ? selectedCollectionEntry?.todo.text || 'Untitled collection'

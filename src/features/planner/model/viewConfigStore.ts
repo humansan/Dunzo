@@ -1,4 +1,4 @@
-import { MENU_SLICES, ToolbarMenuKey, ColKey } from '@/features/planner/types';
+import { MENU_SLICES, ToolbarMenuKey, ColKey, FilterRule, FilterMatch } from '@/features/planner/types';
 import { defaultKeyFor } from '@/lib/query/settings';
 
 // Pure transformations over the `hubViews` blob (the DB-synced record of every
@@ -13,6 +13,32 @@ import { defaultKeyFor } from '@/lib/query/settings';
 export { DEFAULT_VIEW_ID, defaultKeyFor } from '@/lib/query/settings';
 
 export type ViewsConfig = Record<string, any>;
+
+/**
+ * Resolve one view's filter slice: its own record on top of the workspace default,
+ * with the default's filters dropped entirely for a view that opts out
+ * (ViewDef.ignoresDefaultFilters - Archived and Completed, which exist to show
+ * exactly what the shipped default filter excludes).
+ *
+ * Pure and per-view-id, because the sidebar has to resolve this for EVERY tab, not
+ * just the one on screen: a badge counted with the current tab's filters would be a
+ * different wrong answer. useHubViewConfig uses it for the visible view too, so the
+ * two paths can't drift.
+ */
+export function resolveViewFilters(
+  viewsConfig: ViewsConfig,
+  workspaceId: string,
+  viewId: string,
+  ignoresDefaultFilters = false
+): { filters: FilterRule[]; filterMatch: FilterMatch } {
+  const def = ignoresDefaultFilters ? {} : (viewsConfig[defaultKeyFor(workspaceId)] ?? {});
+  const own = viewsConfig[`${workspaceId}:${viewId}`] ?? {};
+  const raw = { ...def, ...own };
+  return {
+    filters: Array.isArray(raw.filters) ? (raw.filters as FilterRule[]) : [],
+    filterMatch: raw.filterMatch === 'or' ? 'or' : 'and',
+  };
+}
 
 /**
  * Apply one menu's settings to every view in a workspace.

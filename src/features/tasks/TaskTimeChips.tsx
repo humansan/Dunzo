@@ -77,7 +77,7 @@ export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
   done = false,
 }) => {
   const inverted = variant === 'inverted';
-  const textCls = done ? 'text-fg-ghost' : inverted ? 'text-canvas' : 'text-(--accent1)';
+  const textCls = done ? 'text-fg-ghost' : inverted ? 'text-canvas' : 'text-accent1';
   // Percent of day is a second reading of dueTime, not a value of its own.
   const pct = percentLabel(duePercent(todo));
 
@@ -89,8 +89,8 @@ export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
             done
               ? 'bg-fill-subtle shadow-none'
               : inverted
-                ? 'bg-(--accent1) shadow-lg shadow-(--accent1)/10'
-                : 'bg-(--accent1)/6 shadow-none hover:bg-(--accent1)/15'
+                ? 'bg-accent1 shadow-lg shadow-accent1/10'
+                : 'bg-accent1/6 shadow-none hover:bg-accent1/15'
           }`}
         >
           <div className={`flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium ${textCls}`}>
@@ -99,7 +99,7 @@ export const TaskTimeChips: React.FC<TaskTimeChipsProps> = ({
           </div>
           {pct && (
             <>
-              <div className={`w-px h-4 ${done ? 'bg-fill' : inverted ? 'bg-black/20' : 'bg-(--accent1)/20'}`} />
+              <div className={`w-px h-4 ${done ? 'bg-fill' : inverted ? 'bg-black/20' : 'bg-accent1/20'}`} />
               <div className={`text-[13px] leading-none font-mono font-medium ${textCls}`}>
                 <span className="relative top-px">{pct}</span>
               </div>

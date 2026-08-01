@@ -52,7 +52,7 @@ export const HubToolbar: React.FC<{
   onToggleMenu,
 }) => {
   const actions: { key: ToolbarMenuKey; label: string; icon: React.ElementType; count?: number }[] = [
-    { key: 'sections', label: 'Sections', icon: Group },
+    { key: 'sections', label: 'Settings', icon: Group },
     { key: 'fields', label: 'Fields', icon: Columns3 },
     { key: 'filter', label: 'Filter', icon: Filter, count: filterCount },
     { key: 'sort', label: 'Sort', icon: ArrowUpDown, count: sortCount },
