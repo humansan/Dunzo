@@ -932,7 +932,6 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           entries={entries}
           todoById={todoById}
           onSaveTodo={onSaveTodo}
-          onToggleTodo={handleToggleTodo}
           title={`Move “${reparentTarget.text || 'Untitled'}” to…`}
           placeholder="Search for a task to nest under…"
           isDisabled={reparentDisabled}

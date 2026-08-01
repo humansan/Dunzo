@@ -35,7 +35,6 @@ export const AppShell: React.FC = () => {
     searchFlatEntries,
     todoById,
     handleHubSaveTodo,
-    handleToggleTodo,
     // active-task tracker (shares the bottom overlay slot with the stopwatch)
     activeTodo,
     activeTodoId,
@@ -158,7 +157,6 @@ export const AppShell: React.FC = () => {
           flatEntries={searchFlatEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
-          onToggleTodo={handleToggleTodo}
           onPick={(id) => { openTask(id); setIsSearchOpen(false); }}
           onClose={() => setIsSearchOpen(false)}
         />

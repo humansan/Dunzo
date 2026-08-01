@@ -35,7 +35,8 @@ interface HubRowProps {
   stopEdit: () => void;
   onSaveTodo: (updatedTodo: Todo) => void;
   onAddSubtask: (parentId: string) => string;
-  onToggleTodo: (id: string) => void;
+  // Omitted → the completion check is read-only (like `startEdit` for the title).
+  onToggleTodo?: (id: string) => void;
   openMenu: (id: string, x: number, y: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: (id: string) => void;
@@ -491,7 +492,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
 
           {dragHandle()}
 
-          <CompletedToggle completed={isDone(todo)} onToggle={() => onToggleTodo(todo.id)} size={18} className='mr-1 ml-1 h-5 flex items-center justify-center'/>
+          <CompletedToggle completed={isDone(todo)} onToggle={onToggleTodo ? () => onToggleTodo(todo.id) : undefined} size={18} className='mr-1 ml-1 h-5 flex items-center justify-center'/>
 
           {isEditing('title') ? (
             titleWrapped ? (

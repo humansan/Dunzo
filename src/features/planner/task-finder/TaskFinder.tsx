@@ -36,9 +36,10 @@ export interface TaskFinderProps {
   // Choosing a task: search opens its full view; a picker returns it to the caller.
   onPick: (id: string) => void;
   onClose: () => void;
-  // Row mutations still available from the results (checkbox toggle / inline rename).
+  // Field edits from the results' quick-edit cells. The results are otherwise a
+  // read-only surface: no inline rename (no `startEdit`) and no completion toggle
+  // (no `onToggleTodo` handed to the table).
   onSaveTodo: (updatedTodo: Todo) => void;
-  onToggleTodo: (id: string) => void;
   // Optional chrome - a picker sets a heading ("Move to…") and its own placeholder.
   title?: string;
   placeholder?: string;
@@ -55,7 +56,6 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   onPick,
   onClose,
   onSaveTodo,
-  onToggleTodo,
   title,
   placeholder = 'Search tasks…',
   isDisabled,
@@ -133,13 +133,13 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
 
   const rowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
-    onToggleTodo,
     onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
     onOpenTask: onPick,
     // onNewInView omitted → no add-row in the results list.
-  }), [onSaveTodo, onToggleTodo, onPick]);
+    // onToggleTodo omitted → read-only completion checks.
+  }), [onSaveTodo, onPick]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -216,10 +216,9 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
               matches={twoPaneMatches}
               onPick={onPick}
               onSaveTodo={onSaveTodo}
-              onToggleTodo={onToggleTodo}
             />
           ) : !q ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by name or notes.</div>
+            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by any field.</div>
           ) : matches.length === 0 ? (
             <div className="px-4 py-6 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
           ) : (

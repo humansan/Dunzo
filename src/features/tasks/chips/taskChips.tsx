@@ -334,7 +334,7 @@ export const ParentTaskButton: React.FC<{
   parentId: string | null;
   onChange: (id: string | null) => void;
 }> = ({ todoId, parentId, onChange }) => {
-  const { searchEntries, todoById, handleHubSaveTodo, handleToggleTodo } = useAppData();
+  const { searchEntries, todoById, handleHubSaveTodo } = useAppData();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const parentTodo = parentId ? todoById.get(parentId) ?? null : null;
@@ -361,7 +361,6 @@ export const ParentTaskButton: React.FC<{
           entries={searchEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
-          onToggleTodo={handleToggleTodo}
           title="Set parent task"
           placeholder="Search for a task to nest under…"
           isDisabled={isDisabled}

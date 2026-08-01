@@ -43,15 +43,19 @@ export const fieldInputClass =
 // ── Completion toggle ────────────────────────────────────────────────────────
 export const CompletedToggle: React.FC<{
   completed: boolean;
-  onToggle: () => void;
+  // Omitted → read-only check (no click, no hover lit): the Task Finder's results.
+  onToggle?: () => void;
   size?: number;
   className?: string;
 }> = ({ completed, onToggle, size = 22, className = '' }) => (
-  <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className={`shrink-0 cursor-pointer ${className}`}>
+  <button
+    onClick={onToggle ? (e) => { e.stopPropagation(); onToggle(); } : undefined}
+    className={`shrink-0 ${onToggle ? 'cursor-pointer' : 'cursor-default'} ${className}`}
+  >
     <motion.div
       animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
       transition={{ duration: 0.3 }}
-      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : 'text-fg-subtle hover:text-fg'}`}
+      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : `text-fg-subtle ${onToggle ? 'hover:text-fg' : ''}`}`}
     >
       {completed
         ? <CheckCircleCutout size={size} strokeWidth={2.5} />

@@ -20,8 +20,7 @@ export const TwoPaneResults: React.FC<{
   matches: OrganizerEntry[];
   onPick: (id: string) => void;
   onSaveTodo: (updatedTodo: Todo) => void;
-  onToggleTodo: (id: string) => void;
-}> = ({ entries, todoById, matches, onPick, onSaveTodo, onToggleTodo }) => {
+}> = ({ entries, todoById, matches, onPick, onSaveTodo }) => {
   const [selectedView, setSelectedView] = useState('all');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [collapsedColls, setCollapsedColls] = useState<Set<string>>(new Set());
@@ -29,7 +28,8 @@ export const TwoPaneResults: React.FC<{
   const { visibleCollections, allCount, uncategorizedCount, collectionCount, bodyModel } =
     useTaskFinderData({ entries, todoById, matches, selectedView, collapsed, collapsedColls });
 
-  // Clicking the cell picks the task via onOpenTask; the checkbox still toggles completion.
+  // Clicking the cell picks the task via onOpenTask; the checkbox is read-only here
+  // (no onToggleTodo), like the title (no startEdit).
   const interaction: TableInteraction = {
     editing: null,
     stopEdit: NOOP,
@@ -38,7 +38,6 @@ export const TwoPaneResults: React.FC<{
   };
   const rowHandlers: TableRowHandlers = {
     onSaveTodo,
-    onToggleTodo,
     onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,

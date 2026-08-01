@@ -110,7 +110,8 @@ export interface TableInteraction {
 // Task mutations triggered from within a row or the add-row button.
 export interface TableRowHandlers {
   onSaveTodo: (updatedTodo: Todo) => void;
-  onToggleTodo: (id: string) => void;
+  // Omitted → read-only completion checks (the Task Finder's results).
+  onToggleTodo?: (id: string) => void;
   onAddSubtask: (parentId: string) => string;
   onQuickAddTask?: (parentId: string) => void;
   onQuickAddInGroup?: (groupValue: string) => void;
