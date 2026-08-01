@@ -53,7 +53,7 @@
   --color-danger-tint: color-mix(in srgb, var(--color-danger) 12%, transparent);
   --color-warning-tint: color-mix(in srgb, var(--color-warning) 10%, transparent);
   --color-success-tint: color-mix(in srgb, var(--color-success) 12%, transparent);
-  --color-info-tint: color-mix(in srgb, var(--color-info) 12%, transparent);
+  --color-info-tint: color-mix(in srgb, var(--color-info) 30%, transparent);
   --color-status-todo: #6b7280;
   --color-status-active: #3b82f6;
   --color-status-done: #22c55e;
@@ -89,6 +89,10 @@
   --accent1: #e1e354;
   --accent2: #c6dabe;
   --xp-tier1: #ffcd4e;
+}
+
+::selection {
+  background: var(--color-info-tint);
 }
 
 body {

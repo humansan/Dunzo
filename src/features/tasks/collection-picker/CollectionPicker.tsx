@@ -51,6 +51,7 @@ export const CollectionPicker: React.FC<{
   nullLabel?: string;
   allowNull?: boolean;
   placeholder?: string;
+  autoFocus?: boolean;
 }> = ({
   value,
   options,
@@ -59,10 +60,22 @@ export const CollectionPicker: React.FC<{
   nullLabel = 'No collection',
   allowNull = true,
   placeholder = 'Search or create collection…',
+  autoFocus = true,
 }) => {
   const [query, setQuery] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const q = query.trim().toLowerCase();
+
+  useEffect(() => {
+    if (autoFocus) {
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus]);
 
   // Every row is a full breadcrumb, so it reads the same whether it arrived by
   // scrolling the list or by matching a search. Children still follow their
@@ -130,7 +143,7 @@ export const CollectionPicker: React.FC<{
     <div className="w-84 bg-surface border border-line rounded-xl shadow-2xl overflow-hidden">
       <div className="p-2">
         <input
-          autoFocus
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setActive(0); }}

@@ -47,7 +47,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   value,
   onChange,
   className,
-  autoFocus,
+  autoFocus = true,
   showClear = true,
   showInDailyList = false,
   onShowInDailyListChange,
@@ -135,8 +135,11 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (autoFocus) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [autoFocus]);
 
