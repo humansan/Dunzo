@@ -564,6 +564,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     value={dateStr}
                     placeholder="Date"
                     onChange={handleDateChange}
+                    showInDailyList={draft.showInDatabase ? (draft.showInDailyList ?? false) : undefined}
+                    onShowInDailyListChange={draft.showInDatabase ? ((val) => update({ showInDailyList: val })) : undefined}
                     autoMoveDate={draft.autoMoveDate ?? false}
                     onAutoMoveDateChange={(val) => update({ autoMoveDate: val })}
                   />

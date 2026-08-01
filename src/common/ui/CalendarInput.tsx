@@ -153,7 +153,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
         onKeyDown={handleTextKeyDown}
         onBlur={handleTextBlur}
         placeholder="MM/DD/YYYY"
-                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-[var(--accent2)] transition-colors"
+                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-line-stronger transition-colors"
       />
       <div className="grid grid-cols-3 gap-1 mt-1.5">
         <button
@@ -175,26 +175,6 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
           Next Week
         </button>
       </div>
-      {onShowInDailyListChange && (
-        <div className="flex items-center justify-between mt-2 px-0.5">
-          <span className="flex flex-col">
-            <span className="text-[11px] text-fg-subtle">Show in daily list</span>
-            {showInDailyList && !value && (
-              <span className="text-[10px] text-fg-faint">Applies once a date is set</span>
-            )}
-          </span>
-          <Switch checked={showInDailyList} onChange={onShowInDailyListChange} />
-        </div>
-      )}
-      {onAutoMoveDateChange && (
-        <div className="flex items-center justify-between mt-2 px-0.5">
-          <span className="flex flex-col">
-            <span className="text-[11px] text-fg-subtle">Move forward if overdue</span>
-            {/* <span className="text-[10px] text-fg-faint">Rolls forward to today until done</span> */}
-          </span>
-          <Switch checked={autoMoveDate} onChange={onAutoMoveDateChange} />
-        </div>
-      )}
       <div className="mt-2">
         <Calendar
           currentMonth={currentMonth}
@@ -203,6 +183,30 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
           focusDate={focusDate}
         />
       </div>
+      {(onShowInDailyListChange || onAutoMoveDateChange) && (
+        <div className="mt-2 pt-2 border-t border-line space-y-2">
+          {onShowInDailyListChange && (
+            <div className="flex items-center justify-between px-0.5 h-6">
+              <span className="flex flex-col -space-y-0.5">
+                <span className="text-[11px] text-fg-subtle">Show in daily list</span>
+                {showInDailyList && !value && (
+                  <span className="text-[10px] text-fg-faint">Applies once a date is set</span>
+                )}
+              </span>
+              <Switch checked={showInDailyList} onChange={onShowInDailyListChange} />
+            </div>
+          )}
+          {onAutoMoveDateChange && (
+            <div className="flex items-center justify-between px-0.5 h-6">
+              <span className="flex flex-col">
+                <span className="text-[11px] text-fg-subtle">Move forward if overdue</span>
+                {/* <span className="text-[10px] text-fg-faint">Rolls forward to today until done</span> */}
+              </span>
+              <Switch checked={autoMoveDate} onChange={onAutoMoveDateChange} />
+            </div>
+          )}
+        </div>
+      )}
       {showClear && (
         <button
           onClick={handleClear}

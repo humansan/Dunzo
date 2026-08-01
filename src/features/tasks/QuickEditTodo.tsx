@@ -26,6 +26,7 @@ export interface QuickEditValues {
   priority?: TodoPriority;
   parentId?: string | null; // immediate parent (a task or a collection)
   autoMoveDate?: boolean;    // roll an overdue, incomplete task forward to today
+  showInDailyList?: boolean;
 }
 
 interface QuickEditTodoProps {
@@ -41,6 +42,8 @@ interface QuickEditTodoProps {
   initialPriority?: TodoPriority;
   initialParentId?: string | null;
   initialAutoMoveDate?: boolean;
+  initialShowInDatabase?: boolean;
+  initialShowInDailyList?: boolean;
   collectionOptions?: CollectionOption[];
   onCreateCollection?: (name: string) => string;
   onSubmit: (vals: QuickEditValues) => void;
@@ -62,6 +65,8 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   initialPriority,
   initialParentId,
   initialAutoMoveDate,
+  initialShowInDatabase,
+  initialShowInDailyList,
   collectionOptions = [],
   onCreateCollection,
   onSubmit,
@@ -99,6 +104,8 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const [priority, setPriority] = useState<TodoPriority | undefined>(initialPriority);
   const [parentId, setParentId] = useState<string | null>(initialParentId ?? null);
   const [autoMoveDate, setAutoMoveDate] = useState<boolean>(seededAutoMove);
+  const [showInDailyList, setShowInDailyList] = useState<boolean>(initialShowInDailyList ?? false);
+  const showInDatabase = initialShowInDatabase ?? false;
 
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -134,6 +141,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     priority,
     parentId,
     autoMoveDate,
+    showInDailyList,
   });
 
   // Keep the latest snapshot fresh for the unmount flush.
@@ -151,8 +159,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setPriority(initialPriority);
     setParentId(initialParentId ?? null);
     setAutoMoveDate(seededAutoMove);
+    setShowInDailyList(initialShowInDailyList ?? false);
     committedRef.current = false;
-  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, seededXp, initialStatus, initialPriority, initialParentId, seededAutoMove]);
+  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, seededXp, initialStatus, initialPriority, initialParentId, seededAutoMove, initialShowInDailyList]);
 
   // On unmount, if an edit panel is force-closed (not via Save/Cancel), persist
   // its current values so switching panels doesn't lose changes.
@@ -254,6 +263,8 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
           value={date}
           onChange={handleDateChange}
           placeholder="Due date"
+          showInDailyList={showInDatabase ? showInDailyList : undefined}
+          onShowInDailyListChange={showInDatabase ? setShowInDailyList : undefined}
           autoMoveDate={autoMoveDate}
           onAutoMoveDateChange={setAutoMoveDate}
         />

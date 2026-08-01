@@ -264,6 +264,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       priority: vals.priority,
       parentId: vals.parentId ?? undefined,
       autoMoveDate: vals.autoMoveDate,
+      showInDailyList: vals.showInDailyList !== undefined ? vals.showInDailyList : todoToEdit.showInDailyList,
     });
   };
 

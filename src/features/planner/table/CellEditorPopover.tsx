@@ -117,8 +117,10 @@ export const CellEditorPopover: React.FC<{
         <CalendarInput
           value={entry.todo.dueDate || ''}
           autoFocus
-          showInDailyList={entry.todo.showInDailyList ?? false}
-          onShowInDailyListChange={(val) => save({ showInDailyList: val })}
+          showInDailyList={entry.todo.showInDatabase !== false ? (entry.todo.showInDailyList ?? false) : undefined}
+          onShowInDailyListChange={entry.todo.showInDatabase !== false ? ((val) => save({ showInDailyList: val })) : undefined}
+          autoMoveDate={entry.todo.autoMoveDate ?? false}
+          onAutoMoveDateChange={(val) => save({ autoMoveDate: val })}
           onChange={(val) => {
             // Clearing the date keeps the showInDailyList flag - an undated task
             // just never lands on a daily list, and re-adding a date sends it back.
