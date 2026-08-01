@@ -128,10 +128,15 @@ export const NotesField: React.FC<{
   const resize = () => {
     const el = ref.current;
     if (!el) return;
+    const parent = el.closest<HTMLDivElement>('.overflow-y-auto, .overflow-auto');
+    const savedScroll = parent?.scrollTop;
     el.style.height = 'auto';
     const next = Math.min(Math.max(el.scrollHeight, minHeight), maxHeight);
     el.style.height = `${next}px`;
     el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    if (parent && savedScroll !== undefined) {
+      parent.scrollTop = savedScroll;
+    }
   };
 
   // Mount-only sizing pass; further growth while typing comes from onInput.

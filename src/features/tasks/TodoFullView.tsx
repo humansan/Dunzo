@@ -84,6 +84,59 @@ const RightProp: React.FC<{
 );
 
 
+function ensureCaretInView(el: HTMLTextAreaElement) {
+  const container = el.closest<HTMLDivElement>('.overflow-y-auto');
+  if (!container) return;
+
+  const start = el.selectionStart ?? 0;
+  const val = el.value;
+
+  const computed = window.getComputedStyle(el);
+  const mirror = document.createElement('div');
+  mirror.style.position = 'absolute';
+  mirror.style.visibility = 'hidden';
+  mirror.style.whiteSpace = 'pre-wrap';
+  mirror.style.wordWrap = 'break-word';
+  mirror.style.fontFamily = computed.fontFamily;
+  mirror.style.fontSize = computed.fontSize;
+  mirror.style.lineHeight = computed.lineHeight;
+  mirror.style.padding = computed.padding;
+  mirror.style.width = `${el.clientWidth}px`;
+  mirror.style.boxSizing = computed.boxSizing;
+
+  const textBefore = val.slice(0, start);
+  const textBeforeNode = document.createTextNode(textBefore);
+  const span = document.createElement('span');
+  span.textContent = val.slice(start, start + 1) || '|';
+
+  mirror.appendChild(textBeforeNode);
+  mirror.appendChild(span);
+  document.body.appendChild(mirror);
+
+  const caretTopInEl = span.offsetTop;
+  const lineHeight = span.offsetHeight || parseFloat(computed.lineHeight) || 20;
+  const caretBottomInEl = caretTopInEl + lineHeight;
+
+  document.body.removeChild(mirror);
+
+  const elRect = el.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const elTopInContainer = elRect.top - containerRect.top + container.scrollTop;
+
+  const caretTopInContainer = elTopInContainer + caretTopInEl;
+  const caretBottomInContainer = elTopInContainer + caretBottomInEl;
+
+  const visibleTop = container.scrollTop;
+  const visibleBottom = container.scrollTop + container.clientHeight;
+  const padding = 16;
+
+  if (caretTopInContainer < visibleTop) {
+    container.scrollTop = Math.max(0, caretTopInContainer - padding);
+  } else if (caretBottomInContainer > visibleBottom) {
+    container.scrollTop = caretBottomInContainer - container.clientHeight + padding;
+  }
+}
+
 export const TodoFullView: React.FC<TodoFullViewProps> = ({
   todo,
   date,
@@ -118,8 +171,19 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const resizeNotes = () => {
     const el = notesRef.current;
     if (!el) return;
+    const parent = el.closest<HTMLDivElement>('.overflow-y-auto');
+    const savedScroll = parent?.scrollTop;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
+    if (parent && savedScroll !== undefined) {
+      parent.scrollTop = savedScroll;
+    }
+  };
+
+  const handleNotesCaretScroll = () => {
+    const el = notesRef.current;
+    if (!el) return;
+    ensureCaretInView(el);
   };
 
   useLayoutEffect(resizeTitle, [draft.text, todo.id]);
@@ -285,8 +349,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <textarea
                 ref={notesRef}
                 value={draft.notes || ''}
-                onChange={(e) => update({ notes: e.target.value })}
-                onInput={resizeNotes}
+                onChange={(e) => {
+                  update({ notes: e.target.value });
+                  handleNotesCaretScroll();
+                }}
+                onInput={() => {
+                  resizeNotes();
+                  handleNotesCaretScroll();
+                }}
+                onKeyUp={handleNotesCaretScroll}
+                onClick={handleNotesCaretScroll}
+                onSelect={handleNotesCaretScroll}
                 placeholder="Add notes..."
                 className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed"
               />
