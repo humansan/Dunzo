@@ -264,7 +264,10 @@ export function buildGroupedItems(
   collapsed: Set<string>,
   sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number,
   showLeafTasks: 'top' | 'bottom' | 'none' = 'bottom',
-  direction: 'asc' | 'desc' = 'asc'
+  direction: 'asc' | 'desc' = 'asc',
+  // Ids satisfying the view's predicate; everything else is a context ancestor
+  // (see FlatNode.matchesView). Omit to mark every row as matching.
+  matchIds?: Set<string>
 ): GroupRow[] {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const tasks = entries.filter((e) => !e.todo.isCollection);
@@ -325,7 +328,15 @@ export function buildGroupedItems(
     const children = doSort(childrenInGroup.get(taskId) ?? []);
     const hasChildren = children.length > 0;
     // No collections in grouped mode - every parent is a task, so indent == depth.
-    const node: FlatNode = { id: taskId, parentId, depth, indent: depth, entry, hasChildren };
+    const node: FlatNode = {
+      id: taskId,
+      parentId,
+      depth,
+      indent: depth,
+      entry,
+      hasChildren,
+      matchesView: !matchIds || matchIds.has(taskId),
+    };
     const rows: GroupRow[] = [{ type: 'task', node, group }];
     if (hasChildren && !collapsed.has(taskId)) {
       for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1, group, taskId));

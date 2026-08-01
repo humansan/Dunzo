@@ -198,13 +198,32 @@ export function useHubData(params: {
   //                   so its direct children render at depth 0),
   //   • 'ancestors' → the archived slice with its ancestor chain re-attached,
   //   • 'none'      → no collections (a flat, collection-free list, e.g. Uncategorized).
-  const viewEntries = useMemo(() => {
+  //
+  // Alongside the entries it returns `matchIds`: the rows that actually satisfied
+  // the predicate, as opposed to the ancestors re-attached around them. Everything
+  // downstream treats that as "is this a hit or just context" - see
+  // FlatNode.matchesView, which the table dims.
+  const { viewEntries, viewMatchIds } = useMemo((): {
+    viewEntries: OrganizerEntry[];
+    viewMatchIds: Set<string>;
+  } => {
     const v = resolveView(selectedView);
-    if (v.source === 'archived') return archivedTreeEntries;
-    if (v.scaffold === 'subtree')
-      return entries.filter((e) => isDescendantOf(e, selectedView));
+    if (v.source === 'archived') {
+      // Everything in the archived slice is a hit; archivedTreeEntries adds the
+      // (possibly live) ancestors around them, and those are the context rows.
+      return {
+        viewEntries: archivedTreeEntries,
+        viewMatchIds: new Set(archivedEntries.map((e) => e.todo.id)),
+      };
+    }
+    if (v.scaffold === 'subtree') {
+      // A descendant's parents are descendants too, so nothing here is context.
+      const list = entries.filter((e) => isDescendantOf(e, selectedView));
+      return { viewEntries: list, viewMatchIds: new Set(list.map((e) => e.todo.id)) };
+    }
 
     const ctx: ViewCtx = { hasCollectionAncestor, isDescendantOf };
+    const matchIds = new Set<string>();
     const out = new Map<string, OrganizerEntry>();
     // Leaf tasks + each leaf's parent-task chain (collections are added below, so
     // the walk only re-attaches missing task parents to keep subtrees intact).
@@ -216,6 +235,7 @@ export function useHubData(params: {
     for (const e of entries) {
       if (e.todo.isCollection || !v.leaf(e, ctx)) continue;
       out.set(e.todo.id, e);
+      matchIds.add(e.todo.id);
       for (const a of ancestorsOf(e.todo, todoById)) {
         const pe = byId.get(a.id);
         if (!pe) break; // archived (or otherwise not live) - the live chain ends here
@@ -223,8 +243,8 @@ export function useHubData(params: {
       }
     }
     if (v.scaffold === 'tree') for (const c of collections) out.set(c.todo.id, c);
-    return [...out.values()];
-  }, [entries, collections, archivedTreeEntries, selectedView, byId, todoById]); // eslint-disable-line react-hooks/exhaustive-deps
+    return { viewEntries: [...out.values()], viewMatchIds: matchIds };
+  }, [entries, archivedEntries, collections, archivedTreeEntries, selectedView, byId, todoById]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Unique display values per field, computed from un-filtered view entries.
   // Used to populate the filter value dropdown.
@@ -294,8 +314,8 @@ export function useHubData(params: {
   // Grouped rows - only used when groupBy !== 'collection'.
   const groupedRows = useMemo((): GroupRow[] => {
     if (sectionsConfig.groupBy === 'collection') return [];
-    return buildGroupedItems(processedEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection);
-  }, [sectionsConfig.groupBy, processedEntries, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection]);
+    return buildGroupedItems(processedEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds);
+  }, [sectionsConfig.groupBy, processedEntries, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds]);
 
   // Rendered rows for collection-grouped (default) mode. processedEntries respects
   // filters + hideEmptyCollections. leafPosition segregates tasks vs sub-collections.
@@ -328,9 +348,10 @@ export function useHubData(params: {
         sortFn,
         leafPosition: sectionsConfig.showLeafTasks !== 'none' ? sectionsConfig.showLeafTasks : undefined,
         flat: !showNesting,
+        matchIds: viewMatchIds,
       });
     },
-    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, sectionsConfig.hideSubcollections, selectedCollectionId, todoById]
+    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, sectionsConfig.hideSubcollections, selectedCollectionId, todoById, viewMatchIds]
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 

@@ -190,4 +190,12 @@ export interface FlatNode {
   indent: number;
   entry: OrganizerEntry;
   hasChildren: boolean;
+  // Whether this row actually satisfies the current view's predicate, or is only
+  // on screen as CONTEXT - an ancestor re-attached to keep a matching descendant
+  // nested (see useHubData's viewEntries / archivedTreeEntries). The Completed tab
+  // shows the unfinished parent of a finished subtask; Archived shows the live
+  // parent of an archived one. Both are wanted, but they need to look different
+  // from a real hit, so context rows render dimmed. Collections are structural and
+  // always count as matching. Defaults to true where nothing supplies a match set.
+  matchesView: boolean;
 }

@@ -411,13 +411,19 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     }
   };
 
+  // A context row - an ancestor kept only so its matching descendant stays nested
+  // (see FlatNode.matchesView) - renders dimmed, so "the tab didn't match this, it's
+  // here for its child" reads at a glance. It lifts to full opacity on hover, since
+  // it's still a live, editable row.
+  const contextDim = node.matchesView ? '' : 'opacity-40';
+
   return (
     <div
       style={style}
       {...dropProps}
       onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-      className={`relative grid items-stretch min-h-[36px] border-b border-line-subtle group/row ${
-        isDragSource ? 'opacity-40' : 'hover:bg-fill-subtle'
+      className={`relative grid items-stretch min-h-[36px] border-b border-line-subtle group/row transition-opacity ${
+        isDragSource ? 'opacity-40' : `hover:bg-fill-subtle ${contextDim}`
       }`}
     >
       {dropLine('before')}
