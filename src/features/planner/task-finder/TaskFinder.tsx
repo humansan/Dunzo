@@ -13,14 +13,11 @@ import { btnGhost } from '@/theme/buttons';
 
 // A command-palette over the active workspace's tasks, driven by `onPick`: search
 // wires it to open a task's full view, a picker (e.g. reparent) wires it to its own
-// action. It matches tasks (never collections) by title + notes, pulls in each
-// match's subtask subtree so results keep their hierarchy (expand/collapse), and
-// renders them through the nesting, name-only, chrome-less `search` variant of the
-// shared TaskTable. There is no add-row (read-only surface).
-//
-// Phase 1: the flat result list is the existing search list; fuzzy/all-fields search
-// (Phase 2), the two-pane view (Phase 3), and the polished ranked list (Phase 5)
-// build on this shell.
+// action. It matches and ranks tasks (never collections) through the tiered,
+// literal-first search core (§useTaskFinderSearch), pulls in each match's subtask
+// subtree so results keep their hierarchy (expand/collapse), and renders them through
+// the nesting, name-only, chrome-less `search` variant of the shared TaskTable. There
+// is no add-row, no inline rename and no completion toggle (read-only surface).
 const RESULT_LIMIT = 50;
 const NOOP = () => {};
 
