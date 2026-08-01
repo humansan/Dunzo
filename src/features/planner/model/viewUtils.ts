@@ -153,8 +153,11 @@ export function getGroupKey(
   return getFieldDisplayValue(entry, field, todoById);
 }
 
-// Human-readable header text for a group key.
+// Human-readable header text for a group key. The empty key is the catch-all for
+// tasks with no value for the grouping field - it has no label of its own, so it
+// gets a name here rather than rendering as a blank pill.
 function getGroupLabel(field: ColKey, key: string): string {
+  if (!key) return 'Ungrouped';
   if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.label ?? key;
   return key;
 }
@@ -389,9 +392,36 @@ export function buildGroupedItems(
     }
   }
 
-  // Ungrouped tasks also preserve hierarchy among themselves.
+  // Tasks with no value for the grouping field get a section of their own, built
+  // exactly like the keyed ones above so it collapses, counts and accepts drops
+  // through the same machinery - the empty key is already a real group everywhere
+  // else (rows are tagged `group: ''`, and dropping on this header runs
+  // groupAssignmentPatch with '', which clears the field). Without a header they
+  // were the one block of rows that couldn't be collapsed.
+  //
+  // Only when there are any: an empty section header would be noise, unlike the
+  // keyed sections which exist because something is in them.
   const ungroupedRows: GroupRow[] = [];
-  for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0, '', null));
+  if (ungrouped.length > 0) {
+    const headerId = `__grp:${groupField}:`;
+    const isCollapsed = collapsed.has(headerId);
+    ungroupedRows.push({
+      type: 'header',
+      id: headerId,
+      value: '',
+      label: getGroupLabel(groupField, ''),
+      color: getGroupColor(groupField, ''),
+      // Every task in the section, subtasks included - `ungrouped` holds only the
+      // roots, so counting it would undercount exactly like the keyed sections
+      // would if they counted `rootTasks`.
+      count: tasks.filter((t) => getOwningGroup(t.todo.id) === '').length,
+      isCollapsed,
+    });
+    if (!isCollapsed) {
+      // Hierarchy is preserved among them, same as inside a keyed section.
+      for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0, '', null));
+    }
+  }
 
   return showLeafTasks === 'top'
     ? [...ungroupedRows, ...groupRows]
