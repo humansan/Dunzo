@@ -16,7 +16,18 @@ import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
 import { CollectionOption, hasDate, normalizeScheduleTimes, isScheduleValid, type ScheduleSide } from '@/features/tasks/model';
-import { isDone } from '@/features/tasks/model';
+import { isDone, collectWithDescendants, isDescendantOf } from '@/features/tasks/model';
+import {
+  TaskTable,
+  buildTreeModel,
+  useRowDnD,
+  VARIANTS,
+  DEFAULT_SECTIONS_CONFIG,
+  NAME_COL_KEY,
+  type TableInteraction,
+  type TableRowHandlers,
+  type EditState,
+} from '@/features/planner/table';
 import { useArchiveConfirm } from '@/features/tasks/useArchiveConfirm';
 import {
   CompletedToggle,
@@ -50,6 +61,17 @@ interface TodoFullViewProps {
   // leave live children under an archived parent (shared/domain/todoArchive).
   onArchive: (id: string) => void;
   onUnarchive: (id: string, mode: 'self' | 'subtree') => void;
+  // ── Subtasks section ────────────────────────────────────────────────────────
+  // Writes for the SUBTASK rows, which never touch this view's draft: they're
+  // other tasks, saved straight through the shared handler like a planner row.
+  onSaveTodo: (todo: Todo) => void;
+  // Swap the overlay to another task (clicking a subtask row opens it here).
+  onOpenTask: (id: string) => void;
+  // "+ New" under the list: create a subtask and return its id, so the row can
+  // drop straight into its title editor.
+  onAddSubtask: (parentId: string) => string;
+  // Persist the subtask order after a drag (position = hubOrder, parentId = nesting).
+  onReorder: (items: { id: string; parentId: string | null }[]) => void;
   showXpChips: boolean; // hide the XP property when the settings toggle is off
 }
 
@@ -64,7 +86,7 @@ const RightProp: React.FC<{
 }> = ({ icon, label, children, noDivider, onClear, canClear }) => (
   <div className={`group/prop py-2.5 ${noDivider ? '' : 'border-b border-line-subtle'}`}>
     <div className="flex items-center justify-between mb-1.5">
-      <div className="flex items-center gap-1.5 text-xs text-fg-subtle font-medium h-5">
+      <div className="flex items-center gap-1.5 text-xs text-fg-muted font-medium h-5">
         {icon}
         {label}
       </div>
@@ -149,6 +171,10 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onDelete,
   onArchive,
   onUnarchive,
+  onSaveTodo,
+  onOpenTask,
+  onAddSubtask,
+  onReorder,
   showXpChips,
 }) => {
   // The archive confirmation counts rows across the whole tree, not just this task.
@@ -216,6 +242,89 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  // ── Subtasks ────────────────────────────────────────────────────────────────
+  // The whole descendant subtree, rendered through the planner's own table so the
+  // rows behave identically (rename in place, check to complete, expand/collapse,
+  // drag to reorder/nest).
+  //
+  // The open task itself is deliberately NOT in the entry set: flattenTree links a
+  // node only to a parent that is present, so leaving it out is what makes its
+  // direct children the top level of this list instead of everything hanging one
+  // indent deeper under a row you're already looking at.
+  const subtaskEntries = useMemo(() => {
+    const ids = collectWithDescendants(allTodos, todo.id);
+    ids.delete(todo.id);
+    return [...ids]
+      .map((id) => byId.get(id))
+      .filter((t): t is Todo => !!t && t.archived !== true)
+      .sort((a, b) => (a.hubOrder ?? a.createdAt) - (b.hubOrder ?? b.createdAt))
+      .map((t) => ({ todo: t }));
+  }, [allTodos, byId, todo.id]);
+
+  // Collapse + inline-edit state are LOCAL: the planner's own collapse set is
+  // DB-synced and shared across its views, and a modal shouldn't reach into it.
+  const [subCollapsed, setSubCollapsed] = useState<Set<string>>(new Set());
+  const [subEditing, setSubEditing] = useState<EditState>(null);
+  useEffect(() => { setSubCollapsed(new Set()); setSubEditing(null); }, [todo.id]);
+
+  const subModel = useMemo(
+    () => buildTreeModel(subtaskEntries, byId, { collapsed: subCollapsed }),
+    [subtaskEntries, byId, subCollapsed]
+  );
+  const subById = useMemo(
+    () => new Map(subtaskEntries.map((e) => [e.todo.id, e])),
+    [subtaskEntries]
+  );
+  const subFlatById = useMemo(
+    () => new Map(subModel.flattened.map((n) => [n.id, n])),
+    [subModel.flattened]
+  );
+
+  const subDnd = useRowDnD({
+    entries: subtaskEntries,
+    processedEntries: subtaskEntries,
+    flattened: subModel.flattened,
+    flatById: subFlatById,
+    groupedRows: [],
+    byId: subById,
+    isDescendantOf: (e, cid) => isDescendantOf(e.todo, cid, byId),
+    // Re-anchor point for rows that read as top-level here. This is the trap: the
+    // open task is absent from the set, so its direct children flatten to
+    // parentId null, and a drop commit would reparent every one of them to the
+    // root of the tree - silently emptying this list. Naming it here puts them
+    // back under the task they belong to, exactly as a collection view does.
+    selectedCollectionId: todo.id,
+    sectionsConfig: DEFAULT_SECTIONS_CONFIG,
+    onReorder,
+    onSaveTodo,
+    clearInteraction: () => setSubEditing(null),
+  });
+
+  const subInteraction = useMemo<TableInteraction>(() => ({
+    editing: subEditing,
+    startEdit: (id, col) => setSubEditing({ id, col, rect: null }),
+    stopEdit: () => setSubEditing(null),
+    openMenu: () => {},
+    toggleCollapse: (id) =>
+      setSubCollapsed((prev) => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      }),
+  }), [subEditing]);
+
+  const subRowHandlers = useMemo<TableRowHandlers>(() => ({
+    onSaveTodo,
+    onToggleTodo: onToggle,
+    onAddSubtask,
+    onOpenTask,
+    // "+ New" adds a subtask of the task being viewed and opens its title editor.
+    onNewInView: () => {
+      const id = onAddSubtask(todo.id);
+      setSubEditing({ id, col: NAME_COL_KEY, rect: null });
+    },
+  }), [onSaveTodo, onToggle, onAddSubtask, onOpenTask, todo.id]);
 
   const update = (patch: Partial<Todo>, nextDate: string = dateStr) => {
     setDraft(prev => {
@@ -364,6 +473,29 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed"
               />
             </div>
+
+            {/* Subtasks - the planner's own table, so the rows behave identically.
+                The plain wrapper matters: TableSurface is `flex-1` (basis 0) and
+                this pane is a flex column, so as a direct child it would collapse
+                to the leftover space and scroll inside itself. Wrapped in a block
+                element, flex-1 is inert and the list grows with the pane. */}
+            <div className="mt-8">
+              <div className="ml-3 mb-1.5 flex items-baseline gap-2">
+                <span className="text-basae font-medium text-fg-muted">Subtasks</span>
+                {subtaskEntries.length > 0 && (
+                  <span className="text-xs text-fg-faint font-mono">{subtaskEntries.length}</span>
+                )}
+              </div>
+              <div className="border-t border-line-subtle">
+                <TaskTable
+                  variant={VARIANTS.subtasks}
+                  model={subModel}
+                  interaction={subInteraction}
+                  rowHandlers={subRowHandlers}
+                  dnd={subDnd}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Divider */}
@@ -494,7 +626,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
               <div className="border-t border-line-subtle py-3 space-y-3 ">
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs text-fg-subtle font-medium">
+                  <div className="flex items-center gap-1.5 text-xs text-fg-muted font-medium">
                     <Clock size={11} />
                     Created
                   </div>

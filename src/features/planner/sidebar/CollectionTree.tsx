@@ -218,7 +218,7 @@ export const CollectionTree: React.FC<{
               }`}
               title={c.todo.text || 'Untitled collection'}
             >
-              <Shapes size={15} className="shrink-0" style={{ color }} fill={checkMode && !checked ? 'none' : 'currentColor'} strokeWidth={1.5} />
+              <Shapes size={15} className={`shrink-0 ${checkMode && !checked ? "fill-none stroke-2" : "fill-current stroke-2"}`} style={{ color }} />
               <span className="flex-1 truncate">{c.todo.text || 'Untitled collection'}</span>
               {/* Right slot: task count by default; on pane hover, collections with
                   nested children swap it for an expand/collapse toggle. */}

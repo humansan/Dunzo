@@ -350,11 +350,11 @@ export const ParentTaskButton: React.FC<{
 
   return (
     <>
-      <button type="button" onClick={() => setPickerOpen(true)} className={rowBtn}>
-        <GitBranch size={16} className="shrink-0 text-fg-subtle" />
+      <button type="button" onClick={() => setPickerOpen(true)} className={rowBtn + " group"}>
+        <GitBranch size={16} className={"shrink-0 group-hover:text-fg " + (parentTaskName && 'text-fg-muted')} />
         {parentTaskName
-          ? <span className="min-w-0 truncate text-fg">{parentTaskName}</span>
-          : <span className="text-fg-subtle">Set parent task</span>}
+          ? <span className="min-w-0 truncate text-fg-muted group-hover:text-fg">{parentTaskName}</span>
+          : <span>Set parent task</span>}
       </button>
       {pickerOpen && (
         <TaskFinder

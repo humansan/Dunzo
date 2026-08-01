@@ -258,12 +258,12 @@ export const CollectionPickerButton: React.FC<{
             />
           </button>
         ) : (
-          <button type="button" onClick={open} className={rowBtn}>
-            <Shapes size={16} className="shrink-0 text-fg-subtle" />
+          <button type="button" onClick={open} className={rowBtn + " group"}>
+            <Shapes size={16} className={"shrink-0 " + (current && 'stroke-fg-muted group-hover:stroke-fg')} />
             {current ? (
               <CollectionBreadcrumb path={current.path} className="min-w-0" />
             ) : (
-              <span className="text-fg-subtle">{empty}</span>
+              <span>{empty}</span>
             )}
           </button>
         )
