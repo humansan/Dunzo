@@ -20,6 +20,7 @@ export interface HubLayout {
   selectedView?: string;
   viewMode?: 'table' | 'list'; // table (default) / single-column list
   finderView?: 'flat' | 'twoPane'; // Task Finder result layout (one pref across search/pickers)
+  finderShowDone?: boolean; // Task Finder: search completed tasks too (undefined ⇒ true)
   sidebarWidth?: number;
   sidebarHidden?: boolean;
   sidebarCollapsed?: string[]; // sidebar collection-tree collapse state

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Clock, LayoutGrid, List, Maximize2 } from 'lucide-react';
 import { TrackerCard } from '@/features/trackers';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
-import { btnNeutral } from '../../theme/buttons';
+import { btnGhost, btnNeutral, btnSwitch } from '../../theme/buttons';
 import { useAppData } from '@/lib/app-data';
 
 export const Route = createFileRoute('/_authed/trackers')({
@@ -42,13 +42,13 @@ function TrackersRoute() {
               <div className="hidden sm:flex bg-fill-subtle rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-1 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-fill text-fg' : 'text-fg-faint hover:text-fg'}`}
+                  className={`p-1 rounded-md transition-colors ${viewMode === 'grid' ? btnSwitch(true) : btnSwitch()}`}
                 >
                   <LayoutGrid size={18} />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1 rounded-md transition-colors ${viewMode === 'list' ? 'bg-fill text-fg' : 'text-fg-faint hover:text-fg'}`}
+                  className={`p-1 rounded-md transition-colors ${viewMode === 'list' ? btnSwitch(true) : btnSwitch()}`}
                 >
                   <List size={18} strokeWidth={2.5} />
                 </button>

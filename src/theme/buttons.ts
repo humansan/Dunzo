@@ -38,6 +38,9 @@ const accentFill: Record<Accent, string> = {
 export const btnGhost = (active = false): string =>
   `${base} ${active ? 'bg-fill text-fg' : 'text-fg-subtle hover:text-fg hover:bg-fill-subtle'}`;
 
+export const btnSwitch = (active = false): string =>
+  `${base} ${active ? 'bg-fill text-fg' : 'text-fg-subtle hover:text-fg'}`;
+
 // 2 - Neutral: gray fill, hover brightens, stays neutral.
 export const btnNeutral = `${base} ${neutralIdle}`;
 
