@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
-import { btnGhost } from '@/theme/buttons';
+import { btnNeutral } from '@/theme/buttons';
 import type { RoleName } from '@/theme/roles';
 import { Checkbox } from '@/common/ui/Checkbox';
 
@@ -94,7 +94,7 @@ export const ConfirmModal: React.FC<{
                   ? ({ ['--tone']: `var(--color-${a.tone})` } as React.CSSProperties)
                   : undefined
               }
-              className={`w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
+              className={`w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
                 a.tone ? TONED_CARD : PLAIN_CARD
               }`}
             >
@@ -130,7 +130,7 @@ export const ConfirmModal: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className={`px-3 py-1.5 rounded-lg text-sm ${btnGhost()}`}
+            className={`px-3 h-8 rounded-lg text-xs font-bold ${btnNeutral}`}
           >
             {cancelLabel}
           </button>

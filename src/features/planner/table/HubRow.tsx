@@ -14,7 +14,7 @@ import {
 } from '@/features/tasks/fields';
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from '@/features/planner/types';
 import { collectionColor } from '@/theme/collectionColor';
-import { INDENT, NAME_BASE_PAD, cellEditCls } from '@/features/planner/constants';
+import { INDENT, NAME_BASE_PAD, LEADING_SLOT, cellEditCls } from '@/features/planner/constants';
 import { pill } from '@/theme/pill';
 import { SectionHeader } from '@/features/planner/table/SectionHeader';
 import { useTableVariant } from '@/features/planner/variant';
@@ -149,7 +149,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           onRowDragStart?.(todo.id);
         }}
         onDragEnd={() => onRowDragEnd?.()}
-        className={`shrink-0 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
+        className={`shrink-0 h-5 ${LEADING_SLOT} flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
         title="Drag to reorder / nest"
       >
         <GripVertical size={16} />
@@ -244,7 +244,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         toggleTitle={{ expand: 'Expand collection', collapse: 'Collapse collection' }}
         count={taskCount}
         depth={indent}
-        leading={dragHandle('mr-1')}
+        leading={dragHandle()}
         actions={
           <>
             {openMenu && (

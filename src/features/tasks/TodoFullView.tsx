@@ -470,7 +470,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 onClick={handleNotesCaretScroll}
                 onSelect={handleNotesCaretScroll}
                 placeholder="Add notes..."
-                className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed"
+                className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed min-h-47"
               />
             </div>
 
@@ -479,12 +479,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 this pane is a flex column, so as a direct child it would collapse
                 to the leftover space and scroll inside itself. Wrapped in a block
                 element, flex-1 is inert and the list grows with the pane. */}
-            <div className="mt-8">
+            <div className="mt-16">
               <div className="ml-8.5 my-1.5 flex items-center gap-2">
-                <span className="text-basae font-medium text-fg-muted">Subtasks</span>
-                {subtaskEntries.length > 0 && (
-                  <span className="text-xs text-fg-faint font-mono">{subtaskEntries.length}</span>
-                )}
+                <span className="text-xs font-medium text-fg-faint">Subtasks</span>
               </div>
               <div className="border-t border-line-subtle">
                 <TaskTable

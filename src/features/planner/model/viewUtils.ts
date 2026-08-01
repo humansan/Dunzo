@@ -378,7 +378,14 @@ export function buildGroupedItems(
     const isCollapsed = collapsed.has(headerId);
     groupRows.push({ type: 'header', id: headerId, value: key, label: getGroupLabel(groupField, key), color: getGroupColor(groupField, key), count: totalCount, isCollapsed });
     if (!isCollapsed) {
-      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 1, key, null));
+      // Depth 0, NOT 1: a section header doesn't cost its tasks an indent level,
+      // exactly as a collection header doesn't (see flattenTree's indent rule). This
+      // used to start at 1, which pushed every task in a Status/Priority/Date group
+      // a full INDENT to the right of its header while the same task under a
+      // collection sat flush with it - the two groupings disagreeing about the same
+      // relationship. Ungrouped roots below already used 0, so they were also
+      // inconsistent with grouped roots at the same structural level.
+      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 0, key, null));
     }
   }
 
