@@ -292,37 +292,15 @@ function useProvideAppData() {
     });
   };
 
-  // Move a todo to a new scheduled day (its dueDate). fromDate is no longer
-  // needed - the date lives on the task now. Land it at the bottom of the target
-  // day by giving it the next dailyOrder.
-  // Same normalization chain as writeHubTodo, reconcileArchived included - the two
-  // differ only in that this one also gives the task a place in the day it moved to.
-  const writeMoveTodo = (toDate: string, updatedTodo: Todo) => {
-    const dueDate = toDate && toDate !== UNDATED ? toDate : undefined;
-    const maxDailyOrder = todos
-      .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
-      .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    const parent = updatedTodo.parentId ? todoById.get(updatedTodo.parentId) : undefined;
-    updateTodo.mutate({
-      id: updatedTodo.id,
-      patch: reconcileArchived(
-        reconcileSchedule(normalizeCompletion(normalizeVisibility({
-          ...updatedTodo,
-          dueDate,
-          dailyOrder: maxDailyOrder + 1,
-          hubOrder: updatedTodo.hubOrder ?? nextHubOrder(),
-        }))),
-        parent
-      ),
-    });
-  };
-
-  // A reschedule carries the whole todo, so it can also contain a status/priority
-  // change (the daily quick-editor sends one payload for both) - hence the same
-  // cascade wrapper the plain save uses.
-  const handleMoveTodo = (_fromDate: string, toDate: string, updatedTodo: Todo) =>
-    saveWithCascade(updatedTodo, () => writeMoveTodo(toDate, updatedTodo));
-
+  // Rescheduling is just a save whose dueDate happens to differ, so there is no
+  // separate move handler: writeHubTodo below derives the new day's position
+  // itself. It used to be its own path, which meant the SAME edit behaved
+  // differently depending on which screen made it - the daily list and the
+  // calendar landed a rescheduled task at the bottom of its new day, while the
+  // planner's Set-date and the full view left it with a stale dailyOrder and it
+  // dropped in at an arbitrary spot. Worse, that path recomputed the order
+  // unconditionally, so every caller had to guard it with its own "did the date
+  // actually change?" test.
   // Auto-move-date sweep: reschedule any incomplete task whose dueDate has passed
   // and that carries the autoMoveDate flag onto today, so it keeps rolling forward
   // until completed. Runs at most once per local calendar day per mount (the ref
@@ -467,10 +445,23 @@ function useProvideAppData() {
     // no longer goes through; a null hubOrder sorts by createdAt on a different
     // scale entirely, which is the bug 0006_backfill_hub_order existed to clean up.
     const hubOrder = updatedTodo.hubOrder ?? nextHubOrder();
+    // A save that MOVES the task to another day also gives it a place in that day:
+    // the bottom, like anything newly arriving there. Its old dailyOrder is an index
+    // into a list it just left, so keeping it would drop the task at an arbitrary
+    // spot among its new neighbours. Derived here from the todo's own before/after
+    // date rather than asked for by the caller, so every surface reschedules the
+    // same way and nobody has to remember to request it.
+    const prevBucket = todoById.get(updatedTodo.id)?.dueDate ?? undefined;
+    const movedDay = bucketKeyOf({ ...updatedTodo, dueDate }) !== bucketKeyOf({ ...updatedTodo, dueDate: prevBucket });
+    const dailyOrder = movedDay
+      ? todos
+          .filter((t) => t && bucketKeyOf(t) === bucketKeyOf({ ...updatedTodo, dueDate }) && t.id !== updatedTodo.id)
+          .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1) + 1
+      : updatedTodo.dailyOrder;
     updateTodo.mutate({
       id: updatedTodo.id,
       patch: reconcileArchived(
-        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, hubOrder }))),
+        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, hubOrder, dailyOrder }))),
         parent
       ),
     });
@@ -726,7 +717,6 @@ function useProvideAppData() {
     // todo/hub handlers
     handleReorderDay,
     handleCreateInDay,
-    handleMoveTodo,
     handleToggleTodo,
     handleToggleAndClose,
     handleStartTracking,

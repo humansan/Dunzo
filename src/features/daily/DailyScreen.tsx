@@ -39,7 +39,6 @@ interface DailyScreenProps {
   // Set the within-day order. Ids only - never touches a task's fields.
   onReorderDay: (orderedIds: string[]) => void;
   onDeleteTodo: (id: string) => void;
-  onMoveTodo: (fromDate: string, toDate: string, updatedTodo: Todo) => void;
   // Currently unwired: the daily list's time chip used to start the tracker, but
   // it is now a time picker (matching the quick-edit panel), so nothing in this
   // screen starts tracking. AppShell still owns the tracker + its state, so this
@@ -75,7 +74,6 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   onCreateInDay,
   onReorderDay,
   onDeleteTodo,
-  onMoveTodo,
   onStartTracking,
   activeTodoId,
   onToggleTodo,
@@ -245,10 +243,20 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     const todoToEdit = currentDayData.todos.find(t => t && t.id === id);
     if (!todoToEdit) return;
 
-    const updatedTodo: Todo = {
+    // A field edit is a one-row write, so it takes the same handler the Planner and
+    // the full view use. It used to re-save the WHOLE day through onUpdateTodos,
+    // which meant editing one XP chip rewrote every task on that day (and every
+    // dailyOrder with it), skipped reconcileArchived, and - because that array is
+    // authoritative - carried an implicit "delete anything not in this list".
+    //
+    // The date rides along in the same payload: a reschedule is just a save whose
+    // dueDate differs, and onSaveTodo lands the task at the bottom of whatever day
+    // it moves to. This used to branch to a separate move handler for that.
+    onSaveTodo({
       ...todoToEdit,
       text: vals.text,
       notes: vals.notes || undefined,
+      dueDate: vals.date || undefined,
       startTime: vals.startTime,
       dueTime: vals.dueTime,
       xp: vals.xp,
@@ -256,20 +264,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       priority: vals.priority,
       parentId: vals.parentId ?? undefined,
       autoMoveDate: vals.autoMoveDate,
-    };
-
-    // A field edit is a one-row write, so it takes the same handler the Planner and
-    // the full view use. It used to re-save the WHOLE day through onUpdateTodos,
-    // which meant editing one XP chip rewrote every task on that day (and every
-    // dailyOrder with it), skipped reconcileArchived, and - because that array is
-    // authoritative - carried an implicit "delete anything not in this list".
-    // A changed date still routes through onMoveTodo, which additionally lands the
-    // task at the bottom of its new day; onSaveTodo doesn't compute dailyOrder.
-    if (vals.date !== selectedDate) {
-      onMoveTodo(selectedDate, vals.date, updatedTodo);
-    } else {
-      onSaveTodo(updatedTodo);
-    }
+    });
   };
 
   // The context menu edits one field at a time; round-tripping the row through
@@ -459,7 +454,6 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
           <CalendarView
             dayTodos={dayTodos}
             onSaveTodo={onSaveTodo}
-            onMoveTodo={onMoveTodo}
             onToggleTodo={onToggleTodo}
             initialDate={selectedDate}
             initialDays={1}

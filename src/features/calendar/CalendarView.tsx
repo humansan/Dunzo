@@ -128,7 +128,6 @@ interface CalendarViewProps {
   // Per-row writes, shared with the planner / daily list / full view so an edit made
   // here gets the same normalization and the same subtask prompts.
   onSaveTodo: (todo: Todo) => void;
-  onMoveTodo: (fromDate: string, toDate: string, updatedTodo: Todo) => void;
   onToggleTodo: (id: string) => void;
   initialDate?: string;
   initialDays?: number;
@@ -350,7 +349,6 @@ const EventCard: React.FC<{
 export const CalendarView: React.FC<CalendarViewProps> = ({
   dayTodos,
   onSaveTodo,
-  onMoveTodo,
   onToggleTodo,
   initialDate,
   initialDays,
@@ -522,23 +520,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const commitSpan = useCallback((todo: Todo, span: TodoSpan) => {
     const patch = decomposeSpan(span);
     const updated = { ...todo, ...patch } as Todo;
-    const oldDue = todo.dueDate;
-    const newDue = patch.dueDate!;
 
-    // onMoveTodo additionally lands the task at the bottom of the day it moved to,
-    // which is what the daily list's own reschedule does.
-    if (oldDue === newDue) onSaveTodo(updated);
-    else onMoveTodo(oldDue ?? '', newDue, updated);
+    // One write either way. A cross-day drag is just a save whose dueDate differs;
+    // onSaveTodo notices that itself and lands the task at the bottom of the day it
+    // moved to, so there's no branch here (and no second handler) to keep in step.
+    onSaveTodo(updated);
 
     setSettling({
       id: todo.id,
       span,
-      dueDate: newDue,
+      dueDate: patch.dueDate!,
       expectStart: patch.startTime!,
       expectEnd: patch.dueTime!,
       accent: accentForTodo(todo),
     });
-  }, [onSaveTodo, onMoveTodo, accentForTodo]);
+  }, [onSaveTodo, accentForTodo]);
 
   // const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);

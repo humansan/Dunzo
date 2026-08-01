@@ -24,7 +24,6 @@ function CalendarRoute() {
         <CalendarView
           dayTodos={d.dayTodos}
           onSaveTodo={d.handleHubSaveTodo}
-          onMoveTodo={d.handleMoveTodo}
           onToggleTodo={d.handleToggleTodo}
           initialDate={date}
           onFocusDateChange={(next) => navigate({ search: { date: next } })}

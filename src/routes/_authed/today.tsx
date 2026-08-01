@@ -29,7 +29,6 @@ function TodayRoute() {
           onCreateInDay={d.handleCreateInDay}
           onReorderDay={d.handleReorderDay}
           onDeleteTodo={d.handleDeleteTodoById}
-          onMoveTodo={d.handleMoveTodo}
           onStartTracking={d.handleStartTracking}
           activeTodoId={d.activeTodoId}
           onToggleTodo={d.handleToggleTodo}
