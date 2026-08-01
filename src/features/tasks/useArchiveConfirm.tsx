@@ -197,19 +197,20 @@ export function useArchiveConfirm(params: {
         onDontShowAgainChange={(v) => { dontAsk.current = v; }}
         dontShowAgainLabel="Remember my choice and stop asking"
         actions={[
-          {
-            label: `Just this ${self}`,
-            description: `Leave the ${count(pending.inside, noun)} inside archived.`,
-            icon: <ArchiveRestore size={18} />,
-            onSelect: () =>
-              finish(() => pending.run('self'), () => write(KEYS.unarchiveMode, 'self')),
-          },
+          // The wider action goes first, matching the status/priority cascade dialog.
           {
             label: `This ${self} and everything inside`,
             description: `Also restore the ${count(pending.inside, noun)} nested inside it.`,
             icon: <CornerDownRight size={18} />,
             onSelect: () =>
               finish(() => pending.run('subtree'), () => write(KEYS.unarchiveMode, 'subtree')),
+          },
+          {
+            label: `Just this ${self}`,
+            description: `Leave the ${count(pending.inside, noun)} inside archived.`,
+            icon: <ArchiveRestore size={18} />,
+            onSelect: () =>
+              finish(() => pending.run('self'), () => write(KEYS.unarchiveMode, 'self')),
           },
         ]}
       />

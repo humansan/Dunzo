@@ -25,6 +25,7 @@ import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
 import { buildSeedTrackers, buildSeedViewsConfig } from '@/lib/onboarding';
+import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascadeConfirm';
 
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
@@ -322,6 +323,24 @@ function useProvideAppData() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDataReady, todos]);
 
+  // ── Status / priority cascade ───────────────────────────────────────────────
+  // Changing either on a task with subtasks asks whether it applies to them too
+  // (see useFieldCascadeConfirm). Both handlers below are the chokepoints every
+  // edit in the app reaches - the row cells, the cell popover, the full view, the
+  // grouped-view drag reassignment, the daily row menu, and every checkbox - so
+  // this is the only place that needs to know about it.
+  const { askFieldCascade, fieldCascadeModal } = useFieldCascadeConfirm();
+
+  // The task descendants of `id`: the rows a cascade could reach. Collections are
+  // excluded - they carry neither status nor priority.
+  const taskDescendantsOf = (id: string): string[] =>
+    [...collectWithDescendants(todos.filter(Boolean) as Todo[], id)].filter(
+      (tid) => tid !== id && !todoById.get(tid)?.isCollection
+    );
+  const patchMany = (ids: string[], patch: Partial<Todo>) => {
+    if (ids.length) batchTodos.mutate({ patches: ids.map((id) => ({ id, ...patch })) });
+  };
+
   const handleToggleTodo = (todoId: string) => {
     const todo = todos.find(t => t && t.id === todoId);
     if (!todo) return;
@@ -330,12 +349,23 @@ function useProvideAppData() {
     // the stamp client-side - otherwise completedAt stays undefined until the next
     // natural refetch and the completion timestamp renders as absent.
     const { status, completedAt } = normalizeCompletion({ ...todo, status: toggledStatus(todo) });
-    updateTodo.mutate({ id: todoId, patch: { status, completedAt } });
-
-    // If we're toggling the active todo, close the tracker
-    if (activeTodoId === todoId) {
-      setActiveTodoId(null);
-    }
+    const applySelf = () => {
+      updateTodo.mutate({ id: todoId, patch: { status, completedAt } });
+      // If we're toggling the active todo, close the tracker
+      if (activeTodoId === todoId) {
+        setActiveTodoId(null);
+      }
+    };
+    // Ticking the checkbox is a status change like any other, so it takes the same
+    // route. Subtasks inherit the parent's completedAt, so a subtree completed in
+    // one click shares one timestamp.
+    askFieldCascade({
+      field: 'status',
+      name: todo.text || 'Untitled',
+      descendantIds: taskDescendantsOf(todoId),
+      applySelf,
+      applyToDescendants: (ids) => patchMany(ids, { status, completedAt }),
+    });
   };
 
   const handleToggleAndClose = (todoId: string) => {
@@ -360,7 +390,7 @@ function useProvideAppData() {
   // Save an edited hub todo. The date lives on the task itself (`dueDate`), so the
   // todo is the whole payload. Normalize the date here (empty/UNDATED ⇒ undated)
   // so callers can just set `dueDate` without worrying about the sentinel.
-  const handleHubSaveTodo = (updatedTodo: Todo) => {
+  const writeHubTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
     // reconcileArchived here too: without it an edit could park an illegal row in
     // the optimistic cache (the server corrects the write, but onSettled doesn't
@@ -372,6 +402,33 @@ function useProvideAppData() {
         reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate }))),
         parent
       ),
+    });
+  };
+
+  const handleHubSaveTodo = (updatedTodo: Todo) => {
+    const prev = todoById.get(updatedTodo.id);
+    // Only status and priority cascade. Status is checked first so an edit that
+    // somehow moved both asks about the more consequential one; the other field
+    // still saves on this task either way, since applySelf writes the whole todo.
+    const field: CascadeField | null =
+      prev && prev.status !== updatedTodo.status
+        ? 'status'
+        : prev && prev.priority !== updatedTodo.priority
+          ? 'priority'
+          : null;
+    if (!field || updatedTodo.isCollection) {
+      writeHubTodo(updatedTodo);
+      return;
+    }
+    const value = field === 'status'
+      ? { status: updatedTodo.status, completedAt: normalizeCompletion(updatedTodo).completedAt }
+      : { priority: updatedTodo.priority };
+    askFieldCascade({
+      field,
+      name: updatedTodo.text || 'Untitled',
+      descendantIds: taskDescendantsOf(updatedTodo.id),
+      applySelf: () => writeHubTodo(updatedTodo),
+      applyToDescendants: (ids) => patchMany(ids, value),
     });
   };
 
@@ -653,6 +710,10 @@ function useProvideAppData() {
     searchFlatEntries,
     // shell UI state
     isFullscreen, setIsFullscreen,
+    // Rendered by the provider, not by any one surface: a status/priority edit can
+    // come from the planner, the daily list, the calendar or the full view, and
+    // they all reach it through the two handlers above.
+    fieldCascadeModal,
   };
 }
 
@@ -662,7 +723,12 @@ const AppDataContext = createContext<AppData | null>(null);
 
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const value = useProvideAppData();
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  return (
+    <AppDataContext.Provider value={value}>
+      {children}
+      {value.fieldCascadeModal}
+    </AppDataContext.Provider>
+  );
 };
 
 export function useAppData(): AppData {
