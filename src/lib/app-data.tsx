@@ -295,13 +295,33 @@ function useProvideAppData() {
   // Move a todo to a new scheduled day (its dueDate). fromDate is no longer
   // needed - the date lives on the task now. Land it at the bottom of the target
   // day by giving it the next dailyOrder.
-  const handleMoveTodo = (_fromDate: string, toDate: string, updatedTodo: Todo) => {
+  // Same normalization chain as writeHubTodo, reconcileArchived included - the two
+  // differ only in that this one also gives the task a place in the day it moved to.
+  const writeMoveTodo = (toDate: string, updatedTodo: Todo) => {
     const dueDate = toDate && toDate !== UNDATED ? toDate : undefined;
     const maxDailyOrder = todos
       .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
       .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1, hubOrder: updatedTodo.hubOrder ?? nextHubOrder() }))) });
+    const parent = updatedTodo.parentId ? todoById.get(updatedTodo.parentId) : undefined;
+    updateTodo.mutate({
+      id: updatedTodo.id,
+      patch: reconcileArchived(
+        reconcileSchedule(normalizeCompletion(normalizeVisibility({
+          ...updatedTodo,
+          dueDate,
+          dailyOrder: maxDailyOrder + 1,
+          hubOrder: updatedTodo.hubOrder ?? nextHubOrder(),
+        }))),
+        parent
+      ),
+    });
   };
+
+  // A reschedule carries the whole todo, so it can also contain a status/priority
+  // change (the daily quick-editor sends one payload for both) - hence the same
+  // cascade wrapper the plain save uses.
+  const handleMoveTodo = (_fromDate: string, toDate: string, updatedTodo: Todo) =>
+    saveWithCascade(updatedTodo, () => writeMoveTodo(toDate, updatedTodo));
 
   // Auto-move-date sweep: reschedule any incomplete task whose dueDate has passed
   // and that carries the autoMoveDate flag onto today, so it keeps rolling forward
@@ -354,6 +374,37 @@ function useProvideAppData() {
     );
   const patchMany = (ids: string[], patch: Partial<Todo>) => {
     if (ids.length) batchTodos.mutate({ patches: ids.map((id) => ({ id, ...patch })) });
+  };
+
+  // Wrap any whole-todo write with the cascade question, so a save and a
+  // reschedule can't disagree about it: the daily quick-editor sends BOTH through
+  // one payload, and routing on "did the date change" used to decide whether the
+  // status change in that same payload got asked about.
+  const saveWithCascade = (updatedTodo: Todo, write: () => void) => {
+    const prev = todoById.get(updatedTodo.id);
+    // Status is checked first so an edit that moved both asks about the more
+    // consequential one; the other field still saves on this task either way,
+    // since `write` persists the whole todo.
+    const field: CascadeField | null =
+      prev && prev.status !== updatedTodo.status
+        ? 'status'
+        : prev && prev.priority !== updatedTodo.priority
+          ? 'priority'
+          : null;
+    if (!field || updatedTodo.isCollection) {
+      write();
+      return;
+    }
+    const value = field === 'status'
+      ? { status: updatedTodo.status, completedAt: normalizeCompletion(updatedTodo).completedAt }
+      : { priority: updatedTodo.priority };
+    askFieldCascade({
+      field,
+      name: updatedTodo.text || 'Untitled',
+      descendantIds: taskDescendantsOf(updatedTodo.id),
+      applySelf: write,
+      applyToDescendants: (ids) => patchMany(ids, value),
+    });
   };
 
   const handleToggleTodo = (todoId: string) => {
@@ -425,32 +476,8 @@ function useProvideAppData() {
     });
   };
 
-  const handleHubSaveTodo = (updatedTodo: Todo) => {
-    const prev = todoById.get(updatedTodo.id);
-    // Only status and priority cascade. Status is checked first so an edit that
-    // somehow moved both asks about the more consequential one; the other field
-    // still saves on this task either way, since applySelf writes the whole todo.
-    const field: CascadeField | null =
-      prev && prev.status !== updatedTodo.status
-        ? 'status'
-        : prev && prev.priority !== updatedTodo.priority
-          ? 'priority'
-          : null;
-    if (!field || updatedTodo.isCollection) {
-      writeHubTodo(updatedTodo);
-      return;
-    }
-    const value = field === 'status'
-      ? { status: updatedTodo.status, completedAt: normalizeCompletion(updatedTodo).completedAt }
-      : { priority: updatedTodo.priority };
-    askFieldCascade({
-      field,
-      name: updatedTodo.text || 'Untitled',
-      descendantIds: taskDescendantsOf(updatedTodo.id),
-      applySelf: () => writeHubTodo(updatedTodo),
-      applyToDescendants: (ids) => patchMany(ids, value),
-    });
-  };
+  const handleHubSaveTodo = (updatedTodo: Todo) =>
+    saveWithCascade(updatedTodo, () => writeHubTodo(updatedTodo));
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
   // nests it as a subtask. `opts` lets a quick-add seed the task with attributes
