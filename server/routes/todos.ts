@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { db } from '../db';
 import { todos, type NewTodoRow } from '../../shared/db/schema';
 import {
@@ -82,6 +82,66 @@ todosRouter.post(
       // only known here when the patch actually sets it.
       const parentOf = (row: Record<string, unknown>) =>
         typeof row.parentId === 'string' ? known.get(row.parentId) : undefined;
+
+      // Archive is a SUBTREE operation, and the per-row check above only ever looks
+      // UP - it can correct the row being written, but archiving a parent is a
+      // statement about rows nobody sent. So expand it here, authoritatively:
+      // `archived: true` also archives every descendant, `archived: false` also
+      // unarchives every archived ancestor. The client sends the same set, so this
+      // normally adds nothing; it's what makes "a live todo under an archived one"
+      // unreachable even from a client that didn't. Two recursive CTEs, and only
+      // when a batch actually toggles `archived` (reorders never do).
+      const archiveIds = new Set<string>();
+      const unarchiveIds = new Set<string>();
+      for (const p of patches) {
+        const r = p as { id?: unknown; archived?: unknown };
+        if (typeof r.id !== 'string' || !('archived' in r)) continue;
+        (r.archived === true ? archiveIds : unarchiveIds).add(r.id);
+      }
+      const idsOf = async (query: SQL) => {
+        const res = await tx.execute(query);
+        return ((res as unknown as { rows?: { id: string }[] }).rows ??
+          (res as unknown as { id: string }[])).map((r) => r.id);
+      };
+      const cascade = new Map<string, boolean>();
+      if (archiveIds.size > 0) {
+        const ids = await idsOf(sql`
+          WITH RECURSIVE subtree AS (
+            SELECT ${todos.id} FROM ${todos}
+             WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...archiveIds]))}
+            UNION
+            SELECT t.id FROM ${todos} t JOIN subtree s ON t.parent_id = s.id
+             WHERE t.user_id = ${userId}
+          )
+          SELECT id FROM subtree
+        `);
+        for (const id of ids) cascade.set(id, true);
+      }
+      if (unarchiveIds.size > 0) {
+        const ids = await idsOf(sql`
+          WITH RECURSIVE chain AS (
+            SELECT ${todos.id}, ${todos.parentId} FROM ${todos}
+             WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...unarchiveIds]))}
+            UNION
+            SELECT t.id, t.parent_id FROM ${todos} t JOIN chain c ON t.id = c.parent_id
+             WHERE t.user_id = ${userId}
+          )
+          SELECT id FROM chain
+        `);
+        // An explicit archive in the same batch wins over an inherited unarchive.
+        for (const id of ids) if (!cascade.has(id)) cascade.set(id, false);
+      }
+      // Rows the client already sent are patched below; the rest are written here.
+      const sent = new Set(
+        patches.map((p) => (p as { id?: unknown }).id).filter((id): id is string => typeof id === 'string')
+      );
+      for (const [id, archived] of cascade) {
+        if (sent.has(id)) continue;
+        await tx
+          .update(todos)
+          .set({ archived })
+          .where(and(eq(todos.userId, userId), eq(todos.id, id)));
+      }
 
       for (const u of upserts) {
         const insertData = pick<NewTodoRow>(u, TODO_FIELDS);

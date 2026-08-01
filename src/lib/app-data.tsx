@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
-import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
@@ -362,7 +362,17 @@ function useProvideAppData() {
   // so callers can just set `dueDate` without worrying about the sentinel.
   const handleHubSaveTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
-    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate }))) });
+    // reconcileArchived here too: without it an edit could park an illegal row in
+    // the optimistic cache (the server corrects the write, but onSettled doesn't
+    // refetch, so the wrong row would stay on screen until some later refetch).
+    const parent = updatedTodo.parentId ? todoById.get(updatedTodo.parentId) : undefined;
+    updateTodo.mutate({
+      id: updatedTodo.id,
+      patch: reconcileArchived(
+        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate }))),
+        parent
+      ),
+    });
   };
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
@@ -486,10 +496,21 @@ function useProvideAppData() {
     if (activeTodoId === id) setActiveTodoId(null);
   };
 
-  // Archive a todo (and its subtasks): hides them from the hub.
+  // Archive a todo and its whole subtree; unarchive it and its archived ancestors.
+  // Both directions are one constraint - a live todo may not sit under an archived
+  // one (shared/domain/todoArchive) - and neither can be expressed as a single-row
+  // write, so both go out as one batch. The server re-derives the same set, so a
+  // partial batch can't leave the tree half-archived.
   const handleArchiveTodo = (id: string) => {
-    const ids = [...collectWithDescendants(todos.filter(Boolean) as Todo[], id)];
-    batchTodos.mutate({ patches: ids.map(tid => ({ id: tid, archived: true })) });
+    const ids = descendantsToArchive(todos.filter(Boolean) as Todo[], id);
+    if (!ids.length) return;
+    batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, archived: true })) });
+  };
+
+  const handleUnarchiveTodo = (id: string) => {
+    const ids = ancestorsToUnarchive(todos.filter(Boolean) as Todo[], id);
+    if (!ids.length) return;
+    batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, archived: false })) });
   };
 
   // Delete a collection. 'cascade' removes the collection and its whole subtree.
@@ -607,6 +628,7 @@ function useProvideAppData() {
     setTaskCollection,
     handleDeleteTodoById,
     handleArchiveTodo,
+    handleUnarchiveTodo,
     handleDeleteCollection,
     handleReorderHubTodos,
     // tracker handlers + modal state

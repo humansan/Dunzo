@@ -45,6 +45,8 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
       // Just delete here; TodoFullView calls onClose (closeOnce) right after, and the
       // stale-todo effect would otherwise fire a second close once the todo disappears.
       onDelete={(id) => d.handleDeleteTodoById(id)}
+      onArchive={d.handleArchiveTodo}
+      onUnarchive={d.handleUnarchiveTodo}
       showXpChips={d.showXpChips}
     />
   );

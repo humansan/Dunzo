@@ -34,6 +34,8 @@ export {
   reconcileArchived,
   archiveConsistent,
   touchesArchive,
+  descendantsToArchive,
+  ancestorsToUnarchive,
 } from '@shared/domain/todoArchive';
 
 // ── Workspaces (currently disabled) ────────────────────────────────────────

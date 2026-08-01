@@ -64,3 +64,64 @@ export function reconcileArchived(todo: Todo, parent: Todo | null | undefined): 
 export function archiveConsistent(todo: Todo, parent: Todo | null | undefined): boolean {
   return reconcileArchived(todo, parent) === todo;
 }
+
+// ── The two subtree operations ───────────────────────────────────────────────
+//
+// The upward per-row rule above can only ever correct the row being written, and
+// that is not enough on its own: archiving a PARENT is a statement about rows
+// nobody is writing. So archive and unarchive are subtree operations, and these
+// compute exactly which rows each one has to touch. Pure, so the confirmation
+// dialog can count the same rows the write will change - the number in the prompt
+// and the number of patches are the same list.
+//
+// Both take a flat todo list (every todo, archived included) rather than an index,
+// because archiving needs children-by-parent and unarchiving needs parent-by-id.
+
+// `rootId` plus every descendant that isn't already archived - what archiving the
+// root must also archive. Cycle-safe via the visited set.
+export function descendantsToArchive(todos: Todo[], rootId: string): string[] {
+  const childrenOf = new Map<string, string[]>();
+  for (const t of todos) {
+    if (!t?.parentId) continue;
+    const arr = childrenOf.get(t.parentId) ?? [];
+    arr.push(t.id);
+    childrenOf.set(t.parentId, arr);
+  }
+  const byId = new Map(todos.filter(Boolean).map((t) => [t.id, t]));
+  const out: string[] = [];
+  const seen = new Set<string>([rootId]);
+  const stack = [rootId];
+  while (stack.length) {
+    const id = stack.pop()!;
+    const t = byId.get(id);
+    if (t && t.archived !== true) out.push(id);
+    for (const c of childrenOf.get(id) ?? []) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      stack.push(c);
+    }
+  }
+  return out;
+}
+
+// `rootId` plus every ARCHIVED ancestor - what unarchiving the root must also
+// unarchive, because a live todo may not sit under an archived one. Live ancestors
+// are already fine and are left out; the walk continues past them so an archived
+// grandparent above a live parent is still caught.
+export function ancestorsToUnarchive(todos: Todo[], rootId: string): string[] {
+  const byId = new Map(todos.filter(Boolean).map((t) => [t.id, t]));
+  const out: string[] = [];
+  const root = byId.get(rootId);
+  if (!root) return out;
+  if (root.archived === true) out.push(rootId);
+  let pid = root.parentId ?? null;
+  const seen = new Set<string>([rootId]);
+  while (pid && !seen.has(pid)) {
+    seen.add(pid);
+    const parent = byId.get(pid);
+    if (!parent) break;
+    if (parent.archived === true) out.push(parent.id);
+    pid = parent.parentId ?? null;
+  }
+  return out;
+}

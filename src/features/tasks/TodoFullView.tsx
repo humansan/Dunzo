@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import {
@@ -17,6 +17,7 @@ import { btnGhost } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
 import { CollectionOption, hasDate, normalizeScheduleTimes, isScheduleValid, type ScheduleSide } from '@/features/tasks/model';
 import { isDone } from '@/features/tasks/model';
+import { useArchiveConfirm } from '@/features/tasks/useArchiveConfirm';
 import {
   CompletedToggle,
   OptionSelectField,
@@ -44,6 +45,11 @@ interface TodoFullViewProps {
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  // Archive/unarchive are subtree operations, so they go through the app-data
+  // handlers rather than a plain `archived` edit - a single-row write here used to
+  // leave live children under an archived parent (shared/domain/todoArchive).
+  onArchive: (id: string) => void;
+  onUnarchive: (id: string) => void;
   showXpChips: boolean; // hide the XP property when the settings toggle is off
 }
 
@@ -88,8 +94,12 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onSave,
   onToggle,
   onDelete,
+  onArchive,
+  onUnarchive,
   showXpChips,
 }) => {
+  // The archive confirmation counts rows across the whole tree, not just this task.
+  const allTodos = useMemo(() => [...byId.values()], [byId]);
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -209,11 +219,15 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const plannerDisabled = plannerOn && !dailyEffective;
   const dailyDisabled = dailyEffective && !plannerOn;
 
-  const handleArchive = () => {
-    const nowArchived = !draft.archived;
-    update({ archived: nowArchived });
-    if (nowArchived) onClose();
-  };
+  // Prompts when the operation reaches beyond this task; the modal is rendered at
+  // the end of this component. Archiving closes the view - the task has left every
+  // live surface, so there is nothing behind the overlay to come back to.
+  const { requestArchiveToggle, archiveConfirmModal } = useArchiveConfirm({
+    todos: allTodos,
+    onArchive: (id) => { onArchive(id); onClose(); },
+    onUnarchive,
+  });
+  const handleArchive = () => requestArchiveToggle(draft.id);
 
   return (
     <motion.div
@@ -467,6 +481,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
           </div>
         </div>
       </motion.div>
+      {archiveConfirmModal}
     </motion.div>
   );
 };

@@ -12,3 +12,4 @@ export { TaskOverlay } from './TaskOverlay';
 export { TodoFullView } from './TodoFullView';
 export { QuickEditTodo, type QuickEditValues } from './QuickEditTodo';
 export { TaskTimeChips, CountdownChip, formatCountdown, type CountdownMode } from './TaskTimeChips';
+export { useArchiveConfirm } from './useArchiveConfirm';

@@ -9,5 +9,7 @@ export { Calendar } from './Calendar';
 export { CalendarInput } from './CalendarInput';
 export { DatePickerPopover } from './DatePickerPopover';
 export { TimeInput } from './TimeInput';
+export { Checkbox } from './Checkbox';
+export { ConfirmModal, type ConfirmAction } from './ConfirmModal';
 export { ParticleBurst } from './ParticleBurst';
 export { ImpactShake } from './ImpactShake';

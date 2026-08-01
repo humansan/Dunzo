@@ -23,6 +23,7 @@ import { HubToolbar, ToolbarMenuKey } from '@/features/planner/toolbar/HubToolba
 import { groupCreateSpec, buildFilterCreatePatch } from '@/features/planner/model/viewUtils';
 import { resolveView } from '@/features/planner/views';
 import { isDone } from '@/features/tasks/model';
+import { useArchiveConfirm } from '@/features/tasks';
 import { TaskTable } from '@/features/planner/table/TaskTable';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskFinder } from '@/features/planner/task-finder';
@@ -59,7 +60,10 @@ interface PlannerViewProps {
   // Delete a collection: 'cascade' removes its whole subtree; 'promote' keeps
   // the tasks/sub-collections and moves them up one level.
   onDeleteCollection: (id: string, mode: 'cascade' | 'promote') => void;
+  // Archive takes the whole subtree; unarchive lifts the archived ancestors with
+  // it (shared/domain/todoArchive). useArchiveConfirm decides when to warn first.
   onArchiveTodo: (id: string) => void;
+  onUnarchiveTodo: (id: string) => void;
   // Persist hub order + nesting (position = hubOrder, parentId = nesting).
   onReorder: (items: { id: string; parentId: string | null }[]) => void;
   onToggleTodo: (id: string) => void;
@@ -96,6 +100,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   onDeleteTodo,
   onDeleteCollection,
   onArchiveTodo,
+  onUnarchiveTodo,
   onReorder,
   onToggleTodo,
   workspaces,
@@ -642,9 +647,19 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     clearInteraction: () => { setEditing(null); setMenu(null); },
   });
 
+  // Archive / unarchive from the row menu and the sidebar collection menu (both
+  // route through RowContextMenu). Prompts first when the operation reaches rows
+  // the user didn't click - unless they've opted out of that direction's warning.
+  const { requestArchiveToggle, archiveConfirmModal } = useArchiveConfirm({
+    todos: useMemo(() => [...todoById.values()], [todoById]),
+    onArchive: onArchiveTodo,
+    onUnarchive: onUnarchiveTodo,
+  });
+
   // Auto-archive: when a task is being completed and the setting is on, mark it
   // complete first (so the checkbox visibly fills) and archive it a beat later, so it
-  // doesn't vanish before the completion even registers.
+  // doesn't vanish before the completion even registers. Deliberately silent - a
+  // checkbox click is not the place for a modal; the cascade still applies.
   const handleToggleTodo = useStableCallback((id: string) => {
     if (sectionsConfig.autoArchive) {
       const entry = entries.find((e) => e.todo.id === id);
@@ -862,14 +877,13 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onSetTime={(_id, time) => setTaskTime(time)}
           onAddTaskAbove={viewAllowsNew ? ((id) => addTaskRelative(id, 'above')) : undefined}
           onAddTaskBelow={viewAllowsNew ? ((id) => addTaskRelative(id, 'below')) : undefined}
-          onArchive={(id) => {
-            if (menuEntry?.todo.archived) onSaveTodo({ ...menuEntry.todo, archived: false });
-            else onArchiveTodo(id);
-            closeMenu();
-          }}
+          onArchive={(id) => { requestArchiveToggle(id); closeMenu(); }}
           onDelete={requestDeleteFromMenu}
         />
       )}
+
+      {/* "This also archives N subtasks" / "...unarchives N parents" confirmation */}
+      {archiveConfirmModal && createPortal(archiveConfirmModal, document.body)}
 
       {/* Edit-collection modal: rename, recolor, and re-parent */}
       {editCollId && (() => {

@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Maximize2, CircleDot, Flag } from 'lucide-react';
 import { CollectionOption } from '@/features/tasks/model';
 import { TodoStatus, TodoPriority } from '@shared/types';
-import { btnAccent, btnNeutral } from '@/theme/buttons';
+import { btnAccent, btnGhost, btnNeutral } from '@/theme/buttons';
 import { statusOption, priorityOption, STATUS_OPTIONS, PRIORITY_OPTIONS } from '@/features/tasks/fields';
 import {
   DateChip,
@@ -306,7 +306,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
             type="button"
             onClick={onOpenFull}
             title="Open full view"
-            className="p-1.5 -ml-1 text-fg-faint hover:text-fg-muted hover:bg-fill-subtle rounded-md"
+            className={`p-1.5 -ml-1 rounded-md ${btnGhost()}`}
           >
             <Maximize2 size={15} />
           </button>
