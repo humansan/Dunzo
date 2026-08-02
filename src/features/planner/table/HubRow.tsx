@@ -349,12 +349,27 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             <span className="truncate text-sm text-fg-muted">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
           </DisplayCell>
         );
-      case 'notes':
+      case 'notes': {
+        // Notes are the one free-text field that can hold newlines, so the cell
+        // opts out of DisplayCell's generic `.truncate` wrap override: that sets
+        // `whitespace-normal`, which collapses \n into spaces and merges the note
+        // into one block. `pre-line` honors the newlines (and still wraps long
+        // lines); the clamp keeps a long note from stretching the row unbounded.
+        const wrapNotes = wrappedFields.has('notes');
         return (
           <DisplayCell col="notes">
-            {todo.notes ? <span className="truncate text-sm text-fg-muted">{todo.notes}</span> : muted}
+            {todo.notes ? (
+              <span
+                className={`text-sm text-fg-muted ${
+                  wrapNotes ? 'whitespace-pre-wrap wrap-anywhere' : 'truncate'
+                } `}
+              >
+                {todo.notes}
+              </span>
+            ) : muted}
           </DisplayCell>
         );
+      }
       case 'startPercent':
         return isEditing('startPercent') ? (
           <div className={editCellWrap}>
