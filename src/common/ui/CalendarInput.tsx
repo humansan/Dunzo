@@ -153,7 +153,7 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
         onKeyDown={handleTextKeyDown}
         onBlur={handleTextBlur}
         placeholder="MM/DD/YYYY"
-                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-line-stronger transition-colors"
+                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-line-strong transition-colors"
       />
       <div className="grid grid-cols-3 gap-1 mt-1.5">
         <button

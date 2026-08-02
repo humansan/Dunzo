@@ -24,7 +24,7 @@ import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
 import { StarStreak, StarStreakPopup, STAR_CELEBRATE_DELAY_MS } from '@/features/xp';
-import { computeXpStats, getWeeklyXp, computeStarStreak, buildXpHistory } from '@/features/xp';
+import { computeXpStats, getWeeklyXp, computeStarStreak, buildXpHistory, starsToLit } from '@/features/xp';
 import { useDelayedValue } from '@/common/hooks/useDelayedValue';
 import { DailyList } from '@/features/daily/DailyList';
 import { DatePickerPopover } from '@/common/ui';
@@ -140,16 +140,17 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   const starStreak = useMemo(() => computeStarStreak(deferredDayTodos, selectedDate, xpHistory), [deferredDayTodos, selectedDate, xpHistory]);
 
   const lit = useMemo(
-    () => [starStreak.flags.completedTask, starStreak.flags.beatYesterday, starStreak.flags.beatAverage],
-    [starStreak]
+    () => starsToLit(starStreak.stars),
+    [starStreak.stars]
   );
 
   const cornerTodos = useDelayedValue(dayTodos, STAR_CELEBRATE_DELAY_MS);
   const cornerStreak = useMemo(() => computeStarStreak(cornerTodos, selectedDate), [cornerTodos, selectedDate]);
   const cornerLit = useMemo(
-    () => [cornerStreak.flags.completedTask, cornerStreak.flags.beatYesterday, cornerStreak.flags.beatAverage],
-    [cornerStreak]
+    () => starsToLit(cornerStreak.stars),
+    [cornerStreak.stars]
   );
+
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: weekStartsOn as 0 | 1 | 2 | 3 | 4 | 5 | 6 });

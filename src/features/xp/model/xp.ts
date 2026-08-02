@@ -247,6 +247,14 @@ export function starsFor(history: XpHistory, date: string): DayStars {
 }
 
 /**
+ * Convert a star count (0..3) into an unordered left-to-right lit array for StarStreak.
+ */
+export function starsToLit(stars: number): boolean[] {
+  return [stars >= 1, stars >= 2, stars >= 3];
+}
+
+
+/**
  * The streak as of `date`. 3★ extends it, 2★ holds it, anything less breaks it -
  * so a skipped or empty day resets to 0. The current day is "live": it can only
  * extend or hold the streak, never reset it mid-day (the reset lands once today

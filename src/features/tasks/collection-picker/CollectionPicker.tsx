@@ -149,7 +149,7 @@ export const CollectionPicker: React.FC<{
           onChange={(e) => { setQuery(e.target.value); setActive(0); }}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
-          className="w-full bg-fill-subtle border border-line rounded-lg px-2.5 h-9 text-fg text-sm placeholder:text-fg-faint focus:outline-none focus:border-line-stronger transition-colors"
+          className="w-full bg-fill-subtle border border-line rounded-lg px-2.5 h-9 text-fg text-sm placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-line-strong transition-colors"
         />
       </div>
 

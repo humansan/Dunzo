@@ -40,9 +40,16 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
   const bestValue = reachedWeekBest ? bestAllTime : bestLast7Days;
   const bestLabel = reachedWeekBest ? 'best all time' : 'best 7d';
 
+
   const reachTarget = target >= avgValue ? target : avgValue;
   const reachText = target >= avgValue ? 'yesterday' : avgLabel;
-  const remaining = reachTarget - earned;
+
+  const firstTarget = target >= avgValue ? avgValue : target;
+  const firstText = target >= avgValue ? avgLabel : 'yesterday';
+
+  // const remaining = earned >= firstTarget ? reachTarget - earned : firstTarget - earned;
+
+  const reachedFirst = earned > 0 && earned >= firstTarget;
   const reachedTarget = earned > 0 && earned >= reachTarget;
   const percent = earned > 0 ? Math.min(100, (earned / reachTarget) * 100): 0;
 
@@ -58,8 +65,10 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
 
   let status: string;
 
-  if (!reachedTarget) {
-    status = reachTarget === 0 ? `Any xp beats ${reachText}` : `${remaining} xp to reach ${reachText}`;
+  if (firstTarget < reachTarget && !reachedFirst) {
+    status = firstTarget === 0 ? `Any xp beats ${firstText}` : `${firstTarget - earned} xp to reach ${firstText}`;
+  } else if (!reachedTarget) {
+    status = reachTarget === 0 ? `Any xp beats ${reachText}` : `${reachTarget - earned} xp to reach ${reachText}`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
     status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} xp to 7-day best`;

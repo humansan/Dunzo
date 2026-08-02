@@ -9,10 +9,10 @@ import fireAnimUrl from '@/assets/Fire.gif';
 
 
 interface StarStreakProps {
-  // The three goal flags in slot order: completed a task, beat yesterday, beat the
-  // average. Callers compute these (see computeStarStreak) - this component doesn't.
+  // Unordered left-to-right lit states corresponding to star count (see starsToLit).
   lit: boolean[];
   streak: number;
+
   // Per-slot burst + streak pulse. Driven ONLY by the celebration popup; the pinned
   // corner instance omits them and so renders statically (no animation, just state).
   bursting?: boolean[];
