@@ -316,49 +316,69 @@ export function useHubData(params: {
     return counts;
   }, [processedEntries, todoById]);
 
-  // Grouped rows - only used when groupBy !== 'collection'.
-  const groupedRows = useMemo((): GroupRow[] => {
-    if (sectionsConfig.groupBy === 'collection') return [];
-    return buildGroupedItems(processedEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds);
-  }, [sectionsConfig.groupBy, processedEntries, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds]);
-
-  // Rendered rows for collection-grouped (default) mode. processedEntries respects
-  // filters + hideEmptyCollections. leafPosition segregates tasks vs sub-collections.
-  // The dragged row stays visible (dimmed), so nothing is excluded during a drag.
-  // When hideSubcollections is on we keep only the tasks sitting directly in the
-  // view's root collection - every nested sub-collection and everything inside it
-  // is dropped (task→subtask nesting, whose parents are tasks, is preserved).
+  // The entries any row builder starts from: processedEntries (filters +
+  // hideEmptyCollections) with hideSubcollections applied. When that setting is on
+  // we keep only the tasks sitting directly in the view's root collection - every
+  // nested sub-collection and everything inside it is dropped (task→subtask
+  // nesting, whose parents are tasks, is preserved).
   //   • picked collection → keep tasks whose nearest collection ancestor is it.
   //   • 'all' / 'uncategorized' → keep top-level collection headers, the tasks
   //     directly under them, and uncategorized tasks; drop nested sub-collections.
-  const flattened = useMemo(
-    () => {
-      let treeEntries = processedEntries;
-      if (sectionsConfig.hideSubcollections) {
-        treeEntries = processedEntries.filter((e) => {
-          const nearestColl = collectionOf(e.todo, todoById);
-          if (selectedCollectionId) {
-            return !e.todo.isCollection && nearestColl === selectedCollectionId;
-          }
-          if (e.todo.isCollection) return nearestColl === null; // top-level only
-          return (
-            nearestColl === null ||
-            collectionOf(todoById.get(nearestColl)!, todoById) === null
-          );
-        });
+  //
+  // This used to live inside the `flattened` memo below, which meant it applied in
+  // collection-grouped mode only: switching Group by to status/priority/date
+  // silently brought the hidden sub-collections' tasks back. It is a statement
+  // about which TASKS the view contains, not about how they are laid out, so both
+  // builders read it now.
+  const visibleEntries = useMemo(() => {
+    if (!sectionsConfig.hideSubcollections) return processedEntries;
+    return processedEntries.filter((e) => {
+      const nearestColl = collectionOf(e.todo, todoById);
+      if (selectedCollectionId) {
+        return !e.todo.isCollection && nearestColl === selectedCollectionId;
       }
-      return flattenTree(treeEntries, {
+      if (e.todo.isCollection) return nearestColl === null; // top-level only
+      return (
+        nearestColl === null ||
+        collectionOf(todoById.get(nearestColl)!, todoById) === null
+      );
+    });
+  }, [processedEntries, sectionsConfig.hideSubcollections, selectedCollectionId, todoById]);
+
+  // Grouped rows - only used when groupBy !== 'collection'.
+  const groupedRows = useMemo((): GroupRow[] => {
+    if (sectionsConfig.groupBy === 'collection') return [];
+    return buildGroupedItems(visibleEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds);
+  }, [sectionsConfig.groupBy, visibleEntries, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds]);
+
+  // Rendered rows for collection-grouped (default) mode. leafPosition segregates
+  // tasks vs sub-collections. The dragged row stays visible (dimmed), so nothing
+  // is excluded during a drag.
+  const flattened = useMemo(
+    () =>
+      flattenTree(visibleEntries, {
         // Flat variants ignore collapse state (nothing to expand/collapse).
         collapsed: showNesting ? collapsed : undefined,
         sortFn,
         leafPosition: sectionsConfig.showLeafTasks !== 'none' ? sectionsConfig.showLeafTasks : undefined,
         flat: !showNesting,
         matchIds: viewMatchIds,
-      });
-    },
-    [processedEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, sectionsConfig.hideSubcollections, selectedCollectionId, todoById, viewMatchIds]
+      }),
+    [visibleEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, viewMatchIds]
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
+
+  // The tasks the table is currently showing, ignoring collapse state: a folded
+  // row is still in the view, it is just not on screen this second. Both row
+  // builders now start from `visibleEntries`, so this is simply its task rows -
+  // context ancestors excluded (they are scaffolding around a match, drawn dimmed;
+  // see FlatNode.matchesView). "Archive completed tasks in view" writes to exactly
+  // this set, which is why it is derived here rather than re-filtered at the call
+  // site: the button and the rows can't disagree about what the view contains.
+  const renderedTaskEntries = useMemo(
+    () => visibleEntries.filter((e) => !e.todo.isCollection && viewMatchIds.has(e.todo.id)),
+    [visibleEntries, viewMatchIds]
+  );
 
   // ── Sidebar counts ─────────────────────────────────────────────────────────
   // Tasks only; collections are never counted. Each tab's count runs the same
@@ -453,6 +473,7 @@ export function useHubData(params: {
     groupedRows,
     flattened,
     flatById,
+    renderedTaskEntries,
     collectionCount,
     allCount,
     uncategorizedCount,

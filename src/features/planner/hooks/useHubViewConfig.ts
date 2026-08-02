@@ -73,7 +73,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     );
     // `sections` is an object, so it merges one level deeper than the rest: a
     // per-view record may hold only `{ groupBy }` (see applyToAllViews' guard),
-    // and a blanket spread would drop the other five fields back to the hardcoded
+    // and a blanket spread would drop the other four fields back to the hardcoded
     // defaults instead of the workspace ones.
     const raw_sections = { ...(defRawAll.sections ?? {}), ...(viewRaw.sections ?? {}) };
     // A view may declare its own default grouping (e.g. In Daily List is a daily
@@ -90,7 +90,6 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       defRawAll.sections?.groupBy ??
       DEFAULT_SECTIONS_CONFIG.groupBy;
     const sections: SectionsConfig = {
-      autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
       showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
       hideEmptyCollections: raw_sections.hideEmptyCollections ?? DEFAULT_SECTIONS_CONFIG.hideEmptyCollections,
       hideSubcollections:   raw_sections.hideSubcollections   ?? DEFAULT_SECTIONS_CONFIG.hideSubcollections,

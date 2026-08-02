@@ -598,6 +598,19 @@ function useProvideAppData() {
     batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, archived: true })) });
   };
 
+  // Archive several todos (each with its subtree) as ONE write - the planner's
+  // "Archive completed tasks in view" button, which can reach dozens of rows. The
+  // union is taken before the batch so a task that is both selected and a
+  // descendant of another selected task is patched once, and so the count the
+  // confirmation showed is the count that goes out.
+  const handleArchiveTodos = (ids: string[]) => {
+    const all = todos.filter(Boolean) as Todo[];
+    const union = new Set<string>();
+    for (const id of ids) for (const tid of descendantsToArchive(all, id)) union.add(tid);
+    if (!union.size) return;
+    batchTodos.mutate({ patches: [...union].map((tid) => ({ id: tid, archived: true })) });
+  };
+
   // `mode` decides what happens BELOW the todo, which is a preference rather than
   // an invariant: 'self' restores just this row (its archived subtree stays put -
   // a legal state), 'subtree' restores everything archived inside it too. What
@@ -726,6 +739,7 @@ function useProvideAppData() {
     setTaskCollection,
     handleDeleteTodoById,
     handleArchiveTodo,
+    handleArchiveTodos,
     handleUnarchiveTodo,
     handleDeleteCollection,
     handleReorderHubTodos,
