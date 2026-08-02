@@ -427,14 +427,15 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // (see FlatNode.matchesView) - renders dimmed, so "the tab didn't match this, it's
   // here for its child" reads at a glance. It lifts to full opacity on hover, since
   // it's still a live, editable row.
-  const contextDim = node.matchesView ? '' : 'opacity-40';
+  const contextDim = node.matchesView ? 'border-line-subtle' : 'opacity-36 border-fg/16';
+  //theme-mismatch
 
   return (
     <div
       style={style}
       {...dropProps}
       onContextMenu={handleContextMenu}
-      className={`relative grid items-stretch min-h-[36px] border-b border-line-subtle group/row transition-opacity ${
+      className={`relative grid items-stretch min-h-[36px] border-b group/row transition-opacity ${
         isDragSource ? 'opacity-40' : `hover:bg-fill-subtle ${contextDim}`
       }`}
     >

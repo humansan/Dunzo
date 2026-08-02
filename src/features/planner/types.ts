@@ -90,6 +90,7 @@ export type ViewConfigField =
   | 'wrappedFields'
   | 'filters'
   | 'filterMatch'
+  | 'hideCompleted'
   | 'sorts'
   | 'sections';
 
@@ -99,7 +100,10 @@ export type ViewConfigField =
 export const MENU_SLICES: Record<ToolbarMenuKey, readonly ViewConfigField[]> = {
   sections: ['sections'],
   fields: ['fieldOrder', 'hiddenFields', 'wrappedFields'],
-  filter: ['filters', 'filterMatch'],
+  // hideCompleted rides with the filters because that is where it is edited (the
+  // locked row at the top of the Filter menu); a "Set for all → filters" that left
+  // it behind would be a silent surprise.
+  filter: ['filters', 'filterMatch', 'hideCompleted'],
   sort: ['sorts'],
 };
 

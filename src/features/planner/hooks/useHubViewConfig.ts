@@ -101,7 +101,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     // sidebar counts every OTHER tab with - so the visible view and the badges can
     // never disagree about what a view's filters are. It also owns the
     // ignoresDefaultFilters opt-out (Archived / Completed).
-    const { filters, filterMatch } = resolveViewFilters(
+    const { filters, filterMatch, hideCompleted } = resolveViewFilters(
       viewsConfig,
       activeWorkspaceId,
       selectedView,
@@ -113,6 +113,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
       wrappedFields,
       filters,
       filterMatch,
+      hideCompleted,
       sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
       sections,
     };
@@ -131,7 +132,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     [viewsConfig, activeWorkspaceId]
   );
 
-  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, filterMatch, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
+  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, filterMatch, hideCompleted, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
 
   // Persist a view-state update, writing ONLY the fields the patch actually
   // touched. Materializing all seven on every edit (what this used to do) would
@@ -145,6 +146,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     wrappedFields?: Set<ColKey>;
     filters?: FilterRule[];
     filterMatch?: FilterMatch;
+    hideCompleted?: boolean;
     sorts?: SortRule[];
     sections?: SectionsConfig;
   }) => {
@@ -154,6 +156,10 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     if (patch.wrappedFields) slice.wrappedFields = [...patch.wrappedFields];
     if (patch.filters)       slice.filters       = patch.filters;
     if (patch.filterMatch)   slice.filterMatch   = patch.filterMatch;
+    // Presence check, not truthiness: `false` is a real value here (turning the
+    // setting OFF on a view that inherits it ON), and the other keys can rely on
+    // truthiness only because none of their legal values are falsy.
+    if (patch.hideCompleted !== undefined) slice.hideCompleted = patch.hideCompleted;
     if (patch.sorts)         slice.sorts         = patch.sorts;
     if (patch.sections)      slice.sections      = patch.sections;
 
@@ -178,7 +184,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
         hiddenFields: [...hiddenFields],
         wrappedFields: [...wrappedFields],
       },
-      filter: { filters: activeFilters, filterMatch },
+      filter: { filters: activeFilters, filterMatch, hideCompleted },
       sort: { sorts: activeSorts },
     }[menu];
 
@@ -255,6 +261,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     wrappedFields,
     activeFilters,
     filterMatch,
+    hideCompleted,
     filtersFor,
     activeSorts,
     sectionsConfig,

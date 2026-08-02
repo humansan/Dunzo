@@ -24,7 +24,7 @@ import { useSettings, useUpdateSettings } from '@/lib/query/settings';
 import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
-import { buildSeedTrackers, buildSeedViewsConfig } from '@/lib/onboarding';
+import { buildSeedTrackers } from '@/lib/onboarding';
 import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascadeConfirm';
 
 
@@ -174,13 +174,9 @@ function useProvideAppData() {
       // Onboarding content for a brand-new account (see @/lib/onboarding): the
       // starter time widgets, so the app isn't blank on first sign-in.
       if (trackers.length === 0) for (const t of buildSeedTrackers()) createTracker.mutate(t);
-      // ...and the planner's default view config, which is what keeps completed
-      // tasks out of every view (and every collection made later) now that
-      // auto-archive is off. Merged over whatever is stored: a first-run account
-      // has no hubViews, but never clobber another workspace's record.
-      updateSettings({
-        hubViews: { ...(settings?.hubViews ?? {}), ...buildSeedViewsConfig(id) },
-      });
+      // No view config is seeded: "hide completed tasks" is a code default in
+      // resolveViewFilters, so it holds for every account and every workspace
+      // without depending on a write here having succeeded.
       return;
     }
     if (!workspaces.some(w => w.id === activeWorkspaceId)) {

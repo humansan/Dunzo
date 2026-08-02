@@ -1,5 +1,4 @@
 import type { Tracker } from '@shared/types';
-import { defaultKeyFor, type UserSettings } from '@/lib/query/settings';
 
 // ── First-run seeding ────────────────────────────────────────────────────────
 // A brand-new account otherwise lands on a completely empty app - no tasks, no
@@ -44,28 +43,11 @@ export function buildSeedTrackers(): Tracker[] {
   ];
 }
 
-// ── Default view config ──────────────────────────────────────────────────────
-// Every planner view (including collections created later, and views never
-// visited) falls back to the workspace's default record when it has no config of
-// its own - the same slot the toolbar's "Set for all" writes. Seeding it is
-// therefore all it takes to give the whole planner a starting filter.
-//
-// That filter is "Status is not Completed", which is what makes finished work
-// disappear from the planner now that auto-archive is off by default. Unlike
-// auto-archive it is a read-time rule, so it behaves identically whether the task
-// was ticked off in the Planner, the daily list, or the calendar.
-export function buildSeedViewsConfig(workspaceId: string): NonNullable<UserSettings['hubViews']> {
-  return {
-    [defaultKeyFor(workspaceId)]: {
-      // Shape must match the planner's FilterRule. `value` is matched against the
-      // field's DISPLAY value (see matchesFilter), i.e. the STATUS_OPTIONS label
-      // rather than the stored 'completed' - the comparison is case-insensitive.
-      filters: [{ id: newId(), field: 'status', condition: 'is_not', value: 'Completed' }],
-      filterMatch: 'and',
-    },
-    // Views that exist to show what this filter excludes (Archived, Completed)
-    // opt out of it via ViewDef.ignoresDefaultFilters - no per-view record needed
-    // here, and unlike a seeded record that opt-out survives a later "Set for all"
-    // and applies to accounts that predate this seed.
-  };
-}
+// ── No seeded view config ────────────────────────────────────────────────────
+// There used to be one, writing the planner's default record so completed tasks
+// were hidden out of the box. That is a CODE default now (resolveViewFilters:
+// `hideCompleted` is on unless something turns it off), because a seeded one only
+// held for accounts where the write actually happened: not for accounts created
+// before the setting existed, not for a second workspace (the seed only ever
+// wrote the first one's record), and not if the signup-time settings PUT failed.
+// Defaults belong in the resolver, where every view goes through them.

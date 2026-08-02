@@ -15,6 +15,7 @@ import {
 } from '@/features/tasks/model';
 import { ColKey, COLUMNS, GroupRow, FilterRule, FilterMatch, SortRule, SectionsConfig } from '@/features/planner/types';
 import { PLANNER_VIEWS, resolveView, ViewCtx, ViewDef } from '@/features/planner/views';
+import type { ViewFilterState } from '@/features/planner/model/viewConfigStore';
 import {
   getFieldDisplayValue,
   getFieldRawValue,
@@ -41,9 +42,12 @@ export function useHubData(params: {
   collapsedColls: Set<string>;
   activeFilters: FilterRule[];
   filterMatch: FilterMatch;
+  // The view's "Hide completed tasks" setting (see ViewFilterState) - applied on
+  // top of the rules, not as one of them.
+  hideCompleted: boolean;
   // Any view's resolved filters, by view id (see useHubViewConfig). The sidebar
   // counts need every tab's own rules, not just the visible tab's.
-  filtersFor: (viewId: string) => { filters: FilterRule[]; filterMatch: FilterMatch };
+  filtersFor: (viewId: string) => ViewFilterState;
   activeSorts: SortRule[];
   sectionsConfig: SectionsConfig;
   // Whether the current view variant shows the collection/subtask hierarchy. When
@@ -61,6 +65,7 @@ export function useHubData(params: {
     collapsedColls,
     activeFilters,
     filterMatch,
+    hideCompleted,
     filtersFor,
     activeSorts,
     sectionsConfig,
@@ -266,8 +271,8 @@ export function useHubData(params: {
   // applyFilters, which the sidebar counts below run too so the badges can't
   // disagree with the rows.
   const filteredEntries = useMemo(
-    () => applyFilters(viewEntries, activeFilters, filterMatch, todoById),
-    [viewEntries, activeFilters, filterMatch, todoById]
+    () => applyFilters(viewEntries, { filters: activeFilters, filterMatch, hideCompleted }, todoById),
+    [viewEntries, activeFilters, filterMatch, hideCompleted, todoById]
   );
 
   // Hide collections that have no visible task descendants (optional section setting).
@@ -369,13 +374,18 @@ export function useHubData(params: {
   const counts = useMemo(() => {
     const cache = new Map<string, OrganizerEntry[]>();
     const filteredFor = (viewId: string, source: OrganizerEntry[]) => {
-      const { filters, filterMatch: match } = filtersFor(viewId);
-      const key = `${source === archivedEntries ? 'a' : 'o'}|${match}|${JSON.stringify(
-        filters.filter((f) => f.value).map((f) => [f.field, f.condition, f.value])
+      const state = filtersFor(viewId);
+      // hideCompleted is part of the signature: two views with identical rules but
+      // a different setting are different result sets, so they can't share a cache
+      // entry.
+      const key = `${source === archivedEntries ? 'a' : 'o'}|${state.filterMatch}|${
+        state.hideCompleted ? 'h' : '-'
+      }|${JSON.stringify(
+        state.filters.filter((f) => f.value).map((f) => [f.field, f.condition, f.value])
       )}`;
       let out = cache.get(key);
       if (!out) {
-        out = applyFilters(source, filters, match, todoById);
+        out = applyFilters(source, state, todoById);
         cache.set(key, out);
       }
       return out;

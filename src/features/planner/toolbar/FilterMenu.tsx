@@ -4,7 +4,22 @@ import { ColDef, ColKey, FilterRule, FilterCondition, FilterMatch, FILTER_CONDIT
 import { btnGhost } from '@/theme/buttons';
 import { PopoverMenu } from '@/common/ui';
 import { ListSelect } from '@/common/ui';
+import { Switch } from '@/common/ui';
 import { SetForAllButton } from '@/features/planner/toolbar/SetForAllButton';
+
+// A rule cell that can't be edited: same shape and rhythm as the ListSelects
+// beside it, minus the affordance. Muted rather than disabled-grey, so the row
+// reads as "fixed", not "broken".
+const LockedCell: React.FC<{ className?: string; children: React.ReactNode }> = ({
+  className = '',
+  children,
+}) => (
+  <span
+    className={`shrink-0 flex items-center h-8 px-2.5 rounded-lg border border-line-subtle bg-fill-subtle text-[13px] text-fg-faint truncate ${className}`}
+  >
+    {children}
+  </span>
+);
 
 export const FilterMenu: React.FC<{
   anchor: { right: number; top: number };
@@ -15,9 +30,15 @@ export const FilterMenu: React.FC<{
   uniqueValues: Map<ColKey, string[]>;
   onChange: (filters: FilterRule[]) => void;
   onChangeMatch: (match: FilterMatch) => void;
+  // The view's "Hide completed tasks" setting. Shown here as a locked rule because
+  // that is what it does, but stored as a flag and applied ON TOP of the rules
+  // below - never joined into them, or switching Match to Or would quietly let
+  // completed tasks back in (see applyFilters).
+  hideCompleted: boolean;
+  onChangeHideCompleted: (value: boolean) => void;
   onSetForAll?: () => void;
   onClose: () => void;
-}> = ({ anchor, filters, match, allColumns, uniqueValues, onChange, onChangeMatch, onSetForAll, onClose }) => {
+}> = ({ anchor, filters, match, allColumns, uniqueValues, onChange, onChangeMatch, hideCompleted, onChangeHideCompleted, onSetForAll, onClose }) => {
   const addFilter = () => {
     const defaultField = allColumns[0]?.key ?? 'status';
     onChange([
@@ -45,13 +66,29 @@ export const FilterMenu: React.FC<{
       anchor={anchor}
       title="Filters"
       onClose={onClose}
-      className="w-130 p-2 space-y-2.5"
+      className="w-130 p-2 space-y-2"
       headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="filters" />}
     >
+        {/* The setting, drawn as the rule it stands for. Deliberately ABOVE the
+            editable list rather than as its first row: inside the list the user's
+            first rule would need an And/Or cell, which would imply this one takes
+            part in Match. It doesn't - it always applies. */}
+        <div className="px-6.5 pt-0.5">
+          <div className="flex items-center gap-1.5 opacity-90">
+            <span className="shrink-0 pl-2 pr-1 text-[13px] text-fg-faint">Hide completed tasks</span>
+            <Switch checked={hideCompleted} onChange={onChangeHideCompleted} />
+            <LockedCell className="flex-1 ml-1 min-w-0">Status is not Completed</LockedCell>
+            {/* <LockedCell className="w-20">is not</LockedCell>
+            <LockedCell className="flex-1 min-w-0">Completed</LockedCell> */}
+            {/* <div className="w-4.5"></div> */}
+          </div>
+        </div>
+
         {filters.length === 0 ? (
-          <p className="px-2 py-2.5 text-[13px] text-fg-ghost text-center">No filters applied</p>
+          <p className="px-2 pt-2.5 pb-1.5 text-[13px] text-fg-ghost text-center">No custom filters applied</p>
         ) : (
-          <div className="space-y-1.5 mb-1 px-0.5">
+          <div className="space-y-1 px-0.5">
+            <p className=" pt-1 px-2 text-[13px] text-fg-subtle text-center font-medium">Custom Filters</p>
             {filters.map((f, i) => {
               const vals = uniqueValues.get(f.field) ?? [];
               return (
@@ -59,7 +96,7 @@ export const FilterMenu: React.FC<{
                   {/* Conjunction: the first row is a static "Where"; every later row picks
                       And/Or. It's one per-view choice, so changing any row flips them all. */}
                   {i === 0 ? (
-                    <span className="w-20 shrink-0 px-2 text-[13px] text-fg-faint">Where</span>
+                    <span className="shrink-0 px-2 text-[13px] text-fg-faint">Where</span>
                   ) : (
                     <ListSelect
                       ariaLabel="Match"
@@ -76,7 +113,7 @@ export const FilterMenu: React.FC<{
                   {/* Field */}
                   <ListSelect
                     ariaLabel="Filter field"
-                    className="w-[110px] shrink-0"
+                    className="w-32 shrink-0"
                     value={f.field}
                     onChange={(v) => update(f.id, { field: v as ColKey })}
                     options={allColumns.map((c) => ({ value: c.key, label: c.label }))}
@@ -85,7 +122,7 @@ export const FilterMenu: React.FC<{
                   {/* Condition */}
                   <ListSelect
                     ariaLabel="Filter condition"
-                    className="w-[118px] shrink-0"
+                    className="w-30 shrink-0"
                     value={f.condition}
                     onChange={(v) => update(f.id, { condition: v as FilterCondition })}
                     options={FILTER_CONDITIONS.map((c) => ({ value: c.value, label: c.label }))}
@@ -118,7 +155,7 @@ export const FilterMenu: React.FC<{
         <button
           type="button"
           onClick={addFilter}
-          className={`flex items-center gap-1.5 w-full px-2 py-1.5 mt-2 rounded-md text-[13px] ${btnGhost()}`}
+          className={`flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md text-[13px] ${btnGhost()}`}
         >
           <Plus size={13} />
           Add filter

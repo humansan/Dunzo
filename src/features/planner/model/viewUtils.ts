@@ -1,5 +1,5 @@
 import { format, parse, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
-import { OrganizerEntry, collectionOf, collectionPath, startPercent, duePercent, percentLabel } from '@/features/tasks/model';
+import { OrganizerEntry, collectionOf, collectionPath, startPercent, duePercent, percentLabel, isDone } from '@/features/tasks/model';
 import { Todo, TodoStatus, TodoPriority } from '@shared/types';
 import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/features/tasks/fields';
@@ -454,22 +454,31 @@ export function buildGroupedItems(
 // as "match all", a harmless no-op under AND but one that would make OR pass
 // everything.
 //
+// `hideCompleted` is the view's "Hide completed tasks" setting. It is ANDed with
+// the rule expression rather than being one of the rules, which is the whole
+// reason it isn't stored as a FilterRule: as a rule it would be subject to
+// `filterMatch`, so switching the match to Or would put completed tasks back on
+// screen while the switch still read "on". A setting has to mean what it says.
+//
 // Pure, and shared by the rendered rows and the sidebar counts, so the two can't
 // disagree about what a view contains.
 export function applyFilters(
   entries: OrganizerEntry[],
-  filters: FilterRule[],
-  filterMatch: FilterMatch,
+  state: { filters: FilterRule[]; filterMatch: FilterMatch; hideCompleted?: boolean },
   todoById: Map<string, Todo>
 ): OrganizerEntry[] {
-  const rules = filters.filter((f) => f.value);
-  if (!rules.length) return entries;
+  const { filterMatch, hideCompleted = false } = state;
+  const rules = state.filters.filter((f) => f.value);
+  if (!rules.length && !hideCompleted) return entries;
 
   const byId = new Map(entries.map((e) => [e.todo.id, e]));
-  const selfMatches = (e: OrganizerEntry) =>
-    filterMatch === 'or'
+  const matchesRules = (e: OrganizerEntry) =>
+    !rules.length ||
+    (filterMatch === 'or'
       ? rules.some((f) => matchesFilter(e, f, todoById))
-      : rules.every((f) => matchesFilter(e, f, todoById));
+      : rules.every((f) => matchesFilter(e, f, todoById)));
+  const selfMatches = (e: OrganizerEntry) =>
+    (!hideCompleted || !isDone(e.todo)) && matchesRules(e);
 
   // Kept = self matches && nearest task ancestor present in this set is kept.
   // Memoized per id. A parentId cycle (corrupt data) is broken by treating the

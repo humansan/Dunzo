@@ -53,12 +53,7 @@ export const SectionsMenu: React.FC<{
       headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="section settings" />}
     >
         <div className={sectionCls}>
-          {/* Auto-archive */}
-          <div className={rowCls}>
-            <span className={labelCls}>Auto-archive completed</span>
-            <Switch checked={config.autoArchive} onChange={(v) => set('autoArchive', v)} />
-          </div>
-
+          
           {/* Hide empty collections */}
           <div className={rowCls}>
             <span className={labelCls}>Hide empty sections</span>
@@ -70,7 +65,16 @@ export const SectionsMenu: React.FC<{
             <span className={labelCls}>Hide subcollections</span>
             <Switch checked={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
           </div>
+
+          {/* Auto-archive */}
+          <div className={rowCls}>
+            <span className={labelCls}>Auto-archive completed</span>
+            <Switch checked={config.autoArchive} onChange={(v) => set('autoArchive', v)} />
+          </div>
         </div>
+
+
+
 
         {/* <div className={sectionCls}>
           { Show leaf tasks (comment this out)}

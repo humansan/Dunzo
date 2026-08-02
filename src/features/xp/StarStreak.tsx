@@ -61,9 +61,9 @@ const StarIcon = React.memo(
         </motion.div>
       )}
       <motion.div
-        animate={burst ? { scale: [1, 1.4, 0.8, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
+        animate={burst ? { scale: [1, 1.5, 0.9, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
         transition={{ duration: 1.1, ease: POP }}
-        className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
+        className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/20'}
       >
         <Astroid size={34} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>
