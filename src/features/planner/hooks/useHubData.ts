@@ -348,8 +348,8 @@ export function useHubData(params: {
   // Grouped rows - only used when groupBy !== 'collection'.
   const groupedRows = useMemo((): GroupRow[] => {
     if (sectionsConfig.groupBy === 'collection') return [];
-    return buildGroupedItems(visibleEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds);
-  }, [sectionsConfig.groupBy, visibleEntries, todoById, collapsed, sortFn, sectionsConfig.showLeafTasks, sectionsConfig.groupSortDirection, viewMatchIds]);
+    return buildGroupedItems(visibleEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.groupSortDirection, viewMatchIds);
+  }, [sectionsConfig.groupBy, visibleEntries, todoById, collapsed, sortFn, sectionsConfig.groupSortDirection, viewMatchIds]);
 
   // Rendered rows for collection-grouped (default) mode. leafPosition segregates
   // tasks vs sub-collections. The dragged row stays visible (dimmed), so nothing

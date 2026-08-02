@@ -102,11 +102,6 @@ const FIELD_OPTIONS: Partial<Record<ColKey, typeof STATUS_OPTIONS>> = {
   priority: PRIORITY_OPTIONS,
 };
 
-// Preferred sort order for well-known group values (others fall back to alpha).
-const FIELD_GROUP_ORDER: Partial<Record<ColKey, string[]>> = {
-  status:   ['Todo', 'In Progress', 'Completed'],
-  priority: ['High', 'Medium', 'Low'],
-};
 
 // Date grouping uses staggered, relative buckets (first qualifying bucket wins),
 // not one section per calendar date. The id is the group key; the label is shown
@@ -171,10 +166,22 @@ function getGroupLabel(field: ColKey, key: string): string {
   return key;
 }
 
-// The canonical (ascending) ordering of group keys for a field.
+// The canonical (ascending) ordering of group keys for a field, derived from the
+// same option sets everything else reads.
+//
+// This used to be a second, hand-written list of labels per field, and priority's
+// copy was authored High→Medium→Low - the reverse of PRIORITY_OPTIONS, which is
+// what getFieldRawValue ranks by. So "Priority ascending" meant High-first when
+// grouping and Low-first when sorting, on the same data, in the same table. Order
+// is a property of the field's option set; restating it anywhere is a second
+// source of truth that can (and did) drift out of step.
+//
+// Group keys are display LABELS (see getGroupKey → getFieldDisplayValue), so the
+// order is the labels in option order. Date is keyed by bucket id instead, and
+// DATE_BUCKETS is already the only place that order is written down.
 function groupKeyOrder(field: ColKey): string[] {
   if (field === 'date') return DATE_BUCKETS.map((b) => b.id);
-  return FIELD_GROUP_ORDER[field] ?? [];
+  return FIELD_OPTIONS[field]?.map((o) => o.label) ?? [];
 }
 
 export function getGroupColor(field: ColKey, key: string): string {
@@ -275,7 +282,6 @@ export function buildGroupedItems(
   todoById: Map<string, Todo>,
   collapsed: Set<string>,
   sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number,
-  showLeafTasks: 'top' | 'bottom' | 'none' = 'bottom',
   direction: 'asc' | 'desc' = 'asc',
   // Ids satisfying the view's predicate; everything else is a context ancestor
   // (see FlatNode.matchesView). Omit to mark every row as matching.
@@ -432,7 +438,17 @@ export function buildGroupedItems(
     }
   }
 
-  return showLeafTasks === 'top'
+  // The no-value section is ordered by `direction`, exactly like the keyed ones:
+  // first ascending, last descending. That matches how SORTING treats the same
+  // tasks - getFieldRawValue ranks an unset field 0, below every real value, and
+  // the direction flips it - so the two ways of ordering a view by a field now
+  // agree about where "no value" sits.
+  //
+  // It used to be placed by `showLeafTasks` (the ungrouped-tasks-top/bottom
+  // setting), which is a statement about tasks vs. sub-collections in tree mode and
+  // has nothing to say about a group's rank. Under it the section sat at the top in
+  // both directions, so reversing the order left one section behind.
+  return direction === 'asc'
     ? [...ungroupedRows, ...groupRows]
     : [...groupRows, ...ungroupedRows];
 }
