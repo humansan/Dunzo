@@ -226,6 +226,18 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo.id]);
 
+  // A task opened with no name is a task that was just created, so put the caret
+  // straight in the title - the view is only ever "new" while the name is empty,
+  // and switching tasks re-checks it (keyed on todo.id, not on every keystroke).
+  useEffect(() => {
+    if (todo.text.trim() !== '') return;
+    const el = titleRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todo.id]);
+
   // Completion is stamped outside the draft - the checkbox toggles through app data,
   // and the save handlers derive completedAt from status - so both fields have to
   // come back from the prop or the Completed timestamp never appears.

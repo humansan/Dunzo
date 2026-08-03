@@ -675,6 +675,15 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
             {tableMode === 'log' ? 'Daily Activity Log' : 'Logged Entries'}
           </h3>
 
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-fill-subtle hover:bg-fill text-fg-muted hover:text-fg border border-line transition-colors cursor-pointer shrink-0"
+          >
+            <Download size={14} />
+            Export CSV
+          </button>
+
+
           {/* Table Mode Toggle */}
           {/* <div className="flex bg-surface rounded-lg p-1 text-xs">
             {(['log', 'raw'] as const).map(mode => (
@@ -719,7 +728,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                       <td className="py-2.5 px-4 font-semibold text-fg whitespace-nowrap">
                         {row.text}
                       </td>
-                      <td className="py-2.5 px-4 font-mono font-bold text-[var(--accent1)] whitespace-nowrap">
+                      <td className="py-2.5 px-4 font-mono font-bold text-xp-tier1 whitespace-nowrap">
                         {row.xp}
                       </td>
                       <td className="py-2.5 px-4 whitespace-nowrap">
@@ -738,19 +747,12 @@ export const StatsView: React.FC<StatsViewProps> = ({ dayTodos }) => {
                   ))}
                 </tbody>
               </table>
-              <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-line-subtle">
+              <div className="flex items-center justify-between gap-4 pt-4">
                 <span className="text-xs text-fg-ghost">
                   {rawRows.length > 50
                     ? `Showing 50 most recent of ${rawRows.length} entries - export for all`
                     : `${rawRows.length} ${rawRows.length === 1 ? 'entry' : 'entries'}`}
                 </span>
-                <button
-                  onClick={handleExportCsv}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-fill-subtle hover:bg-fill text-fg-muted hover:text-fg border border-line transition-colors cursor-pointer shrink-0"
-                >
-                  <Download size={14} />
-                  Export CSV
-                </button>
               </div>
             </div>
           )
