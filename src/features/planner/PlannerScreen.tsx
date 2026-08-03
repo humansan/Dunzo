@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { PlannerView } from './PlannerView';
 import { useAppData } from '@/lib/app-data';
@@ -35,6 +36,17 @@ export function PlannerScreen({
       replace: true,
     });
   const onOpenTask = (id: string) => openTask(id);
+
+  // The route guard only runs on navigation, so it can't catch the collection
+  // being deleted while you're standing in it (here, or on another device). Same
+  // shape as TaskOverlay's stale-todo effect: once the data says it's gone, leave
+  // for the all-tasks view rather than sit on a URL that renders nothing.
+  useEffect(() => {
+    if (!d.isDataReady || selectedView === 'all') return;
+    if (d.todoById.get(selectedView)?.isCollection) return;
+    router.navigate({ to: '/planner', replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.isDataReady, d.todoById, selectedView]);
 
   return (
     <main className="h-screen py-0">
