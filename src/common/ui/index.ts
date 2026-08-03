@@ -11,5 +11,9 @@ export { DatePickerPopover } from './DatePickerPopover';
 export { TimeInput } from './TimeInput';
 export { Checkbox } from './Checkbox';
 export { ConfirmModal, type ConfirmAction } from './ConfirmModal';
+// The shared popup-window behavior: OverlayShell for the standard backdrop+panel,
+// useDismissable for overlays that own their own markup.
+export { OverlayShell } from './OverlayShell';
+export { useDismissable } from './useDismissable';
 export { ParticleBurst } from './ParticleBurst';
 export { ImpactShake } from './ImpactShake';

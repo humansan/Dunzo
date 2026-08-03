@@ -15,6 +15,7 @@ import {
 import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
+import { useDismissable } from '@/common/ui/useDismissable';
 import { CollectionOption, hasDate, normalizeScheduleTimes, isScheduleValid, type ScheduleSide } from '@/features/tasks/model';
 import { isDone, collectWithDescendants, isDescendantOf } from '@/features/tasks/model';
 import {
@@ -179,7 +180,6 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 }) => {
   // The archive confirmation counts rows across the whole tree, not just this task.
   const allTodos = useMemo(() => [...byId.values()], [byId]);
-  const overlayRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -237,11 +237,11 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     );
   }, [todo.status, todo.completedAt]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // Escape + backdrop click + scroll lock, shared with every other popup window.
+  // This view keeps its own panel markup (hence the hook rather than OverlayShell);
+  // `onClose` is the router-aware close from TaskOverlay, which pops the whole
+  // task chain rather than one history entry.
+  const { backdropProps } = useDismissable({ onDismiss: onClose });
 
   // ── Subtasks ────────────────────────────────────────────────────────────────
   // The whole descendant subtree, rendered through the planner's own table so the
@@ -404,11 +404,10 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
   return (
     <motion.div
-      ref={overlayRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      {...backdropProps}
       className={`fixed inset-0 z-[70] p-16 flex items-center justify-center ${overlayBackdrop}`}
     >
       <motion.div

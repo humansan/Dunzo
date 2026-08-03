@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
+import { OverlayShell } from '@/common/ui/OverlayShell';
 import { btnNeutral } from '@/theme/buttons';
 import type { RoleName } from '@/theme/roles';
 import { Checkbox } from '@/common/ui/Checkbox';
@@ -69,73 +68,69 @@ export const ConfirmModal: React.FC<{
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-[70] flex items-center justify-center p-4 ${overlayBackdrop}`}
-      onMouseDown={onClose}
+    // `nested` layer: confirms are usually raised *from* another overlay (the task
+    // full view's archive prompt), and Escape cancels this one only - the stack in
+    // useDismissable keeps it from also closing whatever is underneath.
+    <OverlayShell
+      onClose={onClose}
+      layer="nested"
+      panelClassName="w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-2xl"
     >
-      <motion.div
-        {...modalPop}
-        onMouseDown={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl border border-line bg-surface p-5 shadow-2xl"
-      >
-        <h2 className="text-base font-bold text-fg">{title}</h2>
-        {description && <p className="mt-1.5 text-sm text-fg-subtle">{description}</p>}
+      <h2 className="text-base font-bold text-fg">{title}</h2>
+      {description && <p className="mt-1.5 text-sm text-fg-subtle">{description}</p>}
 
-        <div className="mt-4 space-y-2">
-          {actions.map((a) => (
-            <button
-              key={a.label}
-              type="button"
-              onClick={() => select(a)}
-              // The role becomes a local CSS variable; every class that reads it is
-              // spelled out above (see ConfirmAction.tone).
-              style={
-                a.tone
-                  ? ({ ['--tone']: `var(--color-${a.tone})` } as React.CSSProperties)
-                  : undefined
-              }
-              className={`w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
-                a.tone ? TONED_CARD : PLAIN_CARD
-              }`}
-            >
-              {a.icon && (
-                <span
-                  className={`shrink-0 mt-0.5 ${a.tone ? 'text-(--tone)' : 'text-(--accent2)'}`}
-                >
-                  {a.icon}
-                </span>
-              )}
-              <span className="min-w-0">
-                <span
-                  className={`block text-sm font-semibold ${a.tone ? 'text-(--tone)' : 'text-fg'}`}
-                >
-                  {a.label}
-                </span>
-                {a.description && (
-                  <span className="block text-xs text-fg-subtle">{a.description}</span>
-                )}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-4 flex items-center justify-between gap-3">
-          {onDontShowAgainChange ? (
-            <Checkbox checked={dontShow} onChange={setDontShow}>
-              <span className="text-xs text-fg-subtle">{dontShowAgainLabel}</span>
-            </Checkbox>
-          ) : (
-            <span />
-          )}
+      <div className="mt-4 space-y-2">
+        {actions.map((a) => (
           <button
+            key={a.label}
             type="button"
-            onClick={onClose}
-            className={`px-3 h-8 rounded-lg text-xs font-bold ${btnNeutral}`}
+            onClick={() => select(a)}
+            // The role becomes a local CSS variable; every class that reads it is
+            // spelled out above (see ConfirmAction.tone).
+            style={
+              a.tone
+                ? ({ ['--tone']: `var(--color-${a.tone})` } as React.CSSProperties)
+                : undefined
+            }
+            className={`w-full flex items-start gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer ${
+              a.tone ? TONED_CARD : PLAIN_CARD
+            }`}
           >
-            {cancelLabel}
+            {a.icon && (
+              <span className={`shrink-0 mt-0.5 ${a.tone ? 'text-(--tone)' : 'text-(--accent2)'}`}>
+                {a.icon}
+              </span>
+            )}
+            <span className="min-w-0">
+              <span
+                className={`block text-sm font-semibold ${a.tone ? 'text-(--tone)' : 'text-fg'}`}
+              >
+                {a.label}
+              </span>
+              {a.description && (
+                <span className="block text-xs text-fg-subtle">{a.description}</span>
+              )}
+            </span>
           </button>
-        </div>
-      </motion.div>
-    </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        {onDontShowAgainChange ? (
+          <Checkbox checked={dontShow} onChange={setDontShow}>
+            <span className="text-xs text-fg-subtle">{dontShowAgainLabel}</span>
+          </Checkbox>
+        ) : (
+          <span />
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className={`px-3 h-8 rounded-lg text-xs font-bold ${btnNeutral}`}
+        >
+          {cancelLabel}
+        </button>
+      </div>
+    </OverlayShell>
   );
 };

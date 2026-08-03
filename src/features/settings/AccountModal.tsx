@@ -10,6 +10,7 @@ import logoSvg from '@/assets/icon.svg';
 import { ListSelect, textInputCls } from '@/common/ui';
 import { Switch } from '@/common/ui';
 import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
+import { useDismissable } from '@/common/ui/useDismissable';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { btnGhost, btnNeutral } from '@/theme/buttons';
 
@@ -567,7 +568,6 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   mode,
   onUpdateMode,
 }) => {
-  const overlayRef = useRef<HTMLDivElement>(null);
   const [section, setSection] = useState<Section>('profile');
 
   // Reset to Profile only when the modal transitions open - keyed on `isOpen`
@@ -576,22 +576,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     if (isOpen) setSection('profile');
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
+  // Escape + backdrop click + scroll lock, shared with every other popup window.
+  // `active` is what keeps a closed-but-mounted modal out of the overlay stack.
+  const { backdropProps } = useDismissable({ onDismiss: onClose, active: isOpen });
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          ref={overlayRef}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onMouseDown={(e) => { if (e.target === overlayRef.current) onClose(); }}
+          {...backdropProps}
           className={`fixed inset-0 z-[70] flex items-center justify-center p-4 ${overlayBackdrop}`}
         >
           <motion.div

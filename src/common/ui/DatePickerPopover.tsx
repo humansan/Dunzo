@@ -85,7 +85,12 @@ export const DatePickerPopover: React.FC<DatePickerPopoverProps> = ({
       setIsOpen(false);
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key !== 'Escape') return;
+      // Escape closes the innermost thing only: stop it here so it doesn't also
+      // reach the enclosing overlay's window listener (useDismissable) and close
+      // the whole dialog behind the picker. Same guard ListSelect uses.
+      e.stopPropagation();
+      setIsOpen(false);
     };
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
