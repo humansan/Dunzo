@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Outlet, useRouter, useRouterState, useSearch } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { Minimize2 } from 'lucide-react';
@@ -14,6 +14,7 @@ import { TaskFinder } from '@/features/planner/task-finder';
 import { useAppData } from '@/lib/app-data';
 import { withBase } from '@/lib/basePath';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
+import { recordLocation } from '@/app/tabMemory';
 import { useStopwatch } from '@/features/stopwatch';
 
 // The persistent shell: the chrome (Sidebar + modals + stopwatch + search) renders
@@ -79,6 +80,20 @@ export const AppShell: React.FC = () => {
     if (router.history.canGoBack() && window.history.length > depth) router.history.go(-depth);
     else router.navigate({ to: '.', search: (prev) => ({ ...prev, task: undefined, settings: undefined }) });
   };
+  // Sidebar tab memory. One writer for the whole app: the store is a projection of
+  // the location, so no view has to report where it is, and only the fields
+  // tabMemory names (collection, date) can ever come back.
+  const locationSearch = useRouterState({ select: (s) => s.location.search });
+  useEffect(() => {
+    recordLocation(pathname, locationSearch);
+  }, [pathname, locationSearch]);
+  // A remembered collection can be deleted while it's still in the store; the
+  // sidebar checks before linking to it.
+  const isCollection = useCallback(
+    (id: string) => todoById.get(id)?.isCollection === true,
+    [todoById]
+  );
+
   // Fullscreen is a trackers-only affordance; leaving that view exits it (matches
   // the old handleViewChange behavior).
   const isTrackers = pathname.startsWith('/trackers');
@@ -133,6 +148,7 @@ export const AppShell: React.FC = () => {
         onStopwatchClick={toggleStopwatch}
         isStopwatchActive={timerState !== 'idle'}
         onSearchClick={() => setIsSearchOpen(true)}
+        isCollection={isCollection}
       />
 
       <div className={`transition-all duration-500 ${!isFullscreen ? 'pl-14' : 'pl-0'}`}>

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Clock, ListChecks, CalendarDays, Timer, BarChart2, Blocks, Search } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link, useRouterState } from '@tanstack/react-router';
+import { tabTarget } from '@/app/tabMemory';
 import backgroundUrl from '@/assets/background.jpg';
 import logoSvg from '@/assets/icon-balanced.svg';
 import { AccountMenu } from '@/app/AccountMenu';
@@ -16,9 +17,11 @@ interface SidebarProps {
   onStopwatchClick: () => void;
   isStopwatchActive: boolean;
   onSearchClick: () => void;
+  /** Validates a remembered planner collection id (see tabMemory). */
+  isCollection: (id: string) => boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, email, onOpenSettings, onLogout, onStopwatchClick, isStopwatchActive, onSearchClick }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, email, onOpenSettings, onLogout, onStopwatchClick, isStopwatchActive, onSearchClick, isCollection }) => {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const accountBtnRef = useRef<HTMLButtonElement>(null);
   // Account menu anchored to the right of the logo button, growing upward.
@@ -33,13 +36,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
 
   if (!isVisible) return null;
 
+  // `base` drives the active highlight (and stays the plain section path); the
+  // link itself points at wherever this tab was last left - the collection the
+  // planner was showing, the day Today/Calendar were on. Clicking the tab you're
+  // already on is a no-op: the remembered target *is* the current location.
   const items = [
-    { to: '/today' as const, icon: ListChecks, title: 'Daily Todos' },
-    { to: '/planner' as const, icon: Blocks, title: 'Task Planner' },
-    { to: '/calendar' as const, icon: CalendarDays, title: 'Calendar' },
-    { to: '/trackers' as const, icon: Clock, title: 'Trackers' },
-    { to: '/stats' as const, icon: BarChart2, title: 'Stats' },
-  ];
+    { tab: 'today', base: '/today', icon: ListChecks, title: 'Daily Todos' },
+    { tab: 'planner', base: '/planner', icon: Blocks, title: 'Task Planner' },
+    { tab: 'calendar', base: '/calendar', icon: CalendarDays, title: 'Calendar' },
+    { tab: 'trackers', base: '/trackers', icon: Clock, title: 'Trackers' },
+    { tab: 'stats', base: '/stats', icon: BarChart2, title: 'Stats' },
+  ] as const;
 
   return (
     <motion.div
@@ -50,11 +57,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
       <div className="flex flex-col gap-3">
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname.startsWith(item.to);
+          const isActive = pathname.startsWith(item.base);
+          const target = tabTarget(item.tab, isCollection);
           return (
             <Link
-              key={item.to}
-              to={item.to}
+              key={item.base}
+              {...target}
               className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnToggle(isActive)}`}
               title={item.title}
             >
