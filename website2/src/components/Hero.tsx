@@ -34,6 +34,7 @@ export const Hero: React.FC = () => {
         <img
           src="/background.jpg"
           alt=""
+          decoding="async"
           className="w-full h-full object-cover filter blur-2xl scale-125"
         />
       </div>
@@ -56,7 +57,7 @@ export const Hero: React.FC = () => {
                 key={idx}
                 className="inline-block mr-[0.25em] word-blur-enter"
                 style={{
-                  animationDelay: `${idx * 100 + 400}ms`,
+                  animationDelay: `${idx * 120 + 400}ms`,
                 }}
               >
                 {word === 'calmer' ? (
@@ -71,7 +72,7 @@ export const Hero: React.FC = () => {
           {/* Subtitle */}
           <p
             className="mt-6 text-base sm:text-lg text-fg-muted max-w-xl font-normal leading-relaxed fade-slide-up"
-            style={{ animationDelay: '1100ms' }}
+            style={{ animationDelay: '1400ms' }}
           >
             Dunzo pairs a powerful task database & calendar with a focused daily dashboard + xp gamification designed for mindful momentum.
           </p>
@@ -79,7 +80,7 @@ export const Hero: React.FC = () => {
           {/* Action Buttons */}
           <div
             className="mt-8 flex flex-col sm:flex-row items-center gap-3.5 fade-slide-up"
-            style={{ animationDelay: '1220ms' }}
+            style={{ animationDelay: '1500ms' }}
           >
             <a href={APP_URL} className="btn-accent-lg w-full sm:w-auto">
               <span>Get Started</span>
@@ -100,7 +101,7 @@ export const Hero: React.FC = () => {
             id="demo"
             ref={showcaseRef}
             className="mt-12 relative w-full max-w-5xl scroll-mt-28 fade-slide-up"
-            style={{ animationDelay: '1340ms' }}
+            style={{ animationDelay: '1600ms' }}
           >
             <div
               className={`relative aspect-video rounded-2xl overflow-hidden border border-fg/10 bg-surface group ${
@@ -111,6 +112,7 @@ export const Hero: React.FC = () => {
               <img
                 src="/media/s1.png"
                 alt="Dunzo Daily Dashboard"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
                 aria-hidden={isVideoPlaying}
               />
