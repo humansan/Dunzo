@@ -50,7 +50,7 @@ NOTE: Timeline View is currently work in progress
 <img src="website2/public/media/calendar_no_ribbon.png" alt="Calendar page" width="100%" />
 
 ### Time Widgets and Stopwatch/Pomodoro
-<img src="website2/public/media/v2/widgets_main.png" alt="Time-progress trackers" height="73%" />
+<img src="website2/public/media/v2/widgets_main.png" alt="Time-progress trackers" width="73%" />
 <img src="website2/public/media/v2/widget_editor.png" alt="Widget creator" width="26%" />
 <img src="website2/public/media/s16.png" alt="Stopwatch" width="49%" />
 <img src="website2/public/media/s16b.png" alt="Stopwatch in min mode" width="49%" />
@@ -59,7 +59,7 @@ NOTE: Timeline View is currently work in progress
 ### Stats & More
 <img src="website2/public/media/s14.png" alt="Stats and XP dashboard" width="100%" />
 <img src="website2/public/media/s14b.png" alt="Collection breakdown" width="100%" />
-<img src="website2/public/media/s18b.png" alt="App settings" width="100%" />
+<img src="website2/public/media/s18.png" alt="App settings" width="100%" />
 
 </div>
 

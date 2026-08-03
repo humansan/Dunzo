@@ -9,12 +9,22 @@ import { useRouter } from '@tanstack/react-router';
 export function useOverlayNav() {
   const router = useRouter();
 
-  const openTask = (id: string) =>
-    router.navigate({
+  // Each open pushes an entry, so the browser back button walks back through the
+  // task chain (task -> subtask -> ...). The close actions must *not* do that, so
+  // the pushed entry records how deep the chain is; AppShell.closeOverlay rewinds
+  // by exactly that many entries. Depth is derived from whether an overlay is
+  // currently open rather than by blindly incrementing the previous value, so it
+  // resets to 1 for a fresh open.
+  const openTask = (id: string) => {
+    const { search, state } = router.state.location;
+    const taskDepth = (search.task ? (state.taskDepth ?? 1) : 0) + 1;
+    return router.navigate({
       to: '.',
       search: (prev) => ({ ...prev, task: id }),
+      state: (prev) => ({ ...prev, taskDepth }),
       mask: { to: '/task/$taskId', params: { taskId: id } },
     });
+  };
 
   const openSettings = () =>
     router.navigate({

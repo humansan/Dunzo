@@ -21,4 +21,11 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
+  // Per-history-entry state. `taskDepth` is how many task full-view opens are
+  // stacked on the entry (1 for the first open, 2 for a subtask opened from it,
+  // ...), so closing the overlay can rewind the whole chain in one go instead of
+  // popping a single entry. See useOverlayNav.openTask / AppShell.closeOverlay.
+  interface HistoryState {
+    taskDepth?: number;
+  }
 }

@@ -60,8 +60,23 @@ export const AppShell: React.FC = () => {
   // entry the open pushed (back button also closes); a masked deep-link reload is
   // handled by the standalone /settings and /task/$taskId routes instead.
   const { task: taskOverlayId, settings: settingsOverlayOpen } = useSearch({ from: '/_authed' });
+  // A task overlay opened from another task pushed an entry per open, so closing
+  // pops the *whole* chain (taskDepth, set by useOverlayNav.openTask) - only the
+  // browser back button steps through it one task at a time. Settings is a single
+  // open (unreachable while a task overlay covers the sidebar), hence depth 1.
+  const taskDepth = useRouterState({ select: (s) => s.location.state.taskDepth });
   const closeOverlay = () => {
-    if (window.history.length > 1) router.history.back();
+    // Cold deep-link: `pathname` is the real (unmasked) location, so this only
+    // matches the standalone /task/$taskId route, where the entry underneath the
+    // chain is itself a task full-view (or nothing at all, on a fresh tab).
+    // Rewinding would just reveal that overlay, so leave for /today instead - the
+    // same exit the route's own close uses.
+    if (pathname.startsWith('/task/')) {
+      router.history.push(withBase('/today'));
+      return;
+    }
+    const depth = taskOverlayId ? (taskDepth ?? 1) : 1;
+    if (router.history.canGoBack() && window.history.length > depth) router.history.go(-depth);
     else router.navigate({ to: '.', search: (prev) => ({ ...prev, task: undefined, settings: undefined }) });
   };
   // Fullscreen is a trackers-only affordance; leaving that view exits it (matches
