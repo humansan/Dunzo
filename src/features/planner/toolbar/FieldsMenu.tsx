@@ -96,7 +96,7 @@ export const FieldsMenu: React.FC<{
                       type="button"
                       onClick={() => onToggle(key)}
                       title={isHidden ? 'Show field' : 'Hide field'}
-                      className="shrink-0 p-0.5 rounded text-fg-faint hover:text-fg hover:bg-fill transition-colors"
+                      className="shrink-0 p-0.5 rounded text-fg-faint hover:text-fg hover:bg-fill transition-colors cursor-pointer"
                     >
                       {isHidden ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -105,7 +105,7 @@ export const FieldsMenu: React.FC<{
                     type="button"
                     onClick={() => onToggleWrap(key)}
                     title={isWrapped ? 'Disable wrap' : 'Enable wrap'}
-                    className={`shrink-0 p-0.5 rounded hover:bg-fill transition-colors ${
+                    className={`shrink-0 p-0.5 rounded hover:bg-fill transition-colors cursor-pointer ${
                       isWrapped ? 'text-info' : 'text-fg-faint hover:text-fg'
                     }`}
                   >

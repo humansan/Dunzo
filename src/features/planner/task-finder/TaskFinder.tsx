@@ -208,7 +208,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
         <button
           type="button"
           onClick={rootOption.onSelect}
-          className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-line text-sm text-fg-muted hover:text-fg hover:bg-fill-subtle transition-colors"
+          className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-line text-sm text-fg-muted hover:text-fg hover:bg-fill-subtle transition-colors cursor-pointer"
         >
           <CornerLeftUp size={15} className="text-fg-faint" />
           {rootOption.label}

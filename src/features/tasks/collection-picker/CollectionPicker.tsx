@@ -179,7 +179,7 @@ export const CollectionPicker: React.FC<{
                 onMouseDown={(e) => e.preventDefault()} // keep focus in the input
                 onMouseEnter={() => setActive(i)}
                 onClick={() => commit(row)}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left whitespace-nowrap transition-colors ${
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left whitespace-nowrap transition-colors cursor-pointer ${
                   isActive ? 'bg-fill' : ''
                 }`}
               >

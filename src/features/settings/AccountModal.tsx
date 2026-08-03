@@ -62,7 +62,7 @@ const Segment = <T extends string | number>({
         key={String(o.value)}
         type="button"
         onClick={() => onChange(o.value)}
-        className={`flex-1 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
+        className={`flex-1 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors cursor-pointer ${
           value === o.value ? 'bg-fill-strong text-fg' : 'text-fg-faint hover:text-fg-muted'
         }`}
       >
@@ -84,7 +84,7 @@ const rowCls = 'flex items-center justify-between gap-4';
 const fieldInput = `${textInputCls} w-full`;
 const fieldLabel = 'block text-[11px] font-medium text-fg-subtle mb-1';
 const formButton =
-  'w-full rounded-xl bg-fill py-2.5 text-sm font-semibold text-fg transition-all hover:bg-fill-strong disabled:cursor-not-allowed disabled:opacity-40';
+  'w-full rounded-xl bg-fill py-2.5 text-sm font-semibold text-fg transition-all hover:bg-fill-strong disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer';
 
 type FormMsg = { kind: 'ok' | 'err'; text: string } | null;
 
@@ -279,7 +279,7 @@ const ProfilePane: React.FC<{
         <button
           type="button"
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 font-semibold py-2.5 rounded-xl text-sm transition-all"
+          className="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 font-semibold py-2.5 rounded-xl text-sm transition-all cursor-pointer"
         >
           <LogOut size={15} />
           Log Out
