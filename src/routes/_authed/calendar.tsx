@@ -1,14 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { CalendarView } from '@/features/calendar';
+import { hasInvalidDateParam, validateDateSearch } from '@/lib/dateParam';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { useAppData } from '@/lib/app-data';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
 export const Route = createFileRoute('/_authed/calendar')({
-  validateSearch: (search: Record<string, unknown>): { date?: string } =>
-    typeof search.date === 'string' && DATE_RE.test(search.date) ? { date: search.date } : {},
+  validateSearch: validateDateSearch,
+  // Same as /today: an unusable `date` sends you to the bare calendar rather than
+  // leaving a lying URL in the address bar (or an Invalid Date in the view).
+  beforeLoad: ({ location }) => {
+    if (hasInvalidDateParam(location.searchStr)) throw redirect({ to: '/calendar', replace: true });
+  },
   component: CalendarRoute,
   errorComponent: ViewErrorFallback,
 });
