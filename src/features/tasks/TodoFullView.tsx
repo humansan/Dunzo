@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import {
   X,
+  ArrowLeft,
   Trash2,
   CalendarDays,
   Clock,
@@ -13,7 +14,7 @@ import {
   Database,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnNeutral } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
 import { useDismissable } from '@/common/ui/useDismissable';
 import { CollectionOption, hasDate, normalizeScheduleTimes, isScheduleValid, type ScheduleSide } from '@/features/tasks/model';
@@ -54,6 +55,11 @@ interface TodoFullViewProps {
   onCreateCollection: (name: string) => string;
   byId: Map<string, Todo>;
   onClose: () => void;
+  // Set only when this task was opened from another task's full view. Unlike
+  // `onClose` (which rewinds the whole task chain), this steps back a single
+  // history entry to the task named by `label` - used by the Back button at the
+  // top and by Delete, so removing a subtask returns to the parent you came from.
+  backTo?: { label: string; onBack: () => void };
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -167,6 +173,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onCreateCollection,
   byId,
   onClose,
+  backTo,
   onSave,
   onToggle,
   onDelete,
@@ -240,14 +247,18 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
   // Completion is stamped outside the draft - the checkbox toggles through app data,
   // and the save handlers derive completedAt from status - so both fields have to
-  // come back from the prop or the Completed timestamp never appears.
+  // come back from the prop or the Completed timestamp never appears. `archived` is
+  // the same kind of field (the Archive button writes the whole subtree through
+  // app data, not the draft) and the view now stays open across that write, so it
+  // has to come back too: otherwise the button keeps saying "Archive" and the next
+  // property edit would save a stale `archived: false` straight back over it.
   useEffect(() => {
     setDraft(prev =>
-      prev.status === todo.status && prev.completedAt === todo.completedAt
+      prev.status === todo.status && prev.completedAt === todo.completedAt && prev.archived === todo.archived
         ? prev
-        : { ...prev, status: todo.status, completedAt: todo.completedAt }
+        : { ...prev, status: todo.status, completedAt: todo.completedAt, archived: todo.archived }
     );
-  }, [todo.status, todo.completedAt]);
+  }, [todo.status, todo.completedAt, todo.archived]);
 
   // Escape + backdrop click + scroll lock, shared with every other popup window.
   // This view keeps its own panel markup (hence the hook rather than OverlayShell);
@@ -405,11 +416,12 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const dailyDisabled = dailyEffective && !plannerOn;
 
   // Prompts when the operation reaches beyond this task; the modal is rendered at
-  // the end of this component. Archiving closes the view - the task has left every
-  // live surface, so there is nothing behind the overlay to come back to.
+  // the end of this component. Neither direction closes the view: `byId` indexes
+  // every todo, archived included, so the task is still here to look at (and to
+  // unarchive again) right after the write.
   const { requestArchiveToggle, archiveConfirmModal } = useArchiveConfirm({
     todos: allTodos,
-    onArchive: (id) => { onArchive(id); onClose(); },
+    onArchive,
     onUnarchive,
   });
   const handleArchive = () => requestArchiveToggle(draft.id);
@@ -446,6 +458,19 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
           {/* Left pane: title + notes */}
           <div className="flex-1 flex flex-col overflow-y-auto min-w-0 px-8 py-6">
+            {/* Only when this view was opened from another task - names the task
+                it steps back to (one entry), rather than closing the chain. */}
+            {backTo && (
+              <button
+                type="button"
+                onClick={backTo.onBack}
+                title={`Back to “${backTo.label}”`}
+                className={`self-start max-w-full mb-3 flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-xs font-medium ${btnNeutral}`}
+              >
+                <ArrowLeft size={13} className="shrink-0" />
+                <span className="truncate">{backTo.label}</span>
+              </button>
+            )}
             <div className="flex items-start gap-3 mb-5">
               <CompletedToggle
                 completed={isDone(draft)}
@@ -687,7 +712,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               {draft.archived ? 'Unarchive' : 'Archive'}
             </button>
             <button
-              onClick={() => { onDelete(draft.id); onClose(); }}
+              // A subtask opened from its parent goes back to that parent; anything
+              // else has no full view behind it, so it closes the chain outright.
+              onClick={() => { onDelete(draft.id); (backTo?.onBack ?? onClose)(); }}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all cursor-pointer"
             >
               <Trash2 size={14} />

@@ -316,9 +316,9 @@ export const XP = {
 export const FOCUS = {
   id: 'time-widgets',
   eyebrow: 'Time widgets & focus',
-  heading: 'Time you can feel.',
+  heading: 'Time you can visualize',
   body:
-    'Widgets that show how much of the day, the week, or the project is actually left — and a focus tool with a stopwatch, a timer, and a full Pomodoro that keeps running through a page reload.',
+    'Visualize time with widgets that show how much of the day, the week, or the project is actually left. Stay focused on your work with a stopwatch, timer, and Pomodoro focus and break sessions.',
   chips: [
     { icon: Gauge, label: 'Day / week / month / year' },
     { icon: Timer, label: 'Timer & Pomodoro' },
