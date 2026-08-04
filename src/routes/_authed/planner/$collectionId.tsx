@@ -1,9 +1,11 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { PlannerScreen, validatePlannerSearch } from '@/features/planner';
+import { PlannerScreen, validatePlannerSearch, isPseudoView } from '@/features/planner';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { todosQueryOptions } from '@/features/tasks/api';
 
-// /planner/$collectionId - the collection id is the selected view.
+// /planner/$collectionId - the segment is the selected view: either one of the
+// fixed pseudo-view tabs (uncategorized, categorized, archived, ...) or a real
+// collection id, exactly the split resolveView() makes.
 export const Route = createFileRoute('/_authed/planner/$collectionId')({
   component: PlannerCollectionRoute,
   validateSearch: validatePlannerSearch,
@@ -14,8 +16,15 @@ export const Route = createFileRoute('/_authed/planner/$collectionId')({
   // ensureQueryData rather than the parent loader's data: child beforeLoad runs
   // before parent loaders, and it's a cache read once the todos are warm.
   beforeLoad: async ({ context: { queryClient }, params }) => {
+    const view = params.collectionId;
+    // 'all' is a pseudo-view too, but bare /planner is its canonical URL - send
+    // /planner/all there rather than serving the same view from two paths.
+    if (view === 'all') throw redirect({ to: '/planner', replace: true });
+    // Every other pseudo-view is a valid tab with no backing todo; only real
+    // collection ids need to exist in the data.
+    if (isPseudoView(view)) return;
     const todos = await queryClient.ensureQueryData(todosQueryOptions());
-    if (!todos.some((t) => t.id === params.collectionId && t.isCollection)) {
+    if (!todos.some((t) => t.id === view && t.isCollection)) {
       throw redirect({ to: '/planner', replace: true });
     }
   },

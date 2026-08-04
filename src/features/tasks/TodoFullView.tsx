@@ -465,9 +465,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 type="button"
                 onClick={backTo.onBack}
                 title={`Back to “${backTo.label}”`}
-                className={`self-start max-w-full mb-3 flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-xs font-medium ${btnNeutral}`}
+                className={`self-start max-w-full mb-3 flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] font-medium ${btnGhost()}`}
               >
-                <ArrowLeft size={13} className="shrink-0" />
+                <ArrowLeft size={12} className="shrink-0" />
                 <span className="truncate">{backTo.label}</span>
               </button>
             )}

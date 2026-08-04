@@ -3,6 +3,7 @@ import { useRouter } from '@tanstack/react-router';
 import { PlannerView } from './PlannerView';
 import { useAppData } from '@/lib/app-data';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
+import { isPseudoView } from './views';
 
 // Shared planner surface for both /planner (bare = 'all') and /planner/$collectionId.
 // `selectedView` comes from the route; selecting a view navigates so the collection
@@ -42,7 +43,9 @@ export function PlannerScreen({
   // shape as TaskOverlay's stale-todo effect: once the data says it's gone, leave
   // for the all-tasks view rather than sit on a URL that renders nothing.
   useEffect(() => {
-    if (!d.isDataReady || selectedView === 'all') return;
+    // Pseudo-views ('uncategorized', 'archived', ...) have no backing todo, so the
+    // lookup below would read them as deleted collections and evict them.
+    if (!d.isDataReady || isPseudoView(selectedView)) return;
     if (d.todoById.get(selectedView)?.isCollection) return;
     router.navigate({ to: '/planner', replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
