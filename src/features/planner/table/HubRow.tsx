@@ -149,7 +149,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           onRowDragStart?.(todo.id);
         }}
         onDragEnd={() => onRowDragEnd?.()}
-        className={`shrink-0 h-5 ${LEADING_SLOT} flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
+        className={`shrink-0 h-5 ${LEADING_SLOT} flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-subtle hover:text-fg-muted opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
         title="Drag to reorder / nest"
       >
         <GripVertical size={16} />

@@ -33,7 +33,7 @@ export const Footer: React.FC = () => {
                 Dunzo
               </span>
             </Link>
-            <p className="text-xs text-fg-muted max-w-sm leading-relaxed">
+            <p className="text-xs text-fg-subtle max-w-sm leading-relaxed">
               A calmer way to get things done. Daily focus lists, strategic project planning, and gamified progress tracking.
             </p>
             <div className="flex items-center gap-3 mt-1">
@@ -60,10 +60,10 @@ export const Footer: React.FC = () => {
 
           {/* Features Column */}
           <div className="flex flex-col gap-3 ">
-            <h4 className="text-xs font-bold text-fg-subtle">
+            <h4 className="text-xs font-bold text-fg-faint">
               Features
             </h4>
-            <ul className="flex flex-col gap-2 text-xs text-fg-muted">
+            <ul className="flex flex-col gap-2 text-xs text-fg-subtle">
               {featureLinks.map((link) => (
                 <li key={link.name}>
                   <Link to={link.to} className="hover:text-fg transition-colors">
@@ -76,10 +76,10 @@ export const Footer: React.FC = () => {
 
           {/* About Column */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-bold text-fg-subtle">
+            <h4 className="text-xs font-bold text-fg-faint">
               Shortcuts
             </h4>
-            <ul className="flex flex-col gap-2 text-xs text-fg-muted">
+            <ul className="flex flex-col gap-2 text-xs text-fg-subtle">
               {/* Plain <a>: the app is a separate SPA, so this must leave this router. */}
               <li>
                 <a href={APP_URL} className="hover:text-fg transition-colors">

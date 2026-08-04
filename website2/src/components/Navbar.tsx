@@ -12,7 +12,7 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-5xl z-50 bg-canvas/70 backdrop-blur-md border border-fg/10 rounded-2xl pl-4 pr-3.5 py-3">
+    <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-5xl z-50 bg-canvas/40 backdrop-blur-md border border-fg/10 rounded-2xl pl-4 pr-3.5 py-3">
       <div className="flex items-center justify-between">
         {/* Left Side: Logo (32px) + Bold Dunzo Text (22px) matching s22 */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
@@ -39,7 +39,7 @@ export const Navbar: React.FC = () => {
               <Link
                 key={link.name}
                 to={link.to}
-                className="font-semibold text-fg-muted hover:text-fg transition-colors"
+                className="font-semibold text-fg-subtle hover:text-fg transition-colors"
               >
                 {link.name}
               </Link>

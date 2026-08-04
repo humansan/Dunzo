@@ -30,12 +30,12 @@ export const Hero: React.FC = () => {
   return (
     <section className="relative pt-26 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-canvas">
       {/* Background image blur effect */}
-      <div className="absolute inset-0 opacity-25 pointer-events-none mix-blend-screen overflow-hidden">
+      <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
         <img
           src="/background.jpg"
           alt=""
           decoding="async"
-          className="w-full h-full object-cover filter blur-2xl scale-125"
+          className="w-full h-full object-cover filter blur-lg scale-125"
         />
       </div>
 
@@ -71,7 +71,7 @@ export const Hero: React.FC = () => {
 
           {/* Subtitle */}
           <p
-            className="mt-6 text-base sm:text-lg text-fg-muted max-w-xl font-normal leading-relaxed fade-slide-up"
+            className="mt-6 text-base sm:text-lg text-fg-subtle max-w-xl font-normal leading-relaxed fade-slide-up"
             style={{ animationDelay: '1400ms' }}
           >
             Dunzo pairs a powerful task database & calendar with a focused daily dashboard + xp gamification designed for mindful momentum.
@@ -89,10 +89,10 @@ export const Hero: React.FC = () => {
 
             <button
               onClick={startDemo}
-              className="btn-neutral px-5 h-[52px] rounded-xl text-lg font-medium flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="btn-neutral px-5 h-[52px] rounded-xl text-lg font-medium flex items-center justify-center gap-2 w-full sm:w-auto text-fg-subtle hover:text-fg"
             >
               <Play className="w-4 h-4 fill-gold text-gold" />
-              <span>Watch Demo</span>
+              <span >Watch Demo</span>
             </button>
           </div>
 

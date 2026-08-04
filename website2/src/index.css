@@ -7,10 +7,10 @@
   --color-overlay: #2a2a2a;
 
   --color-fg: #ffffff;
-  --color-fg-muted: #9ca3af;
-  --color-fg-subtle: #6b7280;
-  --color-fg-faint: rgba(255, 255, 255, 0.64);
-  --color-fg-ghost: rgba(255, 255, 255, 0.40);
+  --color-fg-muted: #ffffffd9;
+  --color-fg-subtle: #ffffffb8;
+  --color-fg-faint: #ffffffa3;
+  --color-fg-ghost: #ffffff66;
 
   --color-fill: rgba(255, 255, 255, 0.10);
   --color-fill-subtle: rgba(255, 255, 255, 0.05);
@@ -35,8 +35,10 @@
   --raised: #1f1f1f;
   --overlay: #2a2a2a;
   --fg: #ffffff;
-  --fg-muted: #9ca3af;
-  --fg-subtle: #6b7280;
+  --fg-muted: #ffffffd9;
+  --fg-subtle: #ffffffb8;
+  --fg-faint: #ffffffa3;
+  --fg-ghost: #ffffff66;
   --accent1: #ffcd4e;
   --accent2: #c6dabe;
   --xp-gold: #ffcd4e;
