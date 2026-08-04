@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import { Database, EyeOff, CornerDownRight, Eye } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { ConfirmModal } from '@/common/ui';
@@ -79,6 +79,23 @@ export function usePlannerVisibilityConfirm(params: {
   // ref (not state) is what the action can actually read in the same tick.
   const dontAsk = useRef(false);
 
+  // How many OTHER rows a subtree operation reaches that the user can actually
+  // see. Archived rows are counted out: an archived todo isn't in the Planner at
+  // all, so "and 12 subtasks" would be describing rows that aren't there - the
+  // walks key on `showInDatabase`, which archiving never clears, so an archived
+  // subtree still registers as visible to them.
+  //
+  // They stay in the WRITE set (the handlers re-derive it themselves): the flag
+  // has to keep pointing the right way for when those rows are restored. Only the
+  // prompt is filtered - and when nothing visible is affected, there is no
+  // question worth asking and the toggle just applies.
+  const byId = useMemo(() => new Map(todos.filter(Boolean).map((t) => [t.id, t])), [todos]);
+  const visibleOthers = useCallback(
+    (ids: string[], rootId: string) =>
+      ids.filter((tid) => tid !== rootId && byId.get(tid)?.archived !== true).length,
+    [byId]
+  );
+
   // `next` is the value the switch was moved TO, so the caller doesn't have to
   // re-derive it from the row it just rendered.
   const request = useCallback(
@@ -90,8 +107,7 @@ export function usePlannerVisibilityConfirm(params: {
 
       if (!next) {
         // ── Hiding: everything inside comes along, no choice about it.
-        const ids = descendantsToHide(todos, id);
-        const others = ids.length - 1;
+        const others = visibleOthers(descendantsToHide(todos, id), id);
         if (others <= 0 || read(KEYS.hide) === '1') {
           onHide(id);
           return;
@@ -101,8 +117,8 @@ export function usePlannerVisibilityConfirm(params: {
       }
 
       // ── Showing: parents are forced, children are a choice.
-      const parents = ancestorsToShow(todos, id).length - 1;
-      const inside = descendantsToShow(todos, id).length - 1;
+      const parents = visibleOthers(ancestorsToShow(todos, id), id);
+      const inside = visibleOthers(descendantsToShow(todos, id), id);
 
       if (inside > 0) {
         const remembered = read(KEYS.showMode);
@@ -131,7 +147,7 @@ export function usePlannerVisibilityConfirm(params: {
         run: () => onShow(id, 'self'),
       });
     },
-    [todos, onHide, onShow]
+    [todos, onHide, onShow, visibleOthers]
   );
 
   const close = () => setPending(null);

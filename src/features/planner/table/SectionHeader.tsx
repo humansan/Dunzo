@@ -113,8 +113,8 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         mode === 'column'
           ? 'items-center min-h-[36px]'
           : mode === 'list'
-            ? 'items-end min-h-10 mt-6'
-            : 'items-end min-h-8 mt-5'
+            ? 'items-center pt-6'
+            : 'items-center pt-5'
       } ${onActivate ? 'cursor-pointer' : ''} ${isSelected ? 'bg-fill' : ''} ${isDragSource ? 'opacity-50' : ''}`}
     >
       {dropDecorations}
@@ -123,7 +123,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       <div
         ref={dragImageRef}
         style={{ paddingLeft: NAME_BASE_PAD + depth * INDENT }}
-        className="sticky left-0 z-20 flex items-center h-full min-w-0 overflow-hidden bg-canvas"
+        className={"sticky left-0 z-20 flex items-center min-w-0 overflow-hidden bg-canvas " + (mode === 'list' ? 'h-10' : 'h-8')}
       >
         {hasToggle ? (
           <button

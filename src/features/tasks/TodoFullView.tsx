@@ -294,15 +294,26 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   // node only to a parent that is present, so leaving it out is what makes its
   // direct children the top level of this list instead of everything hanging one
   // indent deeper under a row you're already looking at.
+  //
+  // Archived state is MIRRORED from the task being viewed rather than filtered out
+  // flat. Under a live parent, an individually archived subtask is hidden - that's
+  // an ordinary state and it belongs in the archived view, not here. But the
+  // archive invariant makes every descendant of an archived task archived too
+  // (shared/domain/todoArchive), so an unconditional `archived !== true` emptied
+  // the list completely for an archived task - and silently swallowed anything
+  // added to it, since a task created inside an archived parent is archived on
+  // creation. Mirroring the parent means each list shows the subtasks that
+  // actually live at its own level.
+  const showArchivedSubtasks = todo.archived === true;
   const subtaskEntries = useMemo(() => {
     const ids = collectWithDescendants(allTodos, todo.id);
     ids.delete(todo.id);
     return [...ids]
       .map((id) => byId.get(id))
-      .filter((t): t is Todo => !!t && t.archived !== true)
+      .filter((t): t is Todo => !!t && (t.archived === true) === showArchivedSubtasks)
       .sort((a, b) => (a.hubOrder ?? a.createdAt) - (b.hubOrder ?? b.createdAt))
       .map((t) => ({ todo: t }));
-  }, [allTodos, byId, todo.id]);
+  }, [allTodos, byId, todo.id, showArchivedSubtasks]);
 
   // Collapse + inline-edit state are LOCAL: the planner's own collapse set is
   // DB-synced and shared across its views, and a modal shouldn't reach into it.
@@ -362,11 +373,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     onAddSubtask,
     onOpenTask,
     // "+ New" adds a subtask of the task being viewed and opens its title editor.
-    onNewInView: () => {
-      const id = onAddSubtask(todo.id);
-      setSubEditing({ id, col: NAME_COL_KEY, rect: null });
-    },
-  }), [onSaveTodo, onToggle, onAddSubtask, onOpenTask, todo.id]);
+    // Omitted on an ARCHIVED task, which drops the add-row entirely (TableRows
+    // renders it only when this is supplied): anything created inside an archived
+    // parent is archived on creation, so the button could only ever add rows to a
+    // subtree that is on its way out. Restore the task to add to it.
+    onNewInView: showArchivedSubtasks
+      ? undefined
+      : () => {
+          const id = onAddSubtask(todo.id);
+          setSubEditing({ id, col: NAME_COL_KEY, rect: null });
+        },
+  }), [onSaveTodo, onToggle, onAddSubtask, onOpenTask, todo.id, showArchivedSubtasks]);
 
   const update = (patch: Partial<Todo>, nextDate: string = dateStr) => {
     setDraft(prev => {
