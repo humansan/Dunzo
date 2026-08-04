@@ -65,7 +65,7 @@ const RememberCheckbox: React.FC<{ checked: boolean; onChange: (v: boolean) => v
   checked,
   onChange,
 }) => (
-  <Checkbox checked={checked} onChange={onChange}>
+  <Checkbox checked={checked} onChange={onChange} gold={true}>
     <span className="text-sm text-fg-muted">Remember me</span>
   </Checkbox>
 );
@@ -452,7 +452,7 @@ const LoginScreen: React.FC<{
 
   // Login-specific field styling (kept local so the account modal is unaffected).
   const fieldClass =
-    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:ring-2 focus:ring-xp-tier1 transition-all';
+    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:ring-2 focus:ring-xp-tier1 transition-all ease-linear';
   const fieldLabel =
     'block text-sm font-medium text-fg-muted';
 
@@ -705,12 +705,12 @@ const LoginScreen: React.FC<{
           <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-1.5">
             {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
           </h2>
-          <p className="text-sm text-fg-muted">
+          <p className="text-sm text-fg-subtle">
             {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
             <button
               type="button"
               onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
+              className="font-bold text-xp-tier1 hover:text-xp-tier1/75 transition-colors cursor-pointer"
             >
               {mode === 'login' ? 'Create an account' : 'Log in'}
             </button>
@@ -808,7 +808,7 @@ const LoginScreen: React.FC<{
               <button
                 type="button"
                 onClick={() => switchMode('forgot')}
-                className="text-sm text-fg-muted hover:text-fg underline transition-colors cursor-pointer"
+                className="text-sm text-fg-muted hover:text-xp-tier1 underline transition-colors cursor-pointer"
               >
                 Forgot password?
               </button>
@@ -877,7 +877,7 @@ const LoginScreen: React.FC<{
         src={backgroundUrl}
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover opacity-40 blur-2xl scale-140"
+        className="absolute inset-0 h-full w-full object-cover opacity-50 blur-2xl scale-125"
       />
 
       <div className="relative h-full w-full flex flex-col md:flex-row">

@@ -66,6 +66,8 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
       onDelete={(id) => d.handleDeleteTodoById(id)}
       onArchive={d.handleArchiveTodo}
       onUnarchive={d.handleUnarchiveTodo}
+      onHidePlanner={d.handleHidePlannerTodo}
+      onShowPlanner={d.handleShowPlannerTodo}
       // Subtasks section: its rows are other tasks, so they write through the
       // shared handlers rather than this view's draft. Clicking one swaps the
       // overlay to it (the same masked navigation the planner uses).

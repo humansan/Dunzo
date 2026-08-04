@@ -31,6 +31,7 @@ import {
   type EditState,
 } from '@/features/planner/table';
 import { useArchiveConfirm } from '@/features/tasks/useArchiveConfirm';
+import { usePlannerVisibilityConfirm } from '@/features/tasks/usePlannerVisibilityConfirm';
 import {
   CompletedToggle,
   OptionSelectField,
@@ -68,6 +69,11 @@ interface TodoFullViewProps {
   // leave live children under an archived parent (shared/domain/todoArchive).
   onArchive: (id: string) => void;
   onUnarchive: (id: string, mode: 'self' | 'subtree') => void;
+  // Task Planner visibility is a subtree operation for the same reason archive is
+  // - a visible task may not sit under a hidden one - so it goes through app data
+  // rather than a plain `showInDatabase` edit on the draft.
+  onHidePlanner: (id: string) => void;
+  onShowPlanner: (id: string, mode: 'self' | 'subtree') => void;
   // ── Subtasks section ────────────────────────────────────────────────────────
   // Writes for the SUBTASK rows, which never touch this view's draft: they're
   // other tasks, saved straight through the shared handler like a planner row.
@@ -179,6 +185,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onDelete,
   onArchive,
   onUnarchive,
+  onHidePlanner,
+  onShowPlanner,
   onSaveTodo,
   onOpenTask,
   onAddSubtask,
@@ -252,13 +260,24 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   // app data, not the draft) and the view now stays open across that write, so it
   // has to come back too: otherwise the button keeps saying "Archive" and the next
   // property edit would save a stale `archived: false` straight back over it.
+  // `showInDatabase` is now in the same category, for the same reason - the Task
+  // Planner switch writes a whole subtree through app data rather than the draft.
   useEffect(() => {
     setDraft(prev =>
-      prev.status === todo.status && prev.completedAt === todo.completedAt && prev.archived === todo.archived
+      prev.status === todo.status &&
+      prev.completedAt === todo.completedAt &&
+      prev.archived === todo.archived &&
+      prev.showInDatabase === todo.showInDatabase
         ? prev
-        : { ...prev, status: todo.status, completedAt: todo.completedAt, archived: todo.archived }
+        : {
+            ...prev,
+            status: todo.status,
+            completedAt: todo.completedAt,
+            archived: todo.archived,
+            showInDatabase: todo.showInDatabase,
+          }
     );
-  }, [todo.status, todo.completedAt, todo.archived]);
+  }, [todo.status, todo.completedAt, todo.archived, todo.showInDatabase]);
 
   // Escape + backdrop click + scroll lock, shared with every other popup window.
   // This view keeps its own panel markup (hence the hook rather than OverlayShell);
@@ -392,11 +411,19 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     onSave(candidate, outDate);
   };
 
+  // Whether this task hangs under another TASK (not a collection), which decides
+  // how much of the reachability rule applies to it - see the "Show in" block below.
+  const parentTodo = draft.parentId ? byId.get(draft.parentId) : undefined;
+  const isSubtask = !!parentTodo && !parentTodo.isCollection;
+
   const handleDateChange = (val: string) => {
     // Clearing the due date drops the due time with it (a time needs its date -
     // reconcileSchedule strips it) and keeps the task reachable in the Planner
     // (mirrors normalizeVisibility); re-adding a date later sends it straight back.
-    updateSchedule(val ? {} : { showInDatabase: true }, 'due', val);
+    // A SUBTASK is exempt: it's reachable inside its parent task, and forcing it
+    // into the Planner here would break the parent/child rule the moment the parent
+    // is hidden - the write boundary would just hide it again on the next save.
+    updateSchedule(val || isSubtask ? {} : { showInDatabase: true }, 'due', val);
   };
 
   // The time is the whole value (its % readout is derived), so these just write it.
@@ -405,15 +432,33 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const handleStartDateChange = (val: string) => updateSchedule({ startDate: val || undefined }, 'start');
 
   // "Show in" invariants: the daily flag can be set even without a date (it just
-  // stays pending until one is added), but the task must stay reachable on at least
-  // one surface - so a switch that is the sole *effective* surface can't be turned
-  // off. A daily-flagged task only counts as reachable there once it has a date.
+  // stays pending until one is added), but the task must stay REACHABLE - so a
+  // switch that is the sole *effective* surface can't be turned off. A daily-flagged
+  // task only counts as reachable there once it has a date.
+  //
+  // A subtask is exempt from both locks: it is reachable inside its parent task's
+  // full view (this very list), so it may be switched off everywhere - which is
+  // what lets a hidden parent take its whole subtree out of the Planner. A parent
+  // COLLECTION doesn't count: the Planner renders only the visible todos inside
+  // one, so a task filed straight under a collection is a root for this purpose
+  // and keeps the locks. See shared/domain/todoVisibility.
   const dated = hasDate(dateStr);
   const plannerOn = draft.showInDatabase === true;
   const dailyFlag = draft.showInDailyList === true;
   const dailyEffective = dailyFlag && dated; // actually reaches a daily list
-  const plannerDisabled = plannerOn && !dailyEffective;
-  const dailyDisabled = dailyEffective && !plannerOn;
+  const plannerDisabled = plannerOn && !dailyEffective && !isSubtask;
+  const dailyDisabled = dailyEffective && !plannerOn && !isSubtask;
+
+  // Planner visibility reaches past this task in both directions (hiding takes the
+  // subtree down, showing lifts the hidden parents), so it asks first - same three
+  // questions as the archive confirmation, and the modal renders alongside it at
+  // the end of this component. The batch write goes through app data, not this
+  // view's draft: the rows it touches are other tasks.
+  const { requestPlannerVisibility, plannerVisibilityConfirmModal } = usePlannerVisibilityConfirm({
+    todos: allTodos,
+    onHide: onHidePlanner,
+    onShow: onShowPlanner,
+  });
 
   // Prompts when the operation reaches beyond this task; the modal is rendered at
   // the end of this component. Neither direction closes the view: `byId` indexes
@@ -635,7 +680,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     <Switch
                       checked={plannerOn}
                       disabled={plannerDisabled}
-                      onChange={(val) => update({ showInDatabase: val })}
+                      onChange={(val) => requestPlannerVisibility(draft.id, val)}
                       aria-label="Show in Task Planner"
                     />
                   </div>
@@ -724,6 +769,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
         </div>
       </motion.div>
       {archiveConfirmModal}
+      {plannerVisibilityConfirmModal}
     </motion.div>
   );
 };

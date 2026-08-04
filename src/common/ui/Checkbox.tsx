@@ -10,7 +10,8 @@ export const Checkbox: React.FC<{
   className?: string;
   children?: React.ReactNode;
   'aria-label'?: string;
-}> = ({ checked, onChange, className, children, 'aria-label': ariaLabel }) => (
+  gold?: boolean;
+}> = ({ checked, onChange, className, children, 'aria-label': ariaLabel, gold }) => (
   <button
     type="button"
     role="checkbox"
@@ -22,7 +23,9 @@ export const Checkbox: React.FC<{
     <span
       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
         checked
-          ? 'bg-[var(--accent2)] border-[var(--accent2)] text-canvas'
+          ? gold
+            ? 'bg-xp-tier1 border-xp-tier1 text-canvas'
+            : 'bg-accent2 border-accent2 text-canvas'
           : 'border-line group-hover:border-line-strong'
       }`}
     >

@@ -3,6 +3,7 @@ import type { Todo } from '../shared/types';
 import { normalizeVisibility } from '../shared/domain/todoVisibility';
 import { reconcileSchedule, SCHEDULE_KEYS } from '../shared/domain/todoSchedule';
 import { reconcileArchived } from '../shared/domain/todoArchive';
+import { reconcilePlannerVisibility } from '../shared/domain/todoPlannerVisibility';
 
 // Wrap an async route handler so thrown/rejected errors reach the error
 // middleware instead of crashing the process or hanging the request.
@@ -122,12 +123,17 @@ export const SETTINGS_FIELDS = [
 
 // Fields whose value can change which surface a todo renders on (or remove it
 // from all of them). A patch touching none of these can't break the invariant.
+// `parentId` is in the list because reachability now includes "inside its
+// parent": a subtask may be hidden from both surfaces, a root may not. So moving a
+// task out to the root has to re-run the check that forces a dateless one back
+// into the Planner (see normalizeVisibility).
 const VISIBILITY_KEYS = [
   'showInDatabase',
   'showInDailyList',
   'dueDate',
   'isCollection',
   'archived',
+  'parentId',
 ] as const;
 
 export function touchesVisibility(patch: object): boolean {
@@ -136,11 +142,17 @@ export function touchesVisibility(patch: object): boolean {
 
 // Server-side backstop mirroring the client's normalizeVisibility: given a todo's
 // fully-merged intended state, force showInDatabase on when it would otherwise be
-// reachable on no surface, so a malformed payload can never persist an orphan.
+// reachable nowhere, so a malformed payload can never persist an orphan. `parent`
+// is the todo's current parent row - a task parent is itself a surface (see
+// normalizeVisibility), so a subtask under one is exempt; omitting it applies the
+// stricter root rule, which errs toward showing.
 // Mutates `row` (only sets showInDatabase when a correction is needed) and returns it.
-export function enforceVisibility<T extends Record<string, unknown>>(row: T): T {
+export function enforceVisibility<T extends Record<string, unknown>>(
+  row: T,
+  parent?: Record<string, unknown> | null
+): T {
   const current = (row as { showInDatabase?: boolean | null }).showInDatabase;
-  const fixed = normalizeVisibility(row as unknown as Todo);
+  const fixed = normalizeVisibility(row as unknown as Todo, parent as unknown as Todo | null);
   if (fixed.showInDatabase !== current) {
     (row as { showInDatabase?: boolean }).showInDatabase = fixed.showInDatabase;
   }
@@ -196,6 +208,25 @@ export function enforceArchive<T extends Record<string, unknown>>(
   const fixed = reconcileArchived(row as unknown as Todo, parent as unknown as Todo | null);
   if (fixed.archived !== (row as { archived?: boolean | null }).archived) {
     (row as { archived?: boolean }).archived = fixed.archived;
+  }
+  return row;
+}
+
+// Server-side backstop mirroring the client's reconcilePlannerVisibility: a todo
+// whose parent is hidden from the Task Planner must itself be hidden, so no write
+// can leave a row visible under a hidden one - the state that renders a subtask
+// orphaned at the ROOT of the Planner tree, since the ancestry walk runs over the
+// visible entry set and its chain stops at the hidden parent. `parent` is the
+// todo's current parent row, or null/undefined when it has none or it couldn't be
+// resolved - in which case the row is left alone.
+// Mutates `row` (only when a correction is needed) and returns it.
+export function enforcePlannerVisibility<T extends Record<string, unknown>>(
+  row: T,
+  parent: Record<string, unknown> | null | undefined
+): T {
+  const fixed = reconcilePlannerVisibility(row as unknown as Todo, parent as unknown as Todo | null);
+  if (fixed.showInDatabase !== (row as { showInDatabase?: boolean | null }).showInDatabase) {
+    (row as { showInDatabase?: boolean }).showInDatabase = fixed.showInDatabase;
   }
   return row;
 }

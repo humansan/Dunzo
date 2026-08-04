@@ -14,6 +14,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
 import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive, descendantsToUnarchive } from '@/features/tasks/model';
+import { reconcilePlannerVisibility, descendantsToHide, descendantsToShow, ancestorsToShow } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
@@ -456,8 +457,15 @@ function useProvideAppData() {
       : updatedTodo.dailyOrder;
     updateTodo.mutate({
       id: updatedTodo.id,
-      patch: reconcileArchived(
-        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, hubOrder, dailyOrder }))),
+      patch: reconcilePlannerVisibility(
+        reconcileArchived(
+          reconcileSchedule(
+            normalizeCompletion(
+              normalizeVisibility({ ...updatedTodo, dueDate, hubOrder, dailyOrder }, parent)
+            )
+          ),
+          parent
+        ),
         parent
       ),
     });
@@ -478,10 +486,16 @@ function useProvideAppData() {
     // An explicit group-create date wins over anything in the patch (e.g. a date
     // filter); when none is given we keep whatever dueDate the patch carries.
     const dueDate = opts?.date && opts.date !== UNDATED ? opts.date : undefined;
+    // A subtask INHERITS its parent's Planner visibility: creating one inside a
+    // hidden parent must not manufacture the orphan the invariant exists to
+    // prevent (shared/domain/todoPlannerVisibility). `showInDailyList` keeps
+    // following the setting instead - the daily checklist is flat, so nothing
+    // about it is constrained by where the task sits in the tree.
+    const seedParent = parentId ? todoById.get(parentId) : undefined;
     const newTodo: Todo = {
       id,
       text: '',
-      showInDatabase: true,
+      showInDatabase: seedParent ? seedParent.showInDatabase === true : true,
       showInDailyList: plannerTasksInDailyList,
       workspaceId: activeWorkspaceId,
       ...(parentId ? { parentId } : {}),
@@ -496,9 +510,15 @@ function useProvideAppData() {
     // shared/domain/todoArchive). The server enforces the same rule authoritatively;
     // doing it here keeps the optimistic row honest instead of showing it live for
     // a beat and then having it change under the user.
-    const parent = parentId ? todoById.get(parentId) : undefined;
+    const parent = seedParent;
     createTodo.mutate(
-      reconcileArchived(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))), parent)
+      reconcilePlannerVisibility(
+        reconcileArchived(
+          reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo, parent))),
+          parent
+        ),
+        parent
+      )
     );
     return id;
   };
@@ -578,7 +598,17 @@ function useProvideAppData() {
     const maxOrder = todos
       .filter(t => t && (t.parentId ?? null) === (collectionId ?? null))
       .reduce((m, t) => Math.max(m, t.hubOrder ?? 0), 0);
-    updateTodo.mutate({ id: taskId, patch: { parentId: collectionId, hubOrder: maxOrder + 1 } });
+    // Moving a task out from under a parent TASK and into a collection (or to
+    // uncategorized) can leave it reachable nowhere - a collection is not a surface
+    // of its own - so it gets the same re-parent reconciliation a drag gets.
+    updateTodo.mutate({
+      id: taskId,
+      patch: {
+        parentId: collectionId,
+        hubOrder: maxOrder + 1,
+        ...reparentVisibility(taskId, collectionId),
+      },
+    });
   };
 
   // Remove a todo entirely (server FK-cascades subtasks; cache drops them too).
@@ -624,6 +654,31 @@ function useProvideAppData() {
     batchTodos.mutate({ patches: [...ids].map((tid) => ({ id: tid, archived: false })) });
   };
 
+  // Show/hide a todo in the Task Planner. Like archive, neither direction is a
+  // single-row write: hiding takes the whole subtree down with it (a visible todo
+  // may not sit under a hidden one - shared/domain/todoPlannerVisibility) and
+  // showing lifts every hidden ancestor, so both go out as one batch. The server
+  // re-derives the same set from its own CTEs, so a partial batch can't leave the
+  // tree half-hidden.
+  const handleHidePlannerTodo = (id: string) => {
+    const ids = descendantsToHide(todos.filter(Boolean) as Todo[], id);
+    if (!ids.length) return;
+    batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, showInDatabase: false })) });
+  };
+
+  // `mode` decides what happens BELOW the todo, which is a preference rather than
+  // an invariant: 'self' shows just this row (its hidden subtask stays hidden - a
+  // legal state, and how you hide a single subtask), 'subtree' brings everything
+  // hidden inside it back too. What happens ABOVE is not a choice - the hidden
+  // ancestors always come back, or the row would render orphaned at the root.
+  const handleShowPlannerTodo = (id: string, mode: 'self' | 'subtree' = 'self') => {
+    const all = todos.filter(Boolean) as Todo[];
+    const ids = new Set(ancestorsToShow(all, id));
+    if (mode === 'subtree') for (const d of descendantsToShow(all, id)) ids.add(d);
+    if (!ids.size) return;
+    batchTodos.mutate({ patches: [...ids].map((tid) => ({ id: tid, showInDatabase: true })) });
+  };
+
   // Delete a collection. 'cascade' removes the collection and its whole subtree.
   // 'promote' deletes only the collection node and moves its direct children
   // (tasks and sub-collections) up to the collection's parent (or uncategorized
@@ -636,15 +691,49 @@ function useProvideAppData() {
     // Reparent children (patches) before deleting the node (deletes) - the
     // server applies patches first, so the FK cascade won't take the children.
     batchTodos.mutate({
-      patches: children.map(c => ({ id: c.id, parentId: grandparentId })),
+      // Promoting can move a task to the root, where it needs a surface of its own
+      // again - same re-parent reconciliation a drag gets.
+      patches: children.map(c => ({
+        id: c.id,
+        parentId: grandparentId,
+        ...reparentVisibility(c.id, grandparentId),
+      })),
       deletes: [id],
     });
+  };
+
+  // A re-parent changes which surfaces a task needs. Moving it INTO a hidden
+  // parent hides it (a visible todo may not sit under a hidden one); moving it OUT
+  // to the root - or under a collection, which is not a surface of its own - can
+  // leave it reachable nowhere, so the reachability rescue promotes it back into
+  // the Planner. Both fall out of running the same two rules the write chain runs;
+  // this returns just the fields that changed, to fold into a re-parent patch.
+  //
+  // The client copy exists to keep the OPTIMISTIC CACHE honest - without it a drag
+  // parks an illegal row on screen until some later refetch. The server re-derives
+  // all of it authoritatively (and, unlike this, resolves rows written earlier in
+  // the same batch), so a batch that re-parents a parent and its children together
+  // is settled there.
+  const reparentVisibility = (id: string, parentId: string | null): Partial<Todo> => {
+    const current = todoById.get(id);
+    if (!current) return {};
+    const parent = parentId ? todoById.get(parentId) : undefined;
+    const intended = { ...current, parentId: parentId ?? undefined };
+    const fixed = reconcilePlannerVisibility(normalizeVisibility(intended, parent), parent);
+    return fixed.showInDatabase === current.showInDatabase
+      ? {}
+      : { showInDatabase: fixed.showInDatabase };
   };
 
   // Persist hub order + nesting: assign hubOrder by position and set parentId.
   const handleReorderHubTodos = (items: { id: string; parentId: string | null }[]) => {
     batchTodos.mutate({
-      patches: items.map((it, i) => ({ id: it.id, hubOrder: i, parentId: it.parentId })),
+      patches: items.map((it, i) => ({
+        id: it.id,
+        hubOrder: i,
+        parentId: it.parentId,
+        ...reparentVisibility(it.id, it.parentId),
+      })),
     });
   };
 
@@ -741,6 +830,8 @@ function useProvideAppData() {
     handleArchiveTodo,
     handleArchiveTodos,
     handleUnarchiveTodo,
+    handleHidePlannerTodo,
+    handleShowPlannerTodo,
     handleDeleteCollection,
     handleReorderHubTodos,
     // tracker handlers + modal state
