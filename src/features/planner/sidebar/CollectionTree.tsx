@@ -94,13 +94,6 @@ export const CollectionTree: React.FC<{
             <span className="flex-1 truncate">All Planner Tasks</span>
             <span className="text-xs text-fg-faint font-mono mr-1.5">{allCount}</span>
           </button>
-          {archivedCount !== undefined && (
-            <button type="button" onClick={() => onSelectView?.('archived')} className={itemCls('archived')} title="Archived">
-              <Archive size={15} className="shrink-0 text-fg-subtle" />
-              <span className="flex-1 truncate">Archived</span>
-              <span className="text-xs text-fg-faint font-mono mr-1.5">{archivedCount}</span>
-            </button>
-          )}
           {completedCount !== undefined && (
             <button type="button" onClick={() => onSelectView?.('completed')} className={itemCls('completed')} title="Completed">
               <CircleCheckBig size={15} className="shrink-0 text-fg-subtle" />
@@ -289,6 +282,17 @@ export const CollectionTree: React.FC<{
             </div>
           );
         })}
+      </div>
+
+      <div className="mb-1.5 mx-3 border-t border-line"></div>
+      <div className="shrink-0 px-2">
+        {archivedCount !== undefined && (
+          <button type="button" onClick={() => onSelectView?.('archived')} className={itemCls('archived')} title="Archived">
+            <Archive size={15} className="shrink-0 text-fg-subtle" />
+            <span className="flex-1 truncate">Archived</span>
+            <span className="text-xs text-fg-faint font-mono mr-1.5">{archivedCount}</span>
+          </button>
+        )}
       </div>
     </div>
   );
