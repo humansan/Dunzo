@@ -38,6 +38,10 @@ export interface TableModel {
   selectedView: string;
   viewLabel: string;
   currentCount: number;
+  // The planner's in-view search is narrowing the rows. Only the empty state reads
+  // it - "nothing matched" is a different message from "this view is empty", and
+  // the add-row's invitation to create a task doesn't apply to a search miss.
+  searchActive?: boolean;
 }
 
 // The name-only, chrome-less TableModel every flat/nesting surface shares (search

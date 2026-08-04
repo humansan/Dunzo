@@ -159,6 +159,14 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // and its rows read presentation off this instead of a `listView` boolean.
   const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
 
+  // ── In-view search ──────────────────────────────────────────────────────────
+  // Local to the open tab, and deliberately NOT persisted like filters/sorts: a
+  // search you can't see is a trap, so switching tabs always shows the whole tab.
+  // Clearing on `selectedView` rather than on a click means every route into a tab
+  // (sidebar, breadcrumb, a deep link) resets it the same way.
+  const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => { setSearchQuery(''); }, [selectedView]);
+
   // Per-view layout + column widths (field order/visibility, filters, sorts,
   // section settings, resizable columns) - keyed by workspace + view.
   const {
@@ -215,6 +223,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     completedCount,
     currentCount,
     viewLabel,
+    searchActive,
+    effectiveCollapsed,
   } = useHubData({
     dayTodos,
     activeWorkspaceId,
@@ -229,6 +239,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     filtersFor,
     activeSorts,
     sectionsConfig,
+    searchQuery,
     showNesting: variant.showNesting,
   });
 
@@ -483,6 +494,23 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
   // Whether the current view offers task creation (the Archived view doesn't).
   const viewAllowsNew = resolveView(selectedView).allowNew;
+  // …and whether creation is offered right now. An active search withdraws every
+  // create affordance - the add-row, the group/collection "+" buttons, and the
+  // context menu's five create actions - for two reasons:
+  //
+  //   • A new task starts untitled, so it can't match the query. It would be
+  //     created, filtered straight back out, and leave its inline title editor
+  //     attached to a row that isn't on screen.
+  //   • "Add task above/below" and Duplicate place the new row via placeRelative,
+  //     which reads `processedEntries` - search-narrowed - and writes the whole
+  //     tree order back. Ordering a partial list renumbers the survivors against
+  //     neighbours the query is hiding, the same way a drag would (which is why
+  //     drag is suppressed too).
+  //
+  // The sidebar-origin variants would in fact self-heal (they navigate, and
+  // switching tabs clears the search), but they share these handlers, and one rule
+  // is easier to reason about than a per-origin exception.
+  const canCreate = viewAllowsNew && !searchActive;
   // What a task created in this view needs to remain visible here — e.g. the In
   // Daily List tab seeds the daily flag + today's date. Evaluated per create so
   // dynamic values (today) stay fresh; the view's active filters still win on
@@ -744,6 +772,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           currentCount={currentCount}
           filterCount={activeFilters.length}
           sortCount={activeSorts.length}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           menuOpen={toolbarMenuOpen}
           onToggleMenu={onToggleMenu}
         />
@@ -763,23 +793,30 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               collPathById,
               visibleTaskCounts,
               todoById,
-              collapsed,
+              // The set the rows were built from, not the saved one - see
+              // useHubData.effectiveCollapsed (a search reads as fully expanded).
+              collapsed: effectiveCollapsed,
               selectedCollectionId,
               selectedView,
               viewLabel,
-              currentCount
+              currentCount,
+              searchActive,
             }}
             interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
             rowHandlers={{
               onSaveTodo,
               onToggleTodo,
               onAddSubtask,
-              onQuickAddTask: viewAllowsNew ? handleQuickAddTask : undefined,
-              onQuickAddInGroup: viewAllowsNew ? handleQuickAddInGroup : undefined,
-              onNewInView: viewAllowsNew ? handleNewInView : undefined,
+              onQuickAddTask: canCreate ? handleQuickAddTask : undefined,
+              onQuickAddInGroup: canCreate ? handleQuickAddInGroup : undefined,
+              onNewInView: canCreate ? handleNewInView : undefined,
               onOpenTask,
             }}
-            dnd={dnd}
+            // Drag-to-reorder is suppressed while a search is narrowing the rows:
+            // a drop assigns hubOrder by position over the rows on screen, so
+            // reordering a partial list would renumber the survivors against
+            // neighbours the query is hiding.
+            dnd={searchActive ? undefined : dnd}
             bottomSpacer
           />
       </div>
@@ -865,11 +902,12 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         />
       )}
 
-      {/* Right-click / 3-dot context menu. The four create actions are passed only
-          when the view supports creation (viewAllowsNew) - an undefined handler
-          renders no item. In Archived that isn't cosmetic: the new child would
-          inherit its parent's archived state (shared/domain/todoArchive) and vanish
-          into the row it was created under. */}
+      {/* Right-click / 3-dot context menu. The five create actions are passed only
+          when creation is currently on offer (`canCreate`) - an undefined handler
+          renders no item. Neither half of that is cosmetic: in Archived the new
+          child would inherit its parent's archived state
+          (shared/domain/todoArchive) and vanish into the row it was created under,
+          and under an active search it would be filtered straight back out. */}
       {menu && (
         <RowContextMenu
           menu={menu}
@@ -889,8 +927,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onDuplicate={viewAllowsNew ? duplicateTask : undefined}
           onSetDate={(_id, date) => setTaskDate(date)}
           onSetTime={(_id, time) => setTaskTime(time)}
-          onAddTaskAbove={viewAllowsNew ? ((id) => addTaskRelative(id, 'above')) : undefined}
-          onAddTaskBelow={viewAllowsNew ? ((id) => addTaskRelative(id, 'below')) : undefined}
+          onAddTaskAbove={canCreate ? ((id) => addTaskRelative(id, 'above')) : undefined}
+          onAddTaskBelow={canCreate ? ((id) => addTaskRelative(id, 'below')) : undefined}
           onArchive={(id) => { requestArchiveToggle(id); closeMenu(); }}
           onDelete={requestDeleteFromMenu}
         />

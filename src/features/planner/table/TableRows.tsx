@@ -21,9 +21,21 @@ interface TableRowsProps {
   effectiveGrid: string;
 }
 
-function getEmptyMessage(selectedCollectionId: string | null, selectedView: string, variant?: TableVariant): React.ReactNode {
+function getEmptyMessage(
+  selectedCollectionId: string | null,
+  selectedView: string,
+  variant?: TableVariant,
+  searchActive?: boolean
+): React.ReactNode {
   if (variant !== VARIANTS.table && variant !== VARIANTS.list) {
     return null;
+  }
+
+  // A search miss is not an empty view: every message below invites the user to
+  // add a task, which is the wrong thing to say when the tab has plenty of tasks
+  // and the query just didn't match any of them.
+  if (searchActive) {
+    return 'No tasks match your search.';
   }
 
   if (selectedCollectionId) {
@@ -68,6 +80,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
     wrappedFields,
     selectedCollectionId,
     selectedView,
+    searchActive,
   } = model;
 
   const nameOnly = variant.columns === 'name';
@@ -158,7 +171,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
       )
     );
 
-  const emptyMessage = getEmptyMessage(selectedCollectionId, selectedView, variant);
+  const emptyMessage = getEmptyMessage(selectedCollectionId, selectedView, variant, searchActive);
 
   return (
     <>
@@ -191,7 +204,10 @@ export const TableRows: React.FC<TableRowsProps> = ({
         </button>
       )}
 
-      {isEmpty && emptyMessage && (onNewInView || selectedView === 'archived' || selectedView === 'completed') && (
+      {/* `searchActive` joins the list because a search drops the add-row (see
+          PlannerView), and without it the "nothing matched" message would be
+          gated off by the very handler the search just removed. */}
+      {isEmpty && emptyMessage && (onNewInView || searchActive || selectedView === 'archived' || selectedView === 'completed') && (
         <div className="px-3 py-6 text-xs text-fg-subtle">
           {emptyMessage}
         </div>

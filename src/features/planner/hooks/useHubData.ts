@@ -16,6 +16,7 @@ import {
 } from '@/features/tasks/model';
 import { ColKey, COLUMNS, GroupRow, FilterRule, FilterMatch, SortRule, SectionsConfig } from '@/features/planner/types';
 import { PLANNER_VIEWS, resolveView, ViewCtx, ViewDef } from '@/features/planner/views';
+import { rankTaskFinderMatches } from '@/features/planner/task-finder/useTaskFinderSearch';
 import type { ViewFilterState } from '@/features/planner/model/viewConfigStore';
 import {
   getFieldDisplayValue,
@@ -51,6 +52,11 @@ export function useHubData(params: {
   filtersFor: (viewId: string) => ViewFilterState;
   activeSorts: SortRule[];
   sectionsConfig: SectionsConfig;
+  // The toolbar's in-view search box. Transient and local to the open tab (the
+  // caller clears it on tab change), so unlike filters/sorts it is never persisted
+  // to view state - a saved-but-invisible search would silently hide rows on
+  // return. Empty string = inactive.
+  searchQuery: string;
   // Whether the current view variant shows the collection/subtask hierarchy. When
   // false the tree is flattened to a single depth-0 list (search-style), ignoring
   // collapse state. Both live variants (table/list) pass true.
@@ -70,6 +76,7 @@ export function useHubData(params: {
     filtersFor,
     activeSorts,
     sectionsConfig,
+    searchQuery,
     showNesting,
   } = params;
 
@@ -285,19 +292,71 @@ export function useHubData(params: {
     [viewEntries, activeFilters, filterMatch, hideCompleted, todoById]
   );
 
+  // ── In-view search ──────────────────────────────────────────────────────────
+  // The toolbar's search box, applied ON TOP of the filters so the two compose
+  // (the Filter menu says what the tab contains; search is a lens over that).
+  //
+  // It runs the Task Finder's own ranker (rankTaskFinderMatches) rather than a
+  // second matcher, so the two searches can't drift in what they consider a hit -
+  // the tiers, the searchable-field set and the fuzzy guards are all one
+  // implementation. The RANKING is discarded: this view has its own sort and
+  // grouping, so only the matched set matters, and the limit is lifted (a view
+  // filter that silently stopped at 50 rows would just be wrong).
+  //
+  // Matches are kept WITH their ancestor chain, re-attached for context and left
+  // out of `matchIds` so the table dims them - exactly what the view builder above
+  // does for its own leaves. That is what keeps a matched subtask under its parent
+  // task and its collection header instead of stranded at the root of the tree
+  // (the orphaning trap documented on applyFilters). It is also why search can't
+  // simply reuse applyFilters, which drops a row whose ancestors fail: a subtask
+  // must stay findable when only IT matches the query.
+  const searchMatchIds = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return null; // inactive - the view keeps its own match set untouched
+    return new Set(rankTaskFinderMatches(filteredEntries, todoById, q, Infinity).map((e) => e.todo.id));
+  }, [searchQuery, filteredEntries, todoById]);
+
+  const searchedEntries = useMemo(() => {
+    if (!searchMatchIds) return filteredEntries;
+    const keep = new Set<string>();
+    for (const e of filteredEntries) {
+      if (!searchMatchIds.has(e.todo.id)) continue;
+      keep.add(e.todo.id);
+      for (const a of ancestorsOf(e.todo, todoById)) keep.add(a.id);
+    }
+    return filteredEntries.filter((e) => keep.has(e.todo.id));
+  }, [filteredEntries, searchMatchIds, todoById]);
+
+  // What the table treats as a real hit vs. dimmed scaffolding. While searching,
+  // a row must satisfy BOTH the view's own predicate and the query.
+  const activeMatchIds = useMemo(() => {
+    if (!searchMatchIds) return viewMatchIds;
+    return new Set([...searchMatchIds].filter((id) => viewMatchIds.has(id)));
+  }, [searchMatchIds, viewMatchIds]);
+
+  // Collapse is ignored while searching. The saved collapse set is per-view and
+  // DB-synced, so a user with a few folded collections would otherwise search and
+  // be told there are no matches while the matches sit inside a fold. Everything
+  // reads as expanded for the duration of the query; clearing it restores the real
+  // state, which is never written to.
+  const effectiveCollapsed = useMemo(
+    () => (searchMatchIds ? new Set<string>() : collapsed),
+    [searchMatchIds, collapsed]
+  );
+
   // Hide collections that have no visible task descendants (optional section setting).
   // The ancestor walk runs over `todoById`, not `byId`: `byId` covers the non-archived
   // set only, so an archived collection would break the chain and read as empty in the
   // Archived view (and swallow its children's contribution to live grandparents).
   const processedEntries = useMemo(() => {
-    if (!sectionsConfig.hideEmptyCollections) return filteredEntries;
+    if (!sectionsConfig.hideEmptyCollections) return searchedEntries;
     const collWithTasks = new Set<string>();
-    for (const e of filteredEntries) {
+    for (const e of searchedEntries) {
       if (e.todo.isCollection) continue;
       for (const a of ancestorsOf(e.todo, todoById)) collWithTasks.add(a.id);
     }
-    return filteredEntries.filter((e) => !e.todo.isCollection || collWithTasks.has(e.todo.id));
-  }, [filteredEntries, sectionsConfig.hideEmptyCollections, todoById]);
+    return searchedEntries.filter((e) => !e.todo.isCollection || collWithTasks.has(e.todo.id));
+  }, [searchedEntries, sectionsConfig.hideEmptyCollections, todoById]);
 
   // Build a sort comparator from the active sort rules.
   const sortFn = useMemo(() => {
@@ -358,8 +417,8 @@ export function useHubData(params: {
   // Grouped rows - only used when groupBy !== 'collection'.
   const groupedRows = useMemo((): GroupRow[] => {
     if (sectionsConfig.groupBy === 'collection') return [];
-    return buildGroupedItems(visibleEntries, sectionsConfig.groupBy, todoById, collapsed, sortFn, sectionsConfig.groupSortDirection, viewMatchIds);
-  }, [sectionsConfig.groupBy, visibleEntries, todoById, collapsed, sortFn, sectionsConfig.groupSortDirection, viewMatchIds]);
+    return buildGroupedItems(visibleEntries, sectionsConfig.groupBy, todoById, effectiveCollapsed, sortFn, sectionsConfig.groupSortDirection, activeMatchIds);
+  }, [sectionsConfig.groupBy, visibleEntries, todoById, effectiveCollapsed, sortFn, sectionsConfig.groupSortDirection, activeMatchIds]);
 
   // Rendered rows for collection-grouped (default) mode. leafPosition segregates
   // tasks vs sub-collections. The dragged row stays visible (dimmed), so nothing
@@ -368,13 +427,13 @@ export function useHubData(params: {
     () =>
       flattenTree(visibleEntries, {
         // Flat variants ignore collapse state (nothing to expand/collapse).
-        collapsed: showNesting ? collapsed : undefined,
+        collapsed: showNesting ? effectiveCollapsed : undefined,
         sortFn,
         leafPosition: sectionsConfig.showLeafTasks !== 'none' ? sectionsConfig.showLeafTasks : undefined,
         flat: !showNesting,
-        matchIds: viewMatchIds,
+        matchIds: activeMatchIds,
       }),
-    [visibleEntries, collapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, viewMatchIds]
+    [visibleEntries, effectiveCollapsed, sortFn, sectionsConfig.showLeafTasks, showNesting, activeMatchIds]
   );
   const flatById = useMemo(() => new Map(flattened.map((n) => [n.id, n])), [flattened]);
 
@@ -385,9 +444,12 @@ export function useHubData(params: {
   // see FlatNode.matchesView). "Archive completed tasks in view" writes to exactly
   // this set, which is why it is derived here rather than re-filtered at the call
   // site: the button and the rows can't disagree about what the view contains.
+  // Keyed on the SEARCH-narrowed match set for that same reason: with a query
+  // active, "in view" is what the query left on screen, so "Archive completed
+  // tasks in view" can't reach a row the user can't see.
   const renderedTaskEntries = useMemo(
-    () => visibleEntries.filter((e) => !e.todo.isCollection && viewMatchIds.has(e.todo.id)),
-    [visibleEntries, viewMatchIds]
+    () => visibleEntries.filter((e) => !e.todo.isCollection && activeMatchIds.has(e.todo.id)),
+    [visibleEntries, activeMatchIds]
   );
 
   // ── Sidebar counts ─────────────────────────────────────────────────────────
@@ -479,6 +541,14 @@ export function useHubData(params: {
     viewEntries,
     uniqueValues,
     filteredEntries,
+    // Whether the toolbar's search box is narrowing the rows right now. The table
+    // needs it for its empty state ("nothing matched" vs. "this view is empty"),
+    // and the caller to suppress drag-to-reorder over a partial list.
+    searchActive: searchMatchIds !== null,
+    // The collapse set the rows were actually built from - empty while searching.
+    // The table reads it for its chevrons, so they can't point "collapsed" at a
+    // row whose children are on screen.
+    effectiveCollapsed,
     processedEntries,
     visibleTaskCounts,
     groupedRows,
