@@ -187,6 +187,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // lists, and per-collection counts.
   const {
     entries,
+    flatEntries,
     archivedEntries,
     selectedCollectionId,
     byId,
@@ -946,6 +947,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
       {reparentTarget && (
         <TaskFinder
           entries={entries}
+          flatEntries={flatEntries}
           todoById={todoById}
           onSaveTodo={onSaveTodo}
           title={`Move “${reparentTarget.text || 'Untitled'}” to…`}

@@ -334,7 +334,7 @@ export const ParentTaskButton: React.FC<{
   parentId: string | null;
   onChange: (id: string | null) => void;
 }> = ({ todoId, parentId, onChange }) => {
-  const { searchEntries, todoById, handleHubSaveTodo } = useAppData();
+  const { searchEntries, searchFlatEntries, todoById, handleHubSaveTodo } = useAppData();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const parentTodo = parentId ? todoById.get(parentId) ?? null : null;
@@ -359,6 +359,7 @@ export const ParentTaskButton: React.FC<{
       {pickerOpen && (
         <TaskFinder
           entries={searchEntries}
+          flatEntries={searchFlatEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
           title="Set parent task"

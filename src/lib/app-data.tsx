@@ -752,15 +752,15 @@ function useProvideAppData() {
   // see filters.ts); opening a result shows its full view (rendered by AppShell).
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // Organizer-scoped set: the two-pane (table) search view groups tasks by their
-  // collection, and the reparent/parent pickers choose a Planner task - both want
-  // only tasks that live in the Task Planner.
+  // collection - a Planner structure - so it wants only tasks that live in the Task
+  // Planner. It backs that view on every surface, search and pickers alike.
   const searchEntries = useMemo(
     () => getOrganizerTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
   // Broad set: the flat (list) search view searches every unarchived task, whether
   // it lives in the Planner, the daily list, or both - so a daily-list-only task is
-  // still findable via ⌘/Ctrl+K.
+  // findable via ⌘/Ctrl+K and choosable as a parent in the pickers.
   const searchFlatEntries = useMemo(
     () => getSearchableTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]

@@ -3,6 +3,7 @@ import { DayTodos, Todo } from '@shared/types';
 import {
   getOrganizerTodos,
   getArchivedTodos,
+  getSearchableTodos,
   OrganizerEntry,
   todoIndex,
   collectionOf,
@@ -79,6 +80,15 @@ export function useHubData(params: {
   // (hover, editing, menu open, each dragover frame).
   const entries = useMemo(
     () => getOrganizerTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
+    [dayTodos, activeWorkspaceId]
+  );
+
+  // Every unarchived todo, Planner-visible or not. Not part of the Planner's own
+  // pipeline - nothing below reads it - it exists for the TaskFinder pickers this
+  // view opens, whose flat (list) view searches the broad universe while their
+  // two-pane view stays scoped to `entries`. See TaskFinder's `flatEntries`.
+  const flatEntries = useMemo(
+    () => getSearchableTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
 
@@ -454,6 +464,7 @@ export function useHubData(params: {
 
   return {
     entries,
+    flatEntries,
     archivedEntries,
     selectedCollectionId,
     byId,

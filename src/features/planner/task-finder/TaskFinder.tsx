@@ -21,12 +21,14 @@ const RESULT_LIMIT = 50;
 const NOOP = () => {};
 
 export interface TaskFinderProps {
-  // The task universe searched by the two-pane (Collections) view and the pickers.
-  // Global search passes its Planner-scoped organizer set here.
+  // The task universe searched by the two-pane (Collections) view: the Planner-scoped
+  // organizer set. That view groups by collection, which is a Planner structure, so
+  // it stays Planner-only on every surface.
   entries: OrganizerEntry[];
-  // Optional broader universe for the flat (list) view - global search passes every
-  // unarchived task (Planner + daily-list-only) so daily-only tasks are findable.
-  // Omitted by pickers, which fall back to `entries` in both views.
+  // Optional broader universe for the flat (list) view - every unarchived task,
+  // Planner or daily-list-only. Every caller passes it (search and the pickers
+  // alike); it stays optional so a future read-only surface can opt out, and the
+  // fallback to `entries` keeps that safe.
   flatEntries?: OrganizerEntry[];
   todoById: Map<string, Todo>;
   // Choosing a task: search opens its full view; a picker returns it to the caller.
@@ -75,10 +77,11 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       return n;
     });
 
-  // The flat (list) view searches the broader `flatEntries` universe when provided
-  // (global search: every unarchived task, so daily-list-only tasks are findable);
-  // the two-pane (Collections) view stays scoped to `entries` (the organizer set it
-  // groups by collection). Pickers pass no `flatEntries`, so both views use `entries`.
+  // The two views deliberately search different universes. The flat (list) view
+  // takes the broad one - every unarchived task, so a daily-list-only task is
+  // findable and pickable. The two-pane (Collections) view stays scoped to
+  // `entries`: it groups results under their collection, which is a Planner
+  // structure, so a task that isn't in the Planner has no shelf to sit on there.
   const activeEntries = finderView === 'flat' ? (flatEntries ?? entries) : entries;
 
   // The searchable universe, narrowed twice. A picker excludes candidates it can't
