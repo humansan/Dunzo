@@ -61,7 +61,6 @@ export function PlannerScreen({
           onCreateCollection={d.createCollection}
           onSaveTodo={d.handleHubSaveTodo}
           onAddTodo={d.handleHubAddTodo}
-          onAddSubtask={d.handleAddSubtask}
           onAddCollection={d.addHubCollection}
           workspaces={d.workspaces}
           activeWorkspaceId={d.activeWorkspaceId}

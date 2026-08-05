@@ -142,7 +142,6 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
 
   const rowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
-    onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
     onOpenTask: onPick,

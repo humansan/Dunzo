@@ -137,7 +137,27 @@ interface CalendarViewProps {
   onFocusDateChange?: (date: string) => void;
   // Drawing a block creates the task and returns its id; clicking a block (or the
   // freshly created one) opens it in the task full view.
-  onCreateTask: (date: string, startTime: string, dueTime: string) => string;
+  //
+  // `surfaces` reports which surfaces this calendar is currently SHOWING, so the
+  // new task can be given the flags that keep it on screen where it was drawn. The
+  // caller decides whether that's the right question for it: the calendar page
+  // uses it, the daily screen's embedded calendar ignores it and applies the daily
+  // creation defaults, because a task drawn on the daily screen is a daily task
+  // regardless of what the (shared) calendar filter was last set to.
+  onCreateTask: (
+    date: string,
+    startTime: string,
+    dueTime: string,
+    surfaces: { daily: boolean; planner: boolean }
+  ) => string;
+  // Whether `surfaces` above actually decides what the new task gets. True (the
+  // default) for the calendar page, where a drawn task takes the surfaces on
+  // screen - and where a calendar showing NEITHER therefore has nothing to give
+  // it, so drawing is switched off. An embedder that ignores `surfaces` and
+  // applies its own creation policy passes false: the daily screen's 1-day
+  // calendar always makes a daily task, so the (shared) surface filter has no say
+  // over creating there and must not be able to disable it.
+  surfacesGovernCreate?: boolean;
   onOpenTask: (id: string) => void;
 }
 
@@ -356,6 +376,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   hideMiniCalendar,
   onFocusDateChange,
   onCreateTask,
+  surfacesGovernCreate = true,
   onOpenTask,
 }) => {
   const [focusDate, setFocusDate] = useState(initialDate ? parseISO(initialDate) : new Date());
@@ -667,9 +688,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   );
 
   // --- Drag Selection for Creation --- //
+  // A drawn task takes the surfaces this calendar is showing, so with both turned
+  // off there is nothing to give it: it would be written to a surface the user has
+  // switched off and disappear the moment it was created (or, worse, be rescued
+  // onto one they didn't pick). Nothing to draw with, so drawing is off - but only
+  // where those toggles are what creation reads (see surfacesGovernCreate).
+  const canDrawTasks = !surfacesGovernCreate || showDaily || showPlanner;
+
   const handleGridMouseDown = (e: React.MouseEvent, dateStr: string) => {
     // Ignore right/middle clicks or if clicking on an event
     if (e.button !== 0 || (e.target as HTMLElement).closest('[data-event-card]')) return;
+    if (!canDrawTasks) return;
 
     e.preventDefault();
 
@@ -710,9 +739,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const startTime = minutesToTime(dragSelection.startMins);
       const dueTime = minutesToTime(dragSelection.endMins);
 
-      // The drawn block *is* the task - create it with those times and hand the
-      // user straight to the full view to name it and fill in the rest.
-      const id = onCreateTask(dragSelection.dateStr, startTime, dueTime);
+      // The drawn block *is* the task - create it with those times and the surfaces
+      // this calendar is showing, then hand the user straight to the full view to
+      // name it and fill in the rest.
+      const id = onCreateTask(dragSelection.dateStr, startTime, dueTime, {
+        daily: showDaily,
+        planner: showPlanner,
+      });
       onOpenTask(id);
       setDragSelection(null);
     };
@@ -723,7 +756,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragSelection, onCreateTask, onOpenTask]);
+  }, [dragSelection, onCreateTask, onOpenTask, showDaily, showPlanner]);
 
   // --- Drag & Drop Moving --- //
   const handleEventMouseDown = (e: React.MouseEvent, todo: Todo, span: TodoSpan, dateStr: string) => {
@@ -923,6 +956,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             <SurfaceCheck label="Show task planner tasks" checked={showPlanner} onChange={setShowPlanner} />
             <SurfaceCheck label="Show uncategorized tasks" checked={showUncategorized} onChange={setShowUncategorized} />
             <SurfaceCheck label="Show archived tasks" checked={showArchived} onChange={setShowArchived} />
+            {/* Drawing is off with both surfaces unchecked (see canDrawTasks), which
+                is otherwise indistinguishable from the grid ignoring the drag. The
+                app has no toast layer, so the explanation lives next to the two
+                checkboxes that caused it. */}
+            {!canDrawTasks && (
+              <p className="mt-1.5 text-xs text-fg-subtle">
+                Turn on a surface to draw new tasks here.
+              </p>
+            )}
           </div>
 
           {/* Pick which collections' tasks appear. The tree renders in checkbox mode;

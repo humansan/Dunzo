@@ -276,12 +276,33 @@ function useProvideAppData() {
   // exist yet (the create-then-reorder race that a second request would open).
   const handleCreateInDay = (date: string, todo: Todo, orderedIds: string[]) => {
     const dueDate = date && date !== UNDATED ? date : undefined;
+    // The parent-aware half of the write chain was missing here, and this is the
+    // one create path that can pick a parent without going through addHubTodo: the
+    // daily quick-add panel has a parent picker, and a new daily task takes
+    // `showInDatabase` from the dailyTasksInPlanner setting (default on). Choosing
+    // a Planner-hidden (or archived) parent therefore built a visible child under
+    // an invisible one - the orphan both invariants exist to prevent, which the
+    // Planner renders detached at the ROOT of the tree while its Collection cell
+    // still resolves through the parent it can't see.
+    //
+    // The server corrects the row either way (enforcePlannerVisibility /
+    // enforceArchive in routes/todos), but mutations invalidate without
+    // refetching, so the uncorrected optimistic row is what stays on screen until
+    // some later refetch. Running the same rules here keeps the cache honest.
+    //
     // Daily-created tasks are built by the daily screen, not addHubTodo, so they
-    // arrive without a Planner order - hand out the next one (see nextHubOrder).
-    const upsert = reconcileSchedule(
-      normalizeCompletion(
-        normalizeVisibility({ ...todo, dueDate, hubOrder: todo.hubOrder ?? nextHubOrder() })
-      )
+    // also arrive without a Planner order - hand out the next one (see nextHubOrder).
+    const parent = todo.parentId ? todoById.get(todo.parentId) : undefined;
+    const upsert = reconcilePlannerVisibility(
+      reconcileArchived(
+        reconcileSchedule(
+          normalizeCompletion(
+            normalizeVisibility({ ...todo, dueDate, hubOrder: todo.hubOrder ?? nextHubOrder() }, parent)
+          )
+        ),
+        parent
+      ),
+      parent
     );
     batchTodos.mutate({
       upserts: [upsert],
@@ -486,17 +507,34 @@ function useProvideAppData() {
     // An explicit group-create date wins over anything in the patch (e.g. a date
     // filter); when none is given we keep whatever dueDate the patch carries.
     const dueDate = opts?.date && opts.date !== UNDATED ? opts.date : undefined;
-    // A subtask INHERITS its parent's Planner visibility: creating one inside a
-    // hidden parent must not manufacture the orphan the invariant exists to
-    // prevent (shared/domain/todoPlannerVisibility). `showInDailyList` keeps
-    // following the setting instead - the daily checklist is flat, so nothing
-    // about it is constrained by where the task sits in the tree.
+    // A subtask INHERITS BOTH of its parent's surface flags.
+    //
+    // Planner visibility is an invariant: creating one inside a hidden parent must
+    // not manufacture the orphan the rule exists to prevent (see
+    // shared/domain/todoPlannerVisibility).
+    //
+    // The daily flag is a default rather than a rule, and inheriting it is what
+    // makes a subtask belong to the same surfaces its parent does - a subtask of a
+    // daily-only task is daily-only too, undated so it stays off every list until
+    // the user gives it a date, and reachable meanwhile inside the parent's full
+    // view (which normalizeVisibility counts as a surface for exactly this case).
+    // `plannerTasksInDailyList` is the default for a task created ON the Planner
+    // surface, which a subtask isn't - it's created inside another task - so a
+    // parented create asks the parent and a root create asks the setting.
+    //
+    // Both are only defaults here: a view seed or a filter in `opts.patch` (e.g.
+    // the In Daily List tab's `showInDailyList: true`) is spread after and wins.
+    // A collection parent has no daily flag of its own, so it can't answer for
+    // its tasks - those fall back to the setting like any other root create.
     const seedParent = parentId ? todoById.get(parentId) : undefined;
+    const seedTaskParent = seedParent && !seedParent.isCollection ? seedParent : undefined;
     const newTodo: Todo = {
       id,
       text: '',
       showInDatabase: seedParent ? seedParent.showInDatabase === true : true,
-      showInDailyList: plannerTasksInDailyList,
+      showInDailyList: seedTaskParent
+        ? seedTaskParent.showInDailyList === true
+        : plannerTasksInDailyList,
       workspaceId: activeWorkspaceId,
       ...(parentId ? { parentId } : {}),
       hubOrder: nextHubOrder(),
@@ -524,12 +562,26 @@ function useProvideAppData() {
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>
     addHubTodo(opts?.parentId ?? null, opts);
+  // Create a subtask with no seed beyond what the parent gives it. This is for the
+  // surfaces that have NO view to satisfy - the full view's Subtasks list - so
+  // there are no filters, no tab predicate and no section to keep the new row
+  // consistent with. Every Planner surface has all three and goes through
+  // handleHubAddTodo with a seed built by features/planner/model/createSeed.
   const handleAddSubtask = (parentId: string): string => addHubTodo(parentId);
 
-  // A block drawn on the full calendar page is a dated, timed task. Like every
-  // other new task it defaults to both surfaces (Planner + that day's daily
-  // checklist); the only thing special here is the drawn start/due time.
-  const handleCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
+  // A block drawn on the full calendar page is a dated, timed task, and it adopts
+  // the surfaces the calendar is currently SHOWING (`surfaces`, from that page's
+  // own "Show daily tasks" / "Show task planner tasks" filter). Both flags used to
+  // be hardcoded true, which is the one policy that can't be right: on a calendar
+  // filtered to one surface, a task drawn there was silently given the other one
+  // too. Drawing on a calendar showing neither is blocked at the source (the drag
+  // never starts), so there is no "both off" case to resolve here.
+  const handleCalendarAddTodo = (
+    date: string,
+    startTime: string,
+    dueTime: string,
+    surfaces: { daily: boolean; planner: boolean }
+  ): string =>
     addHubTodo(null, {
       date,
       patch: {
@@ -538,8 +590,8 @@ function useProvideAppData() {
         startDate: date,
         startTime,
         dueTime,
-        showInDatabase: true,
-        showInDailyList: true,
+        showInDatabase: surfaces.planner,
+        showInDailyList: surfaces.daily,
       },
     });
 
@@ -548,6 +600,11 @@ function useProvideAppData() {
   // checklist, Planner visibility follows `dailyTasksInPlanner`, and it seeds the
   // default XP (0/None ⇒ unset) and auto-move flag. The showInDatabase=false case
   // survives normalizeVisibility because the task has a date + showInDailyList.
+  //
+  // It deliberately ignores the calendar's surface filter (which the full calendar
+  // page above reads): that filter is one shared setting, but this control is part
+  // of the DAILY screen, and a task drawn there is a daily task no matter what the
+  // calendar page was last filtered to.
   const handleDailyCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
     addHubTodo(null, {
       date,

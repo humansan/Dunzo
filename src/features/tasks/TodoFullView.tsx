@@ -370,9 +370,16 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const subRowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
     onToggleTodo: onToggle,
-    onAddSubtask,
     onOpenTask,
     // "+ New" adds a subtask of the task being viewed and opens its title editor.
+    // It seeds nothing of its own - and unlike the Planner's create surfaces it has
+    // nothing to seed, since this list is not a view: no tab predicate, no filters,
+    // no sections. What the new subtask does get is its parent's two surface flags
+    // (see addHubTodo), so a subtask of a daily-only task is daily-only too rather
+    // than being pulled into the Planner by a setting about Planner-created tasks.
+    // Undated, it shows on neither surface and lives right here inside its parent,
+    // which normalizeVisibility counts as a surface for exactly this case.
+    //
     // Omitted on an ARCHIVED task, which drops the add-row entirely (TableRows
     // renders it only when this is supplied): anything created inside an archived
     // parent is archived on creation, so the button could only ever add rows to a

@@ -27,6 +27,10 @@ import {
 } from '@/features/planner/model/viewUtils';
 import { flattenTree } from '@/features/planner/sidebar/treeUtils';
 
+// A stable empty set, so a consumer memoizing on `searchVisibleTaskIds` doesn't
+// see a new identity on every render while no search is running.
+const EMPTY_ID_SET: ReadonlySet<string> = new Set<string>();
+
 // The hub's derived-data layer: takes the raw dayTodos plus the active view/
 // filter/sort/section settings and produces every memoized projection the table
 // and sidebar render from (entry indexes, the collection tree, the filtered/
@@ -316,23 +320,56 @@ export function useHubData(params: {
     return new Set(rankTaskFinderMatches(filteredEntries, todoById, q, Infinity).map((e) => e.todo.id));
   }, [searchQuery, filteredEntries, todoById]);
 
+  // A match brings its whole subtask subtree with it, matched or not - searching
+  // for a parent shows what is inside it. This is the Task Finder's rule (see
+  // useTaskFinderData's addSubtree), and the two searches now agree about what a
+  // hit means in both directions: the Finder already expanded downward, and this
+  // view already re-attached upward.
+  //
+  // It is also what makes creating INSIDE a match safe while a search is running:
+  // the new row is a descendant of a match, so the query keeps it on screen
+  // instead of filtering it back out from under its own title editor (see
+  // PlannerView's canCreateUnder).
+  const searchVisibleIds = useMemo(() => {
+    if (!searchMatchIds) return null;
+    const childrenByParent = new Map<string, OrganizerEntry[]>();
+    for (const e of filteredEntries) {
+      const pid = e.todo.parentId;
+      if (!pid) continue;
+      const arr = childrenByParent.get(pid);
+      if (arr) arr.push(e); else childrenByParent.set(pid, [e]);
+    }
+    const out = new Set<string>();
+    const addSubtree = (id: string) => {
+      if (out.has(id)) return;
+      out.add(id);
+      for (const c of childrenByParent.get(id) ?? []) addSubtree(c.todo.id);
+    };
+    for (const id of searchMatchIds) addSubtree(id);
+    return out;
+  }, [searchMatchIds, filteredEntries]);
+
   const searchedEntries = useMemo(() => {
-    if (!searchMatchIds) return filteredEntries;
+    if (!searchVisibleIds) return filteredEntries;
     const keep = new Set<string>();
     for (const e of filteredEntries) {
-      if (!searchMatchIds.has(e.todo.id)) continue;
+      if (!searchVisibleIds.has(e.todo.id)) continue;
       keep.add(e.todo.id);
       for (const a of ancestorsOf(e.todo, todoById)) keep.add(a.id);
     }
     return filteredEntries.filter((e) => keep.has(e.todo.id));
-  }, [filteredEntries, searchMatchIds, todoById]);
+  }, [filteredEntries, searchVisibleIds, todoById]);
 
   // What the table treats as a real hit vs. dimmed scaffolding. While searching,
-  // a row must satisfy BOTH the view's own predicate and the query.
+  // a row must satisfy BOTH the view's own predicate and the query - where "the
+  // query" now includes riding in under a matched parent. Intersecting with the
+  // view's own match set is what keeps that from over-promoting: an unfinished
+  // subtask of a matched completed task is still context in the Completed tab, and
+  // still renders dimmed. Ancestors, re-attached above, are context either way.
   const activeMatchIds = useMemo(() => {
-    if (!searchMatchIds) return viewMatchIds;
-    return new Set([...searchMatchIds].filter((id) => viewMatchIds.has(id)));
-  }, [searchMatchIds, viewMatchIds]);
+    if (!searchVisibleIds) return viewMatchIds;
+    return new Set([...searchVisibleIds].filter((id) => viewMatchIds.has(id)));
+  }, [searchVisibleIds, viewMatchIds]);
 
   // Collapse is ignored while searching. The saved collapse set is per-view and
   // DB-synced, so a user with a few folded collections would otherwise search and
@@ -545,6 +582,12 @@ export function useHubData(params: {
     // needs it for its empty state ("nothing matched" vs. "this view is empty"),
     // and the caller to suppress drag-to-reorder over a partial list.
     searchActive: searchMatchIds !== null,
+    // The tasks a running search is keeping on screen: the hits plus everything
+    // nested under them. A create is only offered under one of these while a
+    // search is active, since a new row survives the query exactly when it arrives
+    // as a match's descendant (see PlannerView's canCreateUnder). Empty when no
+    // search is running - callers gate on `searchActive` first.
+    searchVisibleTaskIds: searchVisibleIds ?? EMPTY_ID_SET,
     // The collapse set the rows were actually built from - empty while searching.
     // The table reads it for its chevrons, so they can't point "collapsed" at a
     // row whose children are on screen.

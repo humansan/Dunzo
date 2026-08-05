@@ -68,7 +68,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
   effectiveGrid,
 }) => {
   const { editing, startEdit, stopEdit, openMenu, toggleCollapse, onActivate, selectedId } = interaction;
-  const { onSaveTodo, onToggleTodo, onAddSubtask, onQuickAddTask, onQuickAddInGroup, onNewInView, onOpenTask } = rowHandlers;
+  const { onSaveTodo, onToggleTodo, onQuickAddTask, onQuickAddInGroup, onNewInView, onOpenTask } = rowHandlers;
   const {
     sectionsConfig,
     flattened,
@@ -101,7 +101,6 @@ export const TableRows: React.FC<TableRowsProps> = ({
           stopEdit={stopEdit}
           onSaveTodo={onSaveTodo}
           onToggleTodo={onToggleTodo}
-          onAddSubtask={onAddSubtask}
           onQuickAddTask={onQuickAddTask}
           openMenu={openMenu}
           isCollapsed={collapsed.has(node.id)}
@@ -147,8 +146,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
             stopEdit={stopEdit}
             onSaveTodo={onSaveTodo}
             onToggleTodo={onToggleTodo}
-            onAddSubtask={onAddSubtask}
-            onQuickAddTask={onQuickAddTask}
+              onQuickAddTask={onQuickAddTask}
             openMenu={openMenu}
             isCollapsed={collapsed.has(row.node.id)}
             onToggleCollapse={toggleCollapse}

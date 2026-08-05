@@ -462,6 +462,10 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
             hideHeader={true}
             hideMiniCalendar={true}
             onCreateTask={onCreateTask}
+            // A block drawn here is a DAILY task (handleDailyCalendarAddTodo), so
+            // the calendar's shared surface filter doesn't decide its flags - and
+            // must not be able to switch drawing off here either.
+            surfacesGovernCreate={false}
             onOpenTask={onOpenTask}
           />
         </div>

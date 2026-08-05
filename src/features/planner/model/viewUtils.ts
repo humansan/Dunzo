@@ -207,6 +207,72 @@ export function groupAssignmentPatch(field: ColKey, value: string): Partial<Todo
   return null;
 }
 
+// The section a task belongs to under `field`, as a raw group key ('' = the
+// no-value section). A subtask ALWAYS inherits its root task's section, so this
+// walks up the task chain (stopping at a collection, which is not a task parent)
+// and reads the group key off the root.
+//
+// Shared by the two things that must agree about it: buildGroupedItems, which
+// PLACES rows in sections, and the create-seed builder, which decides what a new
+// row needs to land in the section it was created from. They differ only in how
+// they resolve a parent - the renderer asks its own in-view task set (a parent
+// the view dropped makes its child a root here), while a seed asks the full todo
+// index - so that lookup is injected rather than assumed.
+export function resolveOwningGroup(
+  taskId: string,
+  field: ColKey,
+  todoById: Map<string, Todo>,
+  todayStr: string,
+  deps: {
+    entryOf: (id: string) => OrganizerEntry | undefined;
+    parentTaskIdOf: (e: OrganizerEntry) => string | null;
+    // Optional memo, shared across a whole build pass.
+    cache?: Map<string, string>;
+  }
+): string {
+  const { entryOf, parentTaskIdOf, cache } = deps;
+  const walk = (id: string): string => {
+    const cached = cache?.get(id);
+    if (cached !== undefined) return cached;
+    const entry = entryOf(id);
+    if (!entry) return '';
+    const parentId = parentTaskIdOf(entry);
+    // Seed before recursing so a corrupt parent cycle resolves to '' instead of
+    // looping. Tasks form a tree (single parent), so there are no false sharings.
+    cache?.set(id, '');
+    const result = parentId ? walk(parentId) : getGroupKey(entry, field, todoById, todayStr);
+    cache?.set(id, result);
+    return result;
+  };
+  return walk(taskId);
+}
+
+// `resolveOwningGroup` against the FULL todo index - what a create-seed asks. The
+// row is not being placed by a renderer here, so "which section will this land
+// in" has to be answered from the real tree rather than a view's entry set.
+export function owningGroupOfTodo(
+  todo: Todo,
+  field: ColKey,
+  todoById: Map<string, Todo>,
+  todayStr: string
+): string {
+  return resolveOwningGroup(todo.id, field, todoById, todayStr, {
+    entryOf: (id) => {
+      const t = id === todo.id ? todo : todoById.get(id);
+      return t ? { todo: t } : undefined;
+    },
+    parentTaskIdOf: (e) => {
+      const pid = e.todo.parentId ?? null;
+      if (!pid) return null;
+      const parent = todoById.get(pid);
+      // A collection is not a task parent: a task filed straight under one is a
+      // root for grouping purposes.
+      return parent && !parent.isCollection ? pid : null;
+    },
+    cache: new Map(),
+  });
+}
+
 // What a freshly created task needs to land in the section `value` under `field`
 // when the user clicks the "+" on a group header. Returns a calendar date (for
 // date buckets) and/or a field patch (priority/status). Date buckets resolve to
@@ -301,22 +367,18 @@ export function buildGroupedItems(
   // parent task's section (so a whole task subtree stays together under its root,
   // regardless of any field value the subtask carries). Only a root task - one
   // with no task parent - is placed by its own field value; '' means ungrouped.
+  //
+  // The walk itself is shared with the create-seed builder (resolveOwningGroup),
+  // so "which section does this row belong to" has one implementation. The lookups
+  // handed in are this view's: a parent the view dropped is not a parent here, and
+  // its child is placed as a root.
   const owningGroupCache = new Map<string, string>();
-  const getOwningGroup = (taskId: string): string => {
-    const cached = owningGroupCache.get(taskId);
-    if (cached !== undefined) return cached;
-    const entry = taskById.get(taskId);
-    if (!entry) return '';
-    const parentId = getParentTaskId(entry);
-    // Seed before recursing so a corrupt parent cycle resolves to '' instead of
-    // looping. Tasks form a tree (single parent), so there are no false sharings.
-    owningGroupCache.set(taskId, '');
-    const result = parentId
-      ? getOwningGroup(parentId)
-      : getGroupKey(entry, groupField, todoById, todayStr);
-    owningGroupCache.set(taskId, result);
-    return result;
-  };
+  const getOwningGroup = (taskId: string): string =>
+    resolveOwningGroup(taskId, groupField, todoById, todayStr, {
+      entryOf: (id) => taskById.get(id),
+      parentTaskIdOf: getParentTaskId,
+      cache: owningGroupCache,
+    });
 
   // Precompute children per task parent. A subtask always follows its parent's
   // section (getOwningGroup), so every task with a task parent nests under it.

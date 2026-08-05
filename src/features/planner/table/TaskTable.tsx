@@ -118,7 +118,8 @@ export interface TableRowHandlers {
   onSaveTodo: (updatedTodo: Todo) => void;
   // Omitted → read-only completion checks (the Task Finder's results).
   onToggleTodo?: (id: string) => void;
-  onAddSubtask: (parentId: string) => string;
+  // Quick-add into a collection header. Omitted → that surface offers no
+  // per-collection create, and the header renders no "+" at all.
   onQuickAddTask?: (parentId: string) => void;
   onQuickAddInGroup?: (groupValue: string) => void;
   // Omit on read-only surfaces (search) to drop the add-row + its empty state.

@@ -34,7 +34,6 @@ interface HubRowProps {
   startEdit?: (id: string, col: ColKey, e: React.MouseEvent) => void;
   stopEdit: () => void;
   onSaveTodo: (updatedTodo: Todo) => void;
-  onAddSubtask: (parentId: string) => string;
   // Omitted → the completion check is read-only (like `startEdit` for the title).
   onToggleTodo?: (id: string) => void;
   // Omitted → no row menu on this surface: the ⋯ button isn't rendered and
@@ -81,7 +80,6 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   stopEdit,
   onSaveTodo,
   onToggleTodo,
-  onAddSubtask,
   openMenu,
   isCollapsed,
   onToggleCollapse,
@@ -261,14 +259,21 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 <MoreHorizontal size={18} />
               </button>
             )}
-            <button
-              type="button"
-              title="Add task"
-              onClick={() => { onQuickAddTask ? onQuickAddTask(todo.id) : onAddSubtask(todo.id); }}
-              className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
-            >
-              {onQuickAddTask && <Plus size={18} />}
-            </button>
+            {/* Only when the surface actually offers creation. This used to fall
+                back to a bare onAddSubtask with no icon rendered, which left a
+                small invisible-but-clickable target on every collection header in
+                the views that withdraw creation - and clicking it created an
+                unseeded task (in Archived, one that was archived on the spot). */}
+            {onQuickAddTask && (
+              <button
+                type="button"
+                title="Add task"
+                onClick={() => onQuickAddTask(todo.id)}
+                className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
+              >
+                <Plus size={18} />
+              </button>
+            )}
           </>
         }
         dropDecorations={<>{dropLine('before')}{dropLine('after')}{insideOverlay}</>}
