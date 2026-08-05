@@ -925,8 +925,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { onOpenTask(id); closeMenu(); }}
           onDuplicate={viewAllowsNew ? duplicateTask : undefined}
-          onSetDate={(_id, date) => setTaskDate(date)}
-          onSetTime={(_id, time) => setTaskTime(time)}
+          // Scheduling is offered per TARGET row, not per view: an archived task has
+          // left every dated surface, so a date on it writes a field nothing reads
+          // until it's restored.
+          onSetDate={menuEntry?.todo.archived ? undefined : ((_id, date) => setTaskDate(date))}
+          onSetTime={menuEntry?.todo.archived ? undefined : ((_id, time) => setTaskTime(time))}
           onAddTaskAbove={canCreate ? ((id) => addTaskRelative(id, 'above')) : undefined}
           onAddTaskBelow={canCreate ? ((id) => addTaskRelative(id, 'below')) : undefined}
           onArchive={(id) => { requestArchiveToggle(id); closeMenu(); }}
