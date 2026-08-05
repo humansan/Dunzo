@@ -21,6 +21,7 @@ import { useRowDnD } from '@/features/planner/hooks/useRowDnD';
 import { HubSidebar } from '@/features/planner/sidebar/HubSidebar';
 import { HubToolbar, ToolbarMenuKey } from '@/features/planner/toolbar/HubToolbar';
 import { buildCreateArgs, anchorGroupValue } from '@/features/planner/model/createSeed';
+import { planAddRows, planGroupAddRows } from '@/features/planner/table/addRows';
 import { resolveView } from '@/features/planner/views';
 import { useArchiveConfirm } from '@/features/tasks';
 import { useArchiveCompleted } from '@/features/planner/hooks/useArchiveCompleted';
@@ -567,6 +568,37 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     closeMenu();
   };
 
+  // ── Contextual "+ New" rows ────────────────────────────────────────────────
+  // One per container - the view root, each collection or attribute section, each
+  // task with subtasks - placed where the task it creates will actually appear
+  // (see table/addRows). This replaces the single add-row that used to sit under
+  // the last row of the table, which in a sectioned view was both a scroll away
+  // and nowhere near the block it added to.
+  //
+  // The filter is `canCreateUnder` restated per spec, so the add-rows withdraw on
+  // exactly the same rule as the header "+" and the context menu: nothing at all
+  // in Archived, and under a search only a create that lands under a
+  // search-visible task, since only that one arrives as a match's descendant.
+  // Spelled out rather than calling canCreateUnder so this memo can depend on the
+  // values it reads instead of on a closure rebuilt every render.
+  const addRows = useMemo(() => {
+    if (!viewAllowsNew) return [];
+    const specs =
+      sectionsConfig.groupBy === 'collection'
+        ? planAddRows(flattened, { leafPosition: sectionsConfig.showLeafTasks })
+        : planGroupAddRows(groupedRows);
+    if (!searchActive) return specs;
+    return specs.filter((s) => s.kind === 'task' && !!s.id && searchVisibleTaskIds.has(s.id));
+  }, [
+    flattened,
+    groupedRows,
+    sectionsConfig.groupBy,
+    sectionsConfig.showLeafTasks,
+    viewAllowsNew,
+    searchActive,
+    searchVisibleTaskIds,
+  ]);
+
   // Splice `id` in next to `anchorId` among its siblings and persist the whole
   // tree order (same mechanism the row drag-and-drop commit uses). A freshly
   // created task starts at the bottom, so this is what moves it into place.
@@ -811,6 +843,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               viewLabel,
               currentCount,
               searchActive,
+              addRows,
             }}
             interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
             rowHandlers={{
@@ -819,6 +852,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               onQuickAddTask: canCreate ? handleQuickAddTask : undefined,
               onQuickAddInGroup: canCreate ? handleQuickAddInGroup : undefined,
               onNewInView: canCreate ? handleNewInView : undefined,
+              // Only a task's own add-row calls this, and `addRows` above has
+              // already decided which of those exist, so it needs no gate here.
+              onCreateInside: createTaskInside,
               onOpenTask,
             }}
             // Drag-to-reorder is suppressed while a search is narrowing the rows:
