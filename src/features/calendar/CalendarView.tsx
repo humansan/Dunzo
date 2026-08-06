@@ -16,7 +16,7 @@ import {
 import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
 import { formatTime12h, minutesToTime } from '@/common/lib/time';
-import { isDone, toggledStatus } from '@/features/tasks/model';
+import { isDone } from '@/features/tasks/model';
 import { collectionOf, todoIndex } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
@@ -125,7 +125,10 @@ const SurfaceCheck: React.FC<{
 
 interface CalendarViewProps {
   dayTodos: DayTodos[];
-  onUpdateTodos: (date: string, todos: Todo[]) => void;
+  // Per-row writes, shared with the planner / daily list / full view so an edit made
+  // here gets the same normalization and the same subtask prompts.
+  onSaveTodo: (todo: Todo) => void;
+  onToggleTodo: (id: string) => void;
   initialDate?: string;
   initialDays?: number;
   hideHeader?: boolean;
@@ -345,7 +348,8 @@ const EventCard: React.FC<{
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
   dayTodos,
-  onUpdateTodos,
+  onSaveTodo,
+  onToggleTodo,
   initialDate,
   initialDays,
   hideHeader,
@@ -472,7 +476,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     grabDateStr: string;   // column the handle was grabbed in
   } | null>(null);
 
-  // Post-drop "settling" ghost. onUpdateTodos writes the new time through react-query's
+  // Post-drop "settling" ghost. commitSpan writes the new time through react-query's
   // optimistic cache, but the echo back into our `dayTodos` prop lands a tick later
   // (the parent re-renders on the query notification, a microtask after the drop). If
   // we simply cleared the drag state on drop, the original card would un-hide at its
@@ -505,47 +509,32 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [byId]
   );
 
-  const handleToggleTodo = useCallback((dateStr: string, todoId: string) => {
-    const dayData = dayTodos.find(d => d.date === dateStr);
-    if (!dayData) return;
-    const newTodos = (dayData.todos || []).map(t =>
-      t && t.id === todoId ? { ...t, status: toggledStatus(t) } : t
-    );
-    onUpdateTodos(dateStr, newTodos);
-  }, [dayTodos, onUpdateTodos]);
-
   // Persist a task's new span after a move or resize, and hold the settling ghost.
   //
   // Buckets are keyed by dueDate, and a 2-day task renders in a column that is NOT
-  // its dueDate - so the write has to target the task's NEW dueDate bucket and clear
-  // it out of the old one. This is the sharp edge: handleUpdateTodos DELETES any todo
-  // missing from the list it's handed, so writing to the column the user happened to
-  // drag in would delete the task outright.
+  // its dueDate - so a cross-day drag changes which bucket the task belongs to.
+  // That used to be written as "re-save the old day without it, then re-save the new
+  // day with it": two requests, the first of which DELETED the task (the day array
+  // was authoritative), so a lost race between them destroyed it outright. It's one
+  // row and one write now - dueDate is the only thing that decides the bucket.
   const commitSpan = useCallback((todo: Todo, span: TodoSpan) => {
     const patch = decomposeSpan(span);
     const updated = { ...todo, ...patch } as Todo;
-    const oldDue = todo.dueDate;
-    const newDue = patch.dueDate!;
 
-    if (oldDue === newDue) {
-      const bucket = dayTodos.find(d => d.date === newDue);
-      onUpdateTodos(newDue, (bucket?.todos || []).map(t => (t && t.id === todo.id ? updated : t)));
-    } else {
-      const from = dayTodos.find(d => d.date === oldDue);
-      const to = dayTodos.find(d => d.date === newDue);
-      if (oldDue) onUpdateTodos(oldDue, (from?.todos || []).filter(t => t && t.id !== todo.id));
-      onUpdateTodos(newDue, [...(to?.todos || []), updated]);
-    }
+    // One write either way. A cross-day drag is just a save whose dueDate differs;
+    // onSaveTodo notices that itself and lands the task at the bottom of the day it
+    // moved to, so there's no branch here (and no second handler) to keep in step.
+    onSaveTodo(updated);
 
     setSettling({
       id: todo.id,
       span,
-      dueDate: newDue,
+      dueDate: patch.dueDate!,
       expectStart: patch.startTime!,
       expectEnd: patch.dueTime!,
       accent: accentForTodo(todo),
     });
-  }, [dayTodos, onUpdateTodos, accentForTodo]);
+  }, [onSaveTodo, accentForTodo]);
 
   // const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -815,7 +804,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingEvent, dayTodos, onUpdateTodos, visibleDays, onOpenTask]);
+  }, [draggingEvent, dayTodos, commitSpan, visibleDays, onOpenTask]);
 
   // --- Drag Resizing --- //
   const handleEventResizeStart = (
@@ -885,7 +874,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [resizingEvent, dayTodos, onUpdateTodos]);
+  }, [resizingEvent, dayTodos, commitSpan]);
 
   // Release the settling ghost once the prop reports the time we committed. Until
   // then the ghost covers the gap where the un-hidden original would show its old
@@ -1168,7 +1157,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           onResizeStart={(e, edge) => handleEventResizeStart(e, todo, span, dateStr, edge)}
                           // Toggle writes through the task's own bucket (its dueDate),
                           // which is NOT this column for a span's first day.
-                          onToggle={() => handleToggleTodo(todo.dueDate ?? dateStr, todo.id)}
+                          onToggle={() => onToggleTodo(todo.id)}
                         />
                       </div>
                     );

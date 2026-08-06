@@ -28,12 +28,13 @@ export interface TableVariant {
 // `React.memo`'d rows that read the variant from context don't re-render just for
 // reading it. Only `table` and `list` are wired today; `column`/`search` land with
 // the flat-list and Finder-columns views.
-export const VARIANTS: Record<'table' | 'list' | 'column' | 'search', TableVariant> = {
+export const VARIANTS: Record<'table' | 'list' | 'search' | 'searchtable' | 'subtasks', TableVariant> = {
   table:  { mode: 'table',  showNesting: true,  columns: 'all',  chrome: 'header', dnd: true },
   list:   { mode: 'list',   showNesting: true,  columns: 'name', chrome: 'title',  dnd: true },
-  column: { mode: 'column', showNesting: false, columns: 'name', chrome: 'none',   dnd: false },
   // Search shows nesting so a matched task's subtasks can be expanded/collapsed.
   search: { mode: 'column', showNesting: true,  columns: 'name', chrome: 'none',   dnd: false },
+  searchtable: { mode: 'column', showNesting: true, columns: 'all', chrome: 'header',   dnd: false },
+  subtasks: { mode: 'column', showNesting: true,  columns: 'name', chrome: 'none',   dnd: true },
 };
 
 // Provided at each table surface by <TaskTable>, so nested rows/headers read the

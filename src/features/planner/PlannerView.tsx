@@ -22,7 +22,8 @@ import { HubSidebar } from '@/features/planner/sidebar/HubSidebar';
 import { HubToolbar, ToolbarMenuKey } from '@/features/planner/toolbar/HubToolbar';
 import { groupCreateSpec, buildFilterCreatePatch } from '@/features/planner/model/viewUtils';
 import { resolveView } from '@/features/planner/views';
-import { isDone } from '@/features/tasks/model';
+import { useArchiveConfirm } from '@/features/tasks';
+import { useArchiveCompleted } from '@/features/planner/hooks/useArchiveCompleted';
 import { TaskTable } from '@/features/planner/table/TaskTable';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskFinder } from '@/features/planner/task-finder';
@@ -59,7 +60,13 @@ interface PlannerViewProps {
   // Delete a collection: 'cascade' removes its whole subtree; 'promote' keeps
   // the tasks/sub-collections and moves them up one level.
   onDeleteCollection: (id: string, mode: 'cascade' | 'promote') => void;
+  // Archive takes the whole subtree; unarchive lifts the archived ancestors with
+  // it (shared/domain/todoArchive). useArchiveConfirm decides when to warn first.
   onArchiveTodo: (id: string) => void;
+  // Same operation over many roots, as one write - the Sections menu's "Archive
+  // completed tasks in view" (see useArchiveCompleted).
+  onArchiveTodos: (ids: string[]) => void;
+  onUnarchiveTodo: (id: string, mode: 'self' | 'subtree') => void;
   // Persist hub order + nesting (position = hubOrder, parentId = nesting).
   onReorder: (items: { id: string; parentId: string | null }[]) => void;
   onToggleTodo: (id: string) => void;
@@ -96,6 +103,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   onDeleteTodo,
   onDeleteCollection,
   onArchiveTodo,
+  onArchiveTodos,
+  onUnarchiveTodo,
   onReorder,
   onToggleTodo,
   workspaces,
@@ -158,6 +167,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     wrappedFields,
     activeFilters,
     filterMatch,
+    hideCompleted,
+    filtersFor,
     activeSorts,
     sectionsConfig,
     updateViewState,
@@ -193,12 +204,14 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     groupedRows,
     flattened,
     flatById,
+    renderedTaskEntries,
     collectionCount,
     allCount,
     uncategorizedCount,
     categorizedCount,
     inDailyListCount,
     archivedCount,
+    completedCount,
     currentCount,
     viewLabel,
   } = useHubData({
@@ -211,6 +224,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     collapsedColls,
     activeFilters,
     filterMatch,
+    hideCompleted,
+    filtersFor,
     activeSorts,
     sectionsConfig,
     showNesting: variant.showNesting,
@@ -639,19 +654,28 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     clearInteraction: () => { setEditing(null); setMenu(null); },
   });
 
-  // Auto-archive: when a task is being completed and the setting is on, mark it
-  // complete first (so the checkbox visibly fills) and archive it a beat later, so it
-  // doesn't vanish before the completion even registers.
-  const handleToggleTodo = useStableCallback((id: string) => {
-    if (sectionsConfig.autoArchive) {
-      const entry = entries.find((e) => e.todo.id === id);
-      if (entry && !isDone(entry.todo)) {
-        onToggleTodo(id);
-        setTimeout(() => onArchiveTodo(id), 500);
-        return;
-      }
-    }
-    onToggleTodo(id);
+  // Archive / unarchive from the row menu and the sidebar collection menu (both
+  // route through RowContextMenu). Prompts first when the operation reaches rows
+  // the user didn't click - unless they've opted out of that direction's warning.
+  const { requestArchiveToggle, archiveConfirmModal } = useArchiveConfirm({
+    todos: useMemo(() => [...todoById.values()], [todoById]),
+    onArchive: onArchiveTodo,
+    onUnarchive: onUnarchiveTodo,
+  });
+
+  // "Archive completed tasks in view" (Sections menu): one write over exactly the
+  // completed tasks the table is showing.
+  const {
+    completedCount: completedInView,
+    disabledReason: archiveCompletedDisabled,
+    requestArchiveCompleted,
+    archiveCompletedModal,
+  } = useArchiveCompleted({
+    renderedTaskEntries,
+    todos: useMemo(() => [...todoById.values()], [todoById]),
+    viewLabel,
+    hideCompleted,
+    onArchiveTodos,
   });
 
   // The popover (tags/notes/status/priority) edits the entry currently being edited.
@@ -693,6 +717,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           allCount={allCount}
           uncategorizedCount={uncategorizedCount}
           archivedCount={archivedCount}
+          completedCount={completedCount}
           inDailyListCount={inDailyListCount}
           categorizedCount={categorizedCount}
           visibleCollections={visibleCollections}
@@ -746,7 +771,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
             interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
             rowHandlers={{
               onSaveTodo,
-              onToggleTodo: handleToggleTodo,
+              onToggleTodo,
               onAddSubtask,
               onQuickAddTask: viewAllowsNew ? handleQuickAddTask : undefined,
               onQuickAddInGroup: viewAllowsNew ? handleQuickAddInGroup : undefined,
@@ -764,6 +789,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           anchor={sectionsMenu}
           config={sectionsConfig}
           onChange={(cfg) => updateViewState({ sections: cfg })}
+          completedCount={completedInView}
+          disabledReason={archiveCompletedDisabled}
+          // The popover closes first: the confirmation is a modal, and leaving the
+          // menu open behind it would put two dismissible layers on screen at once.
+          onArchiveCompleted={() => { setSectionsMenu(null); requestArchiveCompleted(); }}
           onSetForAll={() => applyToAllViews('sections')}
           onClose={() => setSectionsMenu(null)}
         />,
@@ -797,6 +827,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           uniqueValues={uniqueValues}
           onChange={(f) => updateViewState({ filters: f })}
           onChangeMatch={(m) => updateViewState({ filterMatch: m })}
+          hideCompleted={hideCompleted}
+          onChangeHideCompleted={(v) => updateViewState({ hideCompleted: v })}
           onSetForAll={() => applyToAllViews('filter')}
           onClose={() => setFilterMenu(null)}
         />,
@@ -832,7 +864,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         />
       )}
 
-      {/* Right-click / 3-dot context menu */}
+      {/* Right-click / 3-dot context menu. The four create actions are passed only
+          when the view supports creation (viewAllowsNew) - an undefined handler
+          renders no item. In Archived that isn't cosmetic: the new child would
+          inherit its parent's archived state (shared/domain/todoArchive) and vanish
+          into the row it was created under. */}
       {menu && (
         <RowContextMenu
           menu={menu}
@@ -843,25 +879,27 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onToggleColorPicker={() => setColorPickerOpen((v) => !v)}
           onClose={closeMenu}
           onEditCollection={(id) => { onEditCollection(id); closeMenu(); }}
-          onCreateTaskInside={createTaskInside}
-          onCreateNestedCollection={(id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); }}
+          onCreateTaskInside={viewAllowsNew ? createTaskInside : undefined}
+          onCreateNestedCollection={viewAllowsNew ? ((id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); }) : undefined}
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { onOpenTask(id); closeMenu(); }}
-          onDuplicate={duplicateTask}
+          onDuplicate={viewAllowsNew ? duplicateTask : undefined}
           onSetDate={(_id, date) => setTaskDate(date)}
           onSetTime={(_id, time) => setTaskTime(time)}
-          onAddTaskAbove={(id) => addTaskRelative(id, 'above')}
-          onAddTaskBelow={(id) => addTaskRelative(id, 'below')}
-          onArchive={(id) => {
-            if (menuEntry?.todo.archived) onSaveTodo({ ...menuEntry.todo, archived: false });
-            else onArchiveTodo(id);
-            closeMenu();
-          }}
+          onAddTaskAbove={viewAllowsNew ? ((id) => addTaskRelative(id, 'above')) : undefined}
+          onAddTaskBelow={viewAllowsNew ? ((id) => addTaskRelative(id, 'below')) : undefined}
+          onArchive={(id) => { requestArchiveToggle(id); closeMenu(); }}
           onDelete={requestDeleteFromMenu}
         />
       )}
+
+      {/* "This also archives N subtasks" / "...unarchives N parents" confirmation */}
+      {archiveConfirmModal && createPortal(archiveConfirmModal, document.body)}
+
+      {/* "Archive the N completed tasks shown in this view?" confirmation */}
+      {archiveCompletedModal && createPortal(archiveCompletedModal, document.body)}
 
       {/* Edit-collection modal: rename, recolor, and re-parent */}
       {editCollId && (() => {
@@ -910,7 +948,6 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           entries={entries}
           todoById={todoById}
           onSaveTodo={onSaveTodo}
-          onToggleTodo={handleToggleTodo}
           title={`Move “${reparentTarget.text || 'Untitled'}” to…`}
           placeholder="Search for a task to nest under…"
           isDisabled={reparentDisabled}

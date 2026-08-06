@@ -1,9 +1,9 @@
 import { format, parse, parseISO, differenceInCalendarDays, addDays } from 'date-fns';
-import { OrganizerEntry, collectionOf, collectionPath, startPercent, duePercent, percentLabel } from '@/features/tasks/model';
+import { OrganizerEntry, collectionOf, collectionPath, startPercent, duePercent, percentLabel, isDone } from '@/features/tasks/model';
 import { Todo, TodoStatus, TodoPriority } from '@shared/types';
 import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, statusOption, priorityOption } from '@/features/tasks/fields';
-import { ColKey, FilterRule, FlatNode, GroupRow } from '@/features/planner/types';
+import { ColKey, FilterRule, FilterMatch, FlatNode, GroupRow } from '@/features/planner/types';
 
 // Returns a display-formatted string for a field - what the user sees in the
 // table cell. This is used for the filter value dropdown and for filter matching.
@@ -102,11 +102,6 @@ const FIELD_OPTIONS: Partial<Record<ColKey, typeof STATUS_OPTIONS>> = {
   priority: PRIORITY_OPTIONS,
 };
 
-// Preferred sort order for well-known group values (others fall back to alpha).
-const FIELD_GROUP_ORDER: Partial<Record<ColKey, string[]>> = {
-  status:   ['Todo', 'In Progress', 'Completed'],
-  priority: ['High', 'Medium', 'Low'],
-};
 
 // Date grouping uses staggered, relative buckets (first qualifying bucket wins),
 // not one section per calendar date. The id is the group key; the label is shown
@@ -153,16 +148,40 @@ export function getGroupKey(
   return getFieldDisplayValue(entry, field, todoById);
 }
 
+// Header text for the catch-all section: the empty key, holding tasks with no
+// value for the grouping field. Named per field so the header says what is
+// actually missing rather than describing the grouping. Not derived from the
+// column label - that would read "No End Date" for the date grouping. The generic
+// fallback covers a field becoming groupable without a phrase here.
+const UNGROUPED_LABEL: Partial<Record<ColKey, string>> = {
+  status: 'No status',
+  priority: 'No priority',
+  date: 'No date',
+};
+
 // Human-readable header text for a group key.
 function getGroupLabel(field: ColKey, key: string): string {
+  if (!key) return UNGROUPED_LABEL[field] ?? 'Ungrouped';
   if (field === 'date') return DATE_BUCKET_BY_ID.get(key)?.label ?? key;
   return key;
 }
 
-// The canonical (ascending) ordering of group keys for a field.
+// The canonical (ascending) ordering of group keys for a field, derived from the
+// same option sets everything else reads.
+//
+// This used to be a second, hand-written list of labels per field, and priority's
+// copy was authored High→Medium→Low - the reverse of PRIORITY_OPTIONS, which is
+// what getFieldRawValue ranks by. So "Priority ascending" meant High-first when
+// grouping and Low-first when sorting, on the same data, in the same table. Order
+// is a property of the field's option set; restating it anywhere is a second
+// source of truth that can (and did) drift out of step.
+//
+// Group keys are display LABELS (see getGroupKey → getFieldDisplayValue), so the
+// order is the labels in option order. Date is keyed by bucket id instead, and
+// DATE_BUCKETS is already the only place that order is written down.
 function groupKeyOrder(field: ColKey): string[] {
   if (field === 'date') return DATE_BUCKETS.map((b) => b.id);
-  return FIELD_GROUP_ORDER[field] ?? [];
+  return FIELD_OPTIONS[field]?.map((o) => o.label) ?? [];
 }
 
 export function getGroupColor(field: ColKey, key: string): string {
@@ -263,8 +282,10 @@ export function buildGroupedItems(
   todoById: Map<string, Todo>,
   collapsed: Set<string>,
   sortFn?: (a: OrganizerEntry, b: OrganizerEntry) => number,
-  showLeafTasks: 'top' | 'bottom' | 'none' = 'bottom',
-  direction: 'asc' | 'desc' = 'asc'
+  direction: 'asc' | 'desc' = 'asc',
+  // Ids satisfying the view's predicate; everything else is a context ancestor
+  // (see FlatNode.matchesView). Omit to mark every row as matching.
+  matchIds?: Set<string>
 ): GroupRow[] {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const tasks = entries.filter((e) => !e.todo.isCollection);
@@ -325,7 +346,15 @@ export function buildGroupedItems(
     const children = doSort(childrenInGroup.get(taskId) ?? []);
     const hasChildren = children.length > 0;
     // No collections in grouped mode - every parent is a task, so indent == depth.
-    const node: FlatNode = { id: taskId, parentId, depth, indent: depth, entry, hasChildren };
+    const node: FlatNode = {
+      id: taskId,
+      parentId,
+      depth,
+      indent: depth,
+      entry,
+      hasChildren,
+      matchesView: !matchIds || matchIds.has(taskId),
+    };
     const rows: GroupRow[] = [{ type: 'task', node, group }];
     if (hasChildren && !collapsed.has(taskId)) {
       for (const child of children) rows.push(...buildTaskRows(child.todo.id, depth + 1, group, taskId));
@@ -367,17 +396,139 @@ export function buildGroupedItems(
     const isCollapsed = collapsed.has(headerId);
     groupRows.push({ type: 'header', id: headerId, value: key, label: getGroupLabel(groupField, key), color: getGroupColor(groupField, key), count: totalCount, isCollapsed });
     if (!isCollapsed) {
-      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 1, key, null));
+      // Depth 0, NOT 1: a section header doesn't cost its tasks an indent level,
+      // exactly as a collection header doesn't (see flattenTree's indent rule). This
+      // used to start at 1, which pushed every task in a Status/Priority/Date group
+      // a full INDENT to the right of its header while the same task under a
+      // collection sat flush with it - the two groupings disagreeing about the same
+      // relationship. Ungrouped roots below already used 0, so they were also
+      // inconsistent with grouped roots at the same structural level.
+      for (const root of rootTasks) groupRows.push(...buildTaskRows(root.todo.id, 0, key, null));
     }
   }
 
-  // Ungrouped tasks also preserve hierarchy among themselves.
+  // Tasks with no value for the grouping field get a section of their own, built
+  // exactly like the keyed ones above so it collapses, counts and accepts drops
+  // through the same machinery - the empty key is already a real group everywhere
+  // else (rows are tagged `group: ''`, and dropping on this header runs
+  // groupAssignmentPatch with '', which clears the field). Without a header they
+  // were the one block of rows that couldn't be collapsed.
+  //
+  // Only when there are any: an empty section header would be noise, unlike the
+  // keyed sections which exist because something is in them.
   const ungroupedRows: GroupRow[] = [];
-  for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0, '', null));
+  if (ungrouped.length > 0) {
+    const headerId = `__grp:${groupField}:`;
+    const isCollapsed = collapsed.has(headerId);
+    ungroupedRows.push({
+      type: 'header',
+      id: headerId,
+      value: '',
+      label: getGroupLabel(groupField, ''),
+      color: getGroupColor(groupField, ''),
+      // Every task in the section, subtasks included - `ungrouped` holds only the
+      // roots, so counting it would undercount exactly like the keyed sections
+      // would if they counted `rootTasks`.
+      count: tasks.filter((t) => getOwningGroup(t.todo.id) === '').length,
+      isCollapsed,
+    });
+    if (!isCollapsed) {
+      // Hierarchy is preserved among them, same as inside a keyed section.
+      for (const task of doSort(ungrouped)) ungroupedRows.push(...buildTaskRows(task.todo.id, 0, '', null));
+    }
+  }
 
-  return showLeafTasks === 'top'
+  // The no-value section is ordered by `direction`, exactly like the keyed ones:
+  // first ascending, last descending. That matches how SORTING treats the same
+  // tasks - getFieldRawValue ranks an unset field 0, below every real value, and
+  // the direction flips it - so the two ways of ordering a view by a field now
+  // agree about where "no value" sits.
+  //
+  // It used to be placed by `showLeafTasks` (the ungrouped-tasks-top/bottom
+  // setting), which is a statement about tasks vs. sub-collections in tree mode and
+  // has nothing to say about a group's rank. Under it the section sat at the top in
+  // both directions, so reversing the order left one section behind.
+  return direction === 'asc'
     ? [...ungroupedRows, ...groupRows]
     : [...groupRows, ...ungroupedRows];
+}
+
+// Apply a view's filter rules to its entries.
+//
+// A task is kept only when it matches AND every task ancestor of it in this set
+// matches too - so a row that fails takes its whole subtree with it. That mirrors
+// how grouping treats a subtree as one unit (getOwningGroup above: the parent's
+// value decides for everything under it), and it is what keeps the tree intact:
+// under the old row-by-row filter a surviving child of a filtered-out parent lost
+// its parent from the set, and flattenTree - which links a node only to a parent
+// that is present - re-parented it to the root of the view. Nothing can be
+// orphaned that way now, because a survivor's ancestors are survivors by
+// definition.
+//
+// Collections are exempt: they are structural, never filtered, and so never break
+// a chain. Unset (empty-value) rules are dropped first - matchesFilter treats them
+// as "match all", a harmless no-op under AND but one that would make OR pass
+// everything.
+//
+// `hideCompleted` is the view's "Hide completed tasks" setting. It is ANDed with
+// the rule expression rather than being one of the rules, which is the whole
+// reason it isn't stored as a FilterRule: as a rule it would be subject to
+// `filterMatch`, so switching the match to Or would put completed tasks back on
+// screen while the switch still read "on". A setting has to mean what it says.
+//
+// Pure, and shared by the rendered rows and the sidebar counts, so the two can't
+// disagree about what a view contains.
+export function applyFilters(
+  entries: OrganizerEntry[],
+  state: { filters: FilterRule[]; filterMatch: FilterMatch; hideCompleted?: boolean },
+  todoById: Map<string, Todo>
+): OrganizerEntry[] {
+  const { filterMatch, hideCompleted = false } = state;
+  const rules = state.filters.filter((f) => f.value);
+  if (!rules.length && !hideCompleted) return entries;
+
+  const byId = new Map(entries.map((e) => [e.todo.id, e]));
+  const matchesRules = (e: OrganizerEntry) =>
+    !rules.length ||
+    (filterMatch === 'or'
+      ? rules.some((f) => matchesFilter(e, f, todoById))
+      : rules.every((f) => matchesFilter(e, f, todoById)));
+  const selfMatches = (e: OrganizerEntry) =>
+    (!hideCompleted || !isDone(e.todo)) && matchesRules(e);
+
+  // Kept = self matches && nearest task ancestor present in this set is kept.
+  // Memoized per id. A parentId cycle (corrupt data) is broken by treating the
+  // re-entered node as non-blocking rather than as a failure: the row then stands
+  // on its own match, which degrades to the old row-by-row behaviour. Resolving a
+  // cycle to "hidden" instead would make those rows disappear from the Planner
+  // entirely, with nothing on screen to explain why.
+  const verdict = new Map<string, boolean>();
+  const visiting = new Set<string>();
+  const isKept = (e: OrganizerEntry): boolean => {
+    const cached = verdict.get(e.todo.id);
+    if (cached !== undefined) return cached;
+    if (visiting.has(e.todo.id)) return true;
+    visiting.add(e.todo.id);
+    let kept = selfMatches(e);
+    if (kept) {
+      // Walk to the nearest ancestor that is a TASK in this set; collections are
+      // exempt and pass through. An ancestor outside the set ends the chain.
+      let pid = e.todo.parentId ?? null;
+      const seen = new Set<string>();
+      while (pid && !seen.has(pid)) {
+        seen.add(pid);
+        const parent = byId.get(pid);
+        if (!parent) break;
+        if (!parent.todo.isCollection) { kept = isKept(parent); break; }
+        pid = parent.todo.parentId ?? null;
+      }
+    }
+    visiting.delete(e.todo.id);
+    verdict.set(e.todo.id, kept);
+    return kept;
+  };
+
+  return entries.filter((e) => e.todo.isCollection || isKept(e));
 }
 
 // Returns true if the entry's field value satisfies the filter rule.

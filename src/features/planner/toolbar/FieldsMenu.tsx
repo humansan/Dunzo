@@ -106,7 +106,7 @@ export const FieldsMenu: React.FC<{
                     onClick={() => onToggleWrap(key)}
                     title={isWrapped ? 'Disable wrap' : 'Enable wrap'}
                     className={`shrink-0 p-0.5 rounded hover:bg-fill transition-colors ${
-                      isWrapped ? 'text-[var(--accent2)]' : 'text-fg-faint hover:text-fg'
+                      isWrapped ? 'text-info' : 'text-fg-faint hover:text-fg'
                     }`}
                   >
                     <WrapText size={14} />

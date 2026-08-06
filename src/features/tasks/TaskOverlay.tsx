@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { TodoFullView } from '@/features/tasks/TodoFullView';
 import { useAppData } from '@/lib/app-data';
+import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 
 // Task full-view modal wired to app data. Rendered both by AppShell (when the
 // `task` search param is set - the in-app masked open) and by the /task/$taskId
 // route (a cold deep-link). One source of truth for both entries.
 export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({ taskId, onClose }) => {
   const d = useAppData();
+  const { openTask } = useOverlayNav();
   const todo = d.todoById.get(taskId) ?? null;
 
   // Closing runs `onClose` = history.back(); several paths can request a close for the
@@ -45,6 +47,15 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
       // Just delete here; TodoFullView calls onClose (closeOnce) right after, and the
       // stale-todo effect would otherwise fire a second close once the todo disappears.
       onDelete={(id) => d.handleDeleteTodoById(id)}
+      onArchive={d.handleArchiveTodo}
+      onUnarchive={d.handleUnarchiveTodo}
+      // Subtasks section: its rows are other tasks, so they write through the
+      // shared handlers rather than this view's draft. Clicking one swaps the
+      // overlay to it (the same masked navigation the planner uses).
+      onSaveTodo={d.handleHubSaveTodo}
+      onOpenTask={openTask}
+      onAddSubtask={d.handleAddSubtask}
+      onReorder={d.handleReorderHubTodos}
       showXpChips={d.showXpChips}
     />
   );

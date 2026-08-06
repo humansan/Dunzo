@@ -10,6 +10,15 @@ export const TABLE_PAD = 0; // px of horizontal whitespace framing the table (le
 export const TABLE_GUTTER = 64;
 export const BOTTOM_SPACER = 260; // px of dead space below the last row so the context menu has room to open
 
+// The slot between the collapse chevron and a row's first real control - the drag
+// handle on a task row or a collection header, and a placeholder on an attribute
+// header (which has nothing to drag). Fixed so all three are the same width and a
+// section's pill lines up with the checkboxes beneath it; sizing to the grip icon
+// instead left task rows 6px narrower than an attribute header. Spelled as a
+// Tailwind class because these are utility-styled; keep it a literal (see the note
+// in ConfirmModal about interpolated class names).
+export const LEADING_SLOT = 'w-4.5';
+
 // Hub view-config (column widths, per-view config, collapse state, selected view,
 // sidebar sizing) is now DB-synced through `user_settings` (see src/data/settings.ts
 // and the one-time import in src/data/import.ts), not localStorage.

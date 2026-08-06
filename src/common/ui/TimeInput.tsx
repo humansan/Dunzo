@@ -115,7 +115,7 @@ function fromClockParts(h12: number, min: number, pm: boolean): string {
 const HOURS = [12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 const MINUTES = [55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0];
 
-export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className, autoFocus }) => {
+export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className, autoFocus = true }) => {
   const [text, setText] = useState(() => (value ? canonical(value) : ''));
   // The exact left/right substrings last rendered - lets a commit tell which side
   // of the "time | %" string the user touched.
@@ -153,8 +153,11 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (autoFocus) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [autoFocus]);
 
@@ -298,7 +301,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({ value, onChange, className
         }}
         onBlur={() => commit(text)}
         placeholder="e.g. 9a or 3:24 PM or 54%"
-                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-[var(--accent2)] transition-colors"
+                className="w-full bg-overlay border border-line rounded-lg px-2.5 py-1 text-sm text-fg placeholder:text-fg-faint focus:outline-none hover:border-line-strong focus:border-line-strong transition-colors"
       />
 
       <div className="grid grid-cols-2 gap-1 mt-1.5">

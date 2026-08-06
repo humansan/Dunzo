@@ -46,11 +46,13 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
       onDrop={dnd ? (e) => { e.preventDefault(); dnd.onRowDrop(); } : undefined}
       className={`flex-1 min-w-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full ${
         headerChrome
-          ? 'overflow-auto [&::-webkit-scrollbar]:h-2 ml-4 pr-4'
+          ? 'overflow-auto [&::-webkit-scrollbar]:h-2'
           : titleChrome
             ? 'overflow-y-auto overflow-x-hidden px-8'
             : 'overflow-y-auto overflow-x-hidden'
-      }`}
+      }
+      ${variant.mode === 'table' && "ml-4 pr-4"}
+      `}
     >
       {titleChrome ? (
         <div className="max-w-3xl mx-auto w-full text-fg">

@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
-import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule } from '@/features/tasks/model';
+import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive, descendantsToUnarchive } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
@@ -24,6 +24,8 @@ import { useSettings, useUpdateSettings } from '@/lib/query/settings';
 import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
+import { buildSeedTrackers } from '@/lib/onboarding';
+import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascadeConfirm';
 
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
@@ -146,6 +148,9 @@ function useProvideAppData() {
   const setActiveWorkspaceId = (id: string) => updateSettings({ activeWorkspaceId: id });
 
   // First-run seeding + keep activeWorkspaceId valid once data has loaded.
+  // "No workspace at all" is the one signal that means a genuinely new account:
+  // every other collection is user-deletable, so seeding off an empty todo or
+  // tracker list would resurrect content the user threw away.
   const seededRef = useRef(false);
   useEffect(() => {
     if (!isAuthenticated) { seededRef.current = false; return; }
@@ -156,19 +161,28 @@ function useProvideAppData() {
     // duplicate empty "Personal" workspace every time. isSuccess is only true once
     // the server actually returned a list (and stays true with retained data
     // across background refetches), so we never seed off an unconfirmed empty.
-    if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess) return;
+    // The trackers query is gated on too (not just used) so the seed below can
+    // trust `trackers`: a still-loading list also reads as `[]`, and seeding off
+    // that would duplicate the widgets on an account whose workspace create failed.
+    if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess || !trackersQuery.isSuccess) return;
     if (workspaces.length === 0) {
       if (seededRef.current) return;
       seededRef.current = true;
       const id = Math.random().toString(36).substr(2, 9);
       createWorkspace.mutate({ id, name: 'Personal' });
       setActiveWorkspaceId(id);
+      // Onboarding content for a brand-new account (see @/lib/onboarding): the
+      // starter time widgets, so the app isn't blank on first sign-in.
+      if (trackers.length === 0) for (const t of buildSeedTrackers()) createTracker.mutate(t);
+      // No view config is seeded: "hide completed tasks" is a code default in
+      // resolveViewFilters, so it holds for every account and every workspace
+      // without depending on a write here having succeeded.
       return;
     }
     if (!workspaces.some(w => w.id === activeWorkspaceId)) {
       setActiveWorkspaceId(workspaces[0].id);
     }
-  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, workspaces, activeWorkspaceId]);
+  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, trackersQuery.isSuccess, workspaces, trackers, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -238,38 +252,51 @@ function useProvideAppData() {
   // a section's "+" drop the new task above such tasks instead of at the end.
   const nextHubOrder = () => todos.reduce((m, t) => Math.max(m, t?.hubOrder ?? 0), 0) + 1;
 
-  // Replace the whole set of todos scheduled on `date` with `todosForDate` (the
-  // daily/calendar views hand back the full day in its new order). Other days are
-  // left untouched; the provided todos are pinned to `date` via dueDate.
-  // Replace the set of todos scheduled on `date`. Existing todos for that day
-  // that are no longer present are deleted; the rest are upserted with the new
-  // dueDate/order. Server stamps completedAt from status.
-  const handleUpdateTodos = (date: string, todosForDate: Todo[]) => {
+  // ── Daily-list writes ───────────────────────────────────────────────────────
+  // These replaced a single `handleUpdateTodos(date, todos[])` that re-saved a
+  // whole day at once. That signature made the array authoritative, so ANY todo on
+  // that day missing from it was deleted - which meant a field edit carried an
+  // implicit "and delete anything I didn't mention", and every caller had to
+  // remember to pass rows it wasn't even editing (see the daily reorder, which
+  // hand-appended the day's hidden planner tasks purely to keep them alive). Each
+  // operation now says what it is: save one row, create one row, order the day,
+  // delete one row. Nothing deletes by omission.
+
+  // Set the within-day order. Ids only - this never touches a task's fields, so it
+  // can't collide with an edit in flight.
+  const handleReorderDay = (orderedIds: string[]) => {
+    if (!orderedIds.length) return;
+    batchTodos.mutate({ patches: orderedIds.map((id, i) => ({ id, dailyOrder: i })) });
+  };
+
+  // Create `todo` on `date` and set the day's order, in ONE batch. The row goes as
+  // an upsert and the order as patches; the server applies upserts before patches
+  // inside one transaction, so the ordering can never reference a row that doesn't
+  // exist yet (the create-then-reorder race that a second request would open).
+  const handleCreateInDay = (date: string, todo: Todo, orderedIds: string[]) => {
     const dueDate = date && date !== UNDATED ? date : undefined;
-    const newIds = new Set(todosForDate.map(t => t.id));
-    const deletes = todos.filter(t => t && bucketKeyOf(t) === date && !newIds.has(t.id)).map(t => t.id);
-    // Persist within-day position: the array order the daily/calendar view hands
-    // back becomes each task's dailyOrder.
-    // A task created on the Daily page is built here, not by addHubTodo, so it
-    // arrives without a Planner order - hand out the next ones so it lands at the
-    // end of the Planner (see nextHubOrder). Existing orders are left alone.
-    let hubOrder = nextHubOrder();
-    const upserts = todosForDate.map((t, i) => reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...t, dueDate, dailyOrder: i, hubOrder: t.hubOrder ?? hubOrder++ }))));
-    batchTodos.mutate({ upserts, deletes });
-    if (activeTodoId && deletes.includes(activeTodoId)) setActiveTodoId(null);
+    // Daily-created tasks are built by the daily screen, not addHubTodo, so they
+    // arrive without a Planner order - hand out the next one (see nextHubOrder).
+    const upsert = reconcileSchedule(
+      normalizeCompletion(
+        normalizeVisibility({ ...todo, dueDate, hubOrder: todo.hubOrder ?? nextHubOrder() })
+      )
+    );
+    batchTodos.mutate({
+      upserts: [upsert],
+      patches: orderedIds.map((id, i) => ({ id, dailyOrder: i })),
+    });
   };
 
-  // Move a todo to a new scheduled day (its dueDate). fromDate is no longer
-  // needed - the date lives on the task now. Land it at the bottom of the target
-  // day by giving it the next dailyOrder.
-  const handleMoveTodo = (_fromDate: string, toDate: string, updatedTodo: Todo) => {
-    const dueDate = toDate && toDate !== UNDATED ? toDate : undefined;
-    const maxDailyOrder = todos
-      .filter(t => t && bucketKeyOf(t) === toDate && t.id !== updatedTodo.id)
-      .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1);
-    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, dailyOrder: maxDailyOrder + 1, hubOrder: updatedTodo.hubOrder ?? nextHubOrder() }))) });
-  };
-
+  // Rescheduling is just a save whose dueDate happens to differ, so there is no
+  // separate move handler: writeHubTodo below derives the new day's position
+  // itself. It used to be its own path, which meant the SAME edit behaved
+  // differently depending on which screen made it - the daily list and the
+  // calendar landed a rescheduled task at the bottom of its new day, while the
+  // planner's Set-date and the full view left it with a stale dailyOrder and it
+  // dropped in at an arbitrary spot. Worse, that path recomputed the order
+  // unconditionally, so every caller had to guard it with its own "did the date
+  // actually change?" test.
   // Auto-move-date sweep: reschedule any incomplete task whose dueDate has passed
   // and that carries the autoMoveDate flag onto today, so it keeps rolling forward
   // until completed. Runs at most once per local calendar day per mount (the ref
@@ -305,6 +332,55 @@ function useProvideAppData() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDataReady, todos]);
 
+  // ── Status / priority cascade ───────────────────────────────────────────────
+  // Changing either on a task with subtasks asks whether it applies to them too
+  // (see useFieldCascadeConfirm). Both handlers below are the chokepoints every
+  // edit in the app reaches - the row cells, the cell popover, the full view, the
+  // grouped-view drag reassignment, the daily row menu, and every checkbox - so
+  // this is the only place that needs to know about it.
+  const { askFieldCascade, fieldCascadeModal } = useFieldCascadeConfirm();
+
+  // The task descendants of `id`: the rows a cascade could reach. Collections are
+  // excluded - they carry neither status nor priority.
+  const taskDescendantsOf = (id: string): string[] =>
+    [...collectWithDescendants(todos.filter(Boolean) as Todo[], id)].filter(
+      (tid) => tid !== id && !todoById.get(tid)?.isCollection
+    );
+  const patchMany = (ids: string[], patch: Partial<Todo>) => {
+    if (ids.length) batchTodos.mutate({ patches: ids.map((id) => ({ id, ...patch })) });
+  };
+
+  // Wrap any whole-todo write with the cascade question, so a save and a
+  // reschedule can't disagree about it: the daily quick-editor sends BOTH through
+  // one payload, and routing on "did the date change" used to decide whether the
+  // status change in that same payload got asked about.
+  const saveWithCascade = (updatedTodo: Todo, write: () => void) => {
+    const prev = todoById.get(updatedTodo.id);
+    // Status is checked first so an edit that moved both asks about the more
+    // consequential one; the other field still saves on this task either way,
+    // since `write` persists the whole todo.
+    const field: CascadeField | null =
+      prev && prev.status !== updatedTodo.status
+        ? 'status'
+        : prev && prev.priority !== updatedTodo.priority
+          ? 'priority'
+          : null;
+    if (!field || updatedTodo.isCollection) {
+      write();
+      return;
+    }
+    const value = field === 'status'
+      ? { status: updatedTodo.status, completedAt: normalizeCompletion(updatedTodo).completedAt }
+      : { priority: updatedTodo.priority };
+    askFieldCascade({
+      field,
+      name: updatedTodo.text || 'Untitled',
+      descendantIds: taskDescendantsOf(updatedTodo.id),
+      applySelf: write,
+      applyToDescendants: (ids) => patchMany(ids, value),
+    });
+  };
+
   const handleToggleTodo = (todoId: string) => {
     const todo = todos.find(t => t && t.id === todoId);
     if (!todo) return;
@@ -313,12 +389,23 @@ function useProvideAppData() {
     // the stamp client-side - otherwise completedAt stays undefined until the next
     // natural refetch and the completion timestamp renders as absent.
     const { status, completedAt } = normalizeCompletion({ ...todo, status: toggledStatus(todo) });
-    updateTodo.mutate({ id: todoId, patch: { status, completedAt } });
-
-    // If we're toggling the active todo, close the tracker
-    if (activeTodoId === todoId) {
-      setActiveTodoId(null);
-    }
+    const applySelf = () => {
+      updateTodo.mutate({ id: todoId, patch: { status, completedAt } });
+      // If we're toggling the active todo, close the tracker
+      if (activeTodoId === todoId) {
+        setActiveTodoId(null);
+      }
+    };
+    // Ticking the checkbox is a status change like any other, so it takes the same
+    // route. Subtasks inherit the parent's completedAt, so a subtree completed in
+    // one click shares one timestamp.
+    askFieldCascade({
+      field: 'status',
+      name: todo.text || 'Untitled',
+      descendantIds: taskDescendantsOf(todoId),
+      applySelf,
+      applyToDescendants: (ids) => patchMany(ids, { status, completedAt }),
+    });
   };
 
   const handleToggleAndClose = (todoId: string) => {
@@ -343,10 +430,41 @@ function useProvideAppData() {
   // Save an edited hub todo. The date lives on the task itself (`dueDate`), so the
   // todo is the whole payload. Normalize the date here (empty/UNDATED ⇒ undated)
   // so callers can just set `dueDate` without worrying about the sentinel.
-  const handleHubSaveTodo = (updatedTodo: Todo) => {
+  const writeHubTodo = (updatedTodo: Todo) => {
     const dueDate = updatedTodo.dueDate && updatedTodo.dueDate !== UNDATED ? updatedTodo.dueDate : undefined;
-    updateTodo.mutate({ id: updatedTodo.id, patch: reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate }))) });
+    // reconcileArchived here too: without it an edit could park an illegal row in
+    // the optimistic cache (the server corrects the write, but onSettled doesn't
+    // refetch, so the wrong row would stay on screen until some later refetch).
+    const parent = updatedTodo.parentId ? todoById.get(updatedTodo.parentId) : undefined;
+    // Hand out a Planner order if the task somehow lacks one. Daily-created tasks
+    // used to get theirs from handleUpdateTodos' whole-day pass, which a field edit
+    // no longer goes through; a null hubOrder sorts by createdAt on a different
+    // scale entirely, which is the bug 0006_backfill_hub_order existed to clean up.
+    const hubOrder = updatedTodo.hubOrder ?? nextHubOrder();
+    // A save that MOVES the task to another day also gives it a place in that day:
+    // the bottom, like anything newly arriving there. Its old dailyOrder is an index
+    // into a list it just left, so keeping it would drop the task at an arbitrary
+    // spot among its new neighbours. Derived here from the todo's own before/after
+    // date rather than asked for by the caller, so every surface reschedules the
+    // same way and nobody has to remember to request it.
+    const prevBucket = todoById.get(updatedTodo.id)?.dueDate ?? undefined;
+    const movedDay = bucketKeyOf({ ...updatedTodo, dueDate }) !== bucketKeyOf({ ...updatedTodo, dueDate: prevBucket });
+    const dailyOrder = movedDay
+      ? todos
+          .filter((t) => t && bucketKeyOf(t) === bucketKeyOf({ ...updatedTodo, dueDate }) && t.id !== updatedTodo.id)
+          .reduce((m, t) => Math.max(m, t.dailyOrder ?? 0), -1) + 1
+      : updatedTodo.dailyOrder;
+    updateTodo.mutate({
+      id: updatedTodo.id,
+      patch: reconcileArchived(
+        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, hubOrder, dailyOrder }))),
+        parent
+      ),
+    });
   };
+
+  const handleHubSaveTodo = (updatedTodo: Todo) =>
+    saveWithCascade(updatedTodo, () => writeHubTodo(updatedTodo));
 
   // Create a fresh database todo at the bottom of the hub. An optional parentId
   // nests it as a subtask. `opts` lets a quick-add seed the task with attributes
@@ -373,7 +491,15 @@ function useProvideAppData() {
       ...(opts?.patch ?? {}),
       ...(dueDate !== undefined ? { dueDate } : {}),
     };
-    createTodo.mutate(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))));
+    // reconcileArchived: a task created inside an archived parent is archived with
+    // it, so it can never be a live child of an archived row (see
+    // shared/domain/todoArchive). The server enforces the same rule authoritatively;
+    // doing it here keeps the optimistic row honest instead of showing it live for
+    // a beat and then having it change under the user.
+    const parent = parentId ? todoById.get(parentId) : undefined;
+    createTodo.mutate(
+      reconcileArchived(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))), parent)
+    );
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>
@@ -461,10 +587,41 @@ function useProvideAppData() {
     if (activeTodoId === id) setActiveTodoId(null);
   };
 
-  // Archive a todo (and its subtasks): hides them from the hub.
+  // Archive a todo and its whole subtree; unarchive it and its archived ancestors.
+  // Both directions are one constraint - a live todo may not sit under an archived
+  // one (shared/domain/todoArchive) - and neither can be expressed as a single-row
+  // write, so both go out as one batch. The server re-derives the same set, so a
+  // partial batch can't leave the tree half-archived.
   const handleArchiveTodo = (id: string) => {
-    const ids = [...collectWithDescendants(todos.filter(Boolean) as Todo[], id)];
-    batchTodos.mutate({ patches: ids.map(tid => ({ id: tid, archived: true })) });
+    const ids = descendantsToArchive(todos.filter(Boolean) as Todo[], id);
+    if (!ids.length) return;
+    batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, archived: true })) });
+  };
+
+  // Archive several todos (each with its subtree) as ONE write - the planner's
+  // "Archive completed tasks in view" button, which can reach dozens of rows. The
+  // union is taken before the batch so a task that is both selected and a
+  // descendant of another selected task is patched once, and so the count the
+  // confirmation showed is the count that goes out.
+  const handleArchiveTodos = (ids: string[]) => {
+    const all = todos.filter(Boolean) as Todo[];
+    const union = new Set<string>();
+    for (const id of ids) for (const tid of descendantsToArchive(all, id)) union.add(tid);
+    if (!union.size) return;
+    batchTodos.mutate({ patches: [...union].map((tid) => ({ id: tid, archived: true })) });
+  };
+
+  // `mode` decides what happens BELOW the todo, which is a preference rather than
+  // an invariant: 'self' restores just this row (its archived subtree stays put -
+  // a legal state), 'subtree' restores everything archived inside it too. What
+  // happens ABOVE is not a choice - the archived ancestors always come back, or
+  // the result would be a live todo inside an archived one.
+  const handleUnarchiveTodo = (id: string, mode: 'self' | 'subtree' = 'self') => {
+    const all = todos.filter(Boolean) as Todo[];
+    const ids = new Set(ancestorsToUnarchive(all, id));
+    if (mode === 'subtree') for (const d of descendantsToUnarchive(all, id)) ids.add(d);
+    if (!ids.size) return;
+    batchTodos.mutate({ patches: [...ids].map((tid) => ({ id: tid, archived: false })) });
   };
 
   // Delete a collection. 'cascade' removes the collection and its whole subtree.
@@ -567,8 +724,8 @@ function useProvideAppData() {
     // active todo tracker
     activeTodoId, setActiveTodoId, activeTodo,
     // todo/hub handlers
-    handleUpdateTodos,
-    handleMoveTodo,
+    handleReorderDay,
+    handleCreateInDay,
     handleToggleTodo,
     handleToggleAndClose,
     handleStartTracking,
@@ -582,6 +739,8 @@ function useProvideAppData() {
     setTaskCollection,
     handleDeleteTodoById,
     handleArchiveTodo,
+    handleArchiveTodos,
+    handleUnarchiveTodo,
     handleDeleteCollection,
     handleReorderHubTodos,
     // tracker handlers + modal state
@@ -599,6 +758,10 @@ function useProvideAppData() {
     searchFlatEntries,
     // shell UI state
     isFullscreen, setIsFullscreen,
+    // Rendered by the provider, not by any one surface: a status/priority edit can
+    // come from the planner, the daily list, the calendar or the full view, and
+    // they all reach it through the two handlers above.
+    fieldCascadeModal,
   };
 }
 
@@ -608,7 +771,12 @@ const AppDataContext = createContext<AppData | null>(null);
 
 export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const value = useProvideAppData();
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  return (
+    <AppDataContext.Provider value={value}>
+      {children}
+      {value.fieldCascadeModal}
+    </AppDataContext.Provider>
+  );
 };
 
 export function useAppData(): AppData {

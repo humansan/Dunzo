@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import {
@@ -16,7 +16,19 @@ import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
 import { CollectionOption, hasDate, normalizeScheduleTimes, isScheduleValid, type ScheduleSide } from '@/features/tasks/model';
-import { isDone } from '@/features/tasks/model';
+import { isDone, collectWithDescendants, isDescendantOf } from '@/features/tasks/model';
+import {
+  TaskTable,
+  buildTreeModel,
+  useRowDnD,
+  VARIANTS,
+  DEFAULT_SECTIONS_CONFIG,
+  NAME_COL_KEY,
+  type TableInteraction,
+  type TableRowHandlers,
+  type EditState,
+} from '@/features/planner/table';
+import { useArchiveConfirm } from '@/features/tasks/useArchiveConfirm';
 import {
   CompletedToggle,
   OptionSelectField,
@@ -44,6 +56,22 @@ interface TodoFullViewProps {
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  // Archive/unarchive are subtree operations, so they go through the app-data
+  // handlers rather than a plain `archived` edit - a single-row write here used to
+  // leave live children under an archived parent (shared/domain/todoArchive).
+  onArchive: (id: string) => void;
+  onUnarchive: (id: string, mode: 'self' | 'subtree') => void;
+  // ── Subtasks section ────────────────────────────────────────────────────────
+  // Writes for the SUBTASK rows, which never touch this view's draft: they're
+  // other tasks, saved straight through the shared handler like a planner row.
+  onSaveTodo: (todo: Todo) => void;
+  // Swap the overlay to another task (clicking a subtask row opens it here).
+  onOpenTask: (id: string) => void;
+  // "+ New" under the list: create a subtask and return its id, so the row can
+  // drop straight into its title editor.
+  onAddSubtask: (parentId: string) => string;
+  // Persist the subtask order after a drag (position = hubOrder, parentId = nesting).
+  onReorder: (items: { id: string; parentId: string | null }[]) => void;
   showXpChips: boolean; // hide the XP property when the settings toggle is off
 }
 
@@ -58,7 +86,7 @@ const RightProp: React.FC<{
 }> = ({ icon, label, children, noDivider, onClear, canClear }) => (
   <div className={`group/prop py-2.5 ${noDivider ? '' : 'border-b border-line-subtle'}`}>
     <div className="flex items-center justify-between mb-1.5">
-      <div className="flex items-center gap-1.5 text-xs text-fg-subtle font-medium h-5">
+      <div className="flex items-center gap-1.5 text-xs text-fg-muted font-medium h-5">
         {icon}
         {label}
       </div>
@@ -78,6 +106,59 @@ const RightProp: React.FC<{
 );
 
 
+function ensureCaretInView(el: HTMLTextAreaElement) {
+  const container = el.closest<HTMLDivElement>('.overflow-y-auto');
+  if (!container) return;
+
+  const start = el.selectionStart ?? 0;
+  const val = el.value;
+
+  const computed = window.getComputedStyle(el);
+  const mirror = document.createElement('div');
+  mirror.style.position = 'absolute';
+  mirror.style.visibility = 'hidden';
+  mirror.style.whiteSpace = 'pre-wrap';
+  mirror.style.wordWrap = 'break-word';
+  mirror.style.fontFamily = computed.fontFamily;
+  mirror.style.fontSize = computed.fontSize;
+  mirror.style.lineHeight = computed.lineHeight;
+  mirror.style.padding = computed.padding;
+  mirror.style.width = `${el.clientWidth}px`;
+  mirror.style.boxSizing = computed.boxSizing;
+
+  const textBefore = val.slice(0, start);
+  const textBeforeNode = document.createTextNode(textBefore);
+  const span = document.createElement('span');
+  span.textContent = val.slice(start, start + 1) || '|';
+
+  mirror.appendChild(textBeforeNode);
+  mirror.appendChild(span);
+  document.body.appendChild(mirror);
+
+  const caretTopInEl = span.offsetTop;
+  const lineHeight = span.offsetHeight || parseFloat(computed.lineHeight) || 20;
+  const caretBottomInEl = caretTopInEl + lineHeight;
+
+  document.body.removeChild(mirror);
+
+  const elRect = el.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const elTopInContainer = elRect.top - containerRect.top + container.scrollTop;
+
+  const caretTopInContainer = elTopInContainer + caretTopInEl;
+  const caretBottomInContainer = elTopInContainer + caretBottomInEl;
+
+  const visibleTop = container.scrollTop;
+  const visibleBottom = container.scrollTop + container.clientHeight;
+  const padding = 16;
+
+  if (caretTopInContainer < visibleTop) {
+    container.scrollTop = Math.max(0, caretTopInContainer - padding);
+  } else if (caretBottomInContainer > visibleBottom) {
+    container.scrollTop = caretBottomInContainer - container.clientHeight + padding;
+  }
+}
+
 export const TodoFullView: React.FC<TodoFullViewProps> = ({
   todo,
   date,
@@ -88,8 +169,16 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onSave,
   onToggle,
   onDelete,
+  onArchive,
+  onUnarchive,
+  onSaveTodo,
+  onOpenTask,
+  onAddSubtask,
+  onReorder,
   showXpChips,
 }) => {
+  // The archive confirmation counts rows across the whole tree, not just this task.
+  const allTodos = useMemo(() => [...byId.values()], [byId]);
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -108,8 +197,19 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const resizeNotes = () => {
     const el = notesRef.current;
     if (!el) return;
+    const parent = el.closest<HTMLDivElement>('.overflow-y-auto');
+    const savedScroll = parent?.scrollTop;
     el.style.height = 'auto';
     el.style.height = `${el.scrollHeight}px`;
+    if (parent && savedScroll !== undefined) {
+      parent.scrollTop = savedScroll;
+    }
+  };
+
+  const handleNotesCaretScroll = () => {
+    const el = notesRef.current;
+    if (!el) return;
+    ensureCaretInView(el);
   };
 
   useLayoutEffect(resizeTitle, [draft.text, todo.id]);
@@ -142,6 +242,89 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
+
+  // ── Subtasks ────────────────────────────────────────────────────────────────
+  // The whole descendant subtree, rendered through the planner's own table so the
+  // rows behave identically (rename in place, check to complete, expand/collapse,
+  // drag to reorder/nest).
+  //
+  // The open task itself is deliberately NOT in the entry set: flattenTree links a
+  // node only to a parent that is present, so leaving it out is what makes its
+  // direct children the top level of this list instead of everything hanging one
+  // indent deeper under a row you're already looking at.
+  const subtaskEntries = useMemo(() => {
+    const ids = collectWithDescendants(allTodos, todo.id);
+    ids.delete(todo.id);
+    return [...ids]
+      .map((id) => byId.get(id))
+      .filter((t): t is Todo => !!t && t.archived !== true)
+      .sort((a, b) => (a.hubOrder ?? a.createdAt) - (b.hubOrder ?? b.createdAt))
+      .map((t) => ({ todo: t }));
+  }, [allTodos, byId, todo.id]);
+
+  // Collapse + inline-edit state are LOCAL: the planner's own collapse set is
+  // DB-synced and shared across its views, and a modal shouldn't reach into it.
+  const [subCollapsed, setSubCollapsed] = useState<Set<string>>(new Set());
+  const [subEditing, setSubEditing] = useState<EditState>(null);
+  useEffect(() => { setSubCollapsed(new Set()); setSubEditing(null); }, [todo.id]);
+
+  const subModel = useMemo(
+    () => buildTreeModel(subtaskEntries, byId, { collapsed: subCollapsed }),
+    [subtaskEntries, byId, subCollapsed]
+  );
+  const subById = useMemo(
+    () => new Map(subtaskEntries.map((e) => [e.todo.id, e])),
+    [subtaskEntries]
+  );
+  const subFlatById = useMemo(
+    () => new Map(subModel.flattened.map((n) => [n.id, n])),
+    [subModel.flattened]
+  );
+
+  const subDnd = useRowDnD({
+    entries: subtaskEntries,
+    processedEntries: subtaskEntries,
+    flattened: subModel.flattened,
+    flatById: subFlatById,
+    groupedRows: [],
+    byId: subById,
+    isDescendantOf: (e, cid) => isDescendantOf(e.todo, cid, byId),
+    // Re-anchor point for rows that read as top-level here. This is the trap: the
+    // open task is absent from the set, so its direct children flatten to
+    // parentId null, and a drop commit would reparent every one of them to the
+    // root of the tree - silently emptying this list. Naming it here puts them
+    // back under the task they belong to, exactly as a collection view does.
+    selectedCollectionId: todo.id,
+    sectionsConfig: DEFAULT_SECTIONS_CONFIG,
+    onReorder,
+    onSaveTodo,
+    clearInteraction: () => setSubEditing(null),
+  });
+
+  const subInteraction = useMemo<TableInteraction>(() => ({
+    editing: subEditing,
+    startEdit: (id, col) => setSubEditing({ id, col, rect: null }),
+    stopEdit: () => setSubEditing(null),
+    // openMenu omitted - no RowContextMenu in this modal, so no ⋯ button.
+    toggleCollapse: (id) =>
+      setSubCollapsed((prev) => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      }),
+  }), [subEditing]);
+
+  const subRowHandlers = useMemo<TableRowHandlers>(() => ({
+    onSaveTodo,
+    onToggleTodo: onToggle,
+    onAddSubtask,
+    onOpenTask,
+    // "+ New" adds a subtask of the task being viewed and opens its title editor.
+    onNewInView: () => {
+      const id = onAddSubtask(todo.id);
+      setSubEditing({ id, col: NAME_COL_KEY, rect: null });
+    },
+  }), [onSaveTodo, onToggle, onAddSubtask, onOpenTask, todo.id]);
 
   const update = (patch: Partial<Todo>, nextDate: string = dateStr) => {
     setDraft(prev => {
@@ -209,11 +392,15 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const plannerDisabled = plannerOn && !dailyEffective;
   const dailyDisabled = dailyEffective && !plannerOn;
 
-  const handleArchive = () => {
-    const nowArchived = !draft.archived;
-    update({ archived: nowArchived });
-    if (nowArchived) onClose();
-  };
+  // Prompts when the operation reaches beyond this task; the modal is rendered at
+  // the end of this component. Archiving closes the view - the task has left every
+  // live surface, so there is nothing behind the overlay to come back to.
+  const { requestArchiveToggle, archiveConfirmModal } = useArchiveConfirm({
+    todos: allTodos,
+    onArchive: (id) => { onArchive(id); onClose(); },
+    onUnarchive,
+  });
+  const handleArchive = () => requestArchiveToggle(draft.id);
 
   return (
     <motion.div
@@ -247,7 +434,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
         <div className="flex flex-1 overflow-hidden min-h-0">
 
           {/* Left pane: title + notes */}
-          <div className="flex-1 flex flex-col overflow-y-auto min-w-0 px-8 py-6 no-scrollbar">
+          <div className="flex-1 flex flex-col overflow-y-auto min-w-0 px-8 py-6">
             <div className="flex items-start gap-3 mb-5">
               <CompletedToggle
                 completed={isDone(draft)}
@@ -271,11 +458,40 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <textarea
                 ref={notesRef}
                 value={draft.notes || ''}
-                onChange={(e) => update({ notes: e.target.value })}
-                onInput={resizeNotes}
+                onChange={(e) => {
+                  update({ notes: e.target.value });
+                  handleNotesCaretScroll();
+                }}
+                onInput={() => {
+                  resizeNotes();
+                  handleNotesCaretScroll();
+                }}
+                onKeyUp={handleNotesCaretScroll}
+                onClick={handleNotesCaretScroll}
+                onSelect={handleNotesCaretScroll}
                 placeholder="Add notes..."
-                className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed"
+                className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed min-h-47"
               />
+            </div>
+
+            {/* Subtasks - the planner's own table, so the rows behave identically.
+                The plain wrapper matters: TableSurface is `flex-1` (basis 0) and
+                this pane is a flex column, so as a direct child it would collapse
+                to the leftover space and scroll inside itself. Wrapped in a block
+                element, flex-1 is inert and the list grows with the pane. */}
+            <div className="mt-16">
+              <div className="ml-8.5 my-1.5 flex items-center gap-2">
+                <span className="text-xs font-medium text-fg-faint">Subtasks</span>
+              </div>
+              <div className="border-t border-line-subtle">
+                <TaskTable
+                  variant={VARIANTS.subtasks}
+                  model={subModel}
+                  interaction={subInteraction}
+                  rowHandlers={subRowHandlers}
+                  dnd={subDnd}
+                />
+              </div>
             </div>
           </div>
 
@@ -284,7 +500,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
           {/* Right pane: properties + actions */}
           <div className="w-80 shrink-0 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto px-5 py-2 no-scrollbar">
+            <div className="flex-1 overflow-y-auto px-5 py-2">
 
               <RightProp
                 icon={<CircleDot size={11} />}
@@ -348,6 +564,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     value={dateStr}
                     placeholder="Date"
                     onChange={handleDateChange}
+                    showInDailyList={draft.showInDatabase ? (draft.showInDailyList ?? false) : undefined}
+                    onShowInDailyListChange={draft.showInDatabase ? ((val) => update({ showInDailyList: val })) : undefined}
                     autoMoveDate={draft.autoMoveDate ?? false}
                     onAutoMoveDateChange={(val) => update({ autoMoveDate: val })}
                   />
@@ -407,7 +625,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
               <div className="border-t border-line-subtle py-3 space-y-3 ">
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs text-fg-subtle font-medium">
+                  <div className="flex items-center gap-1.5 text-xs text-fg-muted font-medium">
                     <Clock size={11} />
                     Created
                   </div>
@@ -467,6 +685,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
           </div>
         </div>
       </motion.div>
+      {archiveConfirmModal}
     </motion.div>
   );
 };

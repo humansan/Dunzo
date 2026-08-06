@@ -11,7 +11,7 @@ const toggleId = (set: (fn: (prev: Set<string>) => Set<string>) => void) => (id:
   set((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
 // The Task Finder's two-pane result view: a collection list (left) scoping a
-// TABLE-variant TaskTable of the selected view's matching tasks (right). Reuses the
+// SEARCHTABLE-variant TaskTable of the selected view's matching tasks (right). Reuses the
 // full planner table for the right pane; clicking a row picks the task. Owns its own
 // view-selection + collapse state (ephemeral to the finder session).
 export const TwoPaneResults: React.FC<{
@@ -20,8 +20,7 @@ export const TwoPaneResults: React.FC<{
   matches: OrganizerEntry[];
   onPick: (id: string) => void;
   onSaveTodo: (updatedTodo: Todo) => void;
-  onToggleTodo: (id: string) => void;
-}> = ({ entries, todoById, matches, onPick, onSaveTodo, onToggleTodo }) => {
+}> = ({ entries, todoById, matches, onPick, onSaveTodo }) => {
   const [selectedView, setSelectedView] = useState('all');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [collapsedColls, setCollapsedColls] = useState<Set<string>>(new Set());
@@ -29,16 +28,16 @@ export const TwoPaneResults: React.FC<{
   const { visibleCollections, allCount, uncategorizedCount, collectionCount, bodyModel } =
     useTaskFinderData({ entries, todoById, matches, selectedView, collapsed, collapsedColls });
 
-  // Clicking the cell picks the task via onOpenTask; the checkbox still toggles completion.
+  // Clicking the cell picks the task via onOpenTask; the checkbox is read-only here
+  // (no onToggleTodo), like the title (no startEdit).
   const interaction: TableInteraction = {
     editing: null,
     stopEdit: NOOP,
-    openMenu: NOOP,
+    // openMenu omitted - same as the flat Finder list: no row menu here.
     toggleCollapse: toggleId(setCollapsed),
   };
   const rowHandlers: TableRowHandlers = {
     onSaveTodo,
-    onToggleTodo,
     onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
@@ -63,7 +62,7 @@ export const TwoPaneResults: React.FC<{
         {bodyModel.flattened.length === 0 ? (
           <div className="px-4 py-6 text-xs text-fg-faint">No matching tasks in this collection.</div>
         ) : (
-          <TaskTable variant={VARIANTS.table} model={bodyModel} interaction={interaction} rowHandlers={rowHandlers} />
+          <TaskTable variant={VARIANTS.searchtable} model={bodyModel} interaction={interaction} rowHandlers={rowHandlers} />
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ColKey,
   ColDef,
@@ -16,7 +16,7 @@ import {
 } from '@/features/planner/types';
 import { MIN_COL_WIDTH } from '@/features/planner/constants';
 import { resolveView } from '@/features/planner/views';
-import { broadcastMenuConfig, defaultKeyFor } from '@/features/planner/model/viewConfigStore';
+import { broadcastMenuConfig, defaultKeyFor, resolveViewFilters } from '@/features/planner/model/viewConfigStore';
 import { useSyncedSetting } from '@/lib/query/settings';
 
 // Owns the table's per-view layout: column widths (persisted globally) and the
@@ -46,9 +46,9 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     // view's own record on top. A field absent from the view record falls
     // through to the default, which is what lets one broadcast reach views that
     // have never been visited (they have no record at all).
-    const defRaw = viewsConfig[defaultConfigKey] ?? {};
+    const defRawAll = viewsConfig[defaultConfigKey] ?? {};
     const viewRaw = viewsConfig[viewConfigKey] ?? {};
-    const raw = { ...defRaw, ...viewRaw };
+    const raw = { ...defRawAll, ...viewRaw };
     let fieldOrder: ColKey[] = Array.isArray(raw.fieldOrder)
       ? raw.fieldOrder.filter((k: string): k is ColKey => allColKeys.includes(k as ColKey))
       : [];
@@ -73,9 +73,9 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     );
     // `sections` is an object, so it merges one level deeper than the rest: a
     // per-view record may hold only `{ groupBy }` (see applyToAllViews' guard),
-    // and a blanket spread would drop the other five fields back to the hardcoded
+    // and a blanket spread would drop the other four fields back to the hardcoded
     // defaults instead of the workspace ones.
-    const raw_sections = { ...(defRaw.sections ?? {}), ...(viewRaw.sections ?? {}) };
+    const raw_sections = { ...(defRawAll.sections ?? {}), ...(viewRaw.sections ?? {}) };
     // A view may declare its own default grouping (e.g. In Daily List is a daily
     // lens, so it defaults to date grouping). Precedence, highest first:
     //   1. an explicit choice made while on this view
@@ -87,28 +87,51 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     const groupBy =
       viewRaw.sections?.groupBy ??
       viewDefaultGroupBy ??
-      defRaw.sections?.groupBy ??
+      defRawAll.sections?.groupBy ??
       DEFAULT_SECTIONS_CONFIG.groupBy;
     const sections: SectionsConfig = {
-      autoArchive:          raw_sections.autoArchive          ?? DEFAULT_SECTIONS_CONFIG.autoArchive,
       showLeafTasks:        raw_sections.showLeafTasks        ?? DEFAULT_SECTIONS_CONFIG.showLeafTasks,
       hideEmptyCollections: raw_sections.hideEmptyCollections ?? DEFAULT_SECTIONS_CONFIG.hideEmptyCollections,
       hideSubcollections:   raw_sections.hideSubcollections   ?? DEFAULT_SECTIONS_CONFIG.hideSubcollections,
       groupBy,
       groupSortDirection:   raw_sections.groupSortDirection   ?? DEFAULT_SECTIONS_CONFIG.groupSortDirection,
     };
+    // Filters resolve through the shared per-view-id helper - the same one the
+    // sidebar counts every OTHER tab with - so the visible view and the badges can
+    // never disagree about what a view's filters are. It also owns the
+    // ignoresDefaultFilters opt-out (Archived / Completed).
+    const { filters, filterMatch, hideCompleted } = resolveViewFilters(
+      viewsConfig,
+      activeWorkspaceId,
+      selectedView,
+      resolveView(selectedView).ignoresDefaultFilters
+    );
     return {
       fieldOrder,
       hiddenFields,
       wrappedFields,
-      filters: (Array.isArray(raw.filters) ? raw.filters : []) as FilterRule[],
-      filterMatch: (raw.filterMatch === 'or' ? 'or' : 'and') as FilterMatch,
+      filters,
+      filterMatch,
+      hideCompleted,
       sorts:   (Array.isArray(raw.sorts)   ? raw.sorts   : []) as SortRule[],
       sections,
     };
-  }, [viewsConfig, viewConfigKey, defaultConfigKey, selectedView]);
+  }, [viewsConfig, viewConfigKey, defaultConfigKey, selectedView, activeWorkspaceId]);
 
-  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, filterMatch, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
+  // Any view's resolved filters, for the sidebar counts (which have to run each
+  // tab's OWN filters, not the visible tab's). Same helper as above.
+  const filtersFor = useCallback(
+    (viewId: string) =>
+      resolveViewFilters(
+        viewsConfig,
+        activeWorkspaceId,
+        viewId,
+        resolveView(viewId).ignoresDefaultFilters
+      ),
+    [viewsConfig, activeWorkspaceId]
+  );
+
+  const { fieldOrder, hiddenFields, wrappedFields, filters: activeFilters, filterMatch, hideCompleted, sorts: activeSorts, sections: sectionsConfig } = currentViewState;
 
   // Persist a view-state update, writing ONLY the fields the patch actually
   // touched. Materializing all seven on every edit (what this used to do) would
@@ -122,6 +145,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     wrappedFields?: Set<ColKey>;
     filters?: FilterRule[];
     filterMatch?: FilterMatch;
+    hideCompleted?: boolean;
     sorts?: SortRule[];
     sections?: SectionsConfig;
   }) => {
@@ -131,6 +155,10 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     if (patch.wrappedFields) slice.wrappedFields = [...patch.wrappedFields];
     if (patch.filters)       slice.filters       = patch.filters;
     if (patch.filterMatch)   slice.filterMatch   = patch.filterMatch;
+    // Presence check, not truthiness: `false` is a real value here (turning the
+    // setting OFF on a view that inherits it ON), and the other keys can rely on
+    // truthiness only because none of their legal values are falsy.
+    if (patch.hideCompleted !== undefined) slice.hideCompleted = patch.hideCompleted;
     if (patch.sorts)         slice.sorts         = patch.sorts;
     if (patch.sections)      slice.sections      = patch.sections;
 
@@ -155,7 +183,7 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
         hiddenFields: [...hiddenFields],
         wrappedFields: [...wrappedFields],
       },
-      filter: { filters: activeFilters, filterMatch },
+      filter: { filters: activeFilters, filterMatch, hideCompleted },
       sort: { sorts: activeSorts },
     }[menu];
 
@@ -232,6 +260,8 @@ export function useHubViewConfig(activeWorkspaceId: string, selectedView: string
     wrappedFields,
     activeFilters,
     filterMatch,
+    hideCompleted,
+    filtersFor,
     activeSorts,
     sectionsConfig,
     updateViewState,

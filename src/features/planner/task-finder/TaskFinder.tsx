@@ -1,26 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, List, Columns2, CornerLeftUp } from 'lucide-react';
+import { Search, X, List, Columns2, CornerLeftUp, CircleCheckBig } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { OrganizerEntry } from '@/features/tasks/model';
+import { OrganizerEntry, isDone } from '@/features/tasks/model';
 import { useSyncedLayout } from '@/lib/query/settings';
 import { overlayBackdrop } from '@/common/ui/modalMotion';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from '@/features/planner/table/TaskTable';
 import { useTaskFinderSearch } from '@/features/planner/task-finder/useTaskFinderSearch';
 import { TwoPaneResults } from '@/features/planner/task-finder/TwoPaneResults';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnSwitch, btnToggle } from '@/theme/buttons';
 
 // A command-palette over the active workspace's tasks, driven by `onPick`: search
 // wires it to open a task's full view, a picker (e.g. reparent) wires it to its own
-// action. It matches tasks (never collections) by title + notes, pulls in each
-// match's subtask subtree so results keep their hierarchy (expand/collapse), and
-// renders them through the nesting, name-only, chrome-less `search` variant of the
-// shared TaskTable. There is no add-row (read-only surface).
-//
-// Phase 1: the flat result list is the existing search list; fuzzy/all-fields search
-// (Phase 2), the two-pane view (Phase 3), and the polished ranked list (Phase 5)
-// build on this shell.
+// action. It matches and ranks tasks (never collections) through the tiered,
+// literal-first search core (§useTaskFinderSearch), pulls in each match's subtask
+// subtree so results keep their hierarchy (expand/collapse), and renders them through
+// the nesting, name-only, chrome-less `search` variant of the shared TaskTable. There
+// is no add-row, no inline rename and no completion toggle (read-only surface).
 const RESULT_LIMIT = 50;
 const NOOP = () => {};
 
@@ -36,9 +33,10 @@ export interface TaskFinderProps {
   // Choosing a task: search opens its full view; a picker returns it to the caller.
   onPick: (id: string) => void;
   onClose: () => void;
-  // Row mutations still available from the results (checkbox toggle / inline rename).
+  // Field edits from the results' quick-edit cells. The results are otherwise a
+  // read-only surface: no inline rename (no `startEdit`) and no completion toggle
+  // (no `onToggleTodo` handed to the table).
   onSaveTodo: (updatedTodo: Todo) => void;
-  onToggleTodo: (id: string) => void;
   // Optional chrome - a picker sets a heading ("Move to…") and its own placeholder.
   title?: string;
   placeholder?: string;
@@ -55,7 +53,6 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   onPick,
   onClose,
   onSaveTodo,
-  onToggleTodo,
   title,
   placeholder = 'Search tasks…',
   isDisabled,
@@ -67,6 +64,10 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   const [layout, patchLayout] = useSyncedLayout();
   const finderView = layout.finderView ?? 'flat';
   const setFinderView = (v: 'flat' | 'twoPane') => patchLayout(() => ({ finderView: v }));
+  // Whether completed tasks are searched at all - on by default, remembered like the
+  // layout (and, like it, one preference across search + the pickers).
+  const showDone = layout.finderShowDone ?? true;
+  const setShowDone = (v: boolean) => patchLayout(() => ({ finderShowDone: v }));
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const toggleCollapse = (id: string) =>
     setCollapsed((prev) => {
@@ -81,16 +82,22 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   // groups by collection). Pickers pass no `flatEntries`, so both views use `entries`.
   const activeEntries = finderView === 'flat' ? (flatEntries ?? entries) : entries;
 
-  // A picker excludes candidates it can't accept - reparent → the moved task + its
-  // whole subtree (a cycle guard). Removing them from the candidate universe up front
-  // keeps them out of matches AND out of the subtree expansion below (an excluded
-  // task can be nested under a non-excluded match). Collections stay (structure).
-  const candidateEntries = useMemo(
-    () => (isDisabled ? activeEntries.filter((e) => e.todo.isCollection || !isDisabled(e.todo.id)) : activeEntries),
-    [activeEntries, isDisabled]
-  );
+  // The searchable universe, narrowed twice. A picker excludes candidates it can't
+  // accept - reparent → the moved task + its subtree (a cycle guard); the header
+  // toggle optionally excludes completed tasks. Removing them up front keeps them out
+  // of matches AND out of the subtree expansion below (an excluded task can be nested
+  // under a non-excluded match), and - in the two-pane view - out of the collection
+  // tree's counts. Collections always stay (they're structure, never hits).
+  const candidateEntries = useMemo(() => {
+    if (!isDisabled && showDone) return activeEntries;
+    return activeEntries.filter(
+      (e) =>
+        e.todo.isCollection ||
+        ((!isDisabled || !isDisabled(e.todo.id)) && (showDone || !isDone(e.todo)))
+    );
+  }, [activeEntries, isDisabled, showDone]);
 
-  // Which tasks match - VSCode-style fuzzy on the name + all-fields haystack (§hook).
+  // Which tasks match, ranked - literal tiers first, guarded fuzzy last (§hook).
   const matches = useTaskFinderSearch(candidateEntries, todoById, query, RESULT_LIMIT);
 
   // The two-pane (Collections) view is a browsable table: with no query it shows the
@@ -127,19 +134,19 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
   const interaction = useMemo<TableInteraction>(() => ({
     editing: null,
     stopEdit: NOOP,
-    openMenu: NOOP,
+    // openMenu omitted - the Finder hosts no RowContextMenu, so its rows show no ⋯.
     toggleCollapse,
   }), []);
 
   const rowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
-    onToggleTodo,
     onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
     onOpenTask: onPick,
     // onNewInView omitted → no add-row in the results list.
-  }), [onSaveTodo, onToggleTodo, onPick]);
+    // onToggleTodo omitted → read-only completion checks.
+  }), [onSaveTodo, onPick]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -153,7 +160,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       onMouseDown={onClose}
     >
       <div
-        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-xl'} max-h-[70vh] flex flex-col rounded-xl border border-line bg-canvas shadow-2xl overflow-hidden`}
+        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-2xl'} transition-all max-h-[70vh] flex flex-col rounded-xl border border-line bg-canvas shadow-2xl overflow-hidden`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {title && (
@@ -161,7 +168,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
             {title}
           </div>
         )}
-        {/* Search field + Flat / Two-pane toggle */}
+        {/* Search field + completed-tasks filter + Flat / Two-pane toggle */}
         <div className="shrink-0 flex items-center gap-2 px-3 h-12 border-b border-line">
           <Search size={16} className="text-fg-faint" />
           <input
@@ -171,6 +178,15 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
             placeholder={placeholder}
             className="flex-1 min-w-0 bg-transparent text-sm text-fg placeholder:text-fg-faint focus:outline-none"
           />
+          {/* Lit = completed tasks are searched (the default); dim = open tasks only. */}
+          <button
+            type="button"
+            onClick={() => setShowDone(!showDone)}
+            title={showDone ? 'Including completed tasks' : 'Completed tasks excluded'}
+            className={`shrink-0 p-1.5 rounded-lg ${btnToggle(showDone)}`}
+          >
+            <CircleCheckBig size={15} />
+          </button>
           <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-fill-subtle p-0.5">
             {([['flat', List, 'Flat list'], ['twoPane', Columns2, 'Collections']] as const).map(([v, Icon, label]) => (
               <button
@@ -178,7 +194,7 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
                 type="button"
                 onClick={() => setFinderView(v)}
                 title={label}
-                className={`p-1 rounded-md transition-colors ${finderView === v ? 'bg-fill text-fg' : 'text-fg-faint hover:text-fg'}`}
+                className={`p-1 rounded-md transition-colors ${finderView === v ? btnSwitch(true) : btnSwitch()}`}
               >
                 <Icon size={15} />
               </button>
@@ -216,12 +232,11 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
               matches={twoPaneMatches}
               onPick={onPick}
               onSaveTodo={onSaveTodo}
-              onToggleTodo={onToggleTodo}
             />
           ) : !q ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">Type to search tasks by name or notes.</div>
+            <div className="px-4 py-4 text-xs text-fg-faint">Type to search tasks by name, notes, collection, status, priority, or date.</div>
           ) : matches.length === 0 ? (
-            <div className="px-4 py-6 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
+            <div className="px-4 py-4 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
           ) : (
             <TaskTable
               variant={VARIANTS.search}

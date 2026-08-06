@@ -20,6 +20,7 @@ import { OrganizerEntry } from '@/features/tasks/model';
 import { CalendarInput } from '@/common/ui';
 import { TimeInput } from '@/common/ui';
 import { COLLECTION_SLOTS, collectionColor, collectionSlot, colorName } from '@/theme/collectionColor';
+import { useAppData } from '@/lib/app-data';
 
 // Right-click / 3-dot row menu. Branches on whether the target row is a
 // collection (Edit / nested collection / recolor) or a task - the task items
@@ -43,17 +44,26 @@ export const RowContextMenu: React.FC<{
   onToggleColorPicker: () => void;
   onClose: () => void;
   onEditCollection: (id: string) => void;
-  onCreateTaskInside: (parentId: string, sidebar?: true) => void;
-  onCreateNestedCollection: (parentId: string, sidebar?: true) => void;
+  // The four create actions are omitted in views that don't offer creation (see
+  // ViewDef.allowNew) - Archived above all, where a new child would be a LIVE todo
+  // under an archived parent (the invariant in shared/domain/todoArchive now
+  // archives it instead, so the row would silently vanish into the row it was
+  // created under). An undefined handler renders no item, which keeps "can this
+  // view create?" a single decision made by the caller rather than a `selectedView`
+  // check duplicated in here.
+  onCreateTaskInside?: (parentId: string, sidebar?: true) => void;
+  onCreateNestedCollection?: (parentId: string, sidebar?: true) => void;
   onChangeColor: (entry: OrganizerEntry, color: string) => void;
   onMakeCollection: (entry: OrganizerEntry) => void;
   onMoveTo: (id: string) => void;
   onExpand: (id: string) => void;
-  onDuplicate: (id: string) => void;
+  // Also a create action, so it's gated with the other four (Duplicate in Archived
+  // would make a copy that inherits the archived state and vanishes into it).
+  onDuplicate?: (id: string) => void;
   onSetDate: (id: string, date: string) => void;
   onSetTime: (id: string, time: string) => void;
-  onAddTaskAbove: (id: string) => void;
-  onAddTaskBelow: (id: string) => void;
+  onAddTaskAbove?: (id: string) => void;
+  onAddTaskBelow?: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
 }> = ({
@@ -79,6 +89,8 @@ export const RowContextMenu: React.FC<{
   onArchive,
   onDelete,
 }) => {
+  const { handleHubSaveTodo } = useAppData();
+
   // Which date/time flyout is open beside the menu, if any.
   const [sub, setSub] = useState<'date' | 'time' | null>(null);
   useEffect(() => { setSub(null); }, [menu.id]);
@@ -110,12 +122,16 @@ export const RowContextMenu: React.FC<{
             <button onClick={() => onEditCollection(menu.id)} className={itemCls}>
               <Pencil size={14} /> Edit
             </button>
-            <button onClick={() => onCreateTaskInside(menu.id, menu.sidebar)} className={itemCls}>
-              <CornerDownRight size={14} /> Create task inside
-            </button>
-            <button onClick={() => onCreateNestedCollection(menu.id, menu.sidebar)} className={itemCls}>
-              <FolderPlus size={14} /> Create collection inside
-            </button>
+            {onCreateNestedCollection && (
+              <button onClick={() => onCreateNestedCollection(menu.id, menu.sidebar)} className={itemCls}>
+                <FolderPlus size={14} /> Create collection inside
+              </button>
+            )}
+            {onCreateTaskInside && (
+              <button onClick={() => onCreateTaskInside(menu.id, menu.sidebar)} className={itemCls}>
+                <CornerDownRight size={14} /> Create task inside
+              </button>
+            )}
             <button onClick={onToggleColorPicker} className={itemCls}>
               <Palette size={14} /> Change color
             </button>
@@ -143,35 +159,45 @@ export const RowContextMenu: React.FC<{
             <button onClick={() => onExpand(menu.id)} className={itemCls}>
               <Maximize2 size={14} /> Show in full view
             </button>
-            <button onClick={() => onDuplicate(menu.id)} className={itemCls}>
-              <Copy size={14} /> Duplicate
-            </button>
+            {onCreateTaskInside && (
+              <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
+                <CornerDownRight size={14} /> Create task inside
+              </button>
+            )}
             <button
               onClick={() => toggleSub('date')}
               className={`${itemCls} ${sub === 'date' ? 'bg-fill text-fg' : ''}`}
             >
               <CalendarDays size={14} /> Set date
             </button>
-            <button
-              onClick={() => entry?.todo.dueDate && toggleSub('time')}
-              disabled={!entry?.todo.dueDate}
-              title={entry?.todo.dueDate ? undefined : 'Add a date first'}
-              className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${entry?.todo.dueDate ? '' : 'opacity-40 cursor-not-allowed'}`}
-            >
-              <Clock size={14} /> Set time
-            </button>
-            <button onClick={() => onAddTaskAbove(menu.id)} className={itemCls}>
-              <ArrowUp size={14} /> Add task above
-            </button>
-            <button onClick={() => onAddTaskBelow(menu.id)} className={itemCls}>
-              <ArrowDown size={14} /> Add task below
-            </button>
+            {entry?.todo.dueDate && (
+              <button
+                onClick={() => entry?.todo.dueDate && toggleSub('time')}
+                disabled={!entry?.todo.dueDate}
+                title={entry?.todo.dueDate ? undefined : 'Add a date first'}
+                className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${entry?.todo.dueDate ? '' : 'opacity-40 cursor-not-allowed'}`}
+              >
+                <Clock size={14} /> Set time
+              </button>
+            )}
             <button onClick={() => onMoveTo(menu.id)} className={itemCls}>
               <GitBranch size={14} /> Set parent task
             </button>
-            <button onClick={() => onCreateTaskInside(menu.id)} className={itemCls}>
-              <CornerDownRight size={14} /> Create task inside
-            </button>
+            {onDuplicate && (
+              <button onClick={() => onDuplicate(menu.id)} className={itemCls}>
+                <Copy size={14} /> Duplicate
+              </button>
+            )}
+            {onAddTaskAbove && (
+              <button onClick={() => onAddTaskAbove(menu.id)} className={itemCls}>
+                <ArrowUp size={14} /> Add task above
+              </button>
+            )}
+            {onAddTaskBelow && (
+              <button onClick={() => onAddTaskBelow(menu.id)} className={itemCls}>
+                <ArrowDown size={14} /> Add task below
+              </button>
+            )}
             {/* <button onClick={() => entry && onMakeCollection(entry)} className={itemCls}>
               <FolderPlus size={14} /> Make collection
             </button> */}
@@ -196,6 +222,10 @@ export const RowContextMenu: React.FC<{
               <CalendarInput
                 value={entry.todo.dueDate ?? ''}
                 autoFocus
+                showInDailyList={entry.todo.showInDatabase !== false ? (entry.todo.showInDailyList ?? false) : undefined}
+                onShowInDailyListChange={entry.todo.showInDatabase !== false ? ((val) => handleHubSaveTodo({ ...entry.todo, showInDailyList: val })) : undefined}
+                autoMoveDate={entry.todo.autoMoveDate ?? false}
+                onAutoMoveDateChange={(val) => handleHubSaveTodo({ ...entry.todo, autoMoveDate: val })}
                 onChange={(val) => onSetDate(menu.id, val)}
               />
             ) : (

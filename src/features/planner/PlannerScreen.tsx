@@ -56,6 +56,8 @@ export function PlannerScreen({
           onDeleteTodo={d.handleDeleteTodoById}
           onDeleteCollection={d.handleDeleteCollection}
           onArchiveTodo={d.handleArchiveTodo}
+          onArchiveTodos={d.handleArchiveTodos}
+          onUnarchiveTodo={d.handleUnarchiveTodo}
           onReorder={d.handleReorderHubTodos}
           onToggleTodo={d.handleToggleTodo}
           selectedView={selectedView}

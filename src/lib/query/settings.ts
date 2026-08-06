@@ -20,10 +20,25 @@ export interface HubLayout {
   selectedView?: string;
   viewMode?: 'table' | 'list'; // table (default) / single-column list
   finderView?: 'flat' | 'twoPane'; // Task Finder result layout (one pref across search/pickers)
+  finderShowDone?: boolean; // Task Finder: search completed tasks too (undefined ⇒ true)
   sidebarWidth?: number;
   sidebarHidden?: boolean;
   sidebarCollapsed?: string[]; // sidebar collection-tree collapse state
 }
+
+// ── hubViews keys ────────────────────────────────────────────────────────────
+// `hubViews` is keyed `${workspaceId}:${viewId}`, with one reserved view id
+// holding that workspace's DEFAULTS - what a view resolves to when it has no
+// record of its own, which is how a setting reaches views never visited and
+// collections not yet created. Written by the planner's "Set for all" and by the
+// first-run seed in @/lib/onboarding. Real view ids are a pseudo-view name or a
+// collection id, and every id in the app is 9 chars of [0-9a-z], never an
+// underscore, so the reserved id can't collide.
+//
+// These live here, with the blob they key into, so the planner (which re-exports
+// them from model/viewConfigStore) and the seeder agree by construction.
+export const DEFAULT_VIEW_ID = '__default__';
+export const defaultKeyFor = (workspaceId: string) => `${workspaceId}:${DEFAULT_VIEW_ID}`;
 
 export interface UserSettings {
   theme?: Theme;            // user's custom accent colors (accent1/accent2)

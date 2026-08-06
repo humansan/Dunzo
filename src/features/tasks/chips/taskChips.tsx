@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Clock, Astroid, GitBranch } from 'lucide-react';
 import { formatTime12h } from '@/common/lib/time';
-import { collectionOf, percentOfDay, percentLabel } from '@/features/tasks/model';
+import { collectionOf, isDescendantOf, percentOfDay, percentLabel } from '@/features/tasks/model';
 import { Todo } from '@shared/types';
 import {
   OptionSelectField,
@@ -334,39 +334,33 @@ export const ParentTaskButton: React.FC<{
   parentId: string | null;
   onChange: (id: string | null) => void;
 }> = ({ todoId, parentId, onChange }) => {
-  const { searchEntries, todoById, handleHubSaveTodo, handleToggleTodo } = useAppData();
+  const { searchEntries, todoById, handleHubSaveTodo } = useAppData();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const parentTodo = parentId ? todoById.get(parentId) ?? null : null;
   const parentTaskName = parentTodo && !parentTodo.isCollection ? (parentTodo.text || 'Untitled') : null;
 
+  // A task can't be nested under itself or one of its own descendants.
   const isDisabled = (id: string): boolean => {
     if (!todoId) return false;
     if (id === todoId) return true;
-    let p = todoById.get(id)?.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && todoById.has(p) && !seen.has(p)) {
-      if (p === todoId) return true;
-      seen.add(p);
-      p = todoById.get(p)!.parentId ?? null;
-    }
-    return false;
+    const candidate = todoById.get(id);
+    return !!candidate && isDescendantOf(candidate, todoId, todoById);
   };
 
   return (
     <>
-      <button type="button" onClick={() => setPickerOpen(true)} className={rowBtn}>
-        <GitBranch size={16} className="shrink-0 text-fg-subtle" />
+      <button type="button" onClick={() => setPickerOpen(true)} className={rowBtn + " group"}>
+        <GitBranch size={16} className={"shrink-0 group-hover:text-fg " + (parentTaskName && 'text-fg-muted')} />
         {parentTaskName
-          ? <span className="min-w-0 truncate text-fg">{parentTaskName}</span>
-          : <span className="text-fg-subtle">Set parent task</span>}
+          ? <span className="min-w-0 truncate text-fg-muted group-hover:text-fg">{parentTaskName}</span>
+          : <span>Set parent task</span>}
       </button>
       {pickerOpen && (
         <TaskFinder
           entries={searchEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
-          onToggleTodo={handleToggleTodo}
           title="Set parent task"
           placeholder="Search for a task to nest under…"
           isDisabled={isDisabled}

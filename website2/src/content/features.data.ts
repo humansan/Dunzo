@@ -193,7 +193,7 @@ export const PLANNER = {
         },
         {
           term: 'Sections',
-          def: 'Auto-archive completed, hide empty sections, hide subcollections, and where ungrouped tasks go — top by default.',
+          def: 'Hide empty sections, hide subcollections, and where ungrouped tasks go — top by default. Plus one-click archiving of every completed task the view is showing, so filters decide exactly what gets cleared.',
         },
         {
           term: 'Fields',

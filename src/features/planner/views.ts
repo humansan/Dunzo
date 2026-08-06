@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import type { Todo } from '@shared/types';
 import type { OrganizerEntry } from '@/features/tasks/model';
+import { isDone } from '@/features/tasks/model';
 import type { ColKey } from '@/features/planner/types';
 
 // ── Planner view registry ────────────────────────────────────────────────────
@@ -39,6 +40,13 @@ export interface ViewDef {
   defaultGroupBy?: ColKey;
   // Whether the "New" affordances (toolbar + table) are offered in this view.
   allowNew: boolean;
+  // Opt out of the workspace's DEFAULT filters (the "Set for all" / first-run
+  // record - see useHubViewConfig). A view whose whole point is to show a slice
+  // the default filter excludes would otherwise render permanently empty: the
+  // shipped default is "Status is not Completed", which would blank both Archived
+  // (archived tasks are usually completed) and Completed (entirely). Filters set
+  // explicitly ON such a view still apply - this only ignores the inherited ones.
+  ignoresDefaultFilters?: boolean;
   // What a task created inside this view needs in order to remain visible here
   // (e.g. the In Daily List tab seeds the daily flag + today's date). Evaluated
   // at create time so dynamic values like "today" stay fresh.
@@ -94,6 +102,24 @@ export const PLANNER_VIEWS: Record<string, ViewDef> = {
     scaffold: 'ancestors',
     leaf: () => true,
     allowNew: false,
+    ignoresDefaultFilters: true,
+  },
+  completed: {
+    id: 'completed',
+    label: 'Completed',
+    // Completion is not archival: a completed task stays in the organizer set
+    // until it's explicitly archived, so this draws from the same source as every
+    // other live view. Tasks that are BOTH completed and archived belong to the
+    // Archived tab and are deliberately not repeated here.
+    source: 'organizer',
+    // 'tree', so completed tasks keep their collection headers (pair it with
+    // Hide-empty-sections to drop collections that contain none).
+    scaffold: 'tree',
+    leaf: (e) => isDone(e.todo),
+    // An incomplete PARENT of a completed task is re-attached by useHubData's
+    // ancestor walk and shows as context, exactly like the Archived view.
+    allowNew: false,
+    ignoresDefaultFilters: true,
   },
 };
 

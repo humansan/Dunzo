@@ -19,8 +19,15 @@ export function flattenTree(
     leafPosition?: 'top' | 'bottom' | 'none';
     // Ignore nesting: emit one flat, sorted, depth-0 list with no collapse.
     flat?: boolean;
+    // Ids that satisfy the view's predicate. Anything else in `entries` is a
+    // re-attached ancestor shown for context and is flagged matchesView=false so
+    // the table can dim it. Omit to mark every row as matching.
+    matchIds?: Set<string>;
   } = {}
 ): FlatNode[] {
+  // Collections are structural scaffolding, never a "hit" or a "miss".
+  const matches = (e: OrganizerEntry) =>
+    !opts.matchIds || e.todo.isCollection || opts.matchIds.has(e.todo.id);
   // Sibling order: leaf segregation first (when enabled), then user sort / hubOrder.
   const cmp = (a: OrganizerEntry, b: OrganizerEntry) => {
     if (opts.leafPosition === 'top') {
@@ -50,6 +57,7 @@ export function flattenTree(
         indent: 0,
         entry: e,
         hasChildren: false,
+        matchesView: matches(e),
       }));
   }
 
@@ -86,6 +94,7 @@ export function flattenTree(
         indent: indentOf(parent, e),
         entry: e,
         hasChildren,
+        matchesView: matches(e),
       };
       out.push(node);
       const skip = opts.collapsed?.has(id) || opts.excludeId === id;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { NAME_BASE_PAD, INDENT } from '@/features/planner/constants';
+import { NAME_BASE_PAD, LEADING_SLOT } from '@/features/planner/constants';
 import { btnGhost } from '@/theme/buttons';
 import { GroupRow } from '@/features/planner/types';
 import { SectionHeader } from '@/features/planner/table/SectionHeader';
@@ -36,7 +36,9 @@ export const GroupHeaderRow: React.FC<{
       onToggleCollapse={() => onToggleCollapse(id)}
       toggleTitle={{ expand: 'Expand group', collapse: 'Collapse group' }}
       count={count}
-      leading={<span className="shrink-0 w-5.5" />}
+      // An attribute section has nothing to drag, but it still reserves the drag
+      // handle's slot so its pill sits on the same column as the checkboxes below.
+      leading={<span className={`shrink-0 ${LEADING_SLOT}`} />}
       actions={onAddTask ? (
         <button
           type="button"
@@ -48,10 +50,11 @@ export const GroupHeaderRow: React.FC<{
         </button>
       ) : undefined}
       dropDecorations={isDropTarget ? (
-        // Drop line under the header - task lands at the top of this section.
+        // Drop line under the header - task lands at the top of this section, which
+        // is indent 0 (the header costs no level), so the line starts at the base pad.
         <div
           className="pointer-events-none absolute left-0 right-0 bottom-[-1px] z-30 h-0.5 rounded-full bg-[var(--accent2)]"
-          style={{ marginLeft: NAME_BASE_PAD + INDENT }}
+          style={{ marginLeft: NAME_BASE_PAD }}
         />
       ) : undefined}
       onDragOver={onHeaderDragOver}

@@ -80,13 +80,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
         </button>
         <button
           onClick={onStopwatchClick}
-          className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${btnNeutral}`}
+          className={`group relative w-9 h-9 rounded-xl flex items-center justify-center ${isStopwatchActive && "ring-3 ring-accent2"} ${btnNeutral}`}
           title="Stopwatch"
         >
           <Timer
             size={18}
             strokeWidth={2.5}
-            className={`transition-colors ${isStopwatchActive ? 'text-[var(--accent1)]' : 'text-fg-faint group-hover:text-fg'}`}
+            className={`transition-colors ${isStopwatchActive ? 'text-accent2' : 'text-fg-faint group-hover:text-fg'}`}
           />
         </button>
         <button

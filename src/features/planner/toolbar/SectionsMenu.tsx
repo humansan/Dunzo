@@ -1,10 +1,12 @@
 import React from 'react';
+import { Archive } from 'lucide-react';
 import { COLUMNS } from '@/features/planner/types';
 import { SectionsConfig } from '@/features/planner/types';
 import { PopoverMenu } from '@/common/ui';
 import { ListSelect } from '@/common/ui';
 import { Switch } from '@/common/ui';
 import { SetForAllButton } from '@/features/planner/toolbar/SetForAllButton';
+import { btnNeutral } from '@/theme/buttons';
 
 
 // Three-way segmented control for showLeafTasks.
@@ -37,28 +39,28 @@ export const SectionsMenu: React.FC<{
   anchor: { right: number; top: number };
   config: SectionsConfig;
   onChange: (config: SectionsConfig) => void;
+  // How many completed tasks the view is currently showing (see
+  // useArchiveCompleted), and why there are none when that is 0.
+  completedCount: number;
+  disabledReason?: string;
+  onArchiveCompleted: () => void;
   onSetForAll?: () => void;
   onClose: () => void;
-}> = ({ anchor, config, onChange, onSetForAll, onClose }) => {
+}> = ({ anchor, config, onChange, completedCount, disabledReason, onArchiveCompleted, onSetForAll, onClose }) => {
   const set = <K extends keyof SectionsConfig>(key: K, val: SectionsConfig[K]) =>
     onChange({ ...config, [key]: val });
 
   return (
     <PopoverMenu
       anchor={anchor}
-      title="Sections"
+      title="Settings"
       onClose={onClose}
       className="w-[280px] p-3 space-y-2"
       headerClassName="pb-1 text-xs font-bold text-fg"
       headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="section settings" />}
     >
         <div className={sectionCls}>
-          {/* Auto-archive */}
-          <div className={rowCls}>
-            <span className={labelCls}>Auto-archive completed</span>
-            <Switch checked={config.autoArchive} onChange={(v) => set('autoArchive', v)} />
-          </div>
-
+          
           {/* Hide empty collections */}
           <div className={rowCls}>
             <span className={labelCls}>Hide empty sections</span>
@@ -70,7 +72,32 @@ export const SectionsMenu: React.FC<{
             <span className={labelCls}>Hide subcollections</span>
             <Switch checked={config.hideSubcollections} onChange={(v) => set('hideSubcollections', v)} />
           </div>
+
+          {/* Archive completed tasks - the one ACTION among the toggles. Scoped to
+              what the view is showing, hence "in view" in the label: the count next
+              to it moves as the settings above (and the Filter menu) change. */}
+          <div className={rowCls}>
+            <span className={labelCls}>Archive completed tasks in view</span>
+            <button
+              type="button"
+              onClick={onArchiveCompleted}
+              disabled={!completedCount}
+              title={
+                disabledReason ??
+                `Archive the ${completedCount} completed ${
+                  completedCount === 1 ? 'task' : 'tasks'
+                } shown in this view.`
+              }
+              className={`shrink-0 flex items-center gap-1.5 rounded-lg pl-2 pr-1.75 h-6.5 text-xs font-semibold disabled:cursor-not-allowed font-mono  ${btnNeutral}`}
+            >
+              {completedCount}
+              <Archive size={13} />
+            </button>
+          </div>
         </div>
+
+
+
 
         {/* <div className={sectionCls}>
           { Show leaf tasks (comment this out)}

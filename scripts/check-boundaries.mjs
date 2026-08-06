@@ -41,7 +41,7 @@ const FEATURE_DEPS = {
 // The only paths outside code may import a feature through. '' means the barrel.
 const ENTRY_POINTS = {
   tasks: ['', 'model', 'api', 'fields', 'chips', 'collection-picker'],
-  planner: ['', 'task-finder'],
+  planner: ['', 'task-finder', 'table'],
   daily: ['', 'widgets'],
   trackers: ['', 'api'],
   xp: [''],
@@ -75,6 +75,10 @@ const EXCEPTIONS = {
   'features/tasks/chips/taskChips.tsx': {
     allow: ['features/planner'],
     why: 'the parent-task chip opens the planner\'s TaskFinder overlay. tasks and planner are mutually dependent.',
+  },
+  'features/tasks/TodoFullView.tsx': {
+    allow: ['features/planner'],
+    why: 'the Subtasks section embeds the planner\'s task table (via @/features/planner/table) so subtask rows behave exactly like planner rows. Same mutual dependency as chips/taskChips.tsx. Fix: promote the table to a shared home if a third task-side consumer appears.',
   },
   'features/calendar/CalendarView.tsx': {
     allow: ['features/planner'],

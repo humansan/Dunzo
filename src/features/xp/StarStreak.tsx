@@ -9,10 +9,10 @@ import fireAnimUrl from '@/assets/Fire.gif';
 
 
 interface StarStreakProps {
-  // The three goal flags in slot order: completed a task, beat yesterday, beat the
-  // average. Callers compute these (see computeStarStreak) - this component doesn't.
+  // Unordered left-to-right lit states corresponding to star count (see starsToLit).
   lit: boolean[];
   streak: number;
+
   // Per-slot burst + streak pulse. Driven ONLY by the celebration popup; the pinned
   // corner instance omits them and so renders statically (no animation, just state).
   bursting?: boolean[];
@@ -61,9 +61,9 @@ const StarIcon = React.memo(
         </motion.div>
       )}
       <motion.div
-        animate={burst ? { scale: [1, 1.4, 0.8, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
+        animate={burst ? { scale: [1, 1.5, 0.9, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
         transition={{ duration: 1.1, ease: POP }}
-        className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/25'}
+        className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/20'}
       >
         <Astroid size={34} strokeWidth={2.5} fill={active ? gold : 'transparent'} />
       </motion.div>

@@ -36,7 +36,7 @@ const classicRoles: Record<RoleName, RoleValue> = {
   'danger-tint': ['red', 12],
   'warning-tint': ['gold', 10],
   'success-tint': ['emerald', 12],
-  'info-tint': ['blue', 12],
+  'info-tint': ['blue', 30],
   'status-todo': 'subtle',
   'status-active': 'blue',
   'status-done': 'emerald',

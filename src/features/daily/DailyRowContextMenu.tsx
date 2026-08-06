@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
+import { isDescendantOf } from '@/features/tasks/model';
 import { CalendarInput } from '@/common/ui';
 import { TimeInput } from '@/common/ui';
 import { TaskFinder } from '@/features/planner/task-finder';
@@ -58,7 +59,7 @@ export const DailyRowContextMenu: React.FC<{
   onSetParent,
   onDelete,
 }) => {
-  const { searchEntries, todoById, handleHubSaveTodo, handleToggleTodo } = useAppData();
+  const { searchEntries, todoById, handleHubSaveTodo } = useAppData();
 
   // Which flyout is open beside the menu, if any.
   const [sub, setSub] = useState<'date' | 'time' | null>(null);
@@ -97,14 +98,8 @@ export const DailyRowContextMenu: React.FC<{
   // A task can't be nested under itself or one of its own descendants.
   const isDisabled = (id: string): boolean => {
     if (id === todo.id) return true;
-    let p = todoById.get(id)?.parentId ?? null;
-    const seen = new Set<string>();
-    while (p && todoById.has(p) && !seen.has(p)) {
-      if (p === todo.id) return true;
-      seen.add(p);
-      p = todoById.get(p)!.parentId ?? null;
-    }
-    return false;
+    const candidate = todoById.get(id);
+    return !!candidate && isDescendantOf(candidate, todo.id, todoById);
   };
 
   const toggleSub = (which: 'date' | 'time') => setSub((cur) => (cur === which ? null : which));
@@ -124,31 +119,33 @@ export const DailyRowContextMenu: React.FC<{
         <button onClick={() => { onOpenFull(todo.id); onClose(); }} className={itemCls}>
           <Maximize2 size={14} /> Show in full view
         </button>
-        <button onClick={() => { onDuplicate(todo.id); onClose(); }} className={itemCls}>
-          <Copy size={14} /> Duplicate
-        </button>
         <button
           onClick={() => toggleSub('date')}
           className={`${itemCls} ${sub === 'date' ? 'bg-fill text-fg' : ''}`}
         >
           <CalendarDays size={14} /> Set date
         </button>
-        <button
-          onClick={() => date && toggleSub('time')}
-          disabled={!date}
-          title={date ? undefined : 'Add a date first'}
-          className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${date ? '' : 'opacity-40 cursor-not-allowed'}`}
-        >
-          <Clock size={14} /> Set time
+        {date && (
+          <button
+            onClick={() => date && toggleSub('time')}
+            disabled={!date}
+            title={date ? undefined : 'Add a date first'}
+            className={`${itemCls} ${sub === 'time' ? 'bg-fill text-fg' : ''} ${date ? '' : 'opacity-40 cursor-not-allowed'}`}
+          >
+            <Clock size={14} /> Set time
+          </button>
+        )}
+        <button onClick={() => setParentPickerOpen(true)} className={itemCls}>
+          <GitBranch size={14} /> Set parent task
+        </button>
+        <button onClick={() => { onDuplicate(todo.id); onClose(); }} className={itemCls}>
+          <Copy size={14} /> Duplicate
         </button>
         <button onClick={() => { onAddAbove(todo.id); onClose(); }} className={itemCls}>
           <ArrowUp size={14} /> Add task above
         </button>
         <button onClick={() => { onAddBelow(todo.id); onClose(); }} className={itemCls}>
           <ArrowDown size={14} /> Add task below
-        </button>
-        <button onClick={() => setParentPickerOpen(true)} className={itemCls}>
-          <GitBranch size={14} /> Set parent task
         </button>
         <button
           onClick={() => { onDelete(todo.id); onClose(); }}
@@ -168,6 +165,10 @@ export const DailyRowContextMenu: React.FC<{
                 // A daily-list-only task has nowhere to live once undated, so it
                 // can't clear its date; one that's also in the planner can.
                 showClear={!!todo.showInDatabase}
+                showInDailyList={todo.showInDatabase ? (todo.showInDailyList ?? false) : undefined}
+                onShowInDailyListChange={todo.showInDatabase ? ((val) => handleHubSaveTodo({ ...todo, showInDailyList: val })) : undefined}
+                autoMoveDate={todo.autoMoveDate ?? false}
+                onAutoMoveDateChange={(val) => handleHubSaveTodo({ ...todo, autoMoveDate: val })}
                 onChange={(val) => onSetDate(todo.id, val)}
               />
             ) : (
@@ -186,7 +187,6 @@ export const DailyRowContextMenu: React.FC<{
           entries={searchEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
-          onToggleTodo={handleToggleTodo}
           title="Set parent task"
           placeholder="Search for a task to nest under…"
           isDisabled={isDisabled}

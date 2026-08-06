@@ -1,19 +1,83 @@
-import { MENU_SLICES, ToolbarMenuKey, ColKey } from '@/features/planner/types';
+import { MENU_SLICES, ToolbarMenuKey, ColKey, FilterRule, FilterMatch } from '@/features/planner/types';
+import { defaultKeyFor } from '@/lib/query/settings';
 
 // Pure transformations over the `hubViews` blob (the DB-synced record of every
 // planner view's config, keyed `${workspaceId}:${viewId}`). Kept out of
 // useHubViewConfig so the part that rewrites EVERY stored record can be reasoned
 // about - and tested - without React or the settings pipeline.
 
-// The reserved view-id slot holding a workspace's "Set for all" defaults. Real
-// view ids are either a pseudo-view name or a collection id, and every id in the
-// app is Math.random().toString(36).substr(2, 9) - 9 chars of [0-9a-z], never an
-// underscore - so this can't collide.
-export const DEFAULT_VIEW_ID = '__default__';
-
-export const defaultKeyFor = (workspaceId: string) => `${workspaceId}:${DEFAULT_VIEW_ID}`;
+// The reserved view-id slot holding a workspace's defaults - written by "Set for
+// all" here, and by the first-run seed in @/lib/onboarding. Defined with the
+// settings blob it keys into (see @/lib/query/settings) and re-exported here so
+// planner code keeps importing it from its own model layer.
+export { DEFAULT_VIEW_ID, defaultKeyFor } from '@/lib/query/settings';
 
 export type ViewsConfig = Record<string, any>;
+
+/**
+ * Resolve one view's filter slice: its own record on top of the workspace default,
+ * with the default's filters dropped entirely for a view that opts out
+ * (ViewDef.ignoresDefaultFilters - Archived and Completed, which exist to show
+ * exactly what the shipped default filter excludes).
+ *
+ * Pure and per-view-id, because the sidebar has to resolve this for EVERY tab, not
+ * just the one on screen: a badge counted with the current tab's filters would be a
+ * different wrong answer. useHubViewConfig uses it for the visible view too, so the
+ * two paths can't drift.
+ */
+// "Hide completed tasks" used to be seeded as an ordinary rule in the workspace
+// default. It reads identically, so an account that predates the setting is
+// migrated here, at READ time: the rule is recognised, dropped from the editable
+// list, and re-expressed as the flag. No write, idempotent, and it covers every
+// workspace and view at once - including records an older client writes later.
+//
+// The one lossy case: a rule a user typed by hand that happens to match this exact
+// shape becomes the locked setting. The intent is the same, so that seemed a fair
+// trade against a migration that has to enumerate views to rewrite them.
+const isHideCompletedRule = (r: FilterRule) =>
+  r.field === 'status' &&
+  r.condition === 'is_not' &&
+  r.value.trim().toLowerCase() === 'completed';
+
+export interface ViewFilterState {
+  filters: FilterRule[];
+  filterMatch: FilterMatch;
+  // Applied ON TOP of `filters`, ANDed with the whole expression rather than
+  // joined into it - see applyFilters. A rule in the list would be subject to
+  // `filterMatch`, so flipping the match to Or would let completed tasks back in
+  // while the switch still read "on".
+  hideCompleted: boolean;
+}
+
+export function resolveViewFilters(
+  viewsConfig: ViewsConfig,
+  workspaceId: string,
+  viewId: string,
+  ignoresDefaultFilters = false
+): ViewFilterState {
+  const def = ignoresDefaultFilters ? {} : (viewsConfig[defaultKeyFor(workspaceId)] ?? {});
+  const own = viewsConfig[`${workspaceId}:${viewId}`] ?? {};
+  const raw = { ...def, ...own };
+  const stored: FilterRule[] = Array.isArray(raw.filters) ? (raw.filters as FilterRule[]) : [];
+  const legacy = stored.some(isHideCompletedRule);
+  return {
+    filters: legacy ? stored.filter((r) => !isHideCompletedRule(r)) : stored,
+    filterMatch: raw.filterMatch === 'or' ? 'or' : 'and',
+    // ON unless something explicitly turns it off. A CODE default, not a seeded
+    // one: seeding it into the workspace's default record made the behaviour
+    // depend on a write having succeeded, so it was missing for accounts that
+    // predate the setting, for any SECOND workspace (the seed only ever writes the
+    // first one's record), and for anyone whose signup-time settings PUT failed -
+    // all silently, and all unfixable without another write.
+    //
+    // A view that opts out of inherited filters opts out of this too, or the
+    // Archived and Completed tabs - which exist to show exactly what it hides -
+    // would come up empty. There, it only applies if that view sets it itself.
+    hideCompleted: ignoresDefaultFilters
+      ? own.hideCompleted === true
+      : raw.hideCompleted !== false,
+  };
+}
 
 /**
  * Apply one menu's settings to every view in a workspace.

@@ -1,6 +1,6 @@
 {
   "name": "react-example",
-  "homepage": "https://humansan.github.io/dun-progress-tracker",
+  "homepage": "https://dunzo.work",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -17,7 +17,6 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit && node scripts/check-boundaries.mjs",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { HubRow } from '@/features/planner/table/HubRow';
 import { GroupHeaderRow } from '@/features/planner/table/GroupHeaderRow';
 import { ColDef } from '@/features/planner/types';
-import { TableVariant } from '@/features/planner/variant';
+import { TableVariant, VARIANTS } from '@/features/planner/variant';
 import { RowDnD, TableModel, TableInteraction, TableRowHandlers } from '@/features/planner/table/TaskTable';
 
 // The reusable row-list region shared by every chrome: the width anchor (full-grid
@@ -19,6 +19,31 @@ interface TableRowsProps {
   dnd?: RowDnD;
   effectiveColumns: ColDef[];
   effectiveGrid: string;
+}
+
+function getEmptyMessage(selectedCollectionId: string | null, selectedView: string, variant?: TableVariant): React.ReactNode {
+  if (variant !== VARIANTS.table && variant !== VARIANTS.list) {
+    return null;
+  }
+
+  if (selectedCollectionId) {
+    return 'No tasks in this collection yet. Click “New” to add one.';
+  }
+
+  switch (selectedView) {
+    case 'uncategorized':
+      return 'No uncategorized tasks.';
+    case 'categorized':
+      return 'No tasks in any collection yet.';
+    case 'in-daily-list':
+      return 'No tasks in your daily list yet.';
+    case 'archived':
+      return 'No archived tasks.';
+    case 'completed':
+      return 'No completed tasks yet.';
+    default:
+      return <>No todos yet. Click “+ New”.</>;
+  }
 }
 
 export const TableRows: React.FC<TableRowsProps> = ({
@@ -133,6 +158,8 @@ export const TableRows: React.FC<TableRowsProps> = ({
       )
     );
 
+  const emptyMessage = getEmptyMessage(selectedCollectionId, selectedView, variant);
+
   return (
     <>
       {!nameOnly && (
@@ -156,6 +183,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
             variant.mode === 'table' ? 'border-b border-line-subtle bg-canvas' : 'border-b border-line-subtle'
           }`}
         >
+          <div className="w-9"></div>
           <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
             <Plus size={15} />
             <span>New</span>
@@ -163,19 +191,9 @@ export const TableRows: React.FC<TableRowsProps> = ({
         </button>
       )}
 
-      {isEmpty && (onNewInView || selectedView === 'archived') && (
+      {isEmpty && emptyMessage && (onNewInView || selectedView === 'archived' || selectedView === 'completed') && (
         <div className="px-3 py-6 text-xs text-fg-subtle">
-          {selectedCollectionId
-            ? 'No tasks in this collection yet. Click “New” to add one.'
-            : selectedView === 'uncategorized'
-              ? 'No uncategorized tasks.'
-              : selectedView === 'categorized'
-                ? 'No tasks in any collection yet.'
-                : selectedView === 'in-daily-list'
-                  ? 'No tasks in your daily list yet.'
-                  : selectedView === 'archived'
-                    ? 'No archived tasks.'
-                    : <>No todos yet. Click “+ New”.</>}
+          {emptyMessage}
         </div>
       )}
     </>

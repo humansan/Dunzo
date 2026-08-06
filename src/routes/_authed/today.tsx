@@ -25,8 +25,10 @@ function TodayRoute() {
       <div>
         <DailyScreen
           dayTodos={d.dayTodos}
-          onUpdateTodos={d.handleUpdateTodos}
-          onMoveTodo={d.handleMoveTodo}
+          onSaveTodo={d.handleHubSaveTodo}
+          onCreateInDay={d.handleCreateInDay}
+          onReorderDay={d.handleReorderDay}
+          onDeleteTodo={d.handleDeleteTodoById}
           onStartTracking={d.handleStartTracking}
           activeTodoId={d.activeTodoId}
           onToggleTodo={d.handleToggleTodo}

@@ -14,7 +14,7 @@ import {
 } from '@/features/tasks/fields';
 import { ColDef, ColKey, EditState, FlatNode, NAME_COL_KEY } from '@/features/planner/types';
 import { collectionColor } from '@/theme/collectionColor';
-import { INDENT, NAME_BASE_PAD, cellEditCls } from '@/features/planner/constants';
+import { INDENT, NAME_BASE_PAD, LEADING_SLOT, cellEditCls } from '@/features/planner/constants';
 import { pill } from '@/theme/pill';
 import { SectionHeader } from '@/features/planner/table/SectionHeader';
 import { useTableVariant } from '@/features/planner/variant';
@@ -35,8 +35,13 @@ interface HubRowProps {
   stopEdit: () => void;
   onSaveTodo: (updatedTodo: Todo) => void;
   onAddSubtask: (parentId: string) => string;
-  onToggleTodo: (id: string) => void;
-  openMenu: (id: string, x: number, y: number) => void;
+  // Omitted → the completion check is read-only (like `startEdit` for the title).
+  onToggleTodo?: (id: string) => void;
+  // Omitted → no row menu on this surface: the ⋯ button isn't rendered and
+  // right-click falls through to the browser's own menu. Surfaces that don't host
+  // a RowContextMenu (the Task Finder, the full view's Subtasks list) leave it out
+  // rather than passing a no-op that renders a button doing nothing.
+  openMenu?: (id: string, x: number, y: number) => void;
   isCollapsed: boolean;
   onToggleCollapse: (id: string) => void;
   collPath: { id: string; name: string; color?: string }[];
@@ -122,6 +127,11 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); onRowDrop?.(); },
   };
 
+  // undefined on a surface with no row menu, so right-click keeps the browser's own.
+  const handleContextMenu = openMenu
+    ? (e: React.MouseEvent) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }
+    : undefined;
+
   // The grip - the only draggable element, so cell clicks/edits stay intact.
   // NOTE: this must be a plain function call (not an inner <Component/>), or each
   // re-render would create a new component type, remounting the <button> and
@@ -139,7 +149,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           onRowDragStart?.(todo.id);
         }}
         onDragEnd={() => onRowDragEnd?.()}
-        className={`shrink-0 h-5 flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
+        className={`shrink-0 h-5 ${LEADING_SLOT} flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
         title="Drag to reorder / nest"
       >
         <GripVertical size={16} />
@@ -225,7 +235,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             placeholder="Collection name"
             size={1}
             style={pill(color)}
-            className={`w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px font-medium focus:outline-none placeholder:text-fg-faint animate-[ring-grow_75ms_linear_both] ${variant.mode === 'list' ? 'text-base' : 'text-sm'}`}
+            className={`w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px font-medium focus:outline-none placeholder:text-fg-faint animate-[ring-grow_150ms_linear_both] ${variant.mode === 'list' ? 'text-base' : 'text-sm'}`}
           />
         ) : undefined}
         isCollapsed={isCollapsed}
@@ -234,21 +244,23 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         toggleTitle={{ expand: 'Expand collection', collapse: 'Collapse collection' }}
         count={taskCount}
         depth={indent}
-        leading={dragHandle('mr-1')}
+        leading={dragHandle()}
         actions={
           <>
-            <button
-              type="button"
-              title="Options"
-              onClick={(e) => {
-                e.stopPropagation();
-                const r = e.currentTarget.getBoundingClientRect();
-                openMenu(todo.id, r.left, r.bottom + 4);
-              }}
-              className={`shrink-0 mr-0.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
-            >
-              <MoreHorizontal size={18} />
-            </button>
+            {openMenu && (
+              <button
+                type="button"
+                title="Options"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const r = e.currentTarget.getBoundingClientRect();
+                  openMenu(todo.id, r.left, r.bottom + 4);
+                }}
+                className={`shrink-0 mr-0.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
+              >
+                <MoreHorizontal size={18} />
+              </button>
+            )}
             <button
               type="button"
               title="Add task"
@@ -262,7 +274,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
         dropDecorations={<>{dropLine('before')}{dropLine('after')}{insideOverlay}</>}
         isDragSource={isDragSource}
         dragImageRef={dragImageRef}
-        onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
+        onContextMenu={handleContextMenu}
         onDragOver={dropProps.onDragOver}
         onDrop={dropProps.onDrop}
       />
@@ -337,12 +349,27 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             <span className="truncate text-sm text-fg-muted">{todo.xp !== undefined ? `${todo.xp}` : muted}</span>
           </DisplayCell>
         );
-      case 'notes':
+      case 'notes': {
+        // Notes are the one free-text field that can hold newlines, so the cell
+        // opts out of DisplayCell's generic `.truncate` wrap override: that sets
+        // `whitespace-normal`, which collapses \n into spaces and merges the note
+        // into one block. `pre-line` honors the newlines (and still wraps long
+        // lines); the clamp keeps a long note from stretching the row unbounded.
+        const wrapNotes = wrappedFields.has('notes');
         return (
           <DisplayCell col="notes">
-            {todo.notes ? <span className="truncate text-sm text-fg-muted">{todo.notes}</span> : muted}
+            {todo.notes ? (
+              <span
+                className={`text-sm text-fg-muted ${
+                  wrapNotes ? 'whitespace-pre-wrap wrap-anywhere' : 'truncate'
+                } `}
+              >
+                {todo.notes}
+              </span>
+            ) : muted}
           </DisplayCell>
         );
+      }
       case 'startPercent':
         return isEditing('startPercent') ? (
           <div className={editCellWrap}>
@@ -411,13 +438,20 @@ const HubRowImpl: React.FC<HubRowProps> = ({
     }
   };
 
+  // A context row - an ancestor kept only so its matching descendant stays nested
+  // (see FlatNode.matchesView) - renders dimmed, so "the tab didn't match this, it's
+  // here for its child" reads at a glance. It lifts to full opacity on hover, since
+  // it's still a live, editable row.
+  const contextDim = node.matchesView ? 'border-line-subtle' : 'opacity-36 border-fg/16';
+  //theme-mismatch
+
   return (
     <div
       style={style}
       {...dropProps}
-      onContextMenu={(e) => { e.preventDefault(); openMenu(todo.id, e.clientX, e.clientY); }}
-      className={`relative grid items-stretch min-h-[36px] border-b border-line-subtle group/row ${
-        isDragSource ? 'opacity-40' : 'hover:bg-fill-subtle'
+      onContextMenu={handleContextMenu}
+      className={`relative grid items-stretch min-h-[36px] border-b group/row transition-opacity ${
+        isDragSource ? 'opacity-40' : `hover:bg-fill-subtle ${contextDim}`
       }`}
     >
       {dropLine('before')}
@@ -427,11 +461,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           Frozen to the left edge; needs an opaque bg so scrolled cells don't show through. */}
       <div
         ref={dragImageRef}
-        className={`group/name sticky left-0 z-20 flex items-start h-full overflow-hidden cursor-pointer ${
+        className={`group/name sticky left-0 z-20 flex items-start h-full overflow-hidden cursor-pointer pr-1.5 ${
           variant.columns === 'all' ? 'border-r border-line-subtle bg-canvas' : ''
         }
         ${isEditing('title') && "ring-2 ring-inset ring-[var(--accent2)]"}
         `}
+        onClick={() => !isEditing('title') && onOpenTask?.(todo.id)}
       >
         {/* The frozen Name cell needs an opaque bg so scrolled cells don't show through
             it - which also hides the row's translucent hover fill. These two overlays
@@ -466,7 +501,6 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           className={`relative z-10 flex min-w-0 flex-1 ${titleWrapped ? 'items-start' : 'items-center'} ${
             isEditing('title') && !titleWrapped ? 'h-9' : 'py-2'
           } `}
-          onClick={() => !isEditing('title') && onOpenTask?.(todo.id)}
         >
           {/* Collapse chevron (nesting variants only) - a spacer keeps the checkbox
               aligned when a row has no children. A flat variant drops both. */}
@@ -485,7 +519,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
 
           {dragHandle()}
 
-          <CompletedToggle completed={isDone(todo)} onToggle={() => onToggleTodo(todo.id)} size={18} className='mr-1 ml-1 h-5 flex items-center justify-center'/>
+          <CompletedToggle completed={isDone(todo)} onToggle={onToggleTodo ? () => onToggleTodo(todo.id) : undefined} size={18} className='mr-1 ml-1 h-5 flex items-center justify-center'/>
 
           {isEditing('title') ? (
             titleWrapped ? (
@@ -521,18 +555,20 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               >
                 {todo.text || <span className="text-fg-faint">Untitled</span>}
               </span>
-              <button
-                type="button"
-                title="Options"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const r = e.currentTarget.getBoundingClientRect();
-                  openMenu(todo.id, r.left, r.bottom + 4);
-                }}
-                className={`shrink-0 mr-1.5 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
-              >
-                <MoreHorizontal size={16} />
-              </button>
+              {openMenu && (
+                <button
+                  type="button"
+                  title="Options"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const r = e.currentTarget.getBoundingClientRect();
+                    openMenu(todo.id, r.left, r.bottom + 4);
+                  }}
+                  className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+              )}
             </>
           )}
         </div>

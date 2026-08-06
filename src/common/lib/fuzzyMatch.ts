@@ -20,8 +20,13 @@ const BOUNDARY_BONUS = 30;       // matched char right after a separator (word s
 const CAMEL_BONUS = 30;          // matched char at a camelCase hump
 const FIRST_LETTER_BONUS = 15;   // first matched char is the target's very first char
 const LEADING_PENALTY = -5;      // per unmatched char before the first match…
-const MAX_LEADING_PENALTY = -15; // …capped, so a late start isn't unboundedly punished
-const GAP_PENALTY = -3;          // per unmatched char between two matches
+const MAX_LEADING_PENALTY = -40; // …capped, so a late start isn't unboundedly punished
+// Per unmatched char between two matches. Steep on purpose: a scattered subsequence
+// ("plan" inside "Prepare slides for annual…") must not out-score a tight one just
+// because its chars happened to land on word boundaries. Callers that need a hard
+// cut-off should also gate on match density (§useTaskFinderSearch) - the penalty has
+// to stay linear here, since the DP folds it into a running prefix-max.
+const GAP_PENALTY = -8;
 
 // The very first target char is both a word boundary and the first letter.
 const START_BONUS = FIRST_LETTER_BONUS + BOUNDARY_BONUS;
@@ -29,6 +34,17 @@ const START_BONUS = FIRST_LETTER_BONUS + BOUNDARY_BONUS;
 const SEPARATORS = new Set([' ', '\t', '_', '-', '/', '\\', '.', ':', ',', '(', ')', '[', ']']);
 
 const isUpper = (ch: string) => ch !== ch.toLowerCase() && ch === ch.toUpperCase();
+
+// Does target index j start a "word" - the very first char, a char after a separator,
+// or a camelCase hump? Exported because callers rank word-start hits above mid-word
+// ones ("pl" in "Plan trip" beats "pl" in "Simple task") and treat an all-word-start
+// subsequence as an acronym match ("wtp" → "Write The Plan").
+export function isWordStart(target: string, j: number): boolean {
+  if (j === 0) return true;
+  const prev = target[j - 1];
+  const cur = target[j];
+  return SEPARATORS.has(prev) || (!isUpper(prev) && isUpper(cur));
+}
 
 // Boundary bonus for a match at target index j (the first matched char folds in the
 // first-letter bonus + leading penalty separately).
