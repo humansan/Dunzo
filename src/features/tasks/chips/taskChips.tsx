@@ -24,9 +24,9 @@ export const chipBase =
   'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-pointer';
 export const chipDeactivated = 'flex items-center justify-center gap-2 px-2.75 py-[5.5px] rounded-lg cursor-not-allowed';
 export const chipText =
-  'flex items-center justify-center gap-1.5 text-[13px] leading-none font-mono font-medium';
+  'flex items-center justify-center gap-1.5 text-[13px] leading-none font-medium';
 export const rowBtn =
-  'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-mono font-medium min-w-0 max-w-full overflow-hidden ' + btnGhost();
+  'flex items-center gap-1.5 px-2 h-[27px] rounded-lg cursor-pointer text-[13px] leading-none font-medium min-w-0 max-w-full overflow-hidden ' + btnGhost();
 // Shell for panels that don't bring their own (OptionSelectField).
 export const chipPopoverCls = 'rounded-xl border border-line bg-surface shadow-2xl p-2';
 
@@ -186,7 +186,7 @@ export const DateChip: React.FC<{
         onClick={open}
         className={`${chipBase} ${value ? 'bg-[var(--accent2)]/7 hover:bg-[var(--accent2)]/15' : 'bg-fill-subtle hover:bg-fill'}`}
       >
-        <span className={`${chipText} ${value ? 'text-[var(--accent2)]' : 'text-fg-subtle'}`}>
+        <span className={`${chipText} ${value ? 'text-[var(--accent2)] font-mono' : 'text-fg-subtle'}`}>
           <Calendar size={16} />
           <span className="relative top-px">{value ? format(parseISO(value), 'MM/dd/yyyy') : placeholder}</span>
         </span>
@@ -240,7 +240,7 @@ export const TimeChip: React.FC<{
         >
           {value ? (
             <>
-              <span className={`${chipText} ${tone}`}>
+              <span className={`${chipText} ${tone} font-mono`}>
                 <Clock size={16} />
                 <span className="relative top-px">{formatTime12h(value)}</span>
               </span>
@@ -291,7 +291,7 @@ export const XpChip: React.FC<{
         >
           <span className={chipText}>
             <Astroid size={16} className={set && !muted ? '' : dim} />
-            <span className={`relative top-px ${set && !muted ? '' : dim}`}>{set ? `${value} xp` : 'xp'}</span>
+            <span className={`relative top-px ${set && !muted ? 'font-mono' : dim}`}>{set ? `${value} xp` : 'xp'}</span>
           </span>
         </button>
       )}
@@ -350,7 +350,7 @@ export const ParentTaskButton: React.FC<{
 
   return (
     <>
-      <button type="button" onClick={() => setPickerOpen(true)} className={rowBtn + " group"}>
+      <button type="button" onClick={() => setPickerOpen(true)} className={rowBtn + " group "}>
         <GitBranch size={16} className={"shrink-0 group-hover:text-fg " + (parentTaskName && 'text-fg-muted')} />
         {parentTaskName
           ? <span className="min-w-0 truncate text-fg-muted group-hover:text-fg">{parentTaskName}</span>

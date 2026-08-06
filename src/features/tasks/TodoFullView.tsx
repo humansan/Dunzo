@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import {
   X,
-  ArrowLeft,
+  CornerLeftUp,
   Trash2,
   CalendarDays,
   Clock,
@@ -56,11 +56,17 @@ interface TodoFullViewProps {
   onCreateCollection: (name: string) => string;
   byId: Map<string, Todo>;
   onClose: () => void;
-  // Set only when this task was opened from another task's full view. Unlike
-  // `onClose` (which rewinds the whole task chain), this steps back a single
-  // history entry to the task named by `label` - used by the Back button at the
-  // top and by Delete, so removing a subtask returns to the parent you came from.
-  backTo?: { label: string; onBack: () => void };
+  // Where Delete returns to: set only when this task was opened from another
+  // task's full view, and unlike `onClose` (which rewinds the whole task chain)
+  // it steps back a single history entry, so removing a subtask lands you back on
+  // the view you came from rather than out of the chain entirely.
+  //
+  // This is the one thing here that is genuinely about HISTORY. The header's
+  // parent button used to share it and no longer does - where you came from and
+  // what a task sits under are different questions, and answering the second with
+  // the first is what left the button missing on a subtask opened from anywhere
+  // but its parent.
+  onDeleteReturn?: () => void;
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -179,7 +185,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onCreateCollection,
   byId,
   onClose,
-  backTo,
+  onDeleteReturn,
   onSave,
   onToggle,
   onDelete,
@@ -527,17 +533,25 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
           {/* Left pane: title + notes */}
           <div className="flex-1 flex flex-col overflow-y-auto min-w-0 px-8 py-6">
-            {/* Only when this view was opened from another task - names the task
-                it steps back to (one entry), rather than closing the chain. */}
-            {backTo && (
+            {/* The task this one sits under - a way UP the tree, not a history
+                step. It used to be the latter, which meant it appeared only for a
+                subtask opened from its parent's own full view: the identical task
+                reached from the planner, the daily list or a deep link showed
+                nothing, though its parent was no less real. Reading it off
+                `parentId` makes the header say the same thing however you got here.
+
+                A parent COLLECTION is deliberately excluded (`isSubtask`): this
+                overlay renders a task, and a collection has no full view to open.
+                Its collection is already named in the right pane. */}
+            {isSubtask && parentTodo && (
               <button
                 type="button"
-                onClick={backTo.onBack}
-                title={`Back to “${backTo.label}”`}
-                className={`self-start max-w-full mb-3 flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-[11px] font-medium ${btnGhost()}`}
+                onClick={() => onOpenTask(parentTodo.id)}
+                title={`Open parent task “${parentTodo.text.trim() || 'Untitled'}”`}
+                className={`self-start max-w-full mb-3 flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-xs font-medium ${btnNeutral}`}
               >
-                <ArrowLeft size={12} className="shrink-0" />
-                <span className="truncate">{backTo.label}</span>
+                <CornerLeftUp size={12} className="shrink-0" />
+                <span className="truncate">{parentTodo.text.trim() || 'Untitled'}</span>
               </button>
             )}
             <div className="flex items-start gap-3 mb-5">
@@ -781,9 +795,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               {draft.archived ? 'Unarchive' : 'Archive'}
             </button>
             <button
-              // A subtask opened from its parent goes back to that parent; anything
+              // A task opened from another task's full view returns to it; anything
               // else has no full view behind it, so it closes the chain outright.
-              onClick={() => { onDelete(draft.id); (backTo?.onBack ?? onClose)(); }}
+              onClick={() => { onDelete(draft.id); (onDeleteReturn ?? onClose)(); }}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all cursor-pointer"
             >
               <Trash2 size={14} />

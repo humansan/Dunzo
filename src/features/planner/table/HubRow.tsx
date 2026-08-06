@@ -447,7 +447,17 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // (see FlatNode.matchesView) - renders dimmed, so "the tab didn't match this, it's
   // here for its child" reads at a glance. It lifts to full opacity on hover, since
   // it's still a live, editable row.
-  const contextDim = node.matchesView ? 'border-line-subtle' : 'opacity-36 border-fg/16';
+  //
+  // The tone and the dimming are kept apart on purpose. The row's bottom rule needs
+  // a colour on EVERY path: `border-b` on its own resolves to currentColor, so the
+  // one branch that omitted it - the row being dragged - drew a bright line the
+  // width of the table instead of the hairline every other row has. And the two
+  // opacities have to stay mutually exclusive: a context row that is also the drag
+  // source would otherwise carry `opacity-36` and `opacity-40` at once, and which
+  // one wins is decided by the order Tailwind emits them, not by the order they're
+  // written here.
+  const borderTone = node.matchesView ? 'border-line-subtle' : 'border-fg/16';
+  const contextDim = node.matchesView ? '' : 'opacity-36';
   //theme-mismatch
 
   return (
@@ -455,7 +465,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       style={style}
       {...dropProps}
       onContextMenu={handleContextMenu}
-      className={`relative grid items-stretch min-h-[36px] border-b group/row transition-opacity ${
+      className={`relative grid items-stretch min-h-[36px] border-b ${borderTone} group/row transition-opacity ${
         isDragSource ? 'opacity-40' : `hover:bg-fill-subtle ${contextDim}`
       }`}
     >
@@ -558,7 +568,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onClick={(e) => { if (startEdit) e.stopPropagation(); startEdit?.(todo.id, 'title', e); }}
                 className={`flex-1 min-w-0 pl-1 text-sm rounded ${startEdit ? 'cursor-text hover:bg-fill' : ''} ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
               >
-                {todo.text || <span className="text-fg-faint">Untitled</span>}
+                {todo.text || ' '}
               </span>
               {openMenu && (
                 <button
