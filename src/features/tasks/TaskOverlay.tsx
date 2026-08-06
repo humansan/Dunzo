@@ -29,15 +29,18 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
   const closeOnce = useCallback(() => once(onClose)(), [once, onClose]);
 
   // This view was opened from another task's full view (useOverlayNav.openTask
-  // records the opener on the pushed entry), so it can offer a step back to that
-  // task - one history entry, unlike close, which rewinds the whole chain. The
-  // opener can have been deleted meanwhile; then there's simply no back.
+  // records the opener on the pushed entry), so deleting from here can step back
+  // to that task - one history entry, unlike close, which rewinds the whole
+  // chain. The opener can have been deleted meanwhile; then there's simply no
+  // step back and Delete closes.
+  //
+  // This is the only thing the opener is used for now. The header's parent button
+  // reads `parentId` instead: what a task sits under is a fact about the task, not
+  // about the route you took to it, and tying the two hid the button on every
+  // subtask opened from the planner, the daily list or a link.
   const fromTaskId = useRouterState({ select: (s) => s.location.state.fromTaskId });
-  const fromTodo = fromTaskId ? d.todoById.get(fromTaskId) : undefined;
+  const openerExists = !!(fromTaskId && d.todoById.get(fromTaskId));
   const backOnce = useCallback(() => once(() => router.history.back())(), [once, router]);
-  const backTo = fromTodo
-    ? { label: fromTodo.text.trim() || 'Untitled', onBack: backOnce }
-    : undefined;
 
   // Stale / deleted id (e.g. removed here or on another device) - leave the overlay.
   // Only once the todos have actually loaded: on a cold /task/$taskId deep-link the map
@@ -58,7 +61,7 @@ export const TaskOverlay: React.FC<{ taskId: string; onClose: () => void }> = ({
       onCreateCollection={d.createCollection}
       byId={d.todoById}
       onClose={closeOnce}
-      backTo={backTo}
+      onDeleteReturn={openerExists ? backOnce : undefined}
       onSave={(updated, newDate) => d.handleHubSaveTodo({ ...updated, dueDate: newDate || undefined })}
       onToggle={d.handleToggleTodo}
       // Just delete here; TodoFullView calls onClose (closeOnce) right after, and the
