@@ -9,12 +9,30 @@ import { useRouter } from '@tanstack/react-router';
 export function useOverlayNav() {
   const router = useRouter();
 
-  const openTask = (id: string) =>
-    router.navigate({
+  // Each open pushes an entry, so the browser back button walks back through the
+  // task chain (task -> subtask -> ...). The close actions must *not* do that, so
+  // the pushed entry records how deep the chain is; AppShell.closeOverlay rewinds
+  // by exactly that many entries. Depth is derived from whether an overlay is
+  // currently open rather than by blindly incrementing the previous value, so it
+  // resets to 1 for a fresh open.
+  const openTask = (id: string) => {
+    const { search, state, pathname } = router.state.location;
+    const taskDepth = (search.task ? (state.taskDepth ?? 1) : 0) + 1;
+    // The task this open comes from, if any - recorded so the opened view can
+    // offer a one-entry step back to it (see HistoryState.fromTaskId). A full view
+    // is normally the `task` search param, but on a cold deep-link it's the
+    // standalone /task/$taskId route instead, where the id is in the path; back
+    // from there returns to that route, so it counts as an opener just the same.
+    // (`taskDepth` deliberately still resets to 1 there - that route's close
+    // pushes /today rather than rewinding.)
+    const fromTaskId = search.task ?? pathname.match(/^\/task\/(.+)$/)?.[1];
+    return router.navigate({
       to: '.',
       search: (prev) => ({ ...prev, task: id }),
+      state: (prev) => ({ ...prev, taskDepth, fromTaskId }),
       mask: { to: '/task/$taskId', params: { taskId: id } },
     });
+  };
 
   const openSettings = () =>
     router.navigate({

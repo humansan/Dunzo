@@ -20,7 +20,8 @@ import { useCollectionDnD } from '@/features/planner/hooks/useCollectionDnD';
 import { useRowDnD } from '@/features/planner/hooks/useRowDnD';
 import { HubSidebar } from '@/features/planner/sidebar/HubSidebar';
 import { HubToolbar, ToolbarMenuKey } from '@/features/planner/toolbar/HubToolbar';
-import { groupCreateSpec, buildFilterCreatePatch } from '@/features/planner/model/viewUtils';
+import { buildCreateArgs, anchorGroupValue } from '@/features/planner/model/createSeed';
+import { planAddRows, planGroupAddRows } from '@/features/planner/table/addRows';
 import { resolveView } from '@/features/planner/views';
 import { useArchiveConfirm } from '@/features/tasks';
 import { useArchiveCompleted } from '@/features/planner/hooks/useArchiveCompleted';
@@ -52,7 +53,6 @@ interface PlannerViewProps {
   // added from, and `parentId` parents it to a collection so it inherits the
   // selected collection / active filters of the current view.
   onAddTodo: (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }) => string;
-  onAddSubtask: (parentId: string) => string;
   // Create a fresh collection (top-level, or nested when a parentId is given);
   // returns its id for select + rename.
   onAddCollection: (parentId?: string | null) => string;
@@ -98,7 +98,6 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   onCreateCollection,
   onSaveTodo,
   onAddTodo,
-  onAddSubtask,
   onAddCollection,
   onDeleteTodo,
   onDeleteCollection,
@@ -159,6 +158,14 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // and its rows read presentation off this instead of a `listView` boolean.
   const variant = viewMode === 'list' ? VARIANTS.list : VARIANTS.table;
 
+  // ── In-view search ──────────────────────────────────────────────────────────
+  // Local to the open tab, and deliberately NOT persisted like filters/sorts: a
+  // search you can't see is a trap, so switching tabs always shows the whole tab.
+  // Clearing on `selectedView` rather than on a click means every route into a tab
+  // (sidebar, breadcrumb, a deep link) resets it the same way.
+  const [searchQuery, setSearchQuery] = useState('');
+  useEffect(() => { setSearchQuery(''); }, [selectedView]);
+
   // Per-view layout + column widths (field order/visibility, filters, sorts,
   // section settings, resizable columns) - keyed by workspace + view.
   const {
@@ -187,6 +194,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
   // lists, and per-collection counts.
   const {
     entries,
+    flatEntries,
     archivedEntries,
     selectedCollectionId,
     byId,
@@ -214,6 +222,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     completedCount,
     currentCount,
     viewLabel,
+    searchActive,
+    searchVisibleTaskIds,
+    effectiveCollapsed,
   } = useHubData({
     dayTodos,
     activeWorkspaceId,
@@ -228,6 +239,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     filtersFor,
     activeSorts,
     sectionsConfig,
+    searchQuery,
     showNesting: variant.showNesting,
   });
 
@@ -471,113 +483,166 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     setCollapsedColls((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
     sidebar && setSelectedView(id, { editCollection: id });
   };
-  // Seed patch derived from the view's active filters: any "is <value>" filter is
-  // pre-applied to tasks created in this view, so a new task still satisfies the
-  // filters (and stays visible) right after creation. Collection membership is
-  // handled separately via `selectedCollectionId` as the new task's parent.
-  const inheritedFilterPatch = useMemo(
-    () => buildFilterCreatePatch(activeFilters),
-    [activeFilters]
-  );
-
   // Whether the current view offers task creation (the Archived view doesn't).
   const viewAllowsNew = resolveView(selectedView).allowNew;
-  // What a task created in this view needs to remain visible here — e.g. the In
-  // Daily List tab seeds the daily flag + today's date. Evaluated per create so
-  // dynamic values (today) stay fresh; the view's active filters still win on
-  // conflict since those are the user's explicit, in-view constraints.
-  const viewCreateArgs = (): { date?: string | null; patch: Partial<Todo> } => {
-    const seed = resolveView(selectedView).createSeed?.();
-    return { date: seed?.date, patch: { ...seed?.patch, ...inheritedFilterPatch } };
-  };
+  // …and whether a create landing under `parentId` is on offer right now.
+  //
+  // A search narrows the rows, and a create whose result the query would hide is
+  // worse than no create at all: the row is written, filtered straight back out,
+  // and its inline title editor is left attached to something that isn't on
+  // screen. Search now keeps a match's whole subtree (see useHubData), so that
+  // question has a precise answer - a new task survives the query exactly when its
+  // parent is a search-visible TASK, because it arrives as that task's descendant.
+  // Everything else (the add-row and both section "+", which create at the view's
+  // root or under a collection) has no matching ancestor to ride in on and stays
+  // withdrawn until the search is cleared.
+  const canCreateUnder = (parentId: string | null) =>
+    viewAllowsNew && (!searchActive || (!!parentId && searchVisibleTaskIds.has(parentId)));
+  // The root-level affordances, as a plain flag.
+  const canCreate = canCreateUnder(null);
+  // "Add task above/below" lands a SIBLING of the context-menu's target, so what
+  // has to be creatable is the target's PARENT, not the target itself.
+  const canCreateSibling = !!menuEntry && canCreateUnder(menuEntry.todo.parentId ?? null);
 
-  // The table's "New" button adds into the selected collection (else top-level),
-  // inherits the active filters + view seed, then drops straight into the new
-  // row's title field so you can type the name without a second click.
-  const handleNewInView = () => {
-    const seed = viewCreateArgs();
-    const id = onAddTodo({ parentId: selectedCollectionId, date: seed.date, patch: seed.patch });
-    if (selectedCollectionId) {
-      // Make sure the parent isn't collapsed, or the new row would be hidden.
-      setCollapsed((prev) => { const n = new Set(prev); n.delete(selectedCollectionId); return n; });
-    }
-    setEditing({ id, col: 'title', rect: null });
-  };
-  // The "+" on a collection section header (collection grouping): parent the task
-  // to that collection and seed the active filters + view so it stays visible.
-  const handleQuickAddTask = useStableCallback((parentId: string) => {
-    const seed = viewCreateArgs();
-    const id = onAddTodo({ parentId, date: seed.date, patch: seed.patch });
-    setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
-    setEditing({ id, col: 'title', rect: null });
-  });
-  // The "+" on an attribute-grouped section header: create a task seeded with the
-  // view seed + active filters AND the section's attribute/date (the section wins
-  // on conflict so it lands there), parent it to the selected collection so a
-  // collection view keeps it, expand the section if collapsed, focus the new row.
-  const handleQuickAddInGroup = useStableCallback((groupValue: string) => {
-    const { date, patch } = groupCreateSpec(sectionsConfig.groupBy, groupValue);
-    const seed = viewCreateArgs();
-    const id = onAddTodo({
-      date: date ?? seed.date,
-      patch: { ...seed.patch, ...patch },
-      parentId: selectedCollectionId,
+  // The seed for a task created at `parentId` in the section `groupValue` - the
+  // single description of what a new task needs to satisfy this view and land
+  // where it was created from. `groupValue: null` means "seed nothing from the
+  // grouping": collection mode (membership is the parent) or a subtask, whose
+  // section is decided by its root ancestor whatever it carries. Evaluated per
+  // create so dynamic values (today, a date bucket) stay fresh.
+  const createArgs = (parentId: string | null, groupValue: string | null = null) =>
+    buildCreateArgs({
+      parentId,
+      groupValue,
+      view: resolveView(selectedView),
+      filters: activeFilters,
+      groupBy: sectionsConfig.groupBy,
     });
-    const headerId = `__grp:${sectionsConfig.groupBy}:${groupValue}`;
-    setCollapsed((prev) => { const n = new Set(prev); n.delete(headerId); return n; });
+
+  // Create a task, expand whatever would have hidden it, and drop straight into
+  // its title field so you can type the name without a second click. Every create
+  // affordance in the Planner ends here; they differ only in the args above and in
+  // which node has to be expanded.
+  const createTask = (args: ReturnType<typeof createArgs>, expandId?: string | null) => {
+    const id = onAddTodo(args);
+    if (expandId) setCollapsed((prev) => { const n = new Set(prev); n.delete(expandId); return n; });
     setEditing({ id, col: 'title', rect: null });
+    return id;
+  };
+
+  // The table's "New" button adds into the selected collection (else top-level).
+  const handleNewInView = () => createTask(createArgs(selectedCollectionId), selectedCollectionId);
+  // The "+" on a collection section header (collection grouping), and the context
+  // menu's "Create task inside" on a collection - the same operation named twice,
+  // so they run the same code and can't drift apart the way they had.
+  const handleQuickAddTask = useStableCallback((parentId: string) => {
+    createTask(createArgs(parentId), parentId);
+  });
+  // The "+" on an attribute-grouped section header: seeded with the section's
+  // attribute/date on top of the view + filters, parented to the selected
+  // collection so a collection view keeps it, expanding the section if collapsed.
+  const handleQuickAddInGroup = useStableCallback((groupValue: string) => {
+    createTask(
+      createArgs(selectedCollectionId, groupValue),
+      `__grp:${sectionsConfig.groupBy}:${groupValue}`
+    );
   });
 
-  // Context-menu "Create task inside": add a subtask, expand the parent so the
-  // new row is visible, close the menu, and drop into its title field.
+  // Context-menu "Create task inside": a subtask of the target, seeded with the
+  // view + filters so it stays visible where it was made. NOT with the section
+  // attribute - a subtask renders in its root ancestor's section regardless of its
+  // own value (see buildGroupedItems), so seeding one would write a field the user
+  // never asked for to no visible effect.
   const createTaskInside = (parentId: string, sidebar?: true) => {
-    const id = onAddSubtask(parentId);
-    setCollapsed((prev) => { const n = new Set(prev); n.delete(parentId); return n; });
+    const target = findEntry(parentId);
+    // A collection target IS the collection-header "+" - same destination, same
+    // seed, one implementation.
+    if (target?.todo.isCollection) {
+      handleQuickAddTask(parentId);
+      sidebar && setSelectedView(parentId, { editCollection: undefined });
+      closeMenu();
+      return;
+    }
+    createTask(createArgs(parentId), parentId);
     sidebar && setSelectedView(parentId, { editCollection: undefined });
     closeMenu();
-    setEditing({ id, col: 'title', rect: null });
   };
+
+  // ── Contextual "+ New" rows ────────────────────────────────────────────────
+  // One per container - the view root, each collection or attribute section, each
+  // task with subtasks - placed where the task it creates will actually appear
+  // (see table/addRows). This replaces the single add-row that used to sit under
+  // the last row of the table, which in a sectioned view was both a scroll away
+  // and nowhere near the block it added to.
+  //
+  // The filter is `canCreateUnder` restated per spec, so the add-rows withdraw on
+  // exactly the same rule as the header "+" and the context menu: nothing at all
+  // in Archived, and under a search only a create that lands under a
+  // search-visible task, since only that one arrives as a match's descendant.
+  // Spelled out rather than calling canCreateUnder so this memo can depend on the
+  // values it reads instead of on a closure rebuilt every render.
+  const addRows = useMemo(() => {
+    if (!viewAllowsNew) return [];
+    const specs =
+      sectionsConfig.groupBy === 'collection'
+        ? planAddRows(flattened, { leafPosition: sectionsConfig.showLeafTasks })
+        : planGroupAddRows(groupedRows);
+    if (!searchActive) return specs;
+    return specs.filter((s) => s.kind === 'task' && !!s.id && searchVisibleTaskIds.has(s.id));
+  }, [
+    flattened,
+    groupedRows,
+    sectionsConfig.groupBy,
+    sectionsConfig.showLeafTasks,
+    viewAllowsNew,
+    searchActive,
+    searchVisibleTaskIds,
+  ]);
 
   // Splice `id` in next to `anchorId` among its siblings and persist the whole
   // tree order (same mechanism the row drag-and-drop commit uses). A freshly
   // created task starts at the bottom, so this is what moves it into place.
   //
-  // The new node MUST take its parent from the anchor's node in this flat list,
-  // not from the anchor todo's real parentId. In a collection view the collection
-  // node itself is excluded from the entries, so flattenTree reads its direct
-  // children as parentId null (see useHubData's 'subtree' scaffold) - handing in
-  // the real collection id would file the new node under a parent that has no
-  // node here, orderFromFlat's walk would never reach it, and its unreachable-node
-  // fallback would append it at the very end. That is the bug this comment exists
-  // to prevent a repeat of. The `selectedCollectionId` re-anchor below turns the
-  // null back into the collection on save, exactly as it does for every other row.
+  // It runs over the WHOLE workspace tree (`entries`), not the rows on screen.
+  // orderFromFlat assigns hubOrder by position across everything it is handed, and
+  // the rows a view is hiding keep the hubOrders they already had - on the same
+  // scale - so ordering a filtered or search-narrowed list renumbers the survivors
+  // against neighbours nobody can see, scrambling the order the moment the filter
+  // is lifted. (That is also why a drag is suppressed under an active search.) The
+  // full set is the only list whose positions mean the same thing as the numbers
+  // being written.
+  //
+  // Using it also removes the trap the old version had to work around: over
+  // `processedEntries` a collection view excludes the collection node itself, so
+  // its direct children flattened to parentId null and had to be re-anchored on
+  // save. The full set contains the collection, so every parentId here is real.
   const placeRelative = (id: string, anchorId: string, pos: 'above' | 'below') => {
-    const full = flattenTree(processedEntries).map((n) => ({ id: n.id, parentId: n.parentId }));
+    const full = flattenTree(entries).map((n) => ({ id: n.id, parentId: n.parentId }));
     const at = full.findIndex((n) => n.id === anchorId);
     if (at === -1) return;
-    const parentId = full[at].parentId;
-    full.splice(pos === 'above' ? at : at + 1, 0, { id, parentId });
-    let order = orderFromFlat(full);
-    // In a collection view the collection node is hidden, so its direct children
-    // read as depth-0 (parentId null). Re-anchor them to the collection on save.
-    if (selectedCollectionId) order = order.map((n) => ({ id: n.id, parentId: n.parentId ?? selectedCollectionId }));
-    onReorder(order);
+    full.splice(pos === 'above' ? at : at + 1, 0, { id, parentId: full[at].parentId });
+    onReorder(orderFromFlat(full));
   };
 
-  // Context-menu "Add task above/below": create a sibling of the target, seeded
-  // with the view's active filters so it stays visible, then edit its title.
+  // Context-menu "Add task above/below": a SIBLING of the target - the section's
+  // "+" with a chosen landing spot, which is what it should have been all along.
+  // It seeds the anchor's own section (a sibling is placed by its own attribute
+  // when the anchor is a root task, so without this the new row jumps to whichever
+  // section its unset value belongs to), plus the view + filters like every other
+  // create. Dropping the view seed's DATE while keeping its patch is what used to
+  // make this vanish in the In Daily List tab: the row got the daily flag and no
+  // date, which is precisely what that tab filters out.
   const addTaskRelative = (anchorId: string, pos: 'above' | 'below') => {
     const anchor = byId.get(anchorId);
     if (!anchor) return;
     // Create it under the anchor's REAL parent (so it's genuinely nested where the
     // anchor is); placeRelative works out where it sits in the rendered order.
     const parentId = anchor.todo.parentId ?? null;
-    // Seed the view predicate + filters so the sibling stays visible; keep the
-    // anchor's own date (don't force the view seed's date) so it lands in place.
-    const id = onAddTodo({ parentId, patch: viewCreateArgs().patch });
+    const id = createTask(
+      createArgs(parentId, anchorGroupValue(anchor.todo, sectionsConfig.groupBy, todoById))
+    );
     placeRelative(id, anchorId, pos);
     closeMenu();
-    setEditing({ id, col: 'title', rect: null });
   };
 
   // Context-menu Duplicate: copy every field except identity and the stamps that
@@ -589,6 +654,12 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     delete fields.id;
     delete fields.createdAt;
     delete fields.hubOrder;
+    // Position fields belong to the original's PLACE, not to its content. hubOrder
+    // is reassigned by placeRelative below; dailyOrder is simply left unset, which
+    // sorts the copy to the END of its day (the day sort falls back to createdAt,
+    // an epoch far above any order index). Copying it instead tied the two rows at
+    // the same index, where their order came down to whichever the sort saw first.
+    delete fields.dailyOrder;
     delete fields.completedAt;
     delete fields.trackingStartedAt;
     delete fields.deletedAt;
@@ -743,6 +814,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           currentCount={currentCount}
           filterCount={activeFilters.length}
           sortCount={activeSorts.length}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           menuOpen={toolbarMenuOpen}
           onToggleMenu={onToggleMenu}
         />
@@ -762,23 +835,33 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
               collPathById,
               visibleTaskCounts,
               todoById,
-              collapsed,
+              // The set the rows were built from, not the saved one - see
+              // useHubData.effectiveCollapsed (a search reads as fully expanded).
+              collapsed: effectiveCollapsed,
               selectedCollectionId,
               selectedView,
               viewLabel,
-              currentCount
+              currentCount,
+              searchActive,
+              addRows,
             }}
             interaction={{ editing, startEdit, stopEdit, openMenu, toggleCollapse }}
             rowHandlers={{
               onSaveTodo,
               onToggleTodo,
-              onAddSubtask,
-              onQuickAddTask: viewAllowsNew ? handleQuickAddTask : undefined,
-              onQuickAddInGroup: viewAllowsNew ? handleQuickAddInGroup : undefined,
-              onNewInView: viewAllowsNew ? handleNewInView : undefined,
+              onQuickAddTask: canCreate ? handleQuickAddTask : undefined,
+              onQuickAddInGroup: canCreate ? handleQuickAddInGroup : undefined,
+              onNewInView: canCreate ? handleNewInView : undefined,
+              // Only a task's own add-row calls this, and `addRows` above has
+              // already decided which of those exist, so it needs no gate here.
+              onCreateInside: createTaskInside,
               onOpenTask,
             }}
-            dnd={dnd}
+            // Drag-to-reorder is suppressed while a search is narrowing the rows:
+            // a drop assigns hubOrder by position over the rows on screen, so
+            // reordering a partial list would renumber the survivors against
+            // neighbours the query is hiding.
+            dnd={searchActive ? undefined : dnd}
             bottomSpacer
           />
       </div>
@@ -864,11 +947,20 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
         />
       )}
 
-      {/* Right-click / 3-dot context menu. The four create actions are passed only
-          when the view supports creation (viewAllowsNew) - an undefined handler
-          renders no item. In Archived that isn't cosmetic: the new child would
-          inherit its parent's archived state (shared/domain/todoArchive) and vanish
-          into the row it was created under. */}
+      {/* Right-click / 3-dot context menu. Each create action is passed only when
+          that particular create is currently on offer - an undefined handler
+          renders no item - and the question is asked per DESTINATION, because
+          that's what decides whether the new row would survive:
+
+            • Archived (viewAllowsNew) rules out all of them: the new child would
+              inherit its parent's archived state (shared/domain/todoArchive) and
+              vanish into the row it was created under.
+            • Under a search, a create survives only under a search-visible task
+              (canCreateUnder). "Create task inside" a match qualifies - the row
+              arrives as that match's descendant. A sibling (add above/below) has
+              to ask about the ANCHOR'S PARENT instead, since that is where it
+              lands. Duplicate always qualifies: the copy carries the original's
+              title, so it matches whatever the original matched. */}
       {menu && (
         <RowContextMenu
           menu={menu}
@@ -879,17 +971,32 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           onToggleColorPicker={() => setColorPickerOpen((v) => !v)}
           onClose={closeMenu}
           onEditCollection={(id) => { onEditCollection(id); closeMenu(); }}
-          onCreateTaskInside={viewAllowsNew ? createTaskInside : undefined}
-          onCreateNestedCollection={viewAllowsNew ? ((id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); }) : undefined}
+          onCreateTaskInside={
+            (menuEntry?.todo.isCollection ? canCreate : canCreateUnder(menu.id))
+              ? createTaskInside
+              : undefined
+          }
+          // A new collection is empty, so under a search it would be a row with
+          // nothing in it to match - invisible, and (from the table, which doesn't
+          // navigate) unnameable. The sidebar origin is exempt: it selects the new
+          // collection and opens its editor, and switching views clears the search.
+          onCreateNestedCollection={
+            viewAllowsNew && (!searchActive || menu.sidebar)
+              ? ((id, sidebar) => { handleNewNestedCollection(id, sidebar); closeMenu(); })
+              : undefined
+          }
           onChangeColor={(entry, color) => { setCollectionColor(entry, color); closeMenu(); }}
           onMakeCollection={(entry) => { makeCollection(entry); closeMenu(); }}
           onMoveTo={(id) => { setReparentId(id); closeMenu(); }}
           onExpand={(id) => { onOpenTask(id); closeMenu(); }}
           onDuplicate={viewAllowsNew ? duplicateTask : undefined}
-          onSetDate={(_id, date) => setTaskDate(date)}
-          onSetTime={(_id, time) => setTaskTime(time)}
-          onAddTaskAbove={viewAllowsNew ? ((id) => addTaskRelative(id, 'above')) : undefined}
-          onAddTaskBelow={viewAllowsNew ? ((id) => addTaskRelative(id, 'below')) : undefined}
+          // Scheduling is offered per TARGET row, not per view: an archived task has
+          // left every dated surface, so a date on it writes a field nothing reads
+          // until it's restored.
+          onSetDate={menuEntry?.todo.archived ? undefined : ((_id, date) => setTaskDate(date))}
+          onSetTime={menuEntry?.todo.archived ? undefined : ((_id, time) => setTaskTime(time))}
+          onAddTaskAbove={canCreateSibling ? ((id) => addTaskRelative(id, 'above')) : undefined}
+          onAddTaskBelow={canCreateSibling ? ((id) => addTaskRelative(id, 'below')) : undefined}
           onArchive={(id) => { requestArchiveToggle(id); closeMenu(); }}
           onDelete={requestDeleteFromMenu}
         />
@@ -946,6 +1053,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
       {reparentTarget && (
         <TaskFinder
           entries={entries}
+          flatEntries={flatEntries}
           todoById={todoById}
           onSaveTodo={onSaveTodo}
           title={`Move “${reparentTarget.text || 'Untitled'}” to…`}

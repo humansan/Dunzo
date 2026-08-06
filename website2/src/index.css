@@ -7,10 +7,10 @@
   --color-overlay: #2a2a2a;
 
   --color-fg: #ffffff;
-  --color-fg-muted: #9ca3af;
-  --color-fg-subtle: #6b7280;
-  --color-fg-faint: rgba(255, 255, 255, 0.64);
-  --color-fg-ghost: rgba(255, 255, 255, 0.40);
+  --color-fg-muted: #ffffffd9;
+  --color-fg-subtle: #ffffffb8;
+  --color-fg-faint: #ffffffa3;
+  --color-fg-ghost: #ffffff66;
 
   --color-fill: rgba(255, 255, 255, 0.10);
   --color-fill-subtle: rgba(255, 255, 255, 0.05);
@@ -35,8 +35,10 @@
   --raised: #1f1f1f;
   --overlay: #2a2a2a;
   --fg: #ffffff;
-  --fg-muted: #9ca3af;
-  --fg-subtle: #6b7280;
+  --fg-muted: #ffffffd9;
+  --fg-subtle: #ffffffb8;
+  --fg-faint: #ffffffa3;
+  --fg-ghost: #ffffff66;
   --accent1: #ffcd4e;
   --accent2: #c6dabe;
   --xp-gold: #ffcd4e;
@@ -63,12 +65,21 @@ body {
 
   /* 4. Accent - Flat Gold Fill */
   .btn-accent {
-    @apply transition-all duration-100 disabled:opacity-50 cursor-pointer bg-gold text-canvas font-bold hover:bg-gold-hover active:scale-[0.98] rounded-lg px-4 py-2 text-sm flex items-center justify-center gap-2 inset-shadow-sm/40 inset-shadow-white active:inset-shadow-none;
+    @apply transition-all duration-100 disabled:opacity-50 cursor-pointer bg-gold text-canvas font-bold hover:bg-gold-hover active:scale-[0.98] rounded-lg px-4 py-2 text-sm flex items-center justify-center gap-2 inset-shadow-sm/50 inset-shadow-white active:inset-shadow-none;
   }
 
   .btn-accent-lg {
-    @apply transition-all duration-100 disabled:opacity-50 cursor-pointer bg-gold text-canvas font-extrabold hover:bg-gold-hover active:scale-[0.98] rounded-xl px-5 h-13 text-lg flex items-center justify-center gap-2.5 inset-shadow-sm/40 inset-shadow-white active:inset-shadow-none;
+    @apply transition-all duration-100 disabled:opacity-50 cursor-pointer bg-gold text-canvas font-extrabold hover:bg-gold-hover active:scale-[0.98] rounded-xl px-5 h-13 text-lg flex items-center justify-center gap-2.5 inset-shadow-sm/50 inset-shadow-white active:inset-shadow-none;
   }
+}
+
+/* Entrance animations hold at their first keyframe until useAnimationGate
+   confirms the document is visible and has painted. Without this the delay
+   clock runs against wall time from mount, and a page that rendered hidden or
+   stalled its first paint drops the user into the middle of the stagger. */
+html:not(.anim-ready) .fade-slide-up,
+html:not(.anim-ready) .word-blur-enter {
+  animation-play-state: paused;
 }
 
 /* Single-phase smooth word blur-to-focus transition */
@@ -76,7 +87,7 @@ body {
   0% {
     opacity: 0;
     filter: blur(24px);
-    transform: translateY(12px);
+    transform: translateY(16px);
   }
   100% {
     opacity: 1;
@@ -86,12 +97,12 @@ body {
 }
 
 .word-blur-enter {
-  animation: wordBlurFocus 0.8s ease-out both;
+  animation: wordBlurFocus 1s ease-out both;
 }
 
 /* Fade Slide Up Entrance */
 .fade-slide-up {
-  animation: fadeSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: fadeSlideUp 1.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes fadeSlideUp {

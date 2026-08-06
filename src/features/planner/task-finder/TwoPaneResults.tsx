@@ -38,7 +38,6 @@ export const TwoPaneResults: React.FC<{
   };
   const rowHandlers: TableRowHandlers = {
     onSaveTodo,
-    onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
     onOpenTask: onPick,

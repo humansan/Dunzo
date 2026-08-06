@@ -14,6 +14,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { DayTodos, Todo, Tracker } from '@shared/types';
 import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normalizeVisibility, getOrganizerTodos, getSearchableTodos, inWorkspace } from '@/features/tasks/model';
 import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive, descendantsToUnarchive } from '@/features/tasks/model';
+import { reconcilePlannerVisibility, descendantsToHide, descendantsToShow, ancestorsToShow } from '@/features/tasks/model';
 import { format } from 'date-fns';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
@@ -275,12 +276,33 @@ function useProvideAppData() {
   // exist yet (the create-then-reorder race that a second request would open).
   const handleCreateInDay = (date: string, todo: Todo, orderedIds: string[]) => {
     const dueDate = date && date !== UNDATED ? date : undefined;
+    // The parent-aware half of the write chain was missing here, and this is the
+    // one create path that can pick a parent without going through addHubTodo: the
+    // daily quick-add panel has a parent picker, and a new daily task takes
+    // `showInDatabase` from the dailyTasksInPlanner setting (default on). Choosing
+    // a Planner-hidden (or archived) parent therefore built a visible child under
+    // an invisible one - the orphan both invariants exist to prevent, which the
+    // Planner renders detached at the ROOT of the tree while its Collection cell
+    // still resolves through the parent it can't see.
+    //
+    // The server corrects the row either way (enforcePlannerVisibility /
+    // enforceArchive in routes/todos), but mutations invalidate without
+    // refetching, so the uncorrected optimistic row is what stays on screen until
+    // some later refetch. Running the same rules here keeps the cache honest.
+    //
     // Daily-created tasks are built by the daily screen, not addHubTodo, so they
-    // arrive without a Planner order - hand out the next one (see nextHubOrder).
-    const upsert = reconcileSchedule(
-      normalizeCompletion(
-        normalizeVisibility({ ...todo, dueDate, hubOrder: todo.hubOrder ?? nextHubOrder() })
-      )
+    // also arrive without a Planner order - hand out the next one (see nextHubOrder).
+    const parent = todo.parentId ? todoById.get(todo.parentId) : undefined;
+    const upsert = reconcilePlannerVisibility(
+      reconcileArchived(
+        reconcileSchedule(
+          normalizeCompletion(
+            normalizeVisibility({ ...todo, dueDate, hubOrder: todo.hubOrder ?? nextHubOrder() }, parent)
+          )
+        ),
+        parent
+      ),
+      parent
     );
     batchTodos.mutate({
       upserts: [upsert],
@@ -456,8 +478,15 @@ function useProvideAppData() {
       : updatedTodo.dailyOrder;
     updateTodo.mutate({
       id: updatedTodo.id,
-      patch: reconcileArchived(
-        reconcileSchedule(normalizeCompletion(normalizeVisibility({ ...updatedTodo, dueDate, hubOrder, dailyOrder }))),
+      patch: reconcilePlannerVisibility(
+        reconcileArchived(
+          reconcileSchedule(
+            normalizeCompletion(
+              normalizeVisibility({ ...updatedTodo, dueDate, hubOrder, dailyOrder }, parent)
+            )
+          ),
+          parent
+        ),
         parent
       ),
     });
@@ -478,11 +507,34 @@ function useProvideAppData() {
     // An explicit group-create date wins over anything in the patch (e.g. a date
     // filter); when none is given we keep whatever dueDate the patch carries.
     const dueDate = opts?.date && opts.date !== UNDATED ? opts.date : undefined;
+    // A subtask INHERITS BOTH of its parent's surface flags.
+    //
+    // Planner visibility is an invariant: creating one inside a hidden parent must
+    // not manufacture the orphan the rule exists to prevent (see
+    // shared/domain/todoPlannerVisibility).
+    //
+    // The daily flag is a default rather than a rule, and inheriting it is what
+    // makes a subtask belong to the same surfaces its parent does - a subtask of a
+    // daily-only task is daily-only too, undated so it stays off every list until
+    // the user gives it a date, and reachable meanwhile inside the parent's full
+    // view (which normalizeVisibility counts as a surface for exactly this case).
+    // `plannerTasksInDailyList` is the default for a task created ON the Planner
+    // surface, which a subtask isn't - it's created inside another task - so a
+    // parented create asks the parent and a root create asks the setting.
+    //
+    // Both are only defaults here: a view seed or a filter in `opts.patch` (e.g.
+    // the In Daily List tab's `showInDailyList: true`) is spread after and wins.
+    // A collection parent has no daily flag of its own, so it can't answer for
+    // its tasks - those fall back to the setting like any other root create.
+    const seedParent = parentId ? todoById.get(parentId) : undefined;
+    const seedTaskParent = seedParent && !seedParent.isCollection ? seedParent : undefined;
     const newTodo: Todo = {
       id,
       text: '',
-      showInDatabase: true,
-      showInDailyList: plannerTasksInDailyList,
+      showInDatabase: seedParent ? seedParent.showInDatabase === true : true,
+      showInDailyList: seedTaskParent
+        ? seedTaskParent.showInDailyList === true
+        : plannerTasksInDailyList,
       workspaceId: activeWorkspaceId,
       ...(parentId ? { parentId } : {}),
       hubOrder: nextHubOrder(),
@@ -496,20 +548,40 @@ function useProvideAppData() {
     // shared/domain/todoArchive). The server enforces the same rule authoritatively;
     // doing it here keeps the optimistic row honest instead of showing it live for
     // a beat and then having it change under the user.
-    const parent = parentId ? todoById.get(parentId) : undefined;
+    const parent = seedParent;
     createTodo.mutate(
-      reconcileArchived(reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo))), parent)
+      reconcilePlannerVisibility(
+        reconcileArchived(
+          reconcileSchedule(normalizeCompletion(normalizeVisibility(newTodo, parent))),
+          parent
+        ),
+        parent
+      )
     );
     return id;
   };
   const handleHubAddTodo = (opts?: { date?: string | null; patch?: Partial<Todo>; parentId?: string | null }): string =>
     addHubTodo(opts?.parentId ?? null, opts);
+  // Create a subtask with no seed beyond what the parent gives it. This is for the
+  // surfaces that have NO view to satisfy - the full view's Subtasks list - so
+  // there are no filters, no tab predicate and no section to keep the new row
+  // consistent with. Every Planner surface has all three and goes through
+  // handleHubAddTodo with a seed built by features/planner/model/createSeed.
   const handleAddSubtask = (parentId: string): string => addHubTodo(parentId);
 
-  // A block drawn on the full calendar page is a dated, timed task. Like every
-  // other new task it defaults to both surfaces (Planner + that day's daily
-  // checklist); the only thing special here is the drawn start/due time.
-  const handleCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
+  // A block drawn on the full calendar page is a dated, timed task, and it adopts
+  // the surfaces the calendar is currently SHOWING (`surfaces`, from that page's
+  // own "Show daily tasks" / "Show task planner tasks" filter). Both flags used to
+  // be hardcoded true, which is the one policy that can't be right: on a calendar
+  // filtered to one surface, a task drawn there was silently given the other one
+  // too. Drawing on a calendar showing neither is blocked at the source (the drag
+  // never starts), so there is no "both off" case to resolve here.
+  const handleCalendarAddTodo = (
+    date: string,
+    startTime: string,
+    dueTime: string,
+    surfaces: { daily: boolean; planner: boolean }
+  ): string =>
     addHubTodo(null, {
       date,
       patch: {
@@ -518,8 +590,8 @@ function useProvideAppData() {
         startDate: date,
         startTime,
         dueTime,
-        showInDatabase: true,
-        showInDailyList: true,
+        showInDatabase: surfaces.planner,
+        showInDailyList: surfaces.daily,
       },
     });
 
@@ -528,6 +600,11 @@ function useProvideAppData() {
   // checklist, Planner visibility follows `dailyTasksInPlanner`, and it seeds the
   // default XP (0/None ⇒ unset) and auto-move flag. The showInDatabase=false case
   // survives normalizeVisibility because the task has a date + showInDailyList.
+  //
+  // It deliberately ignores the calendar's surface filter (which the full calendar
+  // page above reads): that filter is one shared setting, but this control is part
+  // of the DAILY screen, and a task drawn there is a daily task no matter what the
+  // calendar page was last filtered to.
   const handleDailyCalendarAddTodo = (date: string, startTime: string, dueTime: string): string =>
     addHubTodo(null, {
       date,
@@ -578,7 +655,17 @@ function useProvideAppData() {
     const maxOrder = todos
       .filter(t => t && (t.parentId ?? null) === (collectionId ?? null))
       .reduce((m, t) => Math.max(m, t.hubOrder ?? 0), 0);
-    updateTodo.mutate({ id: taskId, patch: { parentId: collectionId, hubOrder: maxOrder + 1 } });
+    // Moving a task out from under a parent TASK and into a collection (or to
+    // uncategorized) can leave it reachable nowhere - a collection is not a surface
+    // of its own - so it gets the same re-parent reconciliation a drag gets.
+    updateTodo.mutate({
+      id: taskId,
+      patch: {
+        parentId: collectionId,
+        hubOrder: maxOrder + 1,
+        ...reparentVisibility(taskId, collectionId),
+      },
+    });
   };
 
   // Remove a todo entirely (server FK-cascades subtasks; cache drops them too).
@@ -624,6 +711,31 @@ function useProvideAppData() {
     batchTodos.mutate({ patches: [...ids].map((tid) => ({ id: tid, archived: false })) });
   };
 
+  // Show/hide a todo in the Task Planner. Like archive, neither direction is a
+  // single-row write: hiding takes the whole subtree down with it (a visible todo
+  // may not sit under a hidden one - shared/domain/todoPlannerVisibility) and
+  // showing lifts every hidden ancestor, so both go out as one batch. The server
+  // re-derives the same set from its own CTEs, so a partial batch can't leave the
+  // tree half-hidden.
+  const handleHidePlannerTodo = (id: string) => {
+    const ids = descendantsToHide(todos.filter(Boolean) as Todo[], id);
+    if (!ids.length) return;
+    batchTodos.mutate({ patches: ids.map((tid) => ({ id: tid, showInDatabase: false })) });
+  };
+
+  // `mode` decides what happens BELOW the todo, which is a preference rather than
+  // an invariant: 'self' shows just this row (its hidden subtask stays hidden - a
+  // legal state, and how you hide a single subtask), 'subtree' brings everything
+  // hidden inside it back too. What happens ABOVE is not a choice - the hidden
+  // ancestors always come back, or the row would render orphaned at the root.
+  const handleShowPlannerTodo = (id: string, mode: 'self' | 'subtree' = 'self') => {
+    const all = todos.filter(Boolean) as Todo[];
+    const ids = new Set(ancestorsToShow(all, id));
+    if (mode === 'subtree') for (const d of descendantsToShow(all, id)) ids.add(d);
+    if (!ids.size) return;
+    batchTodos.mutate({ patches: [...ids].map((tid) => ({ id: tid, showInDatabase: true })) });
+  };
+
   // Delete a collection. 'cascade' removes the collection and its whole subtree.
   // 'promote' deletes only the collection node and moves its direct children
   // (tasks and sub-collections) up to the collection's parent (or uncategorized
@@ -636,15 +748,49 @@ function useProvideAppData() {
     // Reparent children (patches) before deleting the node (deletes) - the
     // server applies patches first, so the FK cascade won't take the children.
     batchTodos.mutate({
-      patches: children.map(c => ({ id: c.id, parentId: grandparentId })),
+      // Promoting can move a task to the root, where it needs a surface of its own
+      // again - same re-parent reconciliation a drag gets.
+      patches: children.map(c => ({
+        id: c.id,
+        parentId: grandparentId,
+        ...reparentVisibility(c.id, grandparentId),
+      })),
       deletes: [id],
     });
+  };
+
+  // A re-parent changes which surfaces a task needs. Moving it INTO a hidden
+  // parent hides it (a visible todo may not sit under a hidden one); moving it OUT
+  // to the root - or under a collection, which is not a surface of its own - can
+  // leave it reachable nowhere, so the reachability rescue promotes it back into
+  // the Planner. Both fall out of running the same two rules the write chain runs;
+  // this returns just the fields that changed, to fold into a re-parent patch.
+  //
+  // The client copy exists to keep the OPTIMISTIC CACHE honest - without it a drag
+  // parks an illegal row on screen until some later refetch. The server re-derives
+  // all of it authoritatively (and, unlike this, resolves rows written earlier in
+  // the same batch), so a batch that re-parents a parent and its children together
+  // is settled there.
+  const reparentVisibility = (id: string, parentId: string | null): Partial<Todo> => {
+    const current = todoById.get(id);
+    if (!current) return {};
+    const parent = parentId ? todoById.get(parentId) : undefined;
+    const intended = { ...current, parentId: parentId ?? undefined };
+    const fixed = reconcilePlannerVisibility(normalizeVisibility(intended, parent), parent);
+    return fixed.showInDatabase === current.showInDatabase
+      ? {}
+      : { showInDatabase: fixed.showInDatabase };
   };
 
   // Persist hub order + nesting: assign hubOrder by position and set parentId.
   const handleReorderHubTodos = (items: { id: string; parentId: string | null }[]) => {
     batchTodos.mutate({
-      patches: items.map((it, i) => ({ id: it.id, hubOrder: i, parentId: it.parentId })),
+      patches: items.map((it, i) => ({
+        id: it.id,
+        hubOrder: i,
+        parentId: it.parentId,
+        ...reparentVisibility(it.id, it.parentId),
+      })),
     });
   };
 
@@ -663,15 +809,15 @@ function useProvideAppData() {
   // see filters.ts); opening a result shows its full view (rendered by AppShell).
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   // Organizer-scoped set: the two-pane (table) search view groups tasks by their
-  // collection, and the reparent/parent pickers choose a Planner task - both want
-  // only tasks that live in the Task Planner.
+  // collection - a Planner structure - so it wants only tasks that live in the Task
+  // Planner. It backs that view on every surface, search and pickers alike.
   const searchEntries = useMemo(
     () => getOrganizerTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
   // Broad set: the flat (list) search view searches every unarchived task, whether
   // it lives in the Planner, the daily list, or both - so a daily-list-only task is
-  // still findable via ⌘/Ctrl+K.
+  // findable via ⌘/Ctrl+K and choosable as a parent in the pickers.
   const searchFlatEntries = useMemo(
     () => getSearchableTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
@@ -741,6 +887,8 @@ function useProvideAppData() {
     handleArchiveTodo,
     handleArchiveTodos,
     handleUnarchiveTodo,
+    handleHidePlannerTodo,
+    handleShowPlannerTodo,
     handleDeleteCollection,
     handleReorderHubTodos,
     // tracker handlers + modal state

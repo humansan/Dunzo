@@ -30,11 +30,12 @@ export const Hero: React.FC = () => {
   return (
     <section className="relative pt-26 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-canvas">
       {/* Background image blur effect */}
-      <div className="absolute inset-0 opacity-25 pointer-events-none mix-blend-screen overflow-hidden">
+      <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
         <img
           src="/background.jpg"
           alt=""
-          className="w-full h-full object-cover filter blur-2xl scale-125"
+          decoding="async"
+          className="w-full h-full object-cover filter blur-lg scale-125"
         />
       </div>
 
@@ -56,7 +57,7 @@ export const Hero: React.FC = () => {
                 key={idx}
                 className="inline-block mr-[0.25em] word-blur-enter"
                 style={{
-                  animationDelay: `${idx * 100 + 400}ms`,
+                  animationDelay: `${idx * 120 + 400}ms`,
                 }}
               >
                 {word === 'calmer' ? (
@@ -70,8 +71,8 @@ export const Hero: React.FC = () => {
 
           {/* Subtitle */}
           <p
-            className="mt-6 text-base sm:text-lg text-fg-muted max-w-xl font-normal leading-relaxed fade-slide-up"
-            style={{ animationDelay: '1100ms' }}
+            className="mt-6 text-base sm:text-lg text-fg-subtle max-w-xl font-normal leading-relaxed fade-slide-up"
+            style={{ animationDelay: '1400ms' }}
           >
             Dunzo pairs a powerful task database & calendar with a focused daily dashboard + xp gamification designed for mindful momentum.
           </p>
@@ -79,7 +80,7 @@ export const Hero: React.FC = () => {
           {/* Action Buttons */}
           <div
             className="mt-8 flex flex-col sm:flex-row items-center gap-3.5 fade-slide-up"
-            style={{ animationDelay: '1220ms' }}
+            style={{ animationDelay: '1500ms' }}
           >
             <a href={APP_URL} className="btn-accent-lg w-full sm:w-auto">
               <span>Get Started</span>
@@ -88,10 +89,10 @@ export const Hero: React.FC = () => {
 
             <button
               onClick={startDemo}
-              className="btn-neutral px-5 h-[52px] rounded-xl text-lg font-medium flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="btn-neutral px-5 h-[52px] rounded-xl text-lg font-medium flex items-center justify-center gap-2 w-full sm:w-auto text-fg-subtle hover:text-fg"
             >
               <Play className="w-4 h-4 fill-gold text-gold" />
-              <span>Watch Demo</span>
+              <span >Watch Demo</span>
             </button>
           </div>
 
@@ -100,7 +101,7 @@ export const Hero: React.FC = () => {
             id="demo"
             ref={showcaseRef}
             className="mt-12 relative w-full max-w-5xl scroll-mt-28 fade-slide-up"
-            style={{ animationDelay: '1340ms' }}
+            style={{ animationDelay: '1600ms' }}
           >
             <div
               className={`relative aspect-video rounded-2xl overflow-hidden border border-fg/10 bg-surface group ${
@@ -111,6 +112,7 @@ export const Hero: React.FC = () => {
               <img
                 src="/media/s1.png"
                 alt="Dunzo Daily Dashboard"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
                 aria-hidden={isVideoPlaying}
               />

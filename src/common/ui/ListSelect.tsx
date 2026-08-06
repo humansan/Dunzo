@@ -30,7 +30,30 @@ export const ListSelect: React.FC<{
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
 
-  const selected = options.find((o) => o.value === value);
+  const selectedIdx = options.findIndex((o) => o.value === value);
+  const selected = selectedIdx >= 0 ? options[selectedIdx] : undefined;
+  const [active, setActive] = useState(Math.max(0, selectedIdx));
+  const clamped = Math.min(active, Math.max(0, options.length - 1));
+
+  // Reset active index to current selection when dropdown opens.
+  useEffect(() => {
+    if (open) {
+      const idx = options.findIndex((o) => o.value === value);
+      setActive(idx >= 0 ? idx : 0);
+    }
+  }, [open, value, options]);
+
+  // Keep highlighted option in view inside menu popover.
+  useEffect(() => {
+    if (!open) return;
+    const box = menuRef.current;
+    const el = box?.querySelector<HTMLElement>('[data-active="true"]');
+    if (!box || !el) return;
+    const top = el.offsetTop;
+    const bottom = top + el.offsetHeight;
+    if (top < box.scrollTop) box.scrollTop = top;
+    else if (bottom > box.scrollTop + box.clientHeight) box.scrollTop = bottom - box.clientHeight;
+  }, [open, clamped, options.length]);
 
   // Anchor the floating list under the trigger; re-measure on scroll/resize so it
   // tracks the trigger while open (it lives in a body portal, not the flow).
@@ -54,24 +77,46 @@ export const ListSelect: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Close on Escape regardless of focus location.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        setOpen(false);
-      }
-    };
-    document.addEventListener('keydown', onKey, true);
-    return () => document.removeEventListener('keydown', onKey, true);
-  }, [open]);
-
   const pick = (opt: ListSelectOption) => {
     if (opt.disabled) return;
     onChange(opt.value);
     setOpen(false);
     triggerRef.current?.focus();
+  };
+
+  // Keyboard navigation when open (ArrowUp/Down, Enter, Escape).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+        triggerRef.current?.focus();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!options.length) return;
+        const d = e.key === 'ArrowDown' ? 1 : -1;
+        setActive((i) => (Math.min(i, options.length - 1) + d + options.length) % options.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (options[clamped] && !options[clamped].disabled) {
+          pick(options[clamped]);
+        }
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [open, clamped, options]);
+
+  const onTriggerKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      e.preventDefault();
+      setOpen(true);
+    }
   };
 
   return (
@@ -84,6 +129,7 @@ export const ListSelect: React.FC<{
         aria-expanded={open}
         disabled={disabled}
         onClick={() => !disabled && setOpen((o) => !o)}
+        onKeyDown={onTriggerKeyDown}
         className={`flex items-center gap-2 bg-overlay border rounded-lg px-2.5 h-8 text-[13px] transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
           open ? 'border-[var(--accent2)]' : 'border-line hover:border-line-strong'
         } ${className}`}
@@ -114,19 +160,22 @@ export const ListSelect: React.FC<{
               style={{ position: 'fixed', left: pos.left, top: pos.top, minWidth: pos.width }}
               className="z-[81] flex flex-col gap-0.5 max-h-64 overflow-y-auto rounded-lg border border-line bg-surface shadow-2xl p-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-fill-strong [&::-webkit-scrollbar-thumb]:rounded-full"
             >
-              {options.map((opt) => {
+              {options.map((opt, i) => {
                 const isSelected = opt.value === value;
+                const isActive = i === clamped;
                 return (
                   <button
                     key={opt.value}
                     type="button"
                     role="option"
                     aria-selected={isSelected}
+                    data-active={isActive}
                     disabled={opt.disabled}
                     onMouseDown={(e) => e.preventDefault()}
+                    onMouseEnter={() => setActive(i)}
                     onClick={() => pick(opt)}
-                    className={`w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left text-[13px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                      isSelected ? 'bg-fill text-fg' : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
+                    className={`w-full flex items-center gap-2 px-2 py-1 rounded-lg text-left text-[13px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${
+                      isActive ? 'bg-fill text-fg' : 'text-fg-muted hover:bg-fill-subtle hover:text-fg'
                     }`}
                   >
                     <span className="flex-1 min-w-0 truncate">{opt.label}</span>

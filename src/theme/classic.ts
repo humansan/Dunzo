@@ -15,7 +15,7 @@ const classicRoles: Record<RoleName, RoleValue> = {
   'fg-muted': ['fg', 85],
   'fg-subtle': ['fg', 72],
   'fg-faint': ['fg', 64],
-  'fg-ghost': ['fg', 40],
+  'fg-ghost': ['fg', 35],
   // Hairlines - translucent fg
   'line-subtle': ['fg', 6],
   line: ['fg', 10],

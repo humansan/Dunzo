@@ -24,7 +24,7 @@
 const base = 'transition-all disabled:opacity-50 cursor-pointer';
 
 // Neutral resting state shared by types 2 & 3 (and type 1's toggled/open state).
-const neutralIdle = 'bg-fill-subtle text-fg-faint hover:bg-fill hover:text-fg';
+const neutralIdle = 'bg-fill-subtle text-fg-subtle hover:bg-fill hover:text-fg';
 
 export type Accent = 'accent1' | 'accent2';
 // Static (Tailwind-detectable) accent fills + matching glow, per accent. Text is

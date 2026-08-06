@@ -8,6 +8,7 @@ import {
   enforceSchedule,
   enforceSchedulePatch,
   enforceVisibility,
+  enforcePlannerVisibility,
   pick,
   stampCompletion,
   touchesVisibility,
@@ -16,6 +17,7 @@ import {
 } from '../http';
 import { SCHEDULE_KEYS, touchesSchedule } from '../../shared/domain/todoSchedule';
 import { touchesArchive } from '../../shared/domain/todoArchive';
+import { touchesPlannerVisibility } from '../../shared/domain/todoPlannerVisibility';
 
 export const todosRouter = Router();
 
@@ -131,6 +133,54 @@ todosRouter.post(
         // An explicit archive in the same batch wins over an inherited unarchive.
         for (const id of ids) if (!cascade.has(id)) cascade.set(id, false);
       }
+      // Task Planner visibility is a subtree operation for exactly the same reason
+      // (see shared/domain/todoPlannerVisibility), so it expands the same way and
+      // with the same two CTEs: hiding a task also hides every descendant, showing
+      // one also shows every ancestor. Without this a batch that hid a parent
+      // without listing its children would leave them visible under a hidden
+      // parent - orphaned at the root of the Planner tree - and the per-row check
+      // below could never fix it, because nobody writes those children.
+      const hideIds = new Set<string>();
+      const showIds = new Set<string>();
+      for (const p of patches) {
+        const r = p as { id?: unknown; showInDatabase?: unknown };
+        if (typeof r.id !== 'string' || !('showInDatabase' in r)) continue;
+        (r.showInDatabase === true ? showIds : hideIds).add(r.id);
+      }
+      const visCascade = new Map<string, boolean>();
+      if (hideIds.size > 0) {
+        // Collections are excluded: they are database-only folders, pinned visible
+        // by normalizeVisibility, so hiding one would just start a fight between
+        // the two rules. The walk still passes through them.
+        const ids = await idsOf(sql`
+          WITH RECURSIVE subtree AS (
+            SELECT ${todos.id} FROM ${todos}
+             WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...hideIds]))}
+            UNION
+            SELECT t.id FROM ${todos} t JOIN subtree s ON t.parent_id = s.id
+             WHERE t.user_id = ${userId}
+          )
+          SELECT s.id FROM subtree s JOIN ${todos} t ON t.id = s.id
+           WHERE t.is_collection IS NOT TRUE
+        `);
+        for (const id of ids) visCascade.set(id, false);
+      }
+      if (showIds.size > 0) {
+        const ids = await idsOf(sql`
+          WITH RECURSIVE chain AS (
+            SELECT ${todos.id}, ${todos.parentId} FROM ${todos}
+             WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...showIds]))}
+            UNION
+            SELECT t.id, t.parent_id FROM ${todos} t JOIN chain c ON t.id = c.parent_id
+             WHERE t.user_id = ${userId}
+          )
+          SELECT id FROM chain
+        `);
+        // An explicit hide in the same batch wins over an inherited show, matching
+        // how the archive cascade resolves the same collision.
+        for (const id of ids) if (!visCascade.has(id)) visCascade.set(id, true);
+      }
+
       // Rows the client already sent are patched below; the rest are written here.
       const sent = new Set(
         patches.map((p) => (p as { id?: unknown }).id).filter((id): id is string => typeof id === 'string')
@@ -140,6 +190,13 @@ todosRouter.post(
         await tx
           .update(todos)
           .set({ archived })
+          .where(and(eq(todos.userId, userId), eq(todos.id, id)));
+      }
+      for (const [id, showInDatabase] of visCascade) {
+        if (sent.has(id)) continue;
+        await tx
+          .update(todos)
+          .set({ showInDatabase })
           .where(and(eq(todos.userId, userId), eq(todos.id, id)));
       }
 
@@ -154,7 +211,7 @@ todosRouter.post(
         stampCompletion(insertRow as { status?: string | null; completedAt?: number | null });
         // Upserts carry the client's full intended state, so the insert row is the
         // merged truth - enforce the invariant on it and mirror any fix to setData.
-        enforceVisibility(insertRow as Record<string, unknown>);
+        enforceVisibility(insertRow as Record<string, unknown>, parentOf(insertRow as Record<string, unknown>));
 
         const setData = pick<Partial<NewTodoRow>>(u, TODO_UPDATE_FIELDS);
         stampCompletion(setData as { status?: string | null; completedAt?: number | null });
@@ -176,6 +233,14 @@ todosRouter.post(
         // Archive invariant, mirrored onto the conflict-update set the same way.
         enforceArchive(insertRec, parentOf(insertRec));
         if (insertRec.archived !== (setRec.archived ?? null)) setRec.archived = insertRec.archived ?? null;
+        // Planner visibility invariant, likewise. Runs AFTER enforceVisibility so
+        // the reachability rescue can't reintroduce a visible row under a hidden
+        // parent: a subtask is reachable inside its parent, so it never needed the
+        // rescue in the first place.
+        enforcePlannerVisibility(insertRec, parentOf(insertRec));
+        if (insertRec.showInDatabase !== (setRec.showInDatabase ?? null)) {
+          setRec.showInDatabase = insertRec.showInDatabase ?? null;
+        }
         // This row may itself be some later row's parent.
         known.set(insertRow.id, insertRec);
 
@@ -196,7 +261,7 @@ todosRouter.post(
         if (typeof id !== 'string') continue;
         const patch = pick<Partial<NewTodoRow>>(p, TODO_UPDATE_FIELDS);
         // Status stamping and the visibility/schedule/archive backstops all need the existing row.
-        if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch) || touchesArchive(patch)) {
+        if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch) || touchesArchive(patch) || touchesPlannerVisibility(patch)) {
           const [existing] = await tx
             .select()
             .from(todos)
@@ -208,7 +273,8 @@ todosRouter.post(
             );
           }
           if (existing && touchesVisibility(patch)) {
-            const merged = enforceVisibility({ ...existing, ...patch });
+            const intended = { ...existing, ...patch } as Record<string, unknown>;
+            const merged = enforceVisibility(intended, parentOf(intended));
             if (merged.showInDatabase === true && patch.showInDatabase !== true) {
               patch.showInDatabase = true;
             }
@@ -221,6 +287,19 @@ todosRouter.post(
             enforceArchive(merged, parentOf(merged));
             if (merged.archived !== ((patch as Record<string, unknown>).archived ?? existing.archived)) {
               (patch as Record<string, unknown>).archived = merged.archived;
+            }
+            known.set(id, merged);
+          }
+          // Re-parenting under a hidden todo, or showing a row whose parent is
+          // still hidden, both have to fold `showInDatabase: false` back into the
+          // patch. The subtree cascade above already handled the other direction
+          // (this row's own descendants).
+          if (existing && touchesPlannerVisibility(patch)) {
+            const rec = patch as Record<string, unknown>;
+            const merged = { ...existing, ...patch } as Record<string, unknown>;
+            enforcePlannerVisibility(merged, parentOf(merged));
+            if (merged.showInDatabase !== (rec.showInDatabase ?? existing.showInDatabase)) {
+              rec.showInDatabase = merged.showInDatabase;
             }
             known.set(id, merged);
           }
@@ -253,11 +332,17 @@ todosRouter.post(
       createdAt: data.createdAt ?? Date.now(),
     } as NewTodoRow;
     stampCompletion(row as { status?: string | null; completedAt?: number | null });
-    enforceVisibility(row as Record<string, unknown>);
+    // One parent lookup serves the visibility, archive and Planner-visibility
+    // backstops below.
+    const parent = await parentRow(req.userId!, row.parentId);
+    enforceVisibility(row as Record<string, unknown>, parent);
     enforceSchedule(row as Record<string, unknown>);
     // A todo created inside an archived parent is archived with it, rather than
-    // becoming a live child of an archived row (see shared/domain/todoArchive).
-    enforceArchive(row as Record<string, unknown>, await parentRow(req.userId!, row.parentId));
+    // becoming a live child of an archived row (see shared/domain/todoArchive) -
+    // and one created inside a Planner-hidden parent is hidden with it, rather
+    // than becoming an orphan at the root of the Planner tree.
+    enforceArchive(row as Record<string, unknown>, parent);
+    enforcePlannerVisibility(row as Record<string, unknown>, parent);
     const [inserted] = await db.insert(todos).values(row).returning();
     res.status(201).json(inserted);
   })
@@ -271,7 +356,7 @@ todosRouter.patch(
     const userId = req.userId!;
     const patch = pick<Partial<NewTodoRow>>(req.body, TODO_UPDATE_FIELDS);
     // Status stamping and the visibility/schedule/archive backstops all need the existing row.
-    if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch) || touchesArchive(patch)) {
+    if ('status' in patch || touchesVisibility(patch) || touchesSchedule(patch) || touchesArchive(patch) || touchesPlannerVisibility(patch)) {
       const [existing] = await db
         .select()
         .from(todos)
@@ -282,8 +367,16 @@ todosRouter.patch(
           existing?.completedAt
         );
       }
-      if (existing && touchesVisibility(patch)) {
-        const merged = enforceVisibility({ ...existing, ...patch });
+      // The three parent-aware backstops share one lookup of the row's INTENDED
+      // parent (the patch's, when it re-parents; otherwise the current one).
+      const intended = existing ? ({ ...existing, ...patch } as Record<string, unknown>) : undefined;
+      const parent =
+        intended &&
+        (touchesVisibility(patch) || touchesArchive(patch) || touchesPlannerVisibility(patch))
+          ? await parentRow(userId, intended.parentId)
+          : undefined;
+      if (intended && touchesVisibility(patch)) {
+        const merged = enforceVisibility({ ...intended }, parent);
         if (merged.showInDatabase === true && patch.showInDatabase !== true) {
           patch.showInDatabase = true;
         }
@@ -293,11 +386,26 @@ todosRouter.patch(
       }
       // Re-parenting under an archived todo, or un-archiving a row whose parent is
       // still archived, both have to fold `archived: true` back into the patch.
-      if (existing && touchesArchive(patch)) {
-        const merged = { ...existing, ...patch } as Record<string, unknown>;
-        enforceArchive(merged, await parentRow(userId, merged.parentId));
+      if (existing && intended && touchesArchive(patch)) {
+        const merged = { ...intended };
+        enforceArchive(merged, parent);
         if (merged.archived !== ((patch as Record<string, unknown>).archived ?? existing.archived)) {
           (patch as Record<string, unknown>).archived = merged.archived;
+        }
+      }
+      // Same shape for Planner visibility: re-parenting under a hidden todo, or
+      // showing a row whose parent is still hidden, fold `showInDatabase: false`
+      // back into the patch. The DOWNWARD direction (hiding a parent hides its
+      // subtree) can't be done from a single-row patch and is the batch route's
+      // job - which is where the client sends it from.
+      if (existing && intended && touchesPlannerVisibility(patch)) {
+        const rec = patch as Record<string, unknown>;
+        // Re-read the merged row: enforceVisibility above may have folded a
+        // promotion into the patch, and this rule gets the last word on it.
+        const merged = { ...intended, ...patch } as Record<string, unknown>;
+        enforcePlannerVisibility(merged, parent);
+        if (merged.showInDatabase !== (rec.showInDatabase ?? existing.showInDatabase)) {
+          rec.showInDatabase = merged.showInDatabase;
         }
       }
     }

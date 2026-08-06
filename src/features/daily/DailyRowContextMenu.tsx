@@ -59,7 +59,7 @@ export const DailyRowContextMenu: React.FC<{
   onSetParent,
   onDelete,
 }) => {
-  const { searchEntries, todoById, handleHubSaveTodo } = useAppData();
+  const { searchEntries, searchFlatEntries, todoById, handleHubSaveTodo } = useAppData();
 
   // Which flyout is open beside the menu, if any.
   const [sub, setSub] = useState<'date' | 'time' | null>(null);
@@ -185,6 +185,7 @@ export const DailyRowContextMenu: React.FC<{
       {parentPickerOpen && (
         <TaskFinder
           entries={searchEntries}
+          flatEntries={searchFlatEntries}
           todoById={todoById}
           onSaveTodo={handleHubSaveTodo}
           title="Set parent task"

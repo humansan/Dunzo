@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useRouter } from '@tanstack/react-router';
 import { PlannerView } from './PlannerView';
 import { useAppData } from '@/lib/app-data';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
+import { isPseudoView } from './views';
 
 // Shared planner surface for both /planner (bare = 'all') and /planner/$collectionId.
 // `selectedView` comes from the route; selecting a view navigates so the collection
@@ -36,6 +38,19 @@ export function PlannerScreen({
     });
   const onOpenTask = (id: string) => openTask(id);
 
+  // The route guard only runs on navigation, so it can't catch the collection
+  // being deleted while you're standing in it (here, or on another device). Same
+  // shape as TaskOverlay's stale-todo effect: once the data says it's gone, leave
+  // for the all-tasks view rather than sit on a URL that renders nothing.
+  useEffect(() => {
+    // Pseudo-views ('uncategorized', 'archived', ...) have no backing todo, so the
+    // lookup below would read them as deleted collections and evict them.
+    if (!d.isDataReady || isPseudoView(selectedView)) return;
+    if (d.todoById.get(selectedView)?.isCollection) return;
+    router.navigate({ to: '/planner', replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.isDataReady, d.todoById, selectedView]);
+
   return (
     <main className="h-screen py-0">
       <div className="h-screen">
@@ -46,7 +61,6 @@ export function PlannerScreen({
           onCreateCollection={d.createCollection}
           onSaveTodo={d.handleHubSaveTodo}
           onAddTodo={d.handleHubAddTodo}
-          onAddSubtask={d.handleAddSubtask}
           onAddCollection={d.addHubCollection}
           workspaces={d.workspaces}
           activeWorkspaceId={d.activeWorkspaceId}

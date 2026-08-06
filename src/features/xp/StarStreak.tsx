@@ -37,7 +37,7 @@ export const STAR_BLOOM_MS = 600;
 // Memoised so unrelated parent re-renders can't re-pass fresh keyframe arrays
 // mid-burst and restart the pop.
 const StarIcon = React.memo(
-  ({ active, burst, bloom, gold }: { active: boolean; burst: boolean; bloom: boolean; gold: string }) => (
+  ({ active, burst, bloom, gold, anyburst }: { active: boolean; burst: boolean; bloom: boolean; gold: string; anyburst: boolean }) => (
     <div className="relative">
       {/* Lead-up bloom: a blurred gold copy of the star sitting behind the real
           one, so the light that gathers is star-shaped rather than a blob. It
@@ -60,8 +60,9 @@ const StarIcon = React.memo(
           <Astroid size={30} strokeWidth={2.5} fill={gold} color={gold} />
         </motion.div>
       )}
+
       <motion.div
-        animate={burst ? { scale: [1, 1.5, 0.9, 1], rotate: [-20, 12, 0] } : { scale: 1, rotate: 0 }}
+        animate={burst ? { scale: [1, 1.5, 0.9, 1], rotate: [-20, 12, 0] } : anyburst ? { scale: 0.9, rotate: 0, opacity: 0.5 } : { scale: 1, rotate: 0 }}
         transition={{ duration: 1.1, ease: POP }}
         className={active ? 'text-xp-tier1 drop-shadow-[0_0_6px] drop-shadow-xp-tier1' : 'text-fg-faint/20'}
       >
@@ -100,6 +101,7 @@ const StarStreakBase: React.FC<StarStreakProps> = ({
           {lit.map((active, i) => (
             <StarIcon
               key={i}
+              anyburst={bursting ? true : false}
               active={active}
               burst={bursting?.[i] ?? false}
               bloom={blooming?.[i] ?? false}

@@ -60,8 +60,12 @@ export const RowContextMenu: React.FC<{
   // Also a create action, so it's gated with the other four (Duplicate in Archived
   // would make a copy that inherits the archived state and vanishes into it).
   onDuplicate?: (id: string) => void;
-  onSetDate: (id: string, date: string) => void;
-  onSetTime: (id: string, time: string) => void;
+  // Omitted for an archived row: scheduling something that has left every live
+  // surface is meaningless - the date can't put it back on the daily list or in a
+  // dated view, so the picker would write a field nothing reads. Restore the task
+  // first. (Set time additionally needs a date, per the schedule invariant.)
+  onSetDate?: (id: string, date: string) => void;
+  onSetTime?: (id: string, time: string) => void;
   onAddTaskAbove?: (id: string) => void;
   onAddTaskBelow?: (id: string) => void;
   onArchive: (id: string) => void;
@@ -164,13 +168,15 @@ export const RowContextMenu: React.FC<{
                 <CornerDownRight size={14} /> Create task inside
               </button>
             )}
-            <button
-              onClick={() => toggleSub('date')}
-              className={`${itemCls} ${sub === 'date' ? 'bg-fill text-fg' : ''}`}
-            >
-              <CalendarDays size={14} /> Set date
-            </button>
-            {entry?.todo.dueDate && (
+            {onSetDate && (
+              <button
+                onClick={() => toggleSub('date')}
+                className={`${itemCls} ${sub === 'date' ? 'bg-fill text-fg' : ''}`}
+              >
+                <CalendarDays size={14} /> Set date
+              </button>
+            )}
+            {onSetTime && entry?.todo.dueDate && (
               <button
                 onClick={() => entry?.todo.dueDate && toggleSub('time')}
                 disabled={!entry?.todo.dueDate}
@@ -226,13 +232,13 @@ export const RowContextMenu: React.FC<{
                 onShowInDailyListChange={entry.todo.showInDatabase !== false ? ((val) => handleHubSaveTodo({ ...entry.todo, showInDailyList: val })) : undefined}
                 autoMoveDate={entry.todo.autoMoveDate ?? false}
                 onAutoMoveDateChange={(val) => handleHubSaveTodo({ ...entry.todo, autoMoveDate: val })}
-                onChange={(val) => onSetDate(menu.id, val)}
+                onChange={(val) => onSetDate?.(menu.id, val)}
               />
             ) : (
               <TimeInput
                 value={entry.todo.dueTime}
                 autoFocus
-                onChange={(val) => onSetTime(menu.id, val)}
+                onChange={(val) => onSetTime?.(menu.id, val)}
               />
             )}
           </div>

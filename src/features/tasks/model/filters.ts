@@ -39,6 +39,18 @@ export {
   descendantsToUnarchive,
 } from '@shared/domain/todoArchive';
 
+// The Task Planner visibility invariant (a visible todo's parent is visible too),
+// the rule that keeps a subtask from rendering orphaned at the root of the Planner
+// when its parent is hidden. Same rationale, same entry point.
+export {
+  reconcilePlannerVisibility,
+  plannerVisibilityConsistent,
+  touchesPlannerVisibility,
+  descendantsToHide,
+  descendantsToShow,
+  ancestorsToShow,
+} from '@shared/domain/todoPlannerVisibility';
+
 // ── Workspaces (currently disabled) ────────────────────────────────────────
 //
 // Workspaces are switched off: every todo the server hands back belongs to the

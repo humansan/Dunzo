@@ -34,7 +34,6 @@ interface HubRowProps {
   startEdit?: (id: string, col: ColKey, e: React.MouseEvent) => void;
   stopEdit: () => void;
   onSaveTodo: (updatedTodo: Todo) => void;
-  onAddSubtask: (parentId: string) => string;
   // Omitted → the completion check is read-only (like `startEdit` for the title).
   onToggleTodo?: (id: string) => void;
   // Omitted → no row menu on this surface: the ⋯ button isn't rendered and
@@ -81,7 +80,6 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   stopEdit,
   onSaveTodo,
   onToggleTodo,
-  onAddSubtask,
   openMenu,
   isCollapsed,
   onToggleCollapse,
@@ -149,7 +147,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           onRowDragStart?.(todo.id);
         }}
         onDragEnd={() => onRowDragEnd?.()}
-        className={`shrink-0 h-5 ${LEADING_SLOT} flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-ghost hover:text-fg-subtle opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
+        className={`shrink-0 h-5 ${LEADING_SLOT} flex items-center justify-center cursor-grab active:cursor-grabbing text-fg-subtle hover:text-fg-muted opacity-0 group-hover/row:opacity-100 transition-opacity ${className}`}
         title="Drag to reorder / nest"
       >
         <GripVertical size={16} />
@@ -261,14 +259,21 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 <MoreHorizontal size={18} />
               </button>
             )}
-            <button
-              type="button"
-              title="Add task"
-              onClick={() => { onQuickAddTask ? onQuickAddTask(todo.id) : onAddSubtask(todo.id); }}
-              className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
-            >
-              {onQuickAddTask && <Plus size={18} />}
-            </button>
+            {/* Only when the surface actually offers creation. This used to fall
+                back to a bare onAddSubtask with no icon rendered, which left a
+                small invisible-but-clickable target on every collection header in
+                the views that withdraw creation - and clicking it created an
+                unseeded task (in Archived, one that was archived on the spot). */}
+            {onQuickAddTask && (
+              <button
+                type="button"
+                title="Add task"
+                onClick={() => onQuickAddTask(todo.id)}
+                className={`shrink-0 p-0.5 rounded opacity-0 group-hover/row:opacity-100 ${btnGhost()}`}
+              >
+                <Plus size={18} />
+              </button>
+            )}
           </>
         }
         dropDecorations={<>{dropLine('before')}{dropLine('after')}{insideOverlay}</>}
@@ -442,7 +447,17 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // (see FlatNode.matchesView) - renders dimmed, so "the tab didn't match this, it's
   // here for its child" reads at a glance. It lifts to full opacity on hover, since
   // it's still a live, editable row.
-  const contextDim = node.matchesView ? 'border-line-subtle' : 'opacity-36 border-fg/16';
+  //
+  // The tone and the dimming are kept apart on purpose. The row's bottom rule needs
+  // a colour on EVERY path: `border-b` on its own resolves to currentColor, so the
+  // one branch that omitted it - the row being dragged - drew a bright line the
+  // width of the table instead of the hairline every other row has. And the two
+  // opacities have to stay mutually exclusive: a context row that is also the drag
+  // source would otherwise carry `opacity-36` and `opacity-40` at once, and which
+  // one wins is decided by the order Tailwind emits them, not by the order they're
+  // written here.
+  const borderTone = node.matchesView ? 'border-line-subtle' : 'border-fg/16';
+  const contextDim = node.matchesView ? '' : 'opacity-36';
   //theme-mismatch
 
   return (
@@ -450,7 +465,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
       style={style}
       {...dropProps}
       onContextMenu={handleContextMenu}
-      className={`relative grid items-stretch min-h-[36px] border-b group/row transition-opacity ${
+      className={`relative grid items-stretch min-h-[36px] border-b ${borderTone} group/row transition-opacity ${
         isDragSource ? 'opacity-40' : `hover:bg-fill-subtle ${contextDim}`
       }`}
     >
@@ -553,7 +568,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onClick={(e) => { if (startEdit) e.stopPropagation(); startEdit?.(todo.id, 'title', e); }}
                 className={`flex-1 min-w-0 pl-1 text-sm rounded ${startEdit ? 'cursor-text hover:bg-fill' : ''} ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
               >
-                {todo.text || <span className="text-fg-faint">Untitled</span>}
+                {todo.text || ' '}
               </span>
               {openMenu && (
                 <button

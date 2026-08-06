@@ -59,7 +59,7 @@ export const TableSurface: React.FC<TableSurfaceProps> = ({
           {/* Project-style title - the selected collection's name, else the view label. */}
           <div className="mb-5">
             <h1 className="text-3xl font-bold text-fg truncate">
-              {model.selectedCollectionId ? (model.todoById.get(model.selectedCollectionId)?.text || 'Untitled') : model.viewLabel}
+              {model.selectedCollectionId ? (model.todoById.get(model.selectedCollectionId)?.text || 'Untitled collection') : model.viewLabel}
             </h1>
             <p className="mt-0.5 text-xs text-fg-faint">{model.currentCount} item{model.currentCount === 1 ? '' : 's'}</p>
           </div>

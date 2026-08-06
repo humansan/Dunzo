@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useMemo, useState } from 'react';
 import { Search, X, List, Columns2, CornerLeftUp, CircleCheckBig } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { OrganizerEntry, isDone } from '@/features/tasks/model';
 import { useSyncedLayout } from '@/lib/query/settings';
-import { overlayBackdrop } from '@/common/ui/modalMotion';
+import { OverlayShell } from '@/common/ui/OverlayShell';
 import { VARIANTS } from '@/features/planner/variant';
 import { TaskTable, TableInteraction, TableRowHandlers, buildTreeModel } from '@/features/planner/table/TaskTable';
 import { useTaskFinderSearch } from '@/features/planner/task-finder/useTaskFinderSearch';
@@ -22,12 +21,14 @@ const RESULT_LIMIT = 50;
 const NOOP = () => {};
 
 export interface TaskFinderProps {
-  // The task universe searched by the two-pane (Collections) view and the pickers.
-  // Global search passes its Planner-scoped organizer set here.
+  // The task universe searched by the two-pane (Collections) view: the Planner-scoped
+  // organizer set. That view groups by collection, which is a Planner structure, so
+  // it stays Planner-only on every surface.
   entries: OrganizerEntry[];
-  // Optional broader universe for the flat (list) view - global search passes every
-  // unarchived task (Planner + daily-list-only) so daily-only tasks are findable.
-  // Omitted by pickers, which fall back to `entries` in both views.
+  // Optional broader universe for the flat (list) view - every unarchived task,
+  // Planner or daily-list-only. Every caller passes it (search and the pickers
+  // alike); it stays optional so a future read-only surface can opt out, and the
+  // fallback to `entries` keeps that safe.
   flatEntries?: OrganizerEntry[];
   todoById: Map<string, Todo>;
   // Choosing a task: search opens its full view; a picker returns it to the caller.
@@ -76,10 +77,11 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
       return n;
     });
 
-  // The flat (list) view searches the broader `flatEntries` universe when provided
-  // (global search: every unarchived task, so daily-list-only tasks are findable);
-  // the two-pane (Collections) view stays scoped to `entries` (the organizer set it
-  // groups by collection). Pickers pass no `flatEntries`, so both views use `entries`.
+  // The two views deliberately search different universes. The flat (list) view
+  // takes the broad one - every unarchived task, so a daily-list-only task is
+  // findable and pickable. The two-pane (Collections) view stays scoped to
+  // `entries`: it groups results under their collection, which is a Planner
+  // structure, so a task that isn't in the Planner has no shelf to sit on there.
   const activeEntries = finderView === 'flat' ? (flatEntries ?? entries) : entries;
 
   // The searchable universe, narrowed twice. A picker excludes candidates it can't
@@ -140,7 +142,6 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
 
   const rowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
-    onAddSubtask: () => '',
     onQuickAddTask: NOOP,
     onQuickAddInGroup: NOOP,
     onOpenTask: onPick,
@@ -148,106 +149,99 @@ export const TaskFinder: React.FC<TaskFinderProps> = ({
     // onToggleTodo omitted → read-only completion checks.
   }), [onSaveTodo, onPick]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  return createPortal(
-    <div
-      className={`fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] px-4 ${overlayBackdrop}`}
-      onMouseDown={onClose}
+  return (
+    // `command` layer: ⌘K can be raised from anywhere, so it sits above the other
+    // overlays and Escape reaches it first.
+    <OverlayShell
+      onClose={onClose}
+      layer="command"
+      align="top"
+      className="pt-[12vh] px-4"
+      panelClassName={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-2xl'} transition-all max-h-[70vh] flex flex-col rounded-xl border border-line bg-canvas shadow-2xl overflow-hidden`}
     >
-      <div
-        className={`w-full ${finderView === 'twoPane' ? 'max-w-4xl' : 'max-w-2xl'} transition-all max-h-[70vh] flex flex-col rounded-xl border border-line bg-canvas shadow-2xl overflow-hidden`}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        {title && (
-          <div className="shrink-0 px-3 pt-2.5 text-xs font-semibold text-fg-faint">
-            {title}
-          </div>
-        )}
-        {/* Search field + completed-tasks filter + Flat / Two-pane toggle */}
-        <div className="shrink-0 flex items-center gap-2 px-3 h-12 border-b border-line">
-          <Search size={16} className="text-fg-faint" />
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={placeholder}
-            className="flex-1 min-w-0 bg-transparent text-sm text-fg placeholder:text-fg-faint focus:outline-none"
-          />
-          {/* Lit = completed tasks are searched (the default); dim = open tasks only. */}
-          <button
-            type="button"
-            onClick={() => setShowDone(!showDone)}
-            title={showDone ? 'Including completed tasks' : 'Completed tasks excluded'}
-            className={`shrink-0 p-1.5 rounded-lg ${btnToggle(showDone)}`}
-          >
-            <CircleCheckBig size={15} />
-          </button>
-          <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-fill-subtle p-0.5">
-            {([['flat', List, 'Flat list'], ['twoPane', Columns2, 'Collections']] as const).map(([v, Icon, label]) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setFinderView(v)}
-                title={label}
-                className={`p-1 rounded-md transition-colors ${finderView === v ? btnSwitch(true) : btnSwitch()}`}
-              >
-                <Icon size={15} />
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`shrink-0 p-1 rounded transition-colors ${btnGhost()}`}
-          >
-            <X size={15} />
-          </button>
+      {title && (
+        <div className="shrink-0 px-3 pt-2.5 text-xs font-semibold text-fg-faint">
+          {title}
         </div>
-
-        {/* Optional pinned choice above the results (e.g. reparent's top level). */}
-        {rootOption && (
-          <button
-            type="button"
-            onClick={rootOption.onSelect}
-            className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-line text-sm text-fg-muted hover:text-fg hover:bg-fill-subtle transition-colors"
-          >
-            <CornerLeftUp size={15} className="text-fg-faint" />
-            {rootOption.label}
-          </button>
-        )}
-
-        {/* Results. The two-pane view is always browsable (full table with no query,
-            filtered once a query is typed). The flat view stays empty until the user
-            types, then shows matches / a no-match message. */}
-        <div className="flex-1 min-h-0 flex flex-col">
-          {finderView === 'twoPane' ? (
-            <TwoPaneResults
-              entries={candidateEntries}
-              todoById={todoById}
-              matches={twoPaneMatches}
-              onPick={onPick}
-              onSaveTodo={onSaveTodo}
-            />
-          ) : !q ? (
-            <div className="px-4 py-4 text-xs text-fg-faint">Type to search tasks by name, notes, collection, status, priority, or date.</div>
-          ) : matches.length === 0 ? (
-            <div className="px-4 py-4 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
-          ) : (
-            <TaskTable
-              variant={VARIANTS.search}
-              model={model}
-              interaction={interaction}
-              rowHandlers={rowHandlers}
-            />
-          )}
+      )}
+      {/* Search field + completed-tasks filter + Flat / Two-pane toggle */}
+      <div className="shrink-0 flex items-center gap-2 px-3 h-12 border-b border-line">
+        <Search size={16} className="text-fg-faint" />
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={placeholder}
+          className="flex-1 min-w-0 bg-transparent text-sm text-fg placeholder:text-fg-faint focus:outline-none"
+        />
+        {/* Lit = completed tasks are searched (the default); dim = open tasks only. */}
+        <button
+          type="button"
+          onClick={() => setShowDone(!showDone)}
+          title={showDone ? 'Including completed tasks' : 'Completed tasks excluded'}
+          className={`shrink-0 p-1.5 rounded-lg ${btnToggle(showDone)}`}
+        >
+          <CircleCheckBig size={15} />
+        </button>
+        <div className="shrink-0 flex items-center gap-0.5 rounded-lg bg-fill-subtle p-0.5">
+          {([['flat', List, 'Flat list'], ['twoPane', Columns2, 'Collections']] as const).map(([v, Icon, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setFinderView(v)}
+              title={label}
+              className={`p-1 rounded-md transition-colors ${finderView === v ? btnSwitch(true) : btnSwitch()}`}
+            >
+              <Icon size={15} />
+            </button>
+          ))}
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className={`shrink-0 p-1 rounded transition-colors ${btnGhost()}`}
+        >
+          <X size={15} />
+        </button>
       </div>
-    </div>,
-    document.body
+
+      {/* Optional pinned choice above the results (e.g. reparent's top level). */}
+      {rootOption && (
+        <button
+          type="button"
+          onClick={rootOption.onSelect}
+          className="shrink-0 flex items-center gap-2 px-4 h-9 border-b border-line text-sm text-fg-muted hover:text-fg hover:bg-fill-subtle transition-colors cursor-pointer"
+        >
+          <CornerLeftUp size={15} className="text-fg-faint" />
+          {rootOption.label}
+        </button>
+      )}
+
+      {/* Results. The two-pane view is always browsable (full table with no query,
+          filtered once a query is typed). The flat view stays empty until the user
+          types, then shows matches / a no-match message. */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {finderView === 'twoPane' ? (
+          <TwoPaneResults
+            entries={candidateEntries}
+            todoById={todoById}
+            matches={twoPaneMatches}
+            onPick={onPick}
+            onSaveTodo={onSaveTodo}
+          />
+        ) : !q ? (
+          <div className="px-4 py-4 text-xs text-fg-faint">Type to search tasks by name, notes, collection, status, priority, or date.</div>
+        ) : matches.length === 0 ? (
+          <div className="px-4 py-4 text-xs text-fg-faint">No tasks match “{query.trim()}”.</div>
+        ) : (
+          <TaskTable
+            variant={VARIANTS.search}
+            model={model}
+            interaction={interaction}
+            rowHandlers={rowHandlers}
+          />
+        )}
+      </div>
+    </OverlayShell>
   );
 };

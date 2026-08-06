@@ -8,6 +8,7 @@ import { useRowDnD } from '@/features/planner/hooks/useRowDnD';
 import { TableVariant, TableVariantContext } from '@/features/planner/variant';
 import { TableSurface } from '@/features/planner/table/TableSurface';
 import { TableRows } from '@/features/planner/table/TableRows';
+import type { AddRowSpec } from '@/features/planner/table/addRows';
 
 export type RowDnD = ReturnType<typeof useRowDnD>;
 
@@ -38,6 +39,18 @@ export interface TableModel {
   selectedView: string;
   viewLabel: string;
   currentCount: number;
+  // The planner's in-view search is narrowing the rows. Only the empty state reads
+  // it - "nothing matched" is a different message from "this view is empty", and
+  // the add-row's invitation to create a task doesn't apply to a search miss.
+  searchActive?: boolean;
+  // Contextual "+ New" rows: one per container, positioned where the task each
+  // creates will appear (see features/planner/table/addRows). Supplying this -
+  // even empty - opts the surface INTO contextual add-rows and out of the single
+  // one pinned under the last row, which is all a surface with no sections needs
+  // (the full view's Subtasks list is one list, so its bottom is the only place an
+  // add-row could go). The specs are positional rather than rows in `flattened`,
+  // because the drag layer indexes into that array (see useRowDnD).
+  addRows?: AddRowSpec[];
 }
 
 // The name-only, chrome-less TableModel every flat/nesting surface shares (search
@@ -114,9 +127,13 @@ export interface TableRowHandlers {
   onSaveTodo: (updatedTodo: Todo) => void;
   // Omitted → read-only completion checks (the Task Finder's results).
   onToggleTodo?: (id: string) => void;
-  onAddSubtask: (parentId: string) => string;
+  // Quick-add into a collection header. Omitted → that surface offers no
+  // per-collection create, and the header renders no "+" at all.
   onQuickAddTask?: (parentId: string) => void;
   onQuickAddInGroup?: (groupValue: string) => void;
+  // Create a subtask of `parentId` - the context menu's "Create task inside", and
+  // what a task's own add-row calls.
+  onCreateInside?: (parentId: string) => void;
   // Omit on read-only surfaces (search) to drop the add-row + its empty state.
   onNewInView?: () => void;
   // Open task in full view.

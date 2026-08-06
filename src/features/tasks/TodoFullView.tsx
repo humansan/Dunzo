@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import {
   X,
+  CornerLeftUp,
   Trash2,
   CalendarDays,
   Clock,
@@ -13,8 +14,9 @@ import {
   Database,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnNeutral } from '@/theme/buttons';
 import { Switch } from '@/common/ui';
+import { useDismissable } from '@/common/ui/useDismissable';
 import { CollectionOption, hasDate, normalizeScheduleTimes, isScheduleValid, type ScheduleSide } from '@/features/tasks/model';
 import { isDone, collectWithDescendants, isDescendantOf } from '@/features/tasks/model';
 import {
@@ -29,6 +31,7 @@ import {
   type EditState,
 } from '@/features/planner/table';
 import { useArchiveConfirm } from '@/features/tasks/useArchiveConfirm';
+import { usePlannerVisibilityConfirm } from '@/features/tasks/usePlannerVisibilityConfirm';
 import {
   CompletedToggle,
   OptionSelectField,
@@ -53,6 +56,17 @@ interface TodoFullViewProps {
   onCreateCollection: (name: string) => string;
   byId: Map<string, Todo>;
   onClose: () => void;
+  // Where Delete returns to: set only when this task was opened from another
+  // task's full view, and unlike `onClose` (which rewinds the whole task chain)
+  // it steps back a single history entry, so removing a subtask lands you back on
+  // the view you came from rather than out of the chain entirely.
+  //
+  // This is the one thing here that is genuinely about HISTORY. The header's
+  // parent button used to share it and no longer does - where you came from and
+  // what a task sits under are different questions, and answering the second with
+  // the first is what left the button missing on a subtask opened from anywhere
+  // but its parent.
+  onDeleteReturn?: () => void;
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -61,6 +75,11 @@ interface TodoFullViewProps {
   // leave live children under an archived parent (shared/domain/todoArchive).
   onArchive: (id: string) => void;
   onUnarchive: (id: string, mode: 'self' | 'subtree') => void;
+  // Task Planner visibility is a subtree operation for the same reason archive is
+  // - a visible task may not sit under a hidden one - so it goes through app data
+  // rather than a plain `showInDatabase` edit on the draft.
+  onHidePlanner: (id: string) => void;
+  onShowPlanner: (id: string, mode: 'self' | 'subtree') => void;
   // ── Subtasks section ────────────────────────────────────────────────────────
   // Writes for the SUBTASK rows, which never touch this view's draft: they're
   // other tasks, saved straight through the shared handler like a planner row.
@@ -166,11 +185,14 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onCreateCollection,
   byId,
   onClose,
+  onDeleteReturn,
   onSave,
   onToggle,
   onDelete,
   onArchive,
   onUnarchive,
+  onHidePlanner,
+  onShowPlanner,
   onSaveTodo,
   onOpenTask,
   onAddSubtask,
@@ -179,7 +201,6 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 }) => {
   // The archive confirmation counts rows across the whole tree, not just this task.
   const allTodos = useMemo(() => [...byId.values()], [byId]);
-  const overlayRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -226,22 +247,49 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo.id]);
 
+  // A task opened with no name is a task that was just created, so put the caret
+  // straight in the title - the view is only ever "new" while the name is empty,
+  // and switching tasks re-checks it (keyed on todo.id, not on every keystroke).
+  useEffect(() => {
+    if (todo.text.trim() !== '') return;
+    const el = titleRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todo.id]);
+
   // Completion is stamped outside the draft - the checkbox toggles through app data,
   // and the save handlers derive completedAt from status - so both fields have to
-  // come back from the prop or the Completed timestamp never appears.
+  // come back from the prop or the Completed timestamp never appears. `archived` is
+  // the same kind of field (the Archive button writes the whole subtree through
+  // app data, not the draft) and the view now stays open across that write, so it
+  // has to come back too: otherwise the button keeps saying "Archive" and the next
+  // property edit would save a stale `archived: false` straight back over it.
+  // `showInDatabase` is now in the same category, for the same reason - the Task
+  // Planner switch writes a whole subtree through app data rather than the draft.
   useEffect(() => {
     setDraft(prev =>
-      prev.status === todo.status && prev.completedAt === todo.completedAt
+      prev.status === todo.status &&
+      prev.completedAt === todo.completedAt &&
+      prev.archived === todo.archived &&
+      prev.showInDatabase === todo.showInDatabase
         ? prev
-        : { ...prev, status: todo.status, completedAt: todo.completedAt }
+        : {
+            ...prev,
+            status: todo.status,
+            completedAt: todo.completedAt,
+            archived: todo.archived,
+            showInDatabase: todo.showInDatabase,
+          }
     );
-  }, [todo.status, todo.completedAt]);
+  }, [todo.status, todo.completedAt, todo.archived, todo.showInDatabase]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // Escape + backdrop click + scroll lock, shared with every other popup window.
+  // This view keeps its own panel markup (hence the hook rather than OverlayShell);
+  // `onClose` is the router-aware close from TaskOverlay, which pops the whole
+  // task chain rather than one history entry.
+  const { backdropProps } = useDismissable({ onDismiss: onClose });
 
   // ── Subtasks ────────────────────────────────────────────────────────────────
   // The whole descendant subtree, rendered through the planner's own table so the
@@ -252,15 +300,26 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   // node only to a parent that is present, so leaving it out is what makes its
   // direct children the top level of this list instead of everything hanging one
   // indent deeper under a row you're already looking at.
+  //
+  // Archived state is MIRRORED from the task being viewed rather than filtered out
+  // flat. Under a live parent, an individually archived subtask is hidden - that's
+  // an ordinary state and it belongs in the archived view, not here. But the
+  // archive invariant makes every descendant of an archived task archived too
+  // (shared/domain/todoArchive), so an unconditional `archived !== true` emptied
+  // the list completely for an archived task - and silently swallowed anything
+  // added to it, since a task created inside an archived parent is archived on
+  // creation. Mirroring the parent means each list shows the subtasks that
+  // actually live at its own level.
+  const showArchivedSubtasks = todo.archived === true;
   const subtaskEntries = useMemo(() => {
     const ids = collectWithDescendants(allTodos, todo.id);
     ids.delete(todo.id);
     return [...ids]
       .map((id) => byId.get(id))
-      .filter((t): t is Todo => !!t && t.archived !== true)
+      .filter((t): t is Todo => !!t && (t.archived === true) === showArchivedSubtasks)
       .sort((a, b) => (a.hubOrder ?? a.createdAt) - (b.hubOrder ?? b.createdAt))
       .map((t) => ({ todo: t }));
-  }, [allTodos, byId, todo.id]);
+  }, [allTodos, byId, todo.id, showArchivedSubtasks]);
 
   // Collapse + inline-edit state are LOCAL: the planner's own collapse set is
   // DB-synced and shared across its views, and a modal shouldn't reach into it.
@@ -317,14 +376,27 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const subRowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
     onToggleTodo: onToggle,
-    onAddSubtask,
     onOpenTask,
     // "+ New" adds a subtask of the task being viewed and opens its title editor.
-    onNewInView: () => {
-      const id = onAddSubtask(todo.id);
-      setSubEditing({ id, col: NAME_COL_KEY, rect: null });
-    },
-  }), [onSaveTodo, onToggle, onAddSubtask, onOpenTask, todo.id]);
+    // It seeds nothing of its own - and unlike the Planner's create surfaces it has
+    // nothing to seed, since this list is not a view: no tab predicate, no filters,
+    // no sections. What the new subtask does get is its parent's two surface flags
+    // (see addHubTodo), so a subtask of a daily-only task is daily-only too rather
+    // than being pulled into the Planner by a setting about Planner-created tasks.
+    // Undated, it shows on neither surface and lives right here inside its parent,
+    // which normalizeVisibility counts as a surface for exactly this case.
+    //
+    // Omitted on an ARCHIVED task, which drops the add-row entirely (TableRows
+    // renders it only when this is supplied): anything created inside an archived
+    // parent is archived on creation, so the button could only ever add rows to a
+    // subtree that is on its way out. Restore the task to add to it.
+    onNewInView: showArchivedSubtasks
+      ? undefined
+      : () => {
+          const id = onAddSubtask(todo.id);
+          setSubEditing({ id, col: NAME_COL_KEY, rect: null });
+        },
+  }), [onSaveTodo, onToggle, onAddSubtask, onOpenTask, todo.id, showArchivedSubtasks]);
 
   const update = (patch: Partial<Todo>, nextDate: string = dateStr) => {
     setDraft(prev => {
@@ -369,11 +441,19 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     onSave(candidate, outDate);
   };
 
+  // Whether this task hangs under another TASK (not a collection), which decides
+  // how much of the reachability rule applies to it - see the "Show in" block below.
+  const parentTodo = draft.parentId ? byId.get(draft.parentId) : undefined;
+  const isSubtask = !!parentTodo && !parentTodo.isCollection;
+
   const handleDateChange = (val: string) => {
     // Clearing the due date drops the due time with it (a time needs its date -
     // reconcileSchedule strips it) and keeps the task reachable in the Planner
     // (mirrors normalizeVisibility); re-adding a date later sends it straight back.
-    updateSchedule(val ? {} : { showInDatabase: true }, 'due', val);
+    // A SUBTASK is exempt: it's reachable inside its parent task, and forcing it
+    // into the Planner here would break the parent/child rule the moment the parent
+    // is hidden - the write boundary would just hide it again on the next save.
+    updateSchedule(val || isSubtask ? {} : { showInDatabase: true }, 'due', val);
   };
 
   // The time is the whole value (its % readout is derived), so these just write it.
@@ -382,33 +462,51 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const handleStartDateChange = (val: string) => updateSchedule({ startDate: val || undefined }, 'start');
 
   // "Show in" invariants: the daily flag can be set even without a date (it just
-  // stays pending until one is added), but the task must stay reachable on at least
-  // one surface - so a switch that is the sole *effective* surface can't be turned
-  // off. A daily-flagged task only counts as reachable there once it has a date.
+  // stays pending until one is added), but the task must stay REACHABLE - so a
+  // switch that is the sole *effective* surface can't be turned off. A daily-flagged
+  // task only counts as reachable there once it has a date.
+  //
+  // A subtask is exempt from both locks: it is reachable inside its parent task's
+  // full view (this very list), so it may be switched off everywhere - which is
+  // what lets a hidden parent take its whole subtree out of the Planner. A parent
+  // COLLECTION doesn't count: the Planner renders only the visible todos inside
+  // one, so a task filed straight under a collection is a root for this purpose
+  // and keeps the locks. See shared/domain/todoVisibility.
   const dated = hasDate(dateStr);
   const plannerOn = draft.showInDatabase === true;
   const dailyFlag = draft.showInDailyList === true;
   const dailyEffective = dailyFlag && dated; // actually reaches a daily list
-  const plannerDisabled = plannerOn && !dailyEffective;
-  const dailyDisabled = dailyEffective && !plannerOn;
+  const plannerDisabled = plannerOn && !dailyEffective && !isSubtask;
+  const dailyDisabled = dailyEffective && !plannerOn && !isSubtask;
+
+  // Planner visibility reaches past this task in both directions (hiding takes the
+  // subtree down, showing lifts the hidden parents), so it asks first - same three
+  // questions as the archive confirmation, and the modal renders alongside it at
+  // the end of this component. The batch write goes through app data, not this
+  // view's draft: the rows it touches are other tasks.
+  const { requestPlannerVisibility, plannerVisibilityConfirmModal } = usePlannerVisibilityConfirm({
+    todos: allTodos,
+    onHide: onHidePlanner,
+    onShow: onShowPlanner,
+  });
 
   // Prompts when the operation reaches beyond this task; the modal is rendered at
-  // the end of this component. Archiving closes the view - the task has left every
-  // live surface, so there is nothing behind the overlay to come back to.
+  // the end of this component. Neither direction closes the view: `byId` indexes
+  // every todo, archived included, so the task is still here to look at (and to
+  // unarchive again) right after the write.
   const { requestArchiveToggle, archiveConfirmModal } = useArchiveConfirm({
     todos: allTodos,
-    onArchive: (id) => { onArchive(id); onClose(); },
+    onArchive,
     onUnarchive,
   });
   const handleArchive = () => requestArchiveToggle(draft.id);
 
   return (
     <motion.div
-      ref={overlayRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      {...backdropProps}
       className={`fixed inset-0 z-[70] p-16 flex items-center justify-center ${overlayBackdrop}`}
     >
       <motion.div
@@ -435,6 +533,27 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
 
           {/* Left pane: title + notes */}
           <div className="flex-1 flex flex-col overflow-y-auto min-w-0 px-8 py-6">
+            {/* The task this one sits under - a way UP the tree, not a history
+                step. It used to be the latter, which meant it appeared only for a
+                subtask opened from its parent's own full view: the identical task
+                reached from the planner, the daily list or a deep link showed
+                nothing, though its parent was no less real. Reading it off
+                `parentId` makes the header say the same thing however you got here.
+
+                A parent COLLECTION is deliberately excluded (`isSubtask`): this
+                overlay renders a task, and a collection has no full view to open.
+                Its collection is already named in the right pane. */}
+            {isSubtask && parentTodo && (
+              <button
+                type="button"
+                onClick={() => onOpenTask(parentTodo.id)}
+                title={`Open parent task “${parentTodo.text.trim() || 'Untitled'}”`}
+                className={`self-start max-w-full mb-3 flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full text-xs font-medium ${btnNeutral}`}
+              >
+                <CornerLeftUp size={12} className="shrink-0" />
+                <span className="truncate">{parentTodo.text.trim() || 'Untitled'}</span>
+              </button>
+            )}
             <div className="flex items-start gap-3 mb-5">
               <CompletedToggle
                 completed={isDone(draft)}
@@ -470,7 +589,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 onClick={handleNotesCaretScroll}
                 onSelect={handleNotesCaretScroll}
                 placeholder="Add notes..."
-                className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed min-h-47"
+                className="w-full bg-transparent resize-none overflow-hidden text-sm text-fg-muted placeholder:text-fg-ghost focus:outline-none leading-relaxed min-h-48"
               />
             </div>
 
@@ -479,7 +598,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 this pane is a flex column, so as a direct child it would collapse
                 to the leftover space and scroll inside itself. Wrapped in a block
                 element, flex-1 is inert and the list grows with the pane. */}
-            <div className="mt-16">
+            <div className="mt-15.5">
               <div className="ml-8.5 my-1.5 flex items-center gap-2">
                 <span className="text-xs font-medium text-fg-faint">Subtasks</span>
               </div>
@@ -599,7 +718,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     <Switch
                       checked={plannerOn}
                       disabled={plannerDisabled}
-                      onChange={(val) => update({ showInDatabase: val })}
+                      onChange={(val) => requestPlannerVisibility(draft.id, val)}
                       aria-label="Show in Task Planner"
                     />
                   </div>
@@ -623,7 +742,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 </div>
               </RightProp>
 
-              <div className="border-t border-line-subtle py-3 space-y-3 ">
+              <div className="py-3 space-y-3 ">
                 <div>
                   <div className="flex items-center gap-1.5 text-xs text-fg-muted font-medium">
                     <Clock size={11} />
@@ -676,7 +795,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               {draft.archived ? 'Unarchive' : 'Archive'}
             </button>
             <button
-              onClick={() => { onDelete(draft.id); onClose(); }}
+              // A task opened from another task's full view returns to it; anything
+              // else has no full view behind it, so it closes the chain outright.
+              onClick={() => { onDelete(draft.id); (onDeleteReturn ?? onClose)(); }}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all cursor-pointer"
             >
               <Trash2 size={14} />
@@ -686,6 +807,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
         </div>
       </motion.div>
       {archiveConfirmModal}
+      {plannerVisibilityConfirmModal}
     </motion.div>
   );
 };

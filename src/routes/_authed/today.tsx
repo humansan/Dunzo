@@ -1,15 +1,20 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { format } from 'date-fns';
+import { hasInvalidDateParam, validateDateSearch } from '@/lib/dateParam';
 import { DailyScreen } from '@/features/daily';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { useAppData } from '@/lib/app-data';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
 export const Route = createFileRoute('/_authed/today')({
-  validateSearch: (search: Record<string, unknown>): { date?: string } =>
-    typeof search.date === 'string' && DATE_RE.test(search.date) ? { date: search.date } : {},
+  validateSearch: validateDateSearch,
+  // A `date` that isn't a real day (deleted, typo'd, hand-edited) would otherwise
+  // be dropped by validateSearch but stay in the address bar, and the view would
+  // silently show today under a URL claiming otherwise. Land on the bare tab
+  // instead, replacing the bad entry so Back doesn't return to it.
+  beforeLoad: ({ location }) => {
+    if (hasInvalidDateParam(location.searchStr)) throw redirect({ to: '/today', replace: true });
+  },
   component: TodayRoute,
   errorComponent: ViewErrorFallback,
 });

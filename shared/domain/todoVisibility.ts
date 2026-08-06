@@ -27,11 +27,24 @@ import { Todo } from '../types';
 //        false     |     true        |   yes    |      yes        |    no
 //
 // A missing flag reads as false - every todo carries explicit flags now (the old
-// localStorage data has been migrated). Invariant: a todo must be reachable on at
-// least one surface (the "both false" / daily-only-without-a-date orphan is
-// illegal). It is enforced at the write boundary by normalizeVisibility below on
-// the client and again by enforceVisibility (server/http.ts) on the server - which
-// is why these rules live in `shared/` rather than in either tree.
+// localStorage data has been migrated). Invariant: a todo must be REACHABLE - on
+// one of the two surfaces above, or, for a subtask, inside its parent. It is
+// enforced at the write boundary by normalizeVisibility below on the client and
+// again by enforceVisibility (server/http.ts) on the server - which is why these
+// rules live in `shared/` rather than in either tree.
+//
+// The parent clause is what makes the Planner invariant next door possible (see
+// todoPlannerVisibility.ts: a hidden parent hides its subtree). Without it the two
+// rules deadlock - hiding a dateless subtask would trip the rescue below, force it
+// back into the Planner, and immediately re-break the parent/child rule. It is
+// also simply true: TodoFullView's subtask list filters on `archived` alone, so a
+// Planner-hidden subtask is still right there inside the task it belongs to.
+//
+// It means a TASK parent specifically. A collection is not a surface in this
+// sense: the Planner tree renders collections, but it renders only the VISIBLE
+// todos inside them, so a hidden task filed under one would be reachable by search
+// alone. A todo under a collection is treated as a root here, and so is an actual
+// root - the "both false" orphan the rescue was written for in the first place.
 //
 // Dates live on the `DayTodos` wrapper, not the todo itself. A todo with "no
 // date assigned" is one filed under the UNDATED bucket below (same dayTodos
@@ -60,12 +73,22 @@ export function showsInOrganizer(todo: Todo): boolean {
 }
 
 // Enforce the visibility invariant on a todo about to be persisted: every todo
-// must be reachable on at least one surface. The two flags are otherwise free to
-// combine (planner-only, daily-only, both), and the date dependency is left
+// must be reachable. The two flags are otherwise free to combine (planner-only,
+// daily-only, both, or neither for a subtask), and the date dependency is left
 // intact - this only rescues the one illegal outcome, a todo that would render
 // nowhere. It deliberately does NOT fabricate flags on todos that are already
-// visible somewhere.
-export function normalizeVisibility(todo: Todo): Todo {
+// reachable.
+//
+// `parent` is the todo's CURRENT parent row (undefined/null when it has none or it
+// couldn't be resolved), because only the row itself answers the question that
+// matters: a TASK parent is a surface (its full view lists its subtasks), a
+// COLLECTION is not (the Planner tree renders collections, but it only renders the
+// VISIBLE todos inside them - a hidden task under a collection would be reachable
+// by search alone). `parentId` therefore has to be part of the merged state handed
+// to this function; it is one of the VISIBILITY_KEYS (server/http.ts) for the same
+// reason. Omitting `parent` falls back to the stricter root-only rule, which errs
+// toward showing a todo that didn't need it rather than hiding one that did.
+export function normalizeVisibility(todo: Todo, parent?: Todo | null): Todo {
   // Collections are database-only folders; they never belong on the daily list.
   if (todo.isCollection) {
     return todo.showInDatabase === true ? todo : { ...todo, showInDatabase: true };
@@ -74,7 +97,11 @@ export function normalizeVisibility(todo: Todo): Todo {
   if (todo.showInDatabase === true) return todo;
   // Otherwise it must earn its place on the daily checklist, which needs a date.
   if (showsOnDailyChecklist(todo, todo.dueDate ?? '')) return todo;
-  // Would vanish everywhere (e.g. a daily-only todo whose date was cleared) -
-  // surface it in the Task Planner so it stays reachable.
+  // A subtask needs neither: it is reachable inside its parent task's full view,
+  // which is what lets a hidden parent take its whole subtree out of the Planner.
+  if (parent && !parent.isCollection) return todo;
+  // A root todo that would vanish everywhere (e.g. a daily-only todo whose date
+  // was cleared, or a subtask just pulled out to the root) - surface it in the
+  // Task Planner so it stays reachable.
   return { ...todo, showInDatabase: true };
 }

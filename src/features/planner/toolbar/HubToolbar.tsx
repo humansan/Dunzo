@@ -9,10 +9,12 @@ import {
   Columns3,
   Filter,
   ArrowUpDown,
+  Search,
+  X,
 } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { collectionPath } from '@/features/tasks/model';
-import { btnGhost } from '@/theme/buttons';
+import { btnGhost, btnNeutral } from '@/theme/buttons';
 import { CollectionBreadcrumb } from '@/features/tasks/fields';
 
 // Lives in the planner's model layer (it keys MENU_SLICES there); re-exported
@@ -35,6 +37,9 @@ export const HubToolbar: React.FC<{
   currentCount: number;
   filterCount: number;
   sortCount: number;
+  // In-view search, owned by the parent (transient, cleared on tab change).
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
   menuOpen: Record<ToolbarMenuKey, boolean>;
   onToggleMenu: (which: ToolbarMenuKey, e: React.MouseEvent) => void;
 }> = ({
@@ -48,6 +53,8 @@ export const HubToolbar: React.FC<{
   currentCount,
   filterCount,
   sortCount,
+  searchQuery,
+  onSearchChange,
   menuOpen,
   onToggleMenu,
 }) => {
@@ -114,8 +121,36 @@ export const HubToolbar: React.FC<{
           })}
         </div>
 
-        {/* Right-side actions - Sections / Fields / Filter / Sort */}
+        {/* Right-side actions - Search / Sections / Fields / Filter / Sort */}
         <div className="flex items-center gap-1">
+          {/* In-view search: filters the open tab only, and is not persisted -
+              switching tabs clears it (see PlannerView). Sized to sit flush with
+              the menu buttons beside it. */}
+          <div className={`flex items-center gap-1.5 px-2 rounded-lg text-[13px] relative`}>
+            <Search
+              size={13}
+              className="pointer-events-none text-fg-subtle"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') onSearchChange(''); }}
+              placeholder="Search"
+              aria-label="Search tasks in this view"
+              className={"field-sizing-content w-10.5 focus:w-48 text-[13px] text-fg placeholder:text-fg-subtle focus:outline-none transition-all " + (searchQuery && 'w-48')}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => onSearchChange('')}
+                title="Clear search"
+                className={`absolute right-2 p-0.5 rounded ${btnNeutral}`}
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
           {actions.map(({ key, label, icon: Icon, count }) => (
             <button
               key={key}
