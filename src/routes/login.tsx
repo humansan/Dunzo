@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { AuthModal } from '@/features/auth';
-import { authClient } from '@/lib/auth';
+import { fetchSession } from '@/lib/auth';
 import { withBase } from '@/lib/basePath';
 
 // Public route (sibling of _authed, not guarded): the sign-in / sign-up /
@@ -13,8 +13,12 @@ export const Route = createFileRoute('/login')({
     redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
   }),
   beforeLoad: async () => {
-    // Already signed in? Don't show the login screen.
-    const { data } = await authClient.getSession();
+    // Already signed in? Don't show the login screen. Same resilience as the
+    // _authed guard, and the same reasoning inverted: an auth service that didn't
+    // answer must not bounce a signed-in user to /today, but it must not blank
+    // the login screen either - so an unavailable check just shows the form,
+    // which is the one thing that is useful either way.
+    const { data } = await fetchSession();
     if (data) throw redirect({ to: '/today' });
   },
   component: LoginRoute,

@@ -18,6 +18,7 @@ import { reconcilePlannerVisibility, descendantsToHide, descendantsToShow, ances
 import { format } from 'date-fns';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
+import { clearTokenCache } from '@/lib/query/apiClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from '@/features/tasks/api';
 import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from '@/features/trackers/api';
 import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from '@/lib/query/workspaces';
@@ -79,6 +80,11 @@ function useProvideAppData() {
   const prevUserId = useRef(userId);
   useEffect(() => {
     if (prevUserId.current === userId) return;
+    // The cached bearer token is scoped to one account exactly like the query
+    // cache is, so it goes at every transition - including the first resolve,
+    // which the cache clear below deliberately skips. There is nothing to keep:
+    // a token minted for the previous user is precisely what must not survive.
+    clearTokenCache();
     if (prevUserId.current !== undefined) queryClient.clear();
     prevUserId.current = userId;
   }, [userId]);
@@ -838,6 +844,10 @@ function useProvideAppData() {
     // Evict all cached data so the previous account's todos/trackers/etc.
     // can never be shown to the next account that signs in. The session goes
     // null, so AppShell's redirect-out effect routes to /login (closing /settings).
+    // The bearer token is dropped with it - the effect above catches this too,
+    // but that runs a render later, and nothing should be able to leave with the
+    // signed-out token in the meantime.
+    clearTokenCache();
     queryClient.clear();
   };
 
