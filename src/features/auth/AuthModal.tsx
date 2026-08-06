@@ -514,7 +514,7 @@ const LoginScreen: React.FC<{
               type="button"
               onClick={handleResend}
               disabled={submitting || resendCooldown > 0}
-              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer disabled:text-fg-faint disabled:cursor-not-allowed"
+              className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer disabled:text-fg-faint disabled:cursor-not-allowed"
             >
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
             </button>
@@ -523,7 +523,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
+              className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer"
             >
               Back to log in
             </button>
@@ -546,7 +546,7 @@ const LoginScreen: React.FC<{
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
+                className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer"
               >
                 Back to log in
               </button>
@@ -588,7 +588,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
+              className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer"
             >
               Back to log in
             </button>
@@ -828,7 +828,7 @@ const LoginScreen: React.FC<{
                   <button
                     type="button"
                     onClick={() => switchMode('login')}
-                    className="font-bold text-[var(--accent2)] hover:text-xp-tier1 underline transition-colors cursor-pointer"
+                    className="font-bold text-fg-muted hover:text-xp-tier1 underline transition-colors cursor-pointer"
                   >
                     Log in instead
                   </button>
@@ -842,7 +842,7 @@ const LoginScreen: React.FC<{
                     type="button"
                     onClick={() => void enterVerifyMode('unverified-login')}
                     disabled={submitting}
-                    className="font-bold text-[var(--accent2)] hover:text-xp-tier1 underline transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    className="font-bold text-fg-muted hover:text-xp-tier1 underline transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     send me a code
                   </button>
