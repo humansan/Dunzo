@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- The hero backdrop sits behind the navbar's backdrop-blur. Fetching it
+         from the HTML parse means it is decoded before first paint, so the
+         blurred bar never has to re-rasterise around a late image swap. -->
+    <link rel="preload" as="image" href="/background.jpg" fetchpriority="high" />
     <title>Dunzo — A calmer way to get things done</title>
     <meta name="description" content="Dunzo is an intuitive task management app featuring daily focus lists, strategic planner boards, and a gamified XP & streak system designed to eliminate productivity overwhelm." />
     

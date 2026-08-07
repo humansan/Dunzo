@@ -37,7 +37,7 @@ export const Footer: React.FC = () => {
               A calmer way to get things done. Daily focus lists, strategic project planning, and gamified progress tracking.
             </p>
             <div className="flex items-center gap-3 mt-1">
-              <a
+              {/* <a
                 href={GITHUB_URL}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -45,11 +45,11 @@ export const Footer: React.FC = () => {
                 aria-label="GitHub"
               >
                 <Github className="w-4 h-4" />
-              </a>
+              </a> */}
               <button
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="p-1.5 rounded-lg bg-canvas border border-line-subtle text-fg-muted hover:text-fg transition-colors"
+                className="p-1.5 rounded-lg bg-canvas border border-line-subtle text-fg-muted hover:text-fg transition-colors cursor-pointer"
                 aria-label="Back to top"
                 title="Back to top"
               >

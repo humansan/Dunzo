@@ -21,7 +21,9 @@ export const FeaturesHero: React.FC = () => (
       <img
         src="/background.jpg"
         alt=""
-        className="w-full h-full object-cover filter blur-2xl scale-125"
+        decoding="sync"
+        fetchPriority="high"
+        className="w-full h-full object-cover filter blur-xl scale-120"
       />
     </div>
 
