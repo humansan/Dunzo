@@ -476,6 +476,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const plannerOn = draft.showInDatabase === true;
   const dailyFlag = draft.showInDailyList === true;
   const dailyEffective = dailyFlag && dated; // actually reaches a daily list
+  const autoMove = draft.autoMoveDate === true;
   const plannerDisabled = plannerOn && !dailyEffective && !isSubtask;
   const dailyDisabled = dailyEffective && !plannerOn && !isSubtask;
 
@@ -697,6 +698,25 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 {scheduleError?.side === 'due' && (
                   <p className="mt-1.5 text-[11px] text-danger">{scheduleError.message}</p>
                 )}
+                {/* Same flag the due-date picker carries, surfaced here too. It's
+                    settable without a date - the sweep just has nothing to roll
+                    forward until one is set (see the auto-move sweep in app-data). */}
+                <div
+                  className="mt-2.5 flex items-center justify-between"
+                  title={autoMove && !dated ? 'Applies once this task has a due date' : undefined}
+                >
+                  <span className="flex flex-col">
+                    <span className="text-xs text-fg-faint">Move forward if overdue</span>
+                    {autoMove && !dated && (
+                      <span className="text-[10px] text-fg-faint">Pending a due date</span>
+                    )}
+                  </span>
+                  <Switch
+                    checked={autoMove}
+                    onChange={(val) => update({ autoMoveDate: val })}
+                    aria-label="Move forward if overdue"
+                  />
+                </div>
               </RightProp>
 
               {showXpChips && (

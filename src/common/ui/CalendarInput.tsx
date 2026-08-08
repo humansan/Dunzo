@@ -201,6 +201,9 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
               <span className="flex flex-col">
                 <span className="text-[11px] text-fg-subtle">Move forward if overdue</span>
                 {/* <span className="text-[10px] text-fg-faint">Rolls forward to today until done</span> */}
+                {autoMoveDate && !value && (
+                  <span className="text-[10px] text-fg-faint">Applies once a date is set</span>
+                )}
               </span>
               <Switch checked={autoMoveDate} onChange={onAutoMoveDateChange} />
             </div>
