@@ -1,5 +1,4 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
 import { HubRow } from '@/features/planner/table/HubRow';
 import { GroupHeaderRow } from '@/features/planner/table/GroupHeaderRow';
 import { AddRow } from '@/features/planner/table/AddRow';
@@ -92,9 +91,7 @@ export const TableRows: React.FC<TableRowsProps> = ({
   const isEmpty = sectionsConfig.groupBy === 'collection' ? flattened.length === 0 : groupedRows.length === 0;
 
   // Contextual add-rows, keyed by the row each follows (null = before every row).
-  // `addRows` being defined at all is what opts this surface in; the single
-  // bottom add-row below is for the surfaces that don't.
-  const contextual = !!addRows;
+  // A surface with none - a read-only one like search - simply supplies no specs.
   const addAfter = React.useMemo(() => addRowsByAnchor(addRows ?? []), [addRows]);
 
   // Each add-row's create call, by container kind. Every one of these is an
@@ -232,26 +229,6 @@ export const TableRows: React.FC<TableRowsProps> = ({
       {addRowsAfter(null)}
 
       {rows}
-
-      {/* The single bottom add-row, for surfaces that didn't opt into contextual
-          ones (the full view's Subtasks list - one list, so its bottom is the only
-          place an add-row could go). A read-only surface (search) omits
-          onNewInView, dropping both the add-row and its collection empty state. */}
-      {!contextual && onNewInView && (
-        <button
-          type="button"
-          onClick={onNewInView}
-          className={`flex w-full h-9 text-fg-subtle hover:text-fg hover:bg-fill-subtle cursor-pointer transition-colors ${
-            variant.mode === 'table' ? 'border-b border-line-subtle bg-canvas' : 'border-b border-line-subtle'
-          }`}
-        >
-          <div className="w-9"></div>
-          <div className="px-3 text-sm sticky left-0 z-10 flex items-center gap-2 ">
-            <Plus size={15} />
-            <span>New</span>
-          </div>
-        </button>
-      )}
 
       {/* `searchActive` joins the list because a search drops the add-row (see
           PlannerView), and without it the "nothing matched" message would be

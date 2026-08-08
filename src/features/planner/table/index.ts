@@ -16,6 +16,8 @@ export {
 } from './TaskTable';
 export { VARIANTS, type TableVariant } from '@/features/planner/variant';
 export { useRowDnD } from '@/features/planner/hooks/useRowDnD';
+// Contextual add-rows: an embedder plans its own specs off the rows it renders.
+export { planAddRows, type AddRowSpec } from './addRows';
 // The few table types/constants an embedder has to name to build the model.
 export {
   DEFAULT_SECTIONS_CONFIG,

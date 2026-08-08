@@ -44,12 +44,12 @@ export interface TableModel {
   // the add-row's invitation to create a task doesn't apply to a search miss.
   searchActive?: boolean;
   // Contextual "+ New" rows: one per container, positioned where the task each
-  // creates will appear (see features/planner/table/addRows). Supplying this -
-  // even empty - opts the surface INTO contextual add-rows and out of the single
-  // one pinned under the last row, which is all a surface with no sections needs
-  // (the full view's Subtasks list is one list, so its bottom is the only place an
-  // add-row could go). The specs are positional rather than rows in `flattened`,
-  // because the drag layer indexes into that array (see useRowDnD).
+  // creates will appear (see features/planner/table/addRows). Every surface that
+  // can create plans its own specs - the Planner over its sections and collections,
+  // the full view's Subtasks list over that one list - so there is a single add-row
+  // treatment rather than a per-surface button. Omit (or leave empty) on a
+  // read-only surface like search. The specs are positional rather than rows in
+  // `flattened`, because the drag layer indexes into that array (see useRowDnD).
   addRows?: AddRowSpec[];
 }
 
