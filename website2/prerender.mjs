@@ -119,13 +119,15 @@ for (const [route, outFile] of Object.entries(ROUTES)) {
     `<meta name="twitter:description" content="${description}" />`,
   );
 
-  // Google reads the site-name WebSite block from the domain root only; on any other
-  // route it is noise, so strip it everywhere but "/".
+  // Google reads WebSite/Organization from the domain root only; on any other route it
+  // is noise, so the block marked data-root-only is stripped everywhere but "/". The
+  // unmarked SoftwareApplication block describes the product and stays on every route.
   if (route !== '/') {
-    html = html.replace(
-      /\s*<script type="application\/ld\+json">[\s\S]*?<\/script>/,
-      '',
-    );
+    const rootOnly = /\s*<script type="application\/ld\+json" data-root-only>[\s\S]*?<\/script>/;
+    if (!rootOnly.test(html)) {
+      throw new Error('prerender: data-root-only JSON-LD block not found — see index.html');
+    }
+    html = html.replace(rootOnly, '');
   }
 
   if (head.noindex) {

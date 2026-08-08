@@ -48,15 +48,65 @@
 
     <!-- Google derives the SERP "site name" (the line above the blue title) from this,
          not from og:site_name — without it you get the bare domain, "dunzo.work".
-         Google only reads it from the domain root, so once the prerender step gives
-         each route its own head (docs/seo/SEO_IMPLEMENTATION_PLAN.md phase 2) this
-         block should be emitted for "/" only. -->
+         It is only read from the domain root, so prerender.mjs strips this block on
+         every route except "/" — which is what data-root-only marks. Do not remove that
+         attribute without updating the strip in prerender.mjs. -->
+    <script type="application/ld+json" data-root-only>
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://dunzo.work/#website",
+            "name": "Dunzo",
+            "url": "https://dunzo.work/",
+            "publisher": { "@id": "https://dunzo.work/#organization" }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://dunzo.work/#organization",
+            "name": "Dunzo",
+            "url": "https://dunzo.work/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://dunzo.work/favicon-192.png",
+              "width": 192,
+              "height": 192
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- Describes the product itself, so unlike the block above it belongs on every
+         route. No aggregateRating: Google treats self-declared ratings with no reviews
+         behind them as a structured-data violation, and without one this will not
+         produce a star-rating rich result — it is here for entity understanding. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebSite",
+        "@type": "SoftwareApplication",
         "name": "Dunzo",
-        "url": "https://dunzo.work/"
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Web browser",
+        "url": "https://dunzo.work/",
+        "description": "An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system.",
+        "screenshot": "https://dunzo.work/og.png",
+        "softwareHelp": "https://dunzo.work/features",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        },
+        "featureList": [
+          "Daily focus lists",
+          "Task planner with filters, grouping and nested collections",
+          "Calendar sharing the same tasks",
+          "XP, streaks and progress stats",
+          "Pomodoro focus timer and time widgets",
+          "Full-text task search"
+        ]
       }
     </script>
 
