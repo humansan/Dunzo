@@ -272,9 +272,29 @@ export const XpChip: React.FC<{
   /** Drops the gold tint but stays clickable - the daily list uses it to grey the
    *  chip on a completed task. */
   muted?: boolean;
-}> = ({ value, onChange, muted = false }) => {
+  /** XP is only ever earned on a dated daily-list task (see earnsXp); the caller
+   *  disables the chip - greyed, non-interactive, exactly like TimeChip without a
+   *  date - until the task qualifies. `disabledReason` is the tooltip. */
+  disabled?: boolean;
+  disabledReason?: string;
+}> = ({ value, onChange, muted = false, disabled = false, disabledReason }) => {
   const set = value !== undefined;
   const dim = muted ? 'text-fg-ghost' : 'text-fg-subtle';
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        disabled
+        title={disabledReason}
+        className={`${chipDeactivated} bg-fill-subtle opacity-40`}
+      >
+        <span className={`${chipText} text-fg-subtle`}>
+          <Astroid size={16} />
+          <span className="relative top-px">{set ? `${value} xp` : 'xp'}</span>
+        </span>
+      </button>
+    );
+  }
   return (
     <ChipPopover panel={() => <XpSlider value={value} autoFocus onChange={onChange} />}>
       {({ open }) => (

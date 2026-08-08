@@ -66,6 +66,21 @@ export function showsOnDailyChecklist(todo: Todo, date: string): boolean {
   return hasDate(date) && todo.showInDailyList === true;
 }
 
+// Whether a todo can carry XP. XP is a property of a DAY - it is earned by
+// checking a task off on the daily list, and every XP number in the app (see
+// features/xp/model/xp.ts) is rolled up per date over exactly the todos that
+// `showsOnDailyChecklist` admits. So XP on a task that isn't a dated daily-list
+// task is dead data: it is stored, and nothing can ever read it.
+//
+// This is the same shape as the rule that gates a task's TIME on its date (a
+// time can't exist without the day it falls on), and the editors gate on it the
+// same way - the control is disabled rather than accepting a value that goes
+// nowhere. The task's own `dueDate` is the day in question: it is the single
+// source of truth for which daily list a task lands on.
+export function earnsXp(todo: Todo): boolean {
+  return showsOnDailyChecklist(todo, todo.dueDate ?? '');
+}
+
 // Whether a todo should appear in the Task Planner (organizer). Only todos
 // explicitly flagged showInDatabase qualify - dated or not - and not archived.
 export function showsInOrganizer(todo: Todo): boolean {

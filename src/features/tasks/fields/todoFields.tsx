@@ -36,6 +36,19 @@ export const patchFromPercent = (kind: TimeKind, pct: number | undefined): TimeP
   return time === undefined ? {} : patchFromTime(kind, time);
 };
 
+// Why the XP editor is unavailable, or undefined when it isn't. XP is only ever
+// earned by checking a task off on a daily list (see earnsXp in
+// shared/domain/todoVisibility), so it needs BOTH halves of that - and the two are
+// fixed differently, so the message names the one that's actually missing rather
+// than restating the rule. Shared by the full view's chip and the Planner cell's
+// notice, which is the whole point of it living here: one wording, two surfaces.
+export const xpDisabledReason = (dated: boolean, inDailyList: boolean): string | undefined => {
+  if (dated && inDailyList) return undefined;
+  if (!dated && !inDailyList) return 'XP is earned on the daily list - add a due date and turn on Daily Tasks';
+  if (!dated) return 'XP is earned on the daily list - add a due date';
+  return 'XP is earned on the daily list - turn on Daily Tasks';
+};
+
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
 export const fieldInputClass =
   'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';

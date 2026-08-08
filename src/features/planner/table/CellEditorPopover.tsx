@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Todo } from '@shared/types';
-import { OrganizerEntry, CollectionOption, collectionOf, normalizeScheduleTimes, isScheduleValid } from '@/features/tasks/model';
+import { OrganizerEntry, CollectionOption, collectionOf, normalizeScheduleTimes, isScheduleValid, earnsXp, hasDate } from '@/features/tasks/model';
 import {
   NotesField,
   OptionSelectField,
   patchFromTime,
+  xpDisabledReason,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from '@/features/tasks/fields';
@@ -66,12 +67,15 @@ export const CellEditorPopover: React.FC<{
     setScheduleError(null);
     onSaveTodo(candidate);
   };
-  // A time column can't be edited until its side has a date.
-  const noDateNotice = (label: string) => (
+  // Stands in for an editor the task doesn't qualify for yet - a time column with
+  // no date on its side, or XP on a task that isn't on a daily list. The cell still
+  // opens, so the reason is visible where the control would have been.
+  const notice = (text: string) => (
     <div className="rounded-lg border border-line bg-surface shadow-2xl px-3 py-2 text-xs text-fg-subtle">
-      Add a {label} first
+      {text}
     </div>
   );
+  const noDateNotice = (label: string) => notice(`Add a ${label} first`);
 
   return createPortal(
     <div
@@ -108,11 +112,19 @@ export const CellEditorPopover: React.FC<{
           onCreate={onCreateCollection}
         />
       ) : col === 'xp' ? (
-        <XpSlider
-          value={entry.todo.xp}
-          autoFocus
-          onChange={(val) => save({ xp: val })}
-        />
+        // Gated the way the time columns are gated on their date: XP is only ever
+        // earned on a daily list, so off one it would be a number nothing reads.
+        earnsXp(entry.todo) ? (
+          <XpSlider
+            value={entry.todo.xp}
+            autoFocus
+            onChange={(val) => save({ xp: val })}
+          />
+        ) : (
+          notice(
+            xpDisabledReason(hasDate(entry.todo.dueDate ?? ''), entry.todo.showInDailyList === true)!
+          )
+        )
       ) : col === 'date' ? (
         <CalendarInput
           value={entry.todo.dueDate || ''}

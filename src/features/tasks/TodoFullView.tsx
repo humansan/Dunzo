@@ -37,6 +37,7 @@ import {
   CompletedToggle,
   OptionSelectField,
   patchFromTime,
+  xpDisabledReason,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from '@/features/tasks/fields';
@@ -796,7 +797,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                   onClear={() => update({ xp: undefined })}
                   canClear={draft.xp !== undefined}
                 >
-                  <XpChip value={draft.xp} onChange={(val) => update({ xp: val })} />
+                  {/* Gated exactly as the Time chips are gated on a date: XP is
+                      only ever earned on a daily list, so off one it would be a
+                      number nothing can read. `dailyEffective` IS that rule (a
+                      daily flag plus a real date) - the same value the Show-in
+                      switches lock on - so the two can't drift apart. */}
+                  <XpChip
+                    value={draft.xp}
+                    onChange={(val) => update({ xp: val })}
+                    disabled={!dailyEffective}
+                    disabledReason={xpDisabledReason(dated, dailyFlag)}
+                  />
                 </RightProp>
               )}
 
