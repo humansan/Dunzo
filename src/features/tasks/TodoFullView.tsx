@@ -237,6 +237,36 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   useLayoutEffect(resizeTitle, [draft.text, todo.id]);
   useLayoutEffect(resizeNotes, [draft.notes, todo.id]);
 
+  // Both autosizes above measure the text as it is laid out at that instant, so
+  // anything that REWRAPS it afterwards leaves the box a line or two short - and
+  // since the textareas are `overflow-hidden`, the leftover lines just vanish
+  // rather than becoming scrollable. Two things rewrap it after a measurement:
+  //
+  //  • the webfonts load with `display: swap` (index.css), so a note measured
+  //    during the first paint was measured in the fallback font's metrics;
+  //  • the pane changes width (window resize).
+  //
+  // Re-measuring on both is what makes the autosize hold. The observer is gated on
+  // WIDTH: it watches the textarea, whose height we set ourselves, and reacting to
+  // that would be a feedback loop.
+  useEffect(() => {
+    const resize = () => { resizeTitle(); resizeNotes(); };
+    document.fonts?.ready.then(resize);
+
+    const el = notesRef.current;
+    if (!el) return;
+    let lastWidth = el.getBoundingClientRect().width;
+    const ro = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Set when a schedule edit is rejected for putting start after due; shown under
   // the offending side's chips and cleared by the next accepted schedule edit.
   const [scheduleError, setScheduleError] = useState<{ side: ScheduleSide; message: string } | null>(null);
@@ -559,8 +589,18 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
         {/* ── Two-pane body ────────────────────────── */}
         <div className="flex flex-1 overflow-hidden min-h-0">
 
-          {/* Left pane: title + notes */}
-          <div className="flex-1 flex flex-col overflow-y-auto min-w-0 px-8 py-6">
+          {/* Left pane: title + notes.
+              `scrollbar-gutter: stable` is load-bearing, not cosmetic. The custom
+              scrollbar is a CLASSIC one (index.css sets ::-webkit-scrollbar to 8px),
+              so it takes layout width, and the autosizing textareas below measure
+              themselves by collapsing to `height: auto` and reading scrollHeight.
+              Collapsing them makes this pane short enough to stop overflowing, which
+              takes the scrollbar away, which makes the textarea 8px WIDER than it
+              will actually be rendered - so the measurement misses the lines that
+              only wrap once the scrollbar comes back, and `overflow-hidden` then
+              clips them. Reserving the gutter permanently keeps the measured width
+              and the rendered width identical. */}
+          <div className="flex-1 flex flex-col overflow-y-auto [scrollbar-gutter:stable] min-w-0 px-8 py-6">
             {/* The task this one sits under - a way UP the tree, not a history
                 step. It used to be the latter, which meant it appeared only for a
                 subtask opened from its parent's own full view: the identical task
