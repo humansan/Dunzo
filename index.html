@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/src/assets/icon-invert2.png" />
     <title>Dunzo</title>
+
+    <!-- The app shell is login-gated and every /app/* URL rewrites to this one file, so
+         indexing it would put an unbounded set of thin, identically-described pages in
+         front of the marketing site. robots.txt deliberately does NOT Disallow /app —
+         Google has to be able to fetch this page to see the noindex. -->
+    <meta name="robots" content="noindex, nofollow" />
     <meta name="description" content="Dunzo is an intuitive task management app featuring daily focus lists, strategic planner boards, and a gamified XP & streak system designed to eliminate productivity overwhelm." />
 
     <!-- Link previews. Crawlers do not run JS or follow the client router, so every
@@ -18,7 +24,7 @@
     <meta property="og:image" content="https://dunzo.work/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Dunzo — A calmer way to get things done" />
+    <meta property="og:image:alt" content="Dunzo: A calmer way to get things done" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Dunzo" />
     <meta name="twitter:description" content="An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system." />

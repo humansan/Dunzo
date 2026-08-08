@@ -2,15 +2,21 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo.png" />
+    <!-- Google crops the SERP favicon to a circle and paints transparency white, so
+         this is a square, full-bleed, alpha-free crop of logo.png rather than the
+         rounded logo itself — the corners would otherwise read as a white ring.
+         Must stay crawlable (see robots.txt) and at a stable URL. -->
+    <link rel="icon" type="image/png" href="/logo.png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- The hero backdrop sits behind the navbar's backdrop-blur. Fetching it
          from the HTML parse means it is decoded before first paint, so the
          blurred bar never has to re-rasterise around a late image swap. -->
     <link rel="preload" as="image" href="/background.jpg" fetchpriority="high" />
-    <title>Dunzo — A calmer way to get things done</title>
-    <meta name="description" content="Dunzo is an intuitive task management app featuring daily focus lists, strategic planner boards, and a gamified XP & streak system designed to eliminate productivity overwhelm." />
+    <title>Dunzo: A calmer way to get things done</title>
+    <!-- Google truncates around 155-160 chars; this is 124. -->
+    <meta name="description" content="An intuitive task manager with daily focus lists, planner boards, and a gamified XP &amp; streak system. Free in early access." />
     
     <!-- Link previews (Discord, Slack, iMessage, Google Docs, ...). Crawlers do not
          run JS, so these live in the static HTML. URLs must be absolute. -->
@@ -18,17 +24,31 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Dunzo" />
     <meta property="og:url" content="https://dunzo.work/" />
-    <meta property="og:title" content="Dunzo — A calmer way to get things done" />
+    <meta property="og:title" content="Dunzo: A calmer way to get things done" />
     <meta property="og:description" content="An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system." />
     <meta property="og:image" content="https://dunzo.work/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Dunzo — A calmer way to get things done" />
+    <meta property="og:image:alt" content="Dunzo: A calmer way to get things done" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Dunzo — A calmer way to get things done" />
+    <meta name="twitter:title" content="Dunzo: A calmer way to get things done" />
     <meta name="twitter:description" content="An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system." />
     <meta name="twitter:image" content="https://dunzo.work/og.png" />
     <meta name="theme-color" content="#111111" />
+
+    <!-- Google derives the SERP "site name" (the line above the blue title) from this,
+         not from og:site_name — without it you get the bare domain, "dunzo.work".
+         Google only reads it from the domain root, so once the prerender step gives
+         each route its own head (docs/seo/SEO_IMPLEMENTATION_PLAN.md phase 2) this
+         block should be emitted for "/" only. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Dunzo",
+        "url": "https://dunzo.work/"
+      }
+    </script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

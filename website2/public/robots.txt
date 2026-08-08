@@ -1,0 +1,11 @@
+# Everything is crawlable on purpose.
+#
+# The app shell at /app is kept OUT of the index by a <meta name="robots" content="noindex">
+# in the root index.html, NOT by a Disallow here. The two are not interchangeable:
+# a Disallowed URL can still be indexed url-only from external links, and a crawler that
+# is blocked from fetching /app can never see the noindex that would remove it. Allowing
+# the crawl is what makes the noindex effective.
+User-agent: *
+Allow: /
+
+Sitemap: https://dunzo.work/sitemap.xml

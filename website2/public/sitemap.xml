@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Only canonical, indexable, 200-returning marketing URLs belong here.
+
+  /app is deliberately absent: it 302s to /app/today, which bounces signed-out visitors
+  to /app/login, and it carries a noindex. A redirecting, noindexed URL in a sitemap is
+  reported in Search Console as "Page with redirect" / "Excluded by noindex" and is never
+  indexed, so listing it would add errors without adding coverage.
+
+  Hand-maintained at this size. If the site grows past ~10 pages, generate this from the
+  HEADS table in src/seo.ts (see docs/seo/SEO_IMPLEMENTATION_PLAN.md).
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://dunzo.work/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://dunzo.work/features</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>
