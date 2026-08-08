@@ -70,7 +70,10 @@ interface TodoFullViewProps {
   onDeleteReturn?: () => void;
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
+  // Deleting asks for confirmation first (app-data's requestDeleteTodo), so where
+  // to go afterwards is handed over rather than run here: on a cancel nothing
+  // happens, and this view must not navigate away from a delete that didn't occur.
+  onDelete: (id: string, onDeleted: () => void) => void;
   // Archive/unarchive are subtree operations, so they go through the app-data
   // handlers rather than a plain `archived` edit - a single-row write here used to
   // leave live children under an archived parent (shared/domain/todoArchive).
@@ -884,7 +887,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
             <button
               // A task opened from another task's full view returns to it; anything
               // else has no full view behind it, so it closes the chain outright.
-              onClick={() => { onDelete(draft.id); (onDeleteReturn ?? onClose)(); }}
+              // Either way it runs only if the delete is confirmed.
+              onClick={() => onDelete(draft.id, onDeleteReturn ?? onClose)}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all cursor-pointer"
             >
               <Trash2 size={14} />

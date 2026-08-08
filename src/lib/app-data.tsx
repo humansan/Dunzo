@@ -28,6 +28,7 @@ import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
 import { buildSeedTrackers } from '@/lib/onboarding';
 import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascadeConfirm';
+import { useDeleteConfirm } from '@/features/tasks/useDeleteConfirm';
 
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
@@ -675,10 +676,22 @@ function useProvideAppData() {
   };
 
   // Remove a todo entirely (server FK-cascades subtasks; cache drops them too).
+  // The UNCONFIRMED write: everything the user triggers goes through
+  // `requestDeleteTodo` below instead, which asks first.
   const handleDeleteTodoById = (id: string) => {
     deleteTodoMut.mutate(id);
     if (activeTodoId === id) setActiveTodoId(null);
   };
+
+  // "Are you sure?" in front of every user-facing Delete. It lives here for the
+  // same reason the field-cascade prompt does: every delete surface in the app
+  // reaches this one handler, so asking here means one dialog and one set of
+  // counts rather than a prompt bolted onto each menu. The provider renders the
+  // modal (see AppDataProvider).
+  const { requestDeleteTodo, deleteConfirmModal } = useDeleteConfirm({
+    todos,
+    onDelete: handleDeleteTodoById,
+  });
 
   // Archive a todo and its whole subtree; unarchive it and its archived ancestors.
   // Both directions are one constraint - a live todo may not sit under an archived
@@ -894,6 +907,7 @@ function useProvideAppData() {
     addHubCollection,
     setTaskCollection,
     handleDeleteTodoById,
+    requestDeleteTodo,
     handleArchiveTodo,
     handleArchiveTodos,
     handleUnarchiveTodo,
@@ -920,6 +934,9 @@ function useProvideAppData() {
     // come from the planner, the daily list, the calendar or the full view, and
     // they all reach it through the two handlers above.
     fieldCascadeModal,
+    // "Delete this?" / "…and the N subtasks inside it?" - raised by every Delete
+    // in the app through requestDeleteTodo, rendered by the provider below.
+    deleteConfirmModal,
   };
 }
 
@@ -933,6 +950,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <AppDataContext.Provider value={value}>
       {children}
       {value.fieldCascadeModal}
+      {value.deleteConfirmModal}
     </AppDataContext.Provider>
   );
 };
