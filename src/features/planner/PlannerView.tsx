@@ -684,12 +684,24 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
     });
   };
 
-  // Context-menu Delete: a non-empty collection prompts cascade-vs-promote;
-  // empty collections and plain tasks delete straight away.
+  // Context-menu Delete: a non-empty collection prompts cascade-vs-promote; empty
+  // collections delete straight away, and tasks go to onDeleteTodo, which asks its
+  // own "are you sure?" (useDeleteConfirm, wired at the provider).
+  //
+  // "Non-empty" is asked of the WHOLE todo set (`todoById`), not of this view's
+  // entries. Those cover the Planner's organizer set, so a child that doesn't live
+  // in the Planner - a daily-list-only task filed under the collection is the
+  // realistic case - read as no child at all, and the collection took the
+  // straight-to-delete branch: the server FK-cascade then destroyed that task with
+  // no prompt of any kind, and no chance to keep it by promoting. The children are
+  // real whichever surface they appear on, so the question is asked over all of them.
   const requestDeleteFromMenu = (id: string) => {
     const entry = findEntry(id);
-    const hasChildren = (e: OrganizerEntry) => (e.todo.parentId ?? null) === id;
-    if (entry?.todo.isCollection && (entries.some(hasChildren) || archivedEntries.some(hasChildren))) {
+    const hasChildren = () => {
+      for (const t of todoById.values()) if ((t.parentId ?? null) === id) return true;
+      return false;
+    };
+    if (entry?.todo.isCollection && hasChildren()) {
       setDeleteCollId(id);
     } else {
       onDeleteTodo(id);
