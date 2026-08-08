@@ -4,8 +4,10 @@ import { hasInvalidDateParam, validateDateSearch } from '@/lib/dateParam';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { useAppData } from '@/lib/app-data';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
+import { pageHead } from '@/lib/pageTitle';
 
 export const Route = createFileRoute('/_authed/calendar')({
+  head: () => pageHead('Calendar'),
   validateSearch: validateDateSearch,
   // Same as /today: an unusable `date` sends you to the bare calendar rather than
   // leaving a lying URL in the address bar (or an Invalid Date in the view).

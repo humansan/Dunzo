@@ -2,6 +2,7 @@ import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { AuthModal } from '@/features/auth';
 import { fetchSession } from '@/lib/auth';
 import { withBase } from '@/lib/basePath';
+import { pageHead } from '@/lib/pageTitle';
 
 // Public route (sibling of _authed, not guarded): the sign-in / sign-up /
 // password-reset screen. Rendering AuthModal as its own durable route is what
@@ -9,6 +10,7 @@ import { withBase } from '@/lib/basePath';
 // useSession(), and the auth decision is made in beforeLoad (on navigation),
 // not in a render gate that reacts to window-focus revalidation.
 export const Route = createFileRoute('/login')({
+  head: () => pageHead('Sign in'),
   validateSearch: (search: Record<string, unknown>) => ({
     redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
   }),

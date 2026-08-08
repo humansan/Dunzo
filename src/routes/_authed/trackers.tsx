@@ -6,8 +6,10 @@ import { TrackerCard } from '@/features/trackers';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { btnGhost, btnNeutral, btnSwitch } from '../../theme/buttons';
 import { useAppData } from '@/lib/app-data';
+import { pageHead } from '@/lib/pageTitle';
 
 export const Route = createFileRoute('/_authed/trackers')({
+  head: () => pageHead('Trackers'),
   component: TrackersRoute,
   errorComponent: ViewErrorFallback,
 });

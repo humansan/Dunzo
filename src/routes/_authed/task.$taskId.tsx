@@ -3,12 +3,17 @@ import { TaskOverlay } from '@/features/tasks';
 import { todosQueryOptions } from '@/features/tasks/api';
 import { withBase } from '@/lib/basePath';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
+import { pageHead } from '@/lib/pageTitle';
 
 // Standalone /task/$taskId route - only reached by a cold deep-link (reloading the
 // masked URL from the address bar). In-app opens render TaskOverlay over the
 // current page via a search param instead (see useOverlayNav), so the page never
 // unmounts. Both paths render the same TaskOverlay.
 export const Route = createFileRoute('/_authed/task/$taskId')({
+  // Cold deep-link only (see above). An in-app open masks the URL to /task/$id but
+  // stays matched on the page underneath, so that keeps the page's own title -
+  // which is right either way: the full view is a window over a page, not a page.
+  head: () => pageHead('Task'),
   component: TaskRoute,
   // Same guard as /planner/$collectionId: an id that names nothing (or names a
   // collection, which has no full view) would mount an overlay over an empty

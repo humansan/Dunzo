@@ -2,8 +2,10 @@ import { createFileRoute } from '@tanstack/react-router';
 import { StatsView } from '@/features/stats';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { useAppData } from '@/lib/app-data';
+import { pageHead } from '@/lib/pageTitle';
 
 export const Route = createFileRoute('/_authed/stats')({
+  head: () => pageHead('Stats'),
   component: StatsRoute,
   errorComponent: ViewErrorFallback,
 });

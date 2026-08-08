@@ -2,11 +2,15 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import { PlannerScreen, validatePlannerSearch, isPseudoView } from '@/features/planner';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { todosQueryOptions } from '@/features/tasks/api';
+import { pageHead } from '@/lib/pageTitle';
 
 // /planner/$collectionId - the segment is the selected view: either one of the
 // fixed pseudo-view tabs (uncategorized, categorized, archived, ...) or a real
 // collection id, exactly the split resolveView() makes.
 export const Route = createFileRoute('/_authed/planner/$collectionId')({
+  // Same page name as bare /planner: picking a collection or a pseudo-view tab is
+  // navigating *within* the Planner, not to somewhere else.
+  head: () => pageHead('Task Planner'),
   component: PlannerCollectionRoute,
   validateSearch: validatePlannerSearch,
   // This route matches *any* single segment, so the id has to be checked: a

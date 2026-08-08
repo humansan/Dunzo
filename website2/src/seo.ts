@@ -29,13 +29,13 @@ export const HEADS: Record<string, RouteHead> = {
     path: '/',
     // The tagline stays as the <h1>; the title tag is where the search terms go, since
     // "dunzo" alone is unwinnable against the delivery company of the same name.
-    title: 'Dunzo: Task Manager with Daily Focus Lists & XP Streaks',
+    title: 'Dunzo - A calmer way to get things done',
     description:
       'An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system. Free in early access.',
   },
   '/features': {
     path: '/features',
-    title: 'Features: Tasks, Planner, Calendar, XP & Focus | Dunzo',
+    title: 'Dunzo - Features: Tasks, Planner, Calendar, XP & Focus',
     description:
       'Every Dunzo feature: a task database with filters and grouping, a daily focus list, a shared calendar, XP and streaks, Pomodoro timers, and full-text search.',
   },

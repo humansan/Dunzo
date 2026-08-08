@@ -1,17 +1,53 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet, type ErrorComponentProps } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { createRootRouteWithContext, Outlet, useRouterState, type ErrorComponentProps } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { pageHead } from '@/lib/pageTitle';
 
 export interface RouterContext {
   queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  // The bare app name, as the floor every page's own title overrides. It shows on
+  // its own only where no page is really being rendered - the '/' and catch-all
+  // routes, which exist to redirect - so those never flash a stale title from
+  // wherever the user came from.
+  head: () => pageHead(),
   component: RootComponent,
   errorComponent: RootErrorComponent,
 });
 
+// Apply the matched route's page title (its `head` → `meta` → title, see
+// lib/pageTitle) to the tab. The deepest match wins, so a child route's name
+// overrides the root's bare app name - the same precedence the router's own
+// <HeadContent> uses, and the reason each page declares only its own title.
+//
+// Assigning `document.title` rather than rendering <HeadContent/> is deliberate.
+// That component renders a plain <title> element and leans on React 19 hoisting
+// to move it into <head> - where it would land AFTER the static
+// <title>Dunzo</title> in index.html, and a document with two titles shows the
+// first one. Removing the static title would fix that but costs the pre-hydration
+// title (a tab labelled with the URL until React mounts). Writing the property
+// keeps both: index.html titles the first paint, this titles every route after.
+function useDocumentTitle() {
+  const title = useRouterState({
+    select: (state) => {
+      for (let i = state.matches.length - 1; i >= 0; i--) {
+        const found = state.matches[i]!.meta?.find((m) => m && 'title' in m && m.title);
+        if (found?.title) return found.title;
+      }
+      return undefined;
+    },
+  });
+
+  useEffect(() => {
+    if (title) document.title = title;
+  }, [title]);
+}
+
 function RootComponent() {
+  useDocumentTitle();
   return (
     <>
       <Outlet />
