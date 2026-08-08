@@ -15,7 +15,7 @@ export const NotFound: React.FC = () => (
   <main className="relative min-h-[70vh] flex items-center justify-center px-4 pt-32 pb-20">
     <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
       <img
-        src="/background.jpg"
+        src="/background.webp"
         alt=""
         decoding="sync"
         className="w-full h-full object-cover filter blur-xl scale-120"

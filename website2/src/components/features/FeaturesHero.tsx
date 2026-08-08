@@ -19,7 +19,7 @@ export const FeaturesHero: React.FC = () => (
     {/* Same blurred backdrop as the home hero, so the two pages feel like one site. */}
     <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
       <img
-        src="/background.jpg"
+        src="/background.webp"
         alt=""
         decoding="sync"
         fetchPriority="high"

@@ -35,7 +35,7 @@ export const Hero: React.FC = () => {
             lands after first paint and invalidates the navbar's backdrop, which
             is what makes the seams flash there. */}
         <img
-          src="/background.jpg"
+          src="/background.webp"
           alt=""
           decoding="sync"
           fetchPriority="high"
@@ -114,7 +114,7 @@ export const Hero: React.FC = () => {
               onClick={isVideoPlaying ? undefined : () => setIsVideoPlaying(true)}
             >
               <img
-                src="/media/s1.png"
+                src="/media/s1.webp"
                 alt="Dunzo Daily Dashboard"
                 decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"

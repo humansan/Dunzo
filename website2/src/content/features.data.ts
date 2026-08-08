@@ -408,8 +408,8 @@ export const EXTRAS: Extra[] = [
     body:
       'Switch in settings.',
     shots: [
-      { src: '/media/s20_dark.png', alt: 'Dunzo in dark mode' },
-      { src: '/media/s20_light.png', alt: 'Dunzo in light mode' },
+      { src: '/media/s20_dark.webp', alt: 'Dunzo in dark mode' },
+      { src: '/media/s20_light.webp', alt: 'Dunzo in light mode' },
     ],
   },
   {
@@ -417,7 +417,7 @@ export const EXTRAS: Extra[] = [
     title: 'Settings that set defaults',
     body:
       'First day of the week, default XP for new tasks, whether new tasks show in the planner, the daily list, or both, and whether they auto-move when overdue.',
-    shots: [{ src: '/media/s18.png', alt: 'The Dunzo settings modal' }],
+    shots: [{ src: '/media/s18.webp', alt: 'The Dunzo settings modal' }],
   },
   {
     icon: Cloud,
@@ -436,13 +436,13 @@ export const EXTRAS: Extra[] = [
     title: 'Inputs that read English',
     body:
       'Date and time fields take july 14, 2026, 3p, 9:21, or 33% of the day. Every picker in the app, same parser.',
-    shots: [{ src: '/media/s19b.png', alt: 'The Dunzo time picker parsing typed input' }],
+    shots: [{ src: '/media/s19b.webp', alt: 'The Dunzo time picker parsing typed input' }],
   },
   {
     icon: KeyRound,
     title: 'Sign in and go',
     body: 'Email and password, and a password you can reset from settings.',
-    shots: [{ src: '/media/s21.png', alt: 'The Dunzo sign-in screen' }],
+    shots: [{ src: '/media/s21.webp', alt: 'The Dunzo sign-in screen' }],
   },
 ];
 
