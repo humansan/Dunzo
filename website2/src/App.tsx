@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/Home';
 import { Features } from './pages/Features';
+import { NotFound } from './pages/NotFound';
 import { useAnimationGate } from './hooks/useAnimationGate';
 import { useRouteHead } from './hooks/useRouteHead';
 
@@ -24,7 +25,10 @@ export const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/features" element={<Features />} />
-        <Route path="*" element={<Home />} />
+        {/* /404 is the path prerender.mjs renders to produce dist/404.html; "*" is the
+            client-side equivalent for a bad in-app link. Both must render the same thing. */}
+        <Route path="/404" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       <Footer />

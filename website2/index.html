@@ -1,7 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark no-js">
   <head>
     <meta charset="UTF-8" />
+    <!-- Cleared immediately, so `.no-js` only ever survives with scripting disabled.
+         See the `html.no-js` rules in index.css: the entrance animations start at
+         opacity 0 and are released by JS, so without this the prerendered markup would
+         render as a blank page for anyone running without it. -->
+    <script>
+      document.documentElement.classList.remove('no-js');
+    </script>
     <!-- Google crops the SERP favicon to a circle and paints transparency white, so
          this is a square, full-bleed, alpha-free crop of logo.png rather than the
          rounded logo itself — the corners would otherwise read as a white ring.
