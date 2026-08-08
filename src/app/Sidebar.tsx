@@ -41,9 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isVisible, isAuthenticated, em
   // planner was showing, the day Today/Calendar were on. Clicking the tab you're
   // already on is a no-op: the remembered target *is* the current location.
   const items = [
-    { tab: 'today', base: '/today', icon: ListChecks, title: 'Daily Todos' },
     { tab: 'planner', base: '/planner', icon: Blocks, title: 'Task Planner' },
     { tab: 'calendar', base: '/calendar', icon: CalendarDays, title: 'Calendar' },
+    { tab: 'today', base: '/today', icon: ListChecks, title: 'Daily Todos' },
     { tab: 'trackers', base: '/trackers', icon: Clock, title: 'Trackers' },
     { tab: 'stats', base: '/stats', icon: BarChart2, title: 'Stats' },
   ] as const;

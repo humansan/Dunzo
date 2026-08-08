@@ -54,13 +54,13 @@ function TrackersRoute() {
                 </button>
               </div>
 
-              <button
+              {/* <button
                 onClick={() => setIsFullscreen(true)}
                 className={`p-2 rounded-lg ${btnNeutral}`}
                 title="Fullscreen Mode"
               >
                 <Maximize2 size={18} strokeWidth={2.5} />
-              </button>
+              </button> */}
 
               <button
                 onClick={openTrackerModal}

@@ -230,7 +230,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
             onChange={(e) => saveField({ text: e.target.value })}
             onBlur={stopEdit}
             onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-            placeholder="Collection name"
+            placeholder="Untitled collection"
             size={1}
             style={pill(color)}
             className={`w-auto min-w-0 max-w-full field-sizing-content rounded-full px-2.5 py-px font-medium focus:outline-none placeholder:text-fg-faint animate-[ring-grow_150ms_linear_both] ${variant.mode === 'list' ? 'text-base' : 'text-sm'}`}
@@ -568,7 +568,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                 onClick={(e) => { if (startEdit) e.stopPropagation(); startEdit?.(todo.id, 'title', e); }}
                 className={`flex-1 min-w-0 pl-1 text-sm rounded ${startEdit ? 'cursor-text hover:bg-fill' : ''} ${titleWrapped ? 'break-words' : 'truncate'} ${isDone(todo) ? 'text-fg-subtle line-through' : 'text-fg font-medium'}`}
               >
-                {todo.text || ' '}
+                {todo.text || 'Untitled'}
               </span>
               {openMenu && (
                 <button

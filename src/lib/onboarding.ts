@@ -12,7 +12,8 @@ import type { Tracker } from '@shared/types';
 
 // The color the Add Tracker modal starts on, so a seeded widget is indistinguishable
 // from one the user creates by hand and immediately accepts.
-const SEED_COLOR = '#c6dabe';
+const SEED_COLOR1 = '#ffe32e';
+const SEED_COLOR2 = '#2effa4';
 const SEED_PRECISION = 2;
 
 const newId = () => Math.random().toString(36).substr(2, 9);
@@ -24,7 +25,7 @@ export function buildSeedTrackers(): Tracker[] {
       id: newId(),
       name: 'Day',
       type: 'day',
-      color: SEED_COLOR,
+      color: SEED_COLOR1,
       precision: SEED_PRECISION,
       displayMode: 'time_remaining',
       secondaryDisplayMode: 'percent_elapsed',
@@ -34,7 +35,7 @@ export function buildSeedTrackers(): Tracker[] {
       id: newId(),
       name: 'Year',
       type: 'year',
-      color: SEED_COLOR,
+      color: SEED_COLOR2,
       precision: SEED_PRECISION,
       displayMode: 'percent_elapsed',
       secondaryDisplayMode: 'time_remaining',
