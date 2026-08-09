@@ -59,6 +59,13 @@ export const allDayRowHeight = (maxCount: number): number => {
   return ALL_DAY_PAD_Y * 2 + n * ALL_DAY_CHIP_HEIGHT + (n - 1) * ALL_DAY_CHIP_GAP;
 };
 
+// The length a task gets when it's dragged out of the row onto the grid - it has no
+// duration of its own to restore, so one is chosen. 30 minutes, matching the block
+// todoSpan draws for a task anchored on only one side (span.ts), rather than the 15
+// minutes a drawn block starts at: drawing continues into a live resize that sets the
+// real length, a drop doesn't.
+export const ALL_DAY_DROP_DURATION_MINS = 30;
+
 // Top offset of the nth chip in a column.
 export const allDayChipTop = (index: number): number =>
   ALL_DAY_PAD_Y + index * (ALL_DAY_CHIP_HEIGHT + ALL_DAY_CHIP_GAP);

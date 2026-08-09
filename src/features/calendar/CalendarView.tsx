@@ -34,13 +34,20 @@ import {
   shiftSpan,
   resizeSpan,
   decomposeSpan,
+  normalizeSpanEnd,
   isRenderableSpan,
   hasStartPoint,
   hasDuePoint,
   type TodoSpan,
 } from './span';
 import { AllDayRow, type AllDayItem } from './AllDayRow';
-import { allDayDateOf, isUntimedDated, compareAllDay, allDayRowHeight } from './allDay';
+import {
+  allDayDateOf,
+  isUntimedDated,
+  compareAllDay,
+  allDayRowHeight,
+  ALL_DAY_DROP_DURATION_MINS,
+} from './allDay';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -494,8 +501,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // arithmetic and the ghost can be re-segmented into whichever columns it covers.
   const [draggingEvent, setDraggingEvent] = useState<{
     todo: Todo;
-    origSpan: TodoSpan;
-    curSpan: TodoSpan;
+    // Null when the drag started from the all-day row: an untimed task has no span to
+    // move. One is synthesised from the pointer if and when it enters the grid.
+    origSpan: TodoSpan | null;
+    curSpan: TodoSpan | null;
     grabAbsMins: number;   // absolute minute under the cursor when the drag began
     grabDateStr: string;   // column grabbed in (to measure horizontal column delta)
     startX: number;        // where drag started (to calculate col offset)
@@ -786,10 +795,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
     const map = new Map<string, AllDayItem[]>();
     for (const { dateStr } of allDayColumns) {
-      const items: AllDayItem[] = (allDayByDate.get(dateStr) ?? [])
+      const column = allDayByDate.get(dateStr) ?? [];
+      const items: AllDayItem[] = column
         .filter(t => t.id !== inFlightId)
         .map(todo => ({ todo, isGhost: false }));
-      if (ghost && ghost.dateStr === dateStr) items.push({ todo: ghost.todo, isGhost: true });
+      if (ghost && ghost.dateStr === dateStr) {
+        // A chip dragged around inside its own column keeps its slot, because a
+        // same-column drop doesn't move it (the day is unchanged, so the save keeps
+        // its dailyOrder). Coming from anywhere else it goes to the end, which is
+        // where a task landing in a new day is placed.
+        const wasAt = column.findIndex(t => t.id === ghost.todo.id);
+        const at = wasAt === -1 ? items.length : wasAt;
+        items.splice(at, 0, { todo: ghost.todo, isGhost: true });
+      }
       map.set(dateStr, items);
     }
     return map;
@@ -905,6 +923,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   };
 
+  // Grabbing an all-day chip. Mirrors handleEventMouseDown, minus the span: there are
+  // no times to anchor on, so the drag starts spanless and in the all-day zone. Moving
+  // within the row only re-columns it; the span appears the moment it enters the grid.
+  const handleChipMouseDown = (e: React.MouseEvent, todo: Todo, dateStr: string) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+
+    setSettling(null); // a fresh grab supersedes any in-flight settle
+    setDraggingEvent({
+      todo,
+      origSpan: null,
+      curSpan: null,
+      grabAbsMins: 0, // unused: there's no grab offset to preserve without a span
+      grabDateStr: dateStr,
+      startX: e.clientX,
+      startY: e.clientY,
+      zone: 'allday',
+      allDayDate: dateStr,
+    });
+  };
+
   // Which day column a pointer x sits over, measured off the all-day row's strip -
   // the day columns only, gutter excluded. The grid's columns are the same width and
   // start at the same x (both sit right of the 64px gutter inside the same parent),
@@ -960,15 +999,33 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       // scroll container - gutter included - so every column was over-measured by
       // gutter/n px and a long horizontal drag drifted by a column.
       const colIndex = columnIndexAtX(e.clientX);
+      const colDateStr = format(visibleDays[colIndex], 'yyyy-MM-dd');
 
       // Whole-task move = pointer delta on the absolute timeline, snapped to 15min.
-      const pointerAbs =
-        dayIndex(format(visibleDays[colIndex], 'yyyy-MM-dd')) * MINS_PER_DAY +
-        (relativeY / HOUR_HEIGHT) * 60;
+      const pointerAbs = dayIndex(colDateStr) * MINS_PER_DAY + (relativeY / HOUR_HEIGHT) * 60;
       const delta = Math.round((pointerAbs - draggingEvent.grabAbsMins) / 15) * 15;
 
+      // A task dragged out of the all-day row has no span to shift, so one is built
+      // from the pointer each move: the block's TOP sits at the cursor (there's no
+      // grab offset to preserve), snapped to 15 minutes and kept inside the day.
+      const spanFromPointer = (): TodoSpan => {
+        const minsInDay = Math.min(
+          Math.max(Math.round(((relativeY / HOUR_HEIGHT) * 60) / 15) * 15, 0),
+          MINS_PER_DAY - ALL_DAY_DROP_DURATION_MINS
+        );
+        const absStart = dayIndex(colDateStr) * MINS_PER_DAY + minsInDay;
+        return normalizeSpanEnd({ absStart, absEnd: absStart + ALL_DAY_DROP_DURATION_MINS });
+      };
+
       setDraggingEvent(prev =>
-        prev ? { ...prev, zone: 'grid', allDayDate: null, curSpan: shiftSpan(prev.origSpan, delta) } : null
+        prev
+          ? {
+              ...prev,
+              zone: 'grid',
+              allDayDate: null,
+              curSpan: prev.origSpan ? shiftSpan(prev.origSpan, delta) : spanFromPointer(),
+            }
+          : null
       );
     };
 
@@ -1000,7 +1057,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       // commitSpan owns the write, including routing the task into its NEW dueDate
       // bucket, and keeps the card painted at its dropped spot until the prop echoes
       // back (see `settling`) so it doesn't flash to the old position first.
-      commitSpan(draggingEvent.todo, draggingEvent.curSpan);
+      //
+      // No span means the drag never reached the grid (it began on a chip and was
+      // released outside both bands) - nothing to write.
+      if (draggingEvent.curSpan) commitSpan(draggingEvent.todo, draggingEvent.curSpan);
       setDraggingEvent(null);
     };
 
@@ -1269,6 +1329,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           gutterWidth={GUTTER_WIDTH}
           accentFor={accentForTodo}
           onToggleTodo={onToggleTodo}
+          onChipMouseDown={handleChipMouseDown}
         />
 
         {/* Scrollable time grid */}
@@ -1401,7 +1462,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     // Active Dragging Event - keeps the card's cascade indent while it
                     // moves. Only while the pointer is over the grid: once it's over the
                     // all-day row that row draws the ghost, so there's exactly one.
-                    if (draggingEvent && draggingEvent.zone === 'grid') {
+                    if (draggingEvent && draggingEvent.zone === 'grid' && draggingEvent.curSpan) {
                       const seg = segmentFor(draggingEvent.curSpan, dateStr);
                       if (seg) ghosts.push(
                         <EventCard

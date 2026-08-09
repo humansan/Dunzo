@@ -96,11 +96,13 @@ export const AllDayRow: React.FC<{
   gutterWidth: number;
   accentFor: (todo: Todo) => string;
   onToggleTodo: (id: string) => void;
+  // Grabbing a chip: to move it to another column, or down into the time grid.
+  onChipMouseDown: (e: React.MouseEvent, todo: Todo, dateStr: string) => void;
   rowRef?: React.Ref<HTMLDivElement>;
   // The day-columns strip, gutter excluded - the measuring rod for "which column is
   // the pointer over" during a drag.
   stripRef?: React.Ref<HTMLDivElement>;
-}> = ({ days, itemsByDate, height, gutterWidth, accentFor, onToggleTodo, rowRef, stripRef }) => (
+}> = ({ days, itemsByDate, height, gutterWidth, accentFor, onToggleTodo, onChipMouseDown, rowRef, stripRef }) => (
   <div
     ref={rowRef}
     className="flex flex-shrink-0 border-b border-line-subtle"
@@ -125,8 +127,9 @@ export const AllDayRow: React.FC<{
                 top={allDayChipTop(i)}
                 isGhost={isGhost}
                 // A ghost is a preview of a drop in flight; it isn't the task, so it
-                // doesn't offer the task's completion toggle.
+                // neither offers the completion toggle nor starts a drag of its own.
                 onToggle={isGhost ? undefined : () => onToggleTodo(todo.id)}
+                onMouseDown={isGhost ? undefined : (e) => onChipMouseDown(e, todo, dateStr)}
               />
             ))}
           </div>
