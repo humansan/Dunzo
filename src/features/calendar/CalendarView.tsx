@@ -813,9 +813,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return map;
   }, [allDayColumns, allDayByDate, draggingEvent, settling, byId]);
 
-  // The row is as tall as the busiest VISIBLE day - a day off-screen doesn't stretch
-  // it - and never shorter than one slot, so it stays a drop target when empty. The
-  // ghost counts, so the row opens a slot for an incoming task instead of clipping it.
+  // Two heights, because the row grows OVER the grid rather than pushing it down.
+  //
+  // The space the row takes in the layout is what its committed tasks need
+  // (`allDayRestingHeight`) - read straight from allDayByDate, so it holds still for a
+  // whole gesture: a task being dragged out is still in there, one being dragged in
+  // isn't yet. The row itself is drawn at `allDayHeight`, which counts the ghost too,
+  // and overhangs the grid when the two differ. Nothing below moves mid-drag; the grid
+  // reflows once, on commit, as it would for any other change to the day's contents.
+  const allDayRestingHeight = useMemo(
+    () =>
+      allDayRowHeight(
+        allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayByDate.get(dateStr)?.length ?? 0), 0)
+      ),
+    [allDayColumns, allDayByDate]
+  );
+
+  // As tall as the busiest VISIBLE day - a day off-screen doesn't stretch it - and
+  // never shorter than one slot, so it stays a drop target when empty.
   const allDayHeight = useMemo(
     () =>
       allDayRowHeight(
@@ -900,6 +915,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     // Left click only
     if (e.button !== 0) return;
     e.stopPropagation(); // prevent drag selection
+    // Stop the browser from starting a text selection at the grab point - once one is
+    // under way it keeps extending across cards for the length of the drag.
+    e.preventDefault();
     if (!scrollContainerRef.current) return;
 
     // Anchor the drag on the absolute minute under the cursor, not the card's top:
@@ -929,6 +947,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const handleChipMouseDown = (e: React.MouseEvent, todo: Todo, dateStr: string) => {
     if (e.button !== 0) return;
     e.stopPropagation();
+    e.preventDefault(); // no text selection trailing out of the chip
 
     setSettling(null); // a fresh grab supersedes any in-flight settle
     setDraggingEvent({
@@ -1082,6 +1101,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   ) => {
     if (e.button !== 0) return;
     e.stopPropagation();
+    e.preventDefault(); // no text selection trailing out of the handle
     if (!scrollContainerRef.current) return;
 
     // Anchor on the pointer's ABSOLUTE grid position, exactly like the move handler.
@@ -1157,6 +1177,25 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       setSettling(null);
     }
   }, [dayTodos, settling]);
+
+  // One cursor for the whole gesture, and no text selection while it runs. Both are
+  // otherwise decided by whatever element the pointer is over - so a drag across the
+  // grid flickered crosshair → pointer → arrow, and sweeping over a card's label
+  // started selecting it. The class carries `!important` rules over every descendant
+  // (see index.css); an element's own cursor would win otherwise.
+  const dragCursor = draggingEvent
+    ? 'grabbing'
+    : resizingEvent
+      ? 'ns-resize'
+      : dragSelection
+        ? 'crosshair'
+        : null;
+  useEffect(() => {
+    if (!dragCursor) return;
+    const cls = `calendar-drag-${dragCursor}`;
+    document.body.classList.add(cls);
+    return () => document.body.classList.remove(cls);
+  }, [dragCursor]);
 
   // Safety net: never let a ghost wedge if the echo somehow never matches (e.g. a
   // rejected mutation rolls the cache back). The real echo lands within a tick, well
@@ -1319,18 +1358,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
 
         {/* All-day row: dated tasks with no time. A flex sibling of the header row and
-            the scroller, so it's pinned under the dates without any sticky handling. */}
-        <AllDayRow
-          rowRef={allDayRowRef}
-          stripRef={allDayStripRef}
-          days={allDayColumns}
-          itemsByDate={allDayColumnItems}
-          height={allDayHeight}
-          gutterWidth={GUTTER_WIDTH}
-          accentFor={accentForTodo}
-          onToggleTodo={onToggleTodo}
-          onChipMouseDown={handleChipMouseDown}
-        />
+            the scroller, so it's pinned under the dates without any sticky handling.
+            The wrapper holds the layout height and the row is drawn absolutely inside
+            it, so a row that grows for an incoming drag overhangs the grid instead of
+            shoving it down mid-gesture. */}
+        {/* z above every card the grid can raise - the hover lift (40) and the drag
+            ghost (50) - since the scroll container isn't a stacking context of its own,
+            so those z values compete directly with this wrapper's. */}
+        <div className="relative flex-shrink-0 z-[55]" style={{ height: `${allDayRestingHeight}px` }}>
+          <AllDayRow
+            rowRef={allDayRowRef}
+            stripRef={allDayStripRef}
+            days={allDayColumns}
+            itemsByDate={allDayColumnItems}
+            height={allDayHeight}
+            gutterWidth={GUTTER_WIDTH}
+            accentFor={accentForTodo}
+            onToggleTodo={onToggleTodo}
+            onChipMouseDown={handleChipMouseDown}
+          />
+        </div>
 
         {/* Scrollable time grid */}
         <div

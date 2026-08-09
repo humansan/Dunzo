@@ -103,13 +103,16 @@ export const AllDayRow: React.FC<{
   // the pointer over" during a drag.
   stripRef?: React.Ref<HTMLDivElement>;
 }> = ({ days, itemsByDate, height, gutterWidth, accentFor, onToggleTodo, onChipMouseDown, rowRef, stripRef }) => (
+  // Absolute inside the wrapper that owns the layout height: when the row is taller
+  // than that (a drag is adding a slot) it overhangs the grid rather than displacing
+  // it, so it needs its own opaque background to cover what's underneath.
   <div
     ref={rowRef}
-    className="flex flex-shrink-0 border-b border-line-subtle"
+    className="absolute inset-x-0 top-0 flex select-none bg-canvas border-b border-line-subtle"
     style={{ height: `${height}px` }}
   >
     <div
-      className="flex-shrink-0 flex items-start justify-end pr-2 pt-1 text-[10px] font-mono text-fg-ghost"
+      className="flex-shrink-0 flex items-center justify-end pr-2 text-[10px] font-mono text-fg-ghost"
       style={{ width: gutterWidth }}
     >
       all-day
