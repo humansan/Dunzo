@@ -1308,7 +1308,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
-                      className="absolute top-full mt-1 right-0 bg-surface border border-line rounded-xl shadow-2xl py-1 z-50 min-w-[80px]"
+                      className="absolute top-full mt-1 right-0 bg-surface border border-line rounded-xl shadow-2xl py-1 z-60 min-w-[80px]"
                     >
                       {DAY_OPTIONS.map((n) => (
                         <button
