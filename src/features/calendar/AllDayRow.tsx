@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Circle, CheckCircle2 } from 'lucide-react';
+import { Circle, CheckCircle2, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import { Todo } from '@shared/types';
 import { isDone } from '@/features/tasks/model';
+import { btnGhost } from '@/theme/buttons';
 import { ALL_DAY_CHIP_HEIGHT, allDayChipTop } from './allDay';
 
 // ─── All-day row ────────────────────────────────────────────────────────────
@@ -50,7 +51,7 @@ const AllDayChip: React.FC<{
       }}
     >
       {!done && <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: accent }} />}
-      <div className="flex items-center gap-1.5 min-w-0 pl-2 pr-1.5">
+      <div className="flex items-center gap-1.5 min-w-0 pl-2.5 pr-1.5">
         {/* Same dot-to-check swap as EventCard, including the reason the accent
             lives on a plain wrapper rather than the motion.div. */}
         <div
@@ -98,11 +99,19 @@ export const AllDayRow: React.FC<{
   onToggleTodo: (id: string) => void;
   // Grabbing a chip: to move it to another column, or down into the time grid.
   onChipMouseDown: (e: React.MouseEvent, todo: Todo, dateStr: string) => void;
+  // Collapsed: one line per column with a count instead of the chips. The row stays a
+  // drop target - dropping onto a collapsed column still commits, the count just
+  // ticks up - so collapsing is a way to reclaim height, not to switch the row off.
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   rowRef?: React.Ref<HTMLDivElement>;
   // The day-columns strip, gutter excluded - the measuring rod for "which column is
   // the pointer over" during a drag.
   stripRef?: React.Ref<HTMLDivElement>;
-}> = ({ days, itemsByDate, height, gutterWidth, accentFor, onToggleTodo, onChipMouseDown, rowRef, stripRef }) => (
+}> = ({
+  days, itemsByDate, height, gutterWidth, accentFor, onToggleTodo, onChipMouseDown,
+  collapsed, onToggleCollapsed, rowRef, stripRef,
+}) => (
   // Absolute inside the wrapper that owns the layout height: when the row is taller
   // than that (a drag is adding a slot) it overhangs the grid rather than displacing
   // it, so it needs its own opaque background to cover what's underneath.
@@ -112,17 +121,34 @@ export const AllDayRow: React.FC<{
     style={{ height: `${height}px` }}
   >
     <div
-      className="flex-shrink-0 flex items-center justify-end pr-2 text-[10px] font-mono text-fg-ghost"
+      className="flex-shrink-0 flex items-center h-7 justify-end gap-0.5 pr-0.75 text-[10px] font-mono text-fg-ghost"
       style={{ width: gutterWidth }}
     >
       all-day
+      <button
+        type="button"
+        onClick={onToggleCollapsed}
+        title={collapsed ? 'Show all-day tasks' : 'Collapse all-day tasks'}
+        className={`shrink-0 rounded p-0.5 ${btnGhost()}`}
+      >
+        {collapsed ? <ChevronsUpDown size={13} /> : <ChevronsDownUp size={13} />}
+      </button>
+
     </div>
     <div ref={stripRef} className="flex flex-1 min-w-0">
       {days.map(({ key, dateStr }) => {
         const items = itemsByDate.get(dateStr) ?? [];
         return (
           <div key={key} className="flex-1 relative border-l border-line-subtle">
-            {items.map(({ todo, isGhost }, i) => (
+            {collapsed ? (
+              // The ghost counts here too, so a task dragged onto a collapsed column
+              // still shows something happening.
+              items.length > 0 && (
+                <div className="absolute inset-0 flex items-center px-2 text-[11px] font-medium text-fg-faint truncate">
+                  {items.length} task{items.length === 1 ? '' : 's'}
+                </div>
+              )
+            ) : items.map(({ todo, isGhost }, i) => (
               <AllDayChip
                 key={isGhost ? 'ghost' : todo.id}
                 todo={todo}

@@ -51,6 +51,10 @@ import {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+// Whether the all-day row is collapsed, per browser. '1' collapsed, anything else
+// (including a missing key) expanded, so a first visit opens with the tasks visible.
+const ALL_DAY_COLLAPSED_KEY = 'dun-calendar-allday-collapsed';
+
 const HOUR_HEIGHT = 60; // px per hour
 const GUTTER_WIDTH = 64; // px - width of the left time-label gutter (the day grid + current-time line start here)
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -309,7 +313,7 @@ const EventCard: React.FC<{
         //   : '1px solid color-mix(in srgb, var(--accent1), transparent 70%)',
       }}
     >
-      <div className={`flex gap-1.5 min-w-0 pl-1 ${isSmall ? 'w-full' : ''}`}>
+      <div className={`flex gap-1.5 min-w-0 pl-0.5 ${isSmall ? 'w-full' : ''}`}>
         <div
           className="w-1.5 h-1.5 mt-1.5 rounded-full flex-shrink-0 flex items-center justify-center relative"
           onClick={(e) => {
@@ -813,6 +817,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return map;
   }, [allDayColumns, allDayByDate, draggingEvent, settling, byId]);
 
+  // Collapsed, the row is one line per column showing a count instead of the chips -
+  // a way to reclaim the height a busy week takes. It stays a live drop target either
+  // way. Kept in localStorage rather than user_settings: it's a per-browser layout
+  // preference (it follows the screen you're on, not the account), the same place the
+  // stats view keeps its chart interval.
+  const [allDayCollapsed, setAllDayCollapsed] = useState(
+    () => localStorage.getItem(ALL_DAY_COLLAPSED_KEY) === '1'
+  );
+  const toggleAllDayCollapsed = () => {
+    setAllDayCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem(ALL_DAY_COLLAPSED_KEY, next ? '1' : '0');
+      return next;
+    });
+  };
+
   // Two heights, because the row grows OVER the grid rather than pushing it down.
   //
   // The space the row takes in the layout is what its committed tasks need
@@ -821,12 +841,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // isn't yet. The row itself is drawn at `allDayHeight`, which counts the ghost too,
   // and overhangs the grid when the two differ. Nothing below moves mid-drag; the grid
   // reflows once, on commit, as it would for any other change to the day's contents.
+  // Collapsed, both heights are the one-slot minimum: a single line for the count.
   const allDayRestingHeight = useMemo(
     () =>
       allDayRowHeight(
-        allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayByDate.get(dateStr)?.length ?? 0), 0)
+        allDayCollapsed
+          ? 0
+          : allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayByDate.get(dateStr)?.length ?? 0), 0)
       ),
-    [allDayColumns, allDayByDate]
+    [allDayCollapsed, allDayColumns, allDayByDate]
   );
 
   // As tall as the busiest VISIBLE day - a day off-screen doesn't stretch it - and
@@ -834,9 +857,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const allDayHeight = useMemo(
     () =>
       allDayRowHeight(
-        allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayColumnItems.get(dateStr)?.length ?? 0), 0)
+        allDayCollapsed
+          ? 0
+          : allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayColumnItems.get(dateStr)?.length ?? 0), 0)
       ),
-    [allDayColumns, allDayColumnItems]
+    [allDayCollapsed, allDayColumns, allDayColumnItems]
   );
 
   // --- Drag Selection for Creation --- //
@@ -1376,6 +1401,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             accentFor={accentForTodo}
             onToggleTodo={onToggleTodo}
             onChipMouseDown={handleChipMouseDown}
+            collapsed={allDayCollapsed}
+            onToggleCollapsed={toggleAllDayCollapsed}
           />
         </div>
 
