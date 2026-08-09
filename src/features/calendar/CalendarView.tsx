@@ -17,7 +17,7 @@ import { Todo, DayTodos } from '@shared/types';
 import { btnNeutral } from '@/theme/buttons';
 import { formatTime12h, minutesToTime } from '@/common/lib/time';
 import { isDone } from '@/features/tasks/model';
-import { collectionOf, todoIndex } from '@/features/tasks/model';
+import { collectionOf, todoIndex, UNDATED } from '@/features/tasks/model';
 import { collectionColor } from '@/theme/collectionColor';
 import { Calendar } from '@/common/ui/Calendar';
 import { Checkbox } from '@/common/ui/Checkbox';
@@ -61,6 +61,18 @@ const HOVER_RAISE_DELAY_MS = 400; // dwell before a hovered card lifts, so passi
 function minutesToPx(mins: number): number {
   return (mins / 60) * HOUR_HEIGHT;
 }
+
+// The four fields a calendar write ever touches. A key set to undefined means
+// "clear it" - nullifyUndefined turns that into a SQL NULL at the request boundary -
+// so the keys are always present, never omitted.
+type SchedulePatch = Pick<Todo, 'startDate' | 'startTime' | 'dueDate' | 'dueTime'>;
+const SCHEDULE_KEYS = ['startDate', 'startTime', 'dueDate', 'dueTime'] as const;
+
+// Where a settling ghost is drawn: at a span in the time grid, or as a chip in the
+// all-day row (which has no time to place it at, only a column).
+type SettlePlacement =
+  | { kind: 'grid'; span: TodoSpan }
+  | { kind: 'allday'; dateStr: string };
 
 // Assign each event a cascade indent lane, Notion-style: the smallest lane not
 // currently occupied by an earlier-starting event it overlaps (two events overlap
@@ -507,15 +519,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // flash forward". So we keep drawing the card at its dropped spot (and keep the
   // original hidden) until the prop reports the committed time, then release. Same
   // preview-until-echo trick TimeInput uses for its rails.
+  //
+  // `placement` is where to draw the ghost, which is not always a span: a task
+  // dropped on the all-day row has no time to draw at, only a column.
   const [settling, setSettling] = useState<{
     id: string;
-    span: TodoSpan;
-    // The bucket we committed into (the NEW dueDate), which is where the echo lands.
-    dueDate: string;
-    // The exact HH:MM we committed; the ghost lifts once the prop echoes both back.
-    expectStart: string;
-    expectEnd: string;
     accent: string;
+    placement: SettlePlacement;
+    // The bucket we committed into (the NEW dueDate, or UNDATED when we cleared it),
+    // which is where the echo lands.
+    bucket: string;
+    // The exact schedule we committed; the ghost lifts once the prop echoes it back.
+    // All four keys, not just the times, so "cleared" is as expressible as "set" -
+    // matching on undefined works because the optimistic cache merge keeps an
+    // explicit undefined (see useUpdateTodo in features/tasks/api/todos.ts).
+    expect: SchedulePatch;
   } | null>(null);
 
   const byId = useMemo(() => todoIndex(dayTodos), [dayTodos]);
@@ -532,7 +550,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [byId]
   );
 
-  // Persist a task's new span after a move or resize, and hold the settling ghost.
+  // Persist a task's new schedule and hold the settling ghost over the gap.
   //
   // Buckets are keyed by dueDate, and a 2-day task renders in a column that is NOT
   // its dueDate - so a cross-day drag changes which bucket the task belongs to.
@@ -540,24 +558,33 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // day with it": two requests, the first of which DELETED the task (the day array
   // was authoritative), so a lost race between them destroyed it outright. It's one
   // row and one write now - dueDate is the only thing that decides the bucket.
-  const commitSpan = useCallback((todo: Todo, span: TodoSpan) => {
-    const patch = decomposeSpan(span);
-    const updated = { ...todo, ...patch } as Todo;
-
+  //
+  // `expect` is taken from the patch as written, BEFORE the save path runs it through
+  // reconcileSchedule (see writeHubTodo). That's sound for the shapes produced here -
+  // a grid drop sets both sides complete, an all-day drop clears both times - neither
+  // of which reconcileSchedule alters. A future patch shape that it DOES rewrite would
+  // never echo back what we recorded, and the ghost would hang until the 600ms net.
+  const commitSchedule = useCallback((todo: Todo, patch: SchedulePatch, placement: SettlePlacement) => {
     // One write either way. A cross-day drag is just a save whose dueDate differs;
     // onSaveTodo notices that itself and lands the task at the bottom of the day it
     // moved to, so there's no branch here (and no second handler) to keep in step.
-    onSaveTodo(updated);
+    onSaveTodo({ ...todo, ...patch } as Todo);
 
     setSettling({
       id: todo.id,
-      span,
-      dueDate: patch.dueDate!,
-      expectStart: patch.startTime!,
-      expectEnd: patch.dueTime!,
       accent: accentForTodo(todo),
+      placement,
+      // Clearing the dueDate drops the task into the undated bucket, which is where
+      // its echo will land.
+      bucket: patch.dueDate ?? UNDATED,
+      expect: patch,
     });
   }, [onSaveTodo, accentForTodo]);
+
+  // A move or resize on the time grid: the span decides all four schedule fields.
+  const commitSpan = useCallback((todo: Todo, span: TodoSpan) => {
+    commitSchedule(todo, decomposeSpan(span), { kind: 'grid', span });
+  }, [commitSchedule]);
 
   // const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -972,9 +999,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   useEffect(() => {
     if (!settling) return;
     // The echo lands in the bucket we wrote into - the task's NEW dueDate.
-    const day = dayTodos.find(d => d.date === settling.dueDate);
+    const day = dayTodos.find(d => d.date === settling.bucket);
     const t = day?.todos.find(x => x?.id === settling.id);
-    if (t && t.startTime === settling.expectStart && t.dueTime === settling.expectEnd) {
+    // All four fields, so a cleared time (undefined === undefined) releases the ghost
+    // exactly as a set one does.
+    if (t && SCHEDULE_KEYS.every(k => t[k] === settling.expect[k])) {
       setSettling(null);
     }
   }, [dayTodos, settling]);
@@ -1150,6 +1179,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           gutterWidth={GUTTER_WIDTH}
           accentFor={accentForTodo}
           onToggleTodo={onToggleTodo}
+          // The original stays hidden wherever it lives for the settle window, the
+          // same rule the grid's cards follow - so the ghost is the only copy of a
+          // task on screen while a drop lands.
+          hiddenTodoId={settling?.id ?? null}
         />
 
         {/* Scrollable time grid */}
@@ -1319,10 +1352,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                     // Settling ghost: covers the drop until the prop echoes the new
                     // time. Rendered in the resting (non-drag) style so the handoff to
-                    // the real card is invisible.
+                    // the real card is invisible. Only a grid placement draws here - a
+                    // task settling into the all-day row is drawn by that row instead.
                     const settlingTodo = settling ? byId.get(settling.id) : undefined;
-                    if (settling && settlingTodo) {
-                      const seg = segmentFor(settling.span, dateStr);
+                    if (settling && settlingTodo && settling.placement.kind === 'grid') {
+                      const { span } = settling.placement;
+                      const seg = segmentFor(span, dateStr);
                       if (seg) ghosts.push(
                         <EventCard
                           key="settle"
@@ -1332,7 +1367,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                           endMin={seg.endMin}
                           continuesBefore={seg.continuesBefore}
                           continuesAfter={seg.continuesAfter}
-                          durationMins={settling.span.absEnd - settling.span.absStart}
+                          durationMins={span.absEnd - span.absStart}
                           indentLevel={overlapLayout.get(settling.id) ?? 0}
                         />
                       );
