@@ -100,8 +100,7 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         </div>
       </div>
 
-      <div className="mt-auto">
-      <div className="flex items-baseline gap-0.5 mb-3">
+      <div className="mt-auto flex items-baseline gap-0.5 mb-2">
         {mainValue !== null ? (
           <>
             <span className="text-4xl font-bold tracking-tighter" style={{ color: tracker.color }}>
@@ -122,19 +121,33 @@ export const TrackerCard: React.FC<TrackerCardProps> = ({ tracker, onDelete, onE
         </div>
       </div>
 
-      <div className="relative h-1 w-full bg-fill-subtle rounded-full">
+      {/* <div className="absolute inset-x-0 bottom-0 h-1.25 bg-fill-subtle"> 
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${data.percentage}%` }}
           transition={{ duration: 0.5, ease: EXPO_OUT }}
-          className="h-full rounded-full relative z-10"
+          className="h-full"
+          style={{
+            backgroundColor: tracker.color,
+            boxShadow: `0 0 16px ${tracker.color}30`
+          }}
+        />
+      </div> */}
+
+      {/*OLD STYLE*/}
+      <div className="relative h-1.25 w-full bg-fill-subtle">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${data.percentage}%` }}
+          transition={{ duration: 0.5, ease: EXPO_OUT }}
+          className="h-full relative z-10"
           style={{
             backgroundColor: tracker.color,
             boxShadow: `0 0 6px ${tracker.color}40`
           }}
         />
       </div>
-      </div>
+     
     </motion.div>
   );
 };
