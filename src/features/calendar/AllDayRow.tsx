@@ -79,23 +79,28 @@ const AllDayChip: React.FC<{
   );
 };
 
+// One chip's worth of a column: a real task, or the preview of one being dropped in.
+export interface AllDayItem {
+  todo: Todo;
+  isGhost: boolean;
+}
+
 export const AllDayRow: React.FC<{
   // The row's columns - the same array (and therefore the same widths) the header
   // and the grid use.
   days: { key: string; dateStr: string }[];
-  // Untimed tasks per date string, already filtered and in display order.
-  itemsByDate: Map<string, Todo[]>;
+  // Per column, in display order, ghost included - CalendarView decides what belongs
+  // where (and what's hidden mid-drag) so the row never has to reason about it.
+  itemsByDate: Map<string, AllDayItem[]>;
   height: number;
   gutterWidth: number;
   accentFor: (todo: Todo) => string;
   onToggleTodo: (id: string) => void;
-  // Hidden while its drag/settle preview is on screen (phases 3-4).
-  hiddenTodoId?: string | null;
   rowRef?: React.Ref<HTMLDivElement>;
   // The day-columns strip, gutter excluded - the measuring rod for "which column is
-  // the pointer over" once dragging arrives.
+  // the pointer over" during a drag.
   stripRef?: React.Ref<HTMLDivElement>;
-}> = ({ days, itemsByDate, height, gutterWidth, accentFor, onToggleTodo, hiddenTodoId = null, rowRef, stripRef }) => (
+}> = ({ days, itemsByDate, height, gutterWidth, accentFor, onToggleTodo, rowRef, stripRef }) => (
   <div
     ref={rowRef}
     className="flex flex-shrink-0 border-b border-line-subtle"
@@ -112,15 +117,17 @@ export const AllDayRow: React.FC<{
         const items = itemsByDate.get(dateStr) ?? [];
         return (
           <div key={key} className="flex-1 relative border-l border-line-subtle">
-            {items.map((todo, i) => (
-              <div key={todo.id} className={todo.id === hiddenTodoId ? 'hidden' : ''}>
-                <AllDayChip
-                  todo={todo}
-                  accent={accentFor(todo)}
-                  top={allDayChipTop(i)}
-                  onToggle={() => onToggleTodo(todo.id)}
-                />
-              </div>
+            {items.map(({ todo, isGhost }, i) => (
+              <AllDayChip
+                key={isGhost ? 'ghost' : todo.id}
+                todo={todo}
+                accent={accentFor(todo)}
+                top={allDayChipTop(i)}
+                isGhost={isGhost}
+                // A ghost is a preview of a drop in flight; it isn't the task, so it
+                // doesn't offer the task's completion toggle.
+                onToggle={isGhost ? undefined : () => onToggleTodo(todo.id)}
+              />
             ))}
           </div>
         );

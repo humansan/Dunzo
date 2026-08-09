@@ -39,7 +39,7 @@ import {
   hasDuePoint,
   type TodoSpan,
 } from './span';
-import { AllDayRow } from './AllDayRow';
+import { AllDayRow, type AllDayItem } from './AllDayRow';
 import { allDayDateOf, isUntimedDated, compareAllDay, allDayRowHeight } from './allDay';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -500,6 +500,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     grabDateStr: string;   // column grabbed in (to measure horizontal column delta)
     startX: number;        // where drag started (to calculate col offset)
     startY: number;        // where drag started Y
+    // Which band the pointer is currently over. One drag can cross between them, so
+    // the zone - not where the drag began - decides what the ghost looks like and
+    // what the drop writes.
+    zone: 'grid' | 'allday';
+    allDayDate: string | null; // the column under the pointer, while zone is 'allday'
   } | null>(null);
 
   const [resizingEvent, setResizingEvent] = useState<{
@@ -760,14 +765,45 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return map;
   }, [dayTodos, passesGates]);
 
+  // What each column of the row actually draws, ghost included.
+  //
+  // The ghost is a task on its way INTO the row - dragged out of the grid, or already
+  // committed and waiting for the echo. In the settling case the optimistic cache can
+  // report the task as untimed before the ghost lifts, which would draw it twice, so
+  // the in-flight task is filtered out of the real list either way and the ghost is
+  // the single copy on screen.
+  const allDayColumnItems = useMemo(() => {
+    const ghost: { todo: Todo; dateStr: string } | null =
+      draggingEvent?.zone === 'allday' && draggingEvent.allDayDate
+        ? { todo: draggingEvent.todo, dateStr: draggingEvent.allDayDate }
+        : settling?.placement.kind === 'allday'
+          ? (() => {
+              const t = byId.get(settling.id);
+              return t ? { todo: t, dateStr: settling.placement.dateStr } : null;
+            })()
+          : null;
+    const inFlightId = draggingEvent?.todo.id ?? settling?.id ?? null;
+
+    const map = new Map<string, AllDayItem[]>();
+    for (const { dateStr } of allDayColumns) {
+      const items: AllDayItem[] = (allDayByDate.get(dateStr) ?? [])
+        .filter(t => t.id !== inFlightId)
+        .map(todo => ({ todo, isGhost: false }));
+      if (ghost && ghost.dateStr === dateStr) items.push({ todo: ghost.todo, isGhost: true });
+      map.set(dateStr, items);
+    }
+    return map;
+  }, [allDayColumns, allDayByDate, draggingEvent, settling, byId]);
+
   // The row is as tall as the busiest VISIBLE day - a day off-screen doesn't stretch
-  // it - and never shorter than one slot, so it stays a drop target when empty.
+  // it - and never shorter than one slot, so it stays a drop target when empty. The
+  // ghost counts, so the row opens a slot for an incoming task instead of clipping it.
   const allDayHeight = useMemo(
     () =>
       allDayRowHeight(
-        allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayByDate.get(dateStr)?.length ?? 0), 0)
+        allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayColumnItems.get(dateStr)?.length ?? 0), 0)
       ),
-    [allDayColumns, allDayByDate]
+    [allDayColumns, allDayColumnItems]
   );
 
   // --- Drag Selection for Creation --- //
@@ -864,8 +900,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       grabDateStr: dateStr,
       startX: e.clientX,
       startY: e.clientY,
+      zone: 'grid',
+      allDayDate: null,
     });
   };
+
+  // Which day column a pointer x sits over, measured off the all-day row's strip -
+  // the day columns only, gutter excluded. The grid's columns are the same width and
+  // start at the same x (both sit right of the 64px gutter inside the same parent),
+  // so this is the measuring rod for both bands.
+  const columnIndexAtX = useCallback((clientX: number): number => {
+    const strip = allDayStripRef.current?.getBoundingClientRect();
+    const n = visibleDays.length;
+    if (!strip || n === 0 || strip.width === 0) return 0;
+    const idx = Math.floor((clientX - strip.left) / (strip.width / n));
+    return Math.max(0, Math.min(idx, n - 1));
+  }, [visibleDays.length]);
+
+  // Is the pointer over the all-day row's droppable area? Measured from the live
+  // rects rather than a stored y-threshold, because the row's height changes DURING a
+  // drag (it grows a slot for the incoming ghost). The gutter is excluded, so a
+  // release over the "all-day" label reads as a grid drop rather than silently
+  // stripping the task's times.
+  const isOverAllDay = useCallback((clientX: number, clientY: number): boolean => {
+    const row = allDayRowRef.current?.getBoundingClientRect();
+    const strip = allDayStripRef.current?.getBoundingClientRect();
+    if (!row || !strip) return false;
+    return clientY >= row.top && clientY <= row.bottom && clientX >= strip.left && clientX <= strip.right;
+  }, []);
 
   useEffect(() => {
     if (!draggingEvent) return;
@@ -877,15 +939,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       const deltaX = Math.abs(e.clientX - draggingEvent.startX);
       if (deltaY < 3 && deltaX < 3) return; // ignore minimal twitch
 
+      // Over the all-day row: the task is heading for "this day, no time". There's no
+      // vertical position to track - only which column - so the span is left as it is
+      // and simply ignored unless the pointer comes back down to the grid.
+      if (isOverAllDay(e.clientX, e.clientY)) {
+        const dateStr = format(visibleDays[columnIndexAtX(e.clientX)], 'yyyy-MM-dd');
+        setDraggingEvent(prev =>
+          prev && prev.zone === 'allday' && prev.allDayDate === dateStr
+            ? prev
+            : prev && { ...prev, zone: 'allday', allDayDate: dateStr }
+        );
+        return;
+      }
+
       const containerRect = scrollContainerRef.current.getBoundingClientRect();
       const relativeY = e.clientY - containerRect.top + scrollContainerRef.current.scrollTop;
 
-      // Which column the pointer is over (clamped to the visible window). Assumes
-      // equal column widths, as before.
-      const colWidth = containerRect.width / visibleDays.length;
-      const grabColIndex = visibleDays.findIndex(d => format(d, 'yyyy-MM-dd') === draggingEvent.grabDateStr);
-      const colsMoved = Math.round((e.clientX - draggingEvent.startX) / colWidth);
-      const colIndex = Math.max(0, Math.min(grabColIndex + colsMoved, visibleDays.length - 1));
+      // The column the pointer is actually over. This used to be the grab column plus
+      // a rounded delta of pointer travel divided by a column width taken from the
+      // scroll container - gutter included - so every column was over-measured by
+      // gutter/n px and a long horizontal drag drifted by a column.
+      const colIndex = columnIndexAtX(e.clientX);
 
       // Whole-task move = pointer delta on the absolute timeline, snapped to 15min.
       const pointerAbs =
@@ -893,7 +967,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         (relativeY / HOUR_HEIGHT) * 60;
       const delta = Math.round((pointerAbs - draggingEvent.grabAbsMins) / 15) * 15;
 
-      setDraggingEvent(prev => (prev ? { ...prev, curSpan: shiftSpan(prev.origSpan, delta) } : null));
+      setDraggingEvent(prev =>
+        prev ? { ...prev, zone: 'grid', allDayDate: null, curSpan: shiftSpan(prev.origSpan, delta) } : null
+      );
     };
 
     const handleMouseUp = (e: MouseEvent) => {
@@ -903,6 +979,20 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       if (dist < 5) {
         // It's a click, not a drag - open the task in the full view.
         onOpenTask(draggingEvent.todo.id);
+        setDraggingEvent(null);
+        return;
+      }
+
+      // Dropped on the all-day row: keep the day, lose the clock. startDate goes with
+      // the times, so a task that spanned two days collapses onto the column it was
+      // dropped on rather than staying a range with no hours - one untimed task, one
+      // day, which is all this row can express.
+      if (draggingEvent.zone === 'allday' && draggingEvent.allDayDate) {
+        commitSchedule(
+          draggingEvent.todo,
+          { startDate: undefined, startTime: undefined, dueDate: draggingEvent.allDayDate, dueTime: undefined },
+          { kind: 'allday', dateStr: draggingEvent.allDayDate }
+        );
         setDraggingEvent(null);
         return;
       }
@@ -920,7 +1010,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingEvent, dayTodos, commitSpan, visibleDays, onOpenTask]);
+  }, [draggingEvent, dayTodos, commitSpan, commitSchedule, visibleDays, onOpenTask, columnIndexAtX, isOverAllDay]);
 
   // --- Drag Resizing --- //
   const handleEventResizeStart = (
@@ -1174,15 +1264,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           rowRef={allDayRowRef}
           stripRef={allDayStripRef}
           days={allDayColumns}
-          itemsByDate={allDayByDate}
+          itemsByDate={allDayColumnItems}
           height={allDayHeight}
           gutterWidth={GUTTER_WIDTH}
           accentFor={accentForTodo}
           onToggleTodo={onToggleTodo}
-          // The original stays hidden wherever it lives for the settle window, the
-          // same rule the grid's cards follow - so the ghost is the only copy of a
-          // task on screen while a drop lands.
-          hiddenTodoId={settling?.id ?? null}
         />
 
         {/* Scrollable time grid */}
@@ -1312,8 +1398,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {(() => {
                     const ghosts: React.ReactNode[] = [];
 
-                    // Active Dragging Event - keeps the card's cascade indent while it moves.
-                    if (draggingEvent) {
+                    // Active Dragging Event - keeps the card's cascade indent while it
+                    // moves. Only while the pointer is over the grid: once it's over the
+                    // all-day row that row draws the ghost, so there's exactly one.
+                    if (draggingEvent && draggingEvent.zone === 'grid') {
                       const seg = segmentFor(draggingEvent.curSpan, dateStr);
                       if (seg) ghosts.push(
                         <EventCard
