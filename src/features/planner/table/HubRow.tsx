@@ -120,7 +120,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // Drop handlers shared by both row variants. stopPropagation so the table's
   // container-level onDrop (a fallback for releases over the header/gaps) doesn't
   // also fire and double-commit.
+  // dragEnter is handled alongside dragOver: an element only becomes a drop target
+  // once one of the two is cancelled ON it, and a row is a stack of nested cells - so
+  // handling dragOver alone leaves a frame on entering each one where the drop is
+  // refused and the cursor flashes the circle-slash.
   const dropProps = {
+    onDragEnter: (e: React.DragEvent) => onRowDragOver?.(todo.id, e),
     onDragOver: (e: React.DragEvent) => onRowDragOver?.(todo.id, e),
     onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); onRowDrop?.(); },
   };
