@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { GripVertical } from 'lucide-react';
 import { Tracker } from '@shared/types';
 import { PopoverMenu } from '@/common/ui';
@@ -21,28 +21,51 @@ export const TrackerOrderMenu: React.FC<{
 }> = ({ anchor, trackers, onMove, onClose }) => {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropInfo, setDropInfo] = useState<{ id: string; pos: 'before' | 'after' } | null>(null);
+  // Same value as `dragId`, written synchronously in onDragStart. The state update
+  // only lands on the next render, and the first dragEnter/dragOver events arrive
+  // before that - reading state there would refuse the drop for the first frames of
+  // every drag. `dragId` still drives rendering (the dragged row's dim).
+  const dragIdRef = useRef<string | null>(null);
 
+  // Bound to dragEnter AND dragOver: an element is only a drop target once one of
+  // the two is cancelled on it, and a row is several nested elements (grip, colour
+  // dot, label) - handling dragOver alone leaves a frame on entering each one where
+  // the drop is refused and the cursor flips to circle-slash.
   const onRowDragOver = (e: React.DragEvent, id: string) => {
-    if (!dragId) { if (dropInfo) setDropInfo(null); return; }
+    if (!dragIdRef.current) { if (dropInfo) setDropInfo(null); return; }
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const rect = e.currentTarget.getBoundingClientRect();
     const pos: 'before' | 'after' = (e.clientY - rect.top) / rect.height < 0.5 ? 'before' : 'after';
     setDropInfo((prev) => (prev?.id === id && prev.pos === pos ? prev : { id, pos }));
   };
-  const commitDrop = () => {
-    if (dragId && dropInfo && dropInfo.id !== dragId) onMove(dragId, dropInfo.id, dropInfo.pos);
+  const endDrag = () => {
+    dragIdRef.current = null;
     setDragId(null);
     setDropInfo(null);
   };
+  const commitDrop = () => {
+    const id = dragIdRef.current;
+    if (id && dropInfo && dropInfo.id !== id) onMove(id, dropInfo.id, dropInfo.pos);
+    endDrag();
+  };
+
+  // Panel-wide, so the title strip, the panel padding and the gaps between rows stay
+  // part of the drop zone - the cursor holds its drag shape for the whole sweep
+  // instead of flickering whenever the pointer leaves a row.
+  const allowDrop = (e: React.DragEvent) => { if (dragIdRef.current) e.preventDefault(); };
 
   return (
-    <PopoverMenu anchor={anchor} title="Order" onClose={onClose} className="w-60 p-1 space-y-2.5">
-      <div
-        className="space-y-0.5"
-        onDragOver={(e) => { if (dragId) e.preventDefault(); }}
-        onDrop={(e) => { e.preventDefault(); commitDrop(); }}
-      >
+    <PopoverMenu
+      anchor={anchor}
+      title="Order"
+      onClose={onClose}
+      className="w-60 p-1 space-y-2.5"
+      onDragEnter={allowDrop}
+      onDragOver={allowDrop}
+      onDrop={(e) => { e.preventDefault(); commitDrop(); }}
+    >
+      <div className="space-y-0.5">
         {trackers.length === 0 && (
           <div className="px-2 py-1.5 text-[13px] text-fg-faint">No widgets yet</div>
         )}
@@ -54,11 +77,13 @@ export const TrackerOrderMenu: React.FC<{
               className="relative"
               draggable
               onDragStart={(e) => {
+                dragIdRef.current = tracker.id;
                 setDragId(tracker.id);
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', tracker.id);
               }}
-              onDragEnd={() => { setDragId(null); setDropInfo(null); }}
+              onDragEnd={endDrag}
+              onDragEnter={(e) => onRowDragOver(e, tracker.id)}
               onDragOver={(e) => onRowDragOver(e, tracker.id)}
             >
               {drop === 'before' && (
