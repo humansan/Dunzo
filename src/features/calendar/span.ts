@@ -16,8 +16,9 @@ import { minutesToTime } from '@/common/lib/time';
 export const MINS_PER_DAY = 1440;
 
 // The longest task the calendar draws: 24 hours. Anything longer is a multi-day
-// task and belongs in the all-day bar across the header, which isn't built yet, so
-// those aren't rendered at all (see isRenderableSpan). Drag and resize clamp to
+// task and belongs in the all-day bar across the header - which now exists but takes
+// UNTIMED tasks only (see allDay.ts), so those still aren't rendered at all (see
+// isRenderableSpan). Drag and resize clamp to
 // this, so an edge stops at 24h rather than silently pushing the task out of view.
 //
 // This one rule also bounds the grid to two day columns, which is why no separate
@@ -130,7 +131,8 @@ export function spanDuration(span: TodoSpan): number {
 }
 
 // Whether the calendar draws this span at all. Over 24h is a multi-day task, which
-// belongs in the (not yet built) all-day header bar rather than the time grid. The
+// belongs in the all-day header bar rather than the time grid - and that row holds
+// untimed tasks only, so a long span is still drawn nowhere. The
 // day-count check is redundant given the duration cap - it's kept as a cheap guard
 // for stored data that predates the cap.
 export function isRenderableSpan(span: TodoSpan): boolean {

@@ -39,6 +39,8 @@ import {
   hasDuePoint,
   type TodoSpan,
 } from './span';
+import { AllDayRow } from './AllDayRow';
+import { allDayDateOf, isUntimedDated, compareAllDay, allDayRowHeight } from './allDay';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -560,11 +562,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   // const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dayPickerRef = useRef<HTMLDivElement>(null);
+  // The all-day row, and its day-columns strip (gutter excluded). Both are measured
+  // during a drag: the row decides which zone the pointer is in, the strip is the
+  // measuring rod for which column it's over.
+  const allDayRowRef = useRef<HTMLDivElement>(null);
+  const allDayStripRef = useRef<HTMLDivElement>(null);
 
   // Visible days array
   const visibleDays = useMemo(() => {
     return Array.from({ length: dayCount }, (_, i) => addDays(focusDate, i));
   }, [focusDate, dayCount]);
+
+  // The columns, as the all-day row wants them (it has no need for Date objects).
+  const allDayColumns = useMemo(
+    () => visibleDays.map((d) => ({ key: d.toISOString(), dateStr: format(d, 'yyyy-MM-dd') })),
+    [visibleDays]
+  );
 
   // Auto-scroll to ~7 AM on mount and when focus changes
   useLayoutEffect(() => {
@@ -628,6 +641,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [showUncategorized, checkedColls, byId]
   );
 
+  // The filters that decide whether a task is on this calendar AT ALL, independent of
+  // where it gets drawn. Shared by the time grid and the all-day row so the two can
+  // never disagree about what's visible: unchecking a collection has to empty both.
+  const passesGates = useCallback(
+    (t: Todo): boolean => {
+      // Archived tasks are hidden entirely unless "show archived" is on; this gate
+      // owns the archived exclusion, so the planner surface below uses raw
+      // showInDatabase (equivalent to showsInOrganizer for non-archived tasks).
+      if (t.archived && !showArchived) return false;
+      // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
+      const inSet =
+        (showDaily && t.showInDailyList === true) || (showPlanner && t.showInDatabase === true);
+      // Stage 2 - the uncategorized/collection filters narrow that base set.
+      return inSet && passesCollectionFilter(t);
+    },
+    [showArchived, showDaily, showPlanner, passesCollectionFilter]
+  );
+
   // Every renderable task, expanded into each day column its span touches.
   //
   // A task used to be read straight out of the dueDate bucket matching the column,
@@ -651,23 +682,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         // real rule (a side counts only with a date AND a time). The 30-minute default
         // for a one-sided task is applied at render (kept off the todo) so the event
         // card can tell which side was never set and label it "starts"/"ends".
+        // An untimed task isn't dropped any more - it goes to the all-day row below.
         if (!t || !(t.startTime || t.dueTime)) continue;
-        // Archived tasks are hidden entirely unless "show archived" is on; the gate
-        // owns the archived exclusion, so the planner surface below uses raw
-        // showInDatabase (equivalent to showsInOrganizer for non-archived tasks).
-        if (t.archived && !showArchived) continue;
 
         const span = todoSpan(t);
         // A null span means there's no real date to place the task on. Over 24h is a
-        // multi-day task: it belongs in the all-day header bar rather than the time
-        // grid, and that isn't built yet - so it isn't drawn at all.
+        // multi-day task, which still isn't drawn: the all-day row below takes UNTIMED
+        // tasks only, and rendering a timed span as a bar across columns is its own
+        // job (it would need the row to lay out spanning bars, not a stack of chips).
         if (!span || !isRenderableSpan(span)) continue;
 
-        // Stage 1 - base set: the union of the enabled surfaces (both off ⇒ nothing).
-        const inSet =
-          (showDaily && t.showInDailyList === true) || (showPlanner && t.showInDatabase === true);
-        // Stage 2 - the uncategorized/collection filters narrow that base set.
-        if (!inSet || !passesCollectionFilter(t)) continue;
+        if (!passesGates(t)) continue;
 
         const firstIdx = Math.floor(span.absStart / MINS_PER_DAY);
         const lastIdx = Math.floor(span.absEnd / MINS_PER_DAY);
@@ -680,11 +705,42 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       }
     }
     return map;
-  }, [dayTodos, showDaily, showPlanner, showArchived, passesCollectionFilter]);
+  }, [dayTodos, passesGates]);
 
   const getTodosForDate = useCallback(
     (dateStr: string) => todosByDate.get(dateStr) ?? [],
     [todosByDate]
+  );
+
+  // The all-day row's contents: dated tasks with no time on either side, keyed by the
+  // column they belong to. Disjoint from todosByDate by construction - that map needs
+  // a time, this one needs the absence of one - so nothing is drawn twice.
+  //
+  // Note this reads EVERY bucket, including the undated one: a task with only a
+  // startDate lives there, and its start date is still a column it can be shown in.
+  const allDayByDate = useMemo(() => {
+    const map = new Map<string, Todo[]>();
+    for (const day of dayTodos) {
+      for (const t of day.todos || []) {
+        if (!t || !isUntimedDated(t) || !passesGates(t)) continue;
+        const key = allDayDateOf(t)!;
+        const arr = map.get(key);
+        if (arr) arr.push(t);
+        else map.set(key, [t]);
+      }
+    }
+    for (const arr of map.values()) arr.sort(compareAllDay);
+    return map;
+  }, [dayTodos, passesGates]);
+
+  // The row is as tall as the busiest VISIBLE day - a day off-screen doesn't stretch
+  // it - and never shorter than one slot, so it stays a drop target when empty.
+  const allDayHeight = useMemo(
+    () =>
+      allDayRowHeight(
+        allDayColumns.reduce((max, { dateStr }) => Math.max(max, allDayByDate.get(dateStr)?.length ?? 0), 0)
+      ),
+    [allDayColumns, allDayByDate]
   );
 
   // --- Drag Selection for Creation --- //
@@ -1082,6 +1138,19 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
             );
           })}
         </div>
+
+        {/* All-day row: dated tasks with no time. A flex sibling of the header row and
+            the scroller, so it's pinned under the dates without any sticky handling. */}
+        <AllDayRow
+          rowRef={allDayRowRef}
+          stripRef={allDayStripRef}
+          days={allDayColumns}
+          itemsByDate={allDayByDate}
+          height={allDayHeight}
+          gutterWidth={GUTTER_WIDTH}
+          accentFor={accentForTodo}
+          onToggleTodo={onToggleTodo}
+        />
 
         {/* Scrollable time grid */}
         <div
