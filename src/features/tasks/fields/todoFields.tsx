@@ -49,6 +49,16 @@ export const xpDisabledReason = (dated: boolean, inDailyList: boolean): string |
   return 'XP is earned on the daily list - turn on Daily Tasks';
 };
 
+// Open a text editor with the caret AFTER the existing text, not before it. Focusing
+// a field programmatically (autoFocus) leaves the caret at offset 0, so opening a
+// title or a note put the cursor in front of everything already written - the one
+// place you almost never want to type. Bind to onFocus rather than a mount effect so
+// it also covers a re-focus (tabbing back to the field).
+export const caretToEnd = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const el = e.currentTarget;
+  el.setSelectionRange(el.value.length, el.value.length);
+};
+
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
 export const fieldInputClass =
   'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
@@ -202,6 +212,7 @@ export const NotesField: React.FC<{
       // would get bounced there. Same fix as the title editor in HubRow.
       defaultValue={value}
       autoFocus={autoFocus}
+      onFocus={caretToEnd}
       onBlur={onBlur}
       onChange={(e) => onChange(e.target.value)}
       onInput={resize}

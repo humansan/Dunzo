@@ -5,6 +5,7 @@ import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
 import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import {
+  caretToEnd,
   CompletedToggle,
   PercentField,
   CollectionBreadcrumb,
@@ -231,6 +232,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           <input
             type="text"
             autoFocus
+            onFocus={caretToEnd}
             defaultValue={todo.text}
             onChange={(e) => saveField({ text: e.target.value })}
             onBlur={stopEdit}
@@ -547,6 +549,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               // text keeps the same wrapping/styling it had as a display cell.
               <textarea
                 autoFocus
+                onFocus={caretToEnd}
                 rows={1}
                 defaultValue={todo.text}
                 onChange={(e) => saveField({ text: e.target.value })}
@@ -559,6 +562,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               <input
                 type="text"
                 autoFocus
+                onFocus={caretToEnd}
                 defaultValue={todo.text}
                 onChange={(e) => saveField({ text: e.target.value })}
                 onBlur={stopEdit}
