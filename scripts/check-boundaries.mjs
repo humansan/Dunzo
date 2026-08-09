@@ -43,7 +43,7 @@ const ENTRY_POINTS = {
   tasks: ['', 'model', 'api', 'fields', 'chips', 'collection-picker'],
   planner: ['', 'task-finder', 'table'],
   daily: ['', 'widgets'],
-  trackers: ['', 'api'],
+  trackers: ['', 'api', 'model'],
   xp: [''],
   stats: [''],
   stopwatch: [''],

@@ -110,6 +110,10 @@ export const trackers = pgTable(
     precision: integer('precision').notNull(),
     displayMode: text('display_mode'),
     secondaryDisplayMode: text('secondary_display_mode'),
+    // The user's manual order for the widget list (Time Widgets → Order menu).
+    // Nullable like todos.hub_order: a row that predates the backfill sorts last
+    // (NULLs last on ASC), by age.
+    sortOrder: doublePrecision('sort_order'),
     createdAt: bigint('created_at', { mode: 'number' }).notNull(),
   },
   (t) => [index('trackers_user_idx').on(t.userId)]

@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createFileRoute } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Clock, LayoutGrid, List, Maximize2 } from 'lucide-react';
-import { TrackerCard } from '@/features/trackers';
+import { Plus, Clock, LayoutGrid, List, Maximize2, ListOrdered } from 'lucide-react';
+import { TrackerCard, TrackerOrderMenu } from '@/features/trackers';
+import { sortTrackers, moveTrackerId } from '@/features/trackers/model';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { btnGhost, btnNeutral, btnSwitch } from '../../theme/buttons';
 import { useAppData } from '@/lib/app-data';
@@ -19,11 +21,21 @@ function TrackersRoute() {
     trackers,
     handleDeleteTracker,
     handleEditTracker,
+    handleReorderTrackers,
     openTrackerModal,
     isFullscreen, setIsFullscreen,
   } = useAppData();
   // Grid/list toggle is local to this view (no other view reads it).
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // Anchor ({right, top}) of the Order menu, or null when closed.
+  const [orderMenu, setOrderMenu] = useState<{ right: number; top: number } | null>(null);
+
+  // The user's order - the same list the daily page's rail shows.
+  const ordered = useMemo(() => sortTrackers(trackers), [trackers]);
+
+  // A drag hands back the whole list in its new order; the mutation renumbers it.
+  const moveTracker = (dragId: string, targetId: string, pos: 'before' | 'after') =>
+    handleReorderTrackers(moveTrackerId(ordered.map((t) => t.id), dragId, targetId, pos));
 
   return (
     <>
@@ -64,6 +76,20 @@ function TrackersRoute() {
                 <Maximize2 size={18} strokeWidth={2.5} />
               </button> */}
 
+              {/* Anchored to the button's bottom-right, like the planner's
+                  toolbar menus. Clicking again closes it. */}
+              <button
+                onClick={(e) => {
+                  if (orderMenu) { setOrderMenu(null); return; }
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setOrderMenu({ right: window.innerWidth - r.right, top: r.bottom + 6 });
+                }}
+                title="Reorder widgets"
+                className={`p-2 rounded-lg ${btnNeutral}`}
+              >
+                <ListOrdered size={18} strokeWidth={2.5} />
+              </button>
+
               <button
                 onClick={openTrackerModal}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold ${btnNeutral}`}
@@ -80,7 +106,7 @@ function TrackersRoute() {
         <div>
           <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'flex flex-col gap-6'}>
             <AnimatePresence>
-              {trackers.map((tracker) => (
+              {ordered.map((tracker) => (
                 <TrackerCard
                   key={tracker.id}
                   tracker={tracker}
@@ -112,6 +138,17 @@ function TrackersRoute() {
               the bottom of every page (sharing the stopwatch's overlay slot). */}
         </div>
       </main>
+
+      {/* Order menu - drag to set the order used here AND on the daily page. */}
+      {orderMenu && createPortal(
+        <TrackerOrderMenu
+          anchor={orderMenu}
+          trackers={ordered}
+          onMove={moveTracker}
+          onClose={() => setOrderMenu(null)}
+        />,
+        document.body
+      )}
     </>
   );
 }

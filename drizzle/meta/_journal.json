@@ -64,6 +64,13 @@
       "when": 1785512174690,
       "tag": "0008_fix_archive_invariant",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786237648417,
+      "tag": "0009_tracker_sort_order",
+      "breakpoints": true
     }
   ]
 }

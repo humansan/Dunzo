@@ -59,6 +59,9 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
       precision,
       displayMode,
       secondaryDisplayMode,
+      // Position belongs to the widget's PLACE, not its content: editing one keeps
+      // it where it was. A new widget has none here - handleAddTracker appends it.
+      sortOrder: editingTracker?.sortOrder,
       createdAt: editingTracker?.createdAt || Date.now()
     });
     onClose();

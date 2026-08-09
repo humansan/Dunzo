@@ -13,6 +13,9 @@ export interface Tracker {
   precision: number;  // Number of decimal places
   displayMode?: TrackerDisplayMode;
   secondaryDisplayMode?: TrackerSecondaryDisplayMode;
+  // Manual position in the widget list, set by dragging in the Order menu. Undefined
+  // (a pre-ordering row) sorts last, by createdAt - see sortTrackers.
+  sortOrder?: number;
   createdAt: number;
 }
 
