@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Circle, Check, ChevronRight } from 'lucide-react';
 import CheckCircleCutout from '@/assets/CheckCircleCutout';
@@ -54,28 +54,63 @@ export const fieldInputClass =
   'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
 
 // ── Completion toggle ────────────────────────────────────────────────────────
+// The check-off animation runs BEFORE the state change, not with it: checking a
+// task off can remove its row on the spot (the Hide completed filter), and a row
+// that unmounts in the same frame as the click shows no feedback at all. So a
+// click paints the checked state locally, plays the pop, and only then commits -
+// by which time the row can vanish, having been seen to complete.
+// Un-checking commits immediately: there's nothing to animate, and no
+// disappearing act to cover.
+const COMPLETE_ANIM_MS = 300;
+
 export const CompletedToggle: React.FC<{
   completed: boolean;
   // Omitted → read-only check (no click, no hover lit): the Task Finder's results.
   onToggle?: () => void;
   size?: number;
   className?: string;
-}> = ({ completed, onToggle, size = 22, className = '' }) => (
-  <button
-    onClick={onToggle ? (e) => { e.stopPropagation(); onToggle(); } : undefined}
-    className={`shrink-0 cursor-pointer ${className}`}
-  >
-    <motion.div
-      animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
-      transition={{ duration: 0.3 }}
-      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : `text-fg-subtle ${onToggle ? 'hover:text-fg' : ''}`}`}
+}> = ({ completed, onToggle, size = 22, className = '' }) => {
+  // Set for the length of the animation, between the click and the commit.
+  const [pendingComplete, setPendingComplete] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // The row often survives the commit (filter off), so drop the local override
+  // once the real state agrees - and never leave a timer running past unmount.
+  useEffect(() => { if (completed) setPendingComplete(false); }, [completed]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const shown = completed || pendingComplete;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onToggle) return;
+    if (shown) { // un-checking (or cancelling a pending check) - commit now
+      clearTimeout(timer.current);
+      setPendingComplete(false);
+      onToggle();
+      return;
+    }
+    setPendingComplete(true);
+    timer.current = setTimeout(onToggle, COMPLETE_ANIM_MS);
+  };
+
+  return (
+    <button
+      onClick={onToggle ? handleClick : undefined}
+      className={`shrink-0 cursor-pointer ${className}`}
     >
-      {completed
-        ? <CheckCircleCutout size={size} strokeWidth={2.5} />
-        : <Circle size={size} strokeWidth={2.5} />}
-    </motion.div>
-  </button>
-);
+      <motion.div
+        animate={shown ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
+        transition={{ duration: COMPLETE_ANIM_MS / 1000 }}
+        className={`transition-colors duration-200 ${shown ? 'text-[var(--accent1)]' : `text-fg-subtle ${onToggle ? 'hover:text-fg' : ''}`}`}
+      >
+        {shown
+          ? <CheckCircleCutout size={size} strokeWidth={2.5} />
+          : <Circle size={size} strokeWidth={2.5} />}
+      </motion.div>
+    </button>
+  );
+};
 
 // ── Percent of day (an editor for the time, in percent form) ─────────────────
 // `value` is the DERIVED percent (see model/percent.ts), so a keystroke round-trips
