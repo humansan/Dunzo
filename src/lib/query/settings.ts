@@ -32,8 +32,11 @@ export interface HubLayout {
 // record of its own, which is how a setting reaches views never visited and
 // collections not yet created. Written by the planner's "Set for all" and by the
 // first-run seed in @/lib/onboarding. Real view ids are a pseudo-view name or a
-// collection id, and every id in the app is 9 chars of [0-9a-z], never an
-// underscore, so the reserved id can't collide.
+// collection id, and no generated id contains an underscore - v4 UUIDs from
+// @/common/lib/newId are hex and hyphens, and the legacy ids they replaced were
+// [0-9a-z] - so the reserved id can't collide. (The rule used to be stated as "9
+// chars of [0-9a-z]", which was never quite true: the old generator could emit a
+// short id. The underscore is what actually carries the argument.)
 //
 // These live here, with the blob they key into, so the planner (which re-exports
 // them from model/viewConfigStore) and the seeder agree by construction.

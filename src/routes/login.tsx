@@ -17,11 +17,11 @@ export const Route = createFileRoute('/login')({
   beforeLoad: async () => {
     // Already signed in? Don't show the login screen. Same resilience as the
     // _authed guard, and the same reasoning inverted: an auth service that didn't
-    // answer must not bounce a signed-in user to /today, but it must not blank
+    // answer must not bounce a signed-in user to /planner, but it must not blank
     // the login screen either - so an unavailable check just shows the form,
     // which is the one thing that is useful either way.
     const { data } = await fetchSession();
-    if (data) throw redirect({ to: '/today' });
+    if (data) throw redirect({ to: '/planner' });
   },
   component: LoginRoute,
 });
@@ -35,7 +35,7 @@ function LoginRoute() {
   return (
     <AuthModal
       isOpen
-      onAuthenticated={() => router.history.push(withBase(redirectTo ?? '/today'))}
+      onAuthenticated={() => router.history.push(withBase(redirectTo ?? '/planner'))}
     />
   );
 }

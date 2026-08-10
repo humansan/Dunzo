@@ -4,6 +4,7 @@ import { X, CalendarDays } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '@shared/types';
 import { ListSelect, textInputCls } from '@/common/ui';
+import { newId } from '@/common/lib/newId';
 import { btnAccent, btnGhost, btnNeutral, btnToggle } from '@/theme/buttons';
 import { DatePickerPopover } from '@/common/ui';
 import { OverlayShell } from '@/common/ui/OverlayShell';
@@ -50,7 +51,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
     // Custom trackers need both ends; bail before constructing invalid dates.
     if (type === 'custom' && (!startDate || !endDate)) return;
     onAdd({
-      id: editingTracker?.id || Math.random().toString(36).substr(2, 9),
+      id: editingTracker?.id || newId(),
       name: name || type.toUpperCase(),
       type,
       startDate: type === 'custom' ? new Date(startDate + 'T00:00:00').toISOString() : undefined,

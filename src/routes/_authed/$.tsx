@@ -18,6 +18,6 @@ export const Route = createFileRoute('/_authed/$')({
     const section = SECTIONS.find((s) => s === first);
     // Land on the section the user was aiming at, or the app's home view when the
     // path names nothing at all. Replace, so Back doesn't return to the dead URL.
-    throw redirect({ to: section ? `/${section}` : '/today', replace: true });
+    throw redirect({ to: section ? `/${section}` : '/planner', replace: true });
   },
 });

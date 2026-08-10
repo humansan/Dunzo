@@ -9,7 +9,7 @@ import { useAppData } from '@/lib/app-data';
 import { pageHead } from '@/lib/pageTitle';
 
 export const Route = createFileRoute('/_authed/trackers')({
-  head: () => pageHead('Trackers'),
+  head: () => pageHead('Widgets'),
   component: TrackersRoute,
   errorComponent: ViewErrorFallback,
 });

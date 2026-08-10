@@ -5,6 +5,7 @@ import { btnGhost } from '@/theme/buttons';
 import { PopoverMenu } from '@/common/ui';
 import { ListSelect } from '@/common/ui';
 import { Switch } from '@/common/ui';
+import { newId } from '@/common/lib/newId';
 import { SetForAllButton } from '@/features/planner/toolbar/SetForAllButton';
 
 // A rule cell that can't be edited: same shape and rhythm as the ListSelects
@@ -41,9 +42,12 @@ export const FilterMenu: React.FC<{
 }> = ({ anchor, filters, match, allColumns, uniqueValues, onChange, onChangeMatch, hideCompleted, onChangeHideCompleted, onSetForAll, onClose }) => {
   const addFilter = () => {
     const defaultField = allColumns[0]?.key ?? 'status';
+    // Unique for the same reason as the sort rules (see SortMenu): the id is the row's
+    // React key and what `update`/`remove` match on, and `Date.now().toString(36)`
+    // collided for two rules added inside one millisecond.
     onChange([
       ...filters,
-      { id: Date.now().toString(36), field: defaultField, condition: 'is', value: '' },
+      { id: newId(), field: defaultField, condition: 'is', value: '' },
     ]);
   };
 

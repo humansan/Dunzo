@@ -16,6 +16,7 @@ import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normaliz
 import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive, descendantsToUnarchive } from '@/features/tasks/model';
 import { reconcilePlannerVisibility, descendantsToHide, descendantsToShow, ancestorsToShow } from '@/features/tasks/model';
 import { format } from 'date-fns';
+import { newId } from '@/common/lib/newId';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
 import { clearTokenCache } from '@/lib/query/apiClient';
@@ -26,10 +27,16 @@ import { useSettings, useUpdateSettings } from '@/lib/query/settings';
 import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
-import { buildSeedTrackers } from '@/lib/onboarding';
+import { buildSeedTodos, buildSeedTrackers } from '@/lib/onboarding';
 import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascadeConfirm';
 import { useDeleteConfirm } from '@/features/tasks/useDeleteConfirm';
 
+
+// The one browser-persisted piece of task state: which task the daily list is
+// actively tracking, remembered across a reload. It holds a raw todo id, so it is
+// account-specific and MUST be dropped on every identity transition - see the effect
+// in useProvideAppData that clears it alongside the query cache.
+const ACTIVE_TODO_KEY = 'dun-active-todo';
 
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
 // Within-day order follows `dailyOrder` (the daily list's own persisted order;
@@ -65,6 +72,13 @@ function useProvideAppData() {
   const sessionPending = authSession.isPending;
   const isAuthenticated = !!authSession.data;
 
+  // Which task the daily list is actively tracking. Persisted to localStorage (see
+  // below) so a reload doesn't lose it - which is precisely why the effect after it
+  // has to clear it on an account switch. Declared here so that effect can.
+  const [activeTodoId, setActiveTodoId] = useState<string | null>(() =>
+    localStorage.getItem(ACTIVE_TODO_KEY)
+  );
+
   // Defense in depth against cross-account data leaks: whenever the signed-in
   // user identity changes (sign-out, or token swap from another tab), drop the
   // entire query cache so no resident data from the previous user can be served
@@ -86,9 +100,27 @@ function useProvideAppData() {
     // which the cache clear below deliberately skips. There is nothing to keep:
     // a token minted for the previous user is precisely what must not survive.
     clearTokenCache();
-    if (prevUserId.current !== undefined) queryClient.clear();
+    if (prevUserId.current !== undefined) {
+      queryClient.clear();
+      // The active-todo id lives in localStorage, which `queryClient.clear()` does
+      // not touch, so it used to survive an account switch and be applied to the
+      // next account's data. It never resolved there (ids are per-account), but
+      // "set but unresolvable" is the worst of both states: AppShell hides the
+      // stopwatch whenever activeTodoId is truthy, while the active-task card needs
+      // a todo it can't find - so the user got neither. Cleared on the same
+      // transition as the cache, and skipped on the first resolve for the same
+      // reason: a cold load must keep the task it was tracking before the reload.
+      setActiveTodoId(null);
+    }
     prevUserId.current = userId;
   }, [userId]);
+
+  // Mirror the active todo into localStorage. Runs on the reset above too, so the
+  // stored key is dropped with the state.
+  useEffect(() => {
+    if (activeTodoId) localStorage.setItem(ACTIVE_TODO_KEY, activeTodoId);
+    else localStorage.removeItem(ACTIVE_TODO_KEY);
+  }, [activeTodoId]);
 
   // ── Server data (TanStack Query); fetched once authenticated ───────────────
   const todosQuery = useTodos(isAuthenticated);
@@ -169,19 +201,31 @@ function useProvideAppData() {
     // duplicate empty "Personal" workspace every time. isSuccess is only true once
     // the server actually returned a list (and stays true with retained data
     // across background refetches), so we never seed off an unconfirmed empty.
-    // The trackers query is gated on too (not just used) so the seed below can
-    // trust `trackers`: a still-loading list also reads as `[]`, and seeding off
-    // that would duplicate the widgets on an account whose workspace create failed.
+    // The trackers and todos queries are gated on too (not just used) so the seed
+    // below can trust `trackers`/`todos`: a still-loading list also reads as `[]`,
+    // and seeding off that would duplicate the content on an account whose
+    // workspace create failed.
     if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess || !trackersQuery.isSuccess) return;
+    if (!todosQuery.isSuccess) return;
     if (workspaces.length === 0) {
       if (seededRef.current) return;
       seededRef.current = true;
-      const id = Math.random().toString(36).substr(2, 9);
-      createWorkspace.mutate({ id, name: 'Personal' });
+      const id = newId();
       setActiveWorkspaceId(id);
       // Onboarding content for a brand-new account (see @/lib/onboarding): the
-      // starter time widgets, so the app isn't blank on first sign-in.
+      // starter time widgets, so the app isn't blank on first sign-in, and the
+      // Planner tour collections.
       if (trackers.length === 0) for (const t of buildSeedTrackers()) createTracker.mutate(t);
+      // The tour rows carry `workspaceId`, a foreign key to the workspace being
+      // created right here, so they can only be sent once that POST has actually
+      // landed - hence mutateAsync rather than firing both off together. One batch,
+      // in parent-before-child order (see buildSeedTodos), because `parentId` is a
+      // foreign key too. A failure here leaves the account usable but untoured;
+      // nothing retries, since the workspace now exists and this branch is done.
+      createWorkspace
+        .mutateAsync({ id, name: 'Personal' })
+        .then(() => { if (todos.length === 0) batchTodos.mutate({ upserts: buildSeedTodos(id) }); })
+        .catch(() => {});
       // No view config is seeded: "hide completed tasks" is a code default in
       // resolveViewFilters, so it holds for every account and every workspace
       // without depending on a write here having succeeded.
@@ -190,20 +234,16 @@ function useProvideAppData() {
     if (!workspaces.some(w => w.id === activeWorkspaceId)) {
       setActiveWorkspaceId(workspaces[0].id);
     }
-  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, trackersQuery.isSuccess, workspaces, trackers, activeWorkspaceId]);
+  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, trackersQuery.isSuccess, todosQuery.isSuccess, workspaces, trackers, todos, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = newId();
     createWorkspace.mutate({ id, name: '' });
     setActiveWorkspaceId(id);
     return id;
   };
   const renameWorkspace = (id: string, name: string) =>
     renameWorkspaceMut.mutate({ id, name });
-
-  const [activeTodoId, setActiveTodoId] = useState<string | null>(() => {
-    return localStorage.getItem('dun-active-todo');
-  });
 
   // Derived per-day bucket view for the day-grouped read surfaces (daily list,
   // calendar, stats) that still consume DayTodos[]. Not persisted.
@@ -220,14 +260,6 @@ function useProvideAppData() {
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, [themeId, mode]);
-
-  useEffect(() => {
-    if (activeTodoId) {
-      localStorage.setItem('dun-active-todo', activeTodoId);
-    } else {
-      localStorage.removeItem('dun-active-todo');
-    }
-  }, [activeTodoId]);
 
   const handleAddTracker = (newTracker: Tracker) => {
     if (editingTracker) updateTracker.mutate(newTracker);
@@ -510,7 +542,7 @@ function useProvideAppData() {
     parentId: string | null,
     opts?: { date?: string | null; patch?: Partial<Todo> }
   ): string => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = newId();
     // An explicit group-create date wins over anything in the patch (e.g. a date
     // filter); when none is given we keep whatever dueDate the patch carries.
     const dueDate = opts?.date && opts.date !== UNDATED ? opts.date : undefined;
@@ -635,7 +667,7 @@ function useProvideAppData() {
     workspaceId: string = activeWorkspaceId,
     parentId: string | null = null,
   ): string => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = newId();
     const newCollection: Todo = {
       id,
       text: name,
@@ -862,6 +894,10 @@ function useProvideAppData() {
     // signed-out token in the meantime.
     clearTokenCache();
     queryClient.clear();
+    // Same reasoning for the tracked task: the effect above catches this a render
+    // later, but the stored id should not outlive the session that set it.
+    setActiveTodoId(null);
+    localStorage.removeItem(ACTIVE_TODO_KEY);
   };
 
   return {

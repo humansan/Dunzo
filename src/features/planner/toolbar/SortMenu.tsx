@@ -4,6 +4,7 @@ import { ColDef, ColKey, SortRule } from '@/features/planner/types';
 import { btnGhost } from '@/theme/buttons';
 import { PopoverMenu } from '@/common/ui';
 import { ListSelect } from '@/common/ui';
+import { newId } from '@/common/lib/newId';
 import { SetForAllButton } from '@/features/planner/toolbar/SetForAllButton';
 
 export const SortMenu: React.FC<{
@@ -16,9 +17,14 @@ export const SortMenu: React.FC<{
 }> = ({ anchor, sorts, allColumns, onChange, onSetForAll, onClose }) => {
   const addSort = () => {
     const defaultField = allColumns[0]?.key ?? 'title';
+    // The rule id has to be genuinely unique: it's this row's React key AND the
+    // identity `update`/`remove` below match on, so two rules sharing one means
+    // editing either edits both and deleting either deletes both. This was
+    // `Date.now().toString(36)`, which collides for two rules added in the same
+    // millisecond.
     onChange([
       ...sorts,
-      { id: Date.now().toString(36), field: defaultField, direction: 'asc' },
+      { id: newId(), field: defaultField, direction: 'asc' },
     ]);
   };
 

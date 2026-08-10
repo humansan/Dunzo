@@ -10,7 +10,8 @@ import {
   jsonb,
   index,
   check,
-  type AnyPgColumn,
+  primaryKey,
+  foreignKey,
 } from 'drizzle-orm/pg-core';
 import type { Theme, TodoStatus, CalendarFilter } from '../types';
 
@@ -25,32 +26,43 @@ import type { Theme, TodoStatus, CalendarFilter } from '../types';
 //   • tracker dates are full ISO strings → kept as `text`
 // DB-only additions: `user_id` (multi-user scoping), `daily_order` (the ordering
 // gap from DATABASE_MIGRATION_NOTES §5.4), and a generated `completed` column.
+//
+// IDENTITY IS `(user_id, id)`, not `id`. Every read here is scoped to one user,
+// so a bare `id` PK made identity global while visibility stayed per-user - and
+// the two disagreeing is a bug factory. It made one account's backup unimportable
+// into another (the ids collide with rows the importer can't see), it let a todo
+// reference a parent or workspace belonging to someone else (the old single-column
+// FK only asked whether the id existed *anywhere*, and no route checks ownership),
+// and it forced the batch upsert to guard conflicts with a `where user_id = me`
+// that silently dropped writes instead of applying them. A client id now only has
+// to be unique within its own account, which is the only scope that ever reads it.
+// Both FKs are composite for the same reason: `(user_id, parent_id)` can't point
+// out of the tenant. They live in the extras callback because Drizzle's
+// column-level `.references()` cannot express a composite FK.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const workspaces = pgTable(
   'workspaces',
   {
-    id: text('id').primaryKey(),
+    id: text('id').notNull(),
     userId: text('user_id').notNull(),
     name: text('name').notNull(),
     createdAt: bigint('created_at', { mode: 'number' }),
   },
-  (t) => [index('workspaces_user_idx').on(t.userId)]
+  // No `workspaces_user_idx`: the PK's leading column is already `user_id`, so a
+  // standalone index on it is dead weight. Same for trackers below.
+  (t) => [primaryKey({ columns: [t.userId, t.id] })]
 );
 
 export const todos = pgTable(
   'todos',
   {
-    id: text('id').primaryKey(),
+    id: text('id').notNull(),
     userId: text('user_id').notNull(),
-    workspaceId: text('workspace_id').references(() => workspaces.id, {
-      onDelete: 'cascade',
-    }),
-    // Self-referential nesting (subtasks + collections). Cascade covers hard
-    // delete of a collection/parent and all its descendants.
-    parentId: text('parent_id').references((): AnyPgColumn => todos.id, {
-      onDelete: 'cascade',
-    }),
+    workspaceId: text('workspace_id'),
+    // Self-referential nesting (subtasks + collections). See the composite FKs in
+    // the extras callback below for the cascade and the tenant guard.
+    parentId: text('parent_id'),
     isCollection: boolean('is_collection').notNull().default(false),
     text: text('text').notNull().default(''),
     // `status` is the single source of truth for completion (nullable/clearable;
@@ -87,9 +99,30 @@ export const todos = pgTable(
     trackingStartedAt: bigint('tracking_started_at', { mode: 'number' }),
   },
   (t) => [
+    primaryKey({ columns: [t.userId, t.id] }),
+    // Both FKs are MATCH SIMPLE (the Postgres default): a NULL in any column skips
+    // the check entirely. `user_id` is NOT NULL, so the nullable half is always the
+    // reference itself - a root todo (`parent_id` null) and an uncategorized one
+    // (`workspace_id` null) are unconstrained, which is what we want.
+    foreignKey({
+      columns: [t.userId, t.workspaceId],
+      foreignColumns: [workspaces.userId, workspaces.id],
+      name: 'todos_user_workspace_fk',
+    }).onDelete('cascade'),
+    // Self-referential, via `t` rather than `todos` - that's what lets this drop
+    // the `AnyPgColumn` thunk the old column-level reference needed to break the
+    // circular type.
+    foreignKey({
+      columns: [t.userId, t.parentId],
+      foreignColumns: [t.userId, t.id],
+      name: 'todos_user_parent_fk',
+    }).onDelete('cascade'),
+    // These two are NOT redundant with the PK (their second column differs) and are
+    // load-bearing twice over: Postgres does not index FK *source* columns, so a
+    // cascade delete from either FK above scans them.
     index('todos_user_workspace_idx').on(t.userId, t.workspaceId),
-    index('todos_user_due_idx').on(t.userId, t.dueDate),
     index('todos_user_parent_idx').on(t.userId, t.parentId),
+    index('todos_user_due_idx').on(t.userId, t.dueDate),
     check(
       'todos_status_check',
       sql`${t.status} is null or ${t.status} in ('todo','in_progress','completed')`
@@ -100,7 +133,7 @@ export const todos = pgTable(
 export const trackers = pgTable(
   'trackers',
   {
-    id: text('id').primaryKey(),
+    id: text('id').notNull(),
     userId: text('user_id').notNull(),
     name: text('name').notNull(),
     type: text('type').notNull(),
@@ -110,9 +143,13 @@ export const trackers = pgTable(
     precision: integer('precision').notNull(),
     displayMode: text('display_mode'),
     secondaryDisplayMode: text('secondary_display_mode'),
+    // The user's manual order for the widget list (Time Widgets → Order menu).
+    // Nullable like todos.hub_order: a row that predates the backfill sorts last
+    // (NULLs last on ASC), by age.
+    sortOrder: doublePrecision('sort_order'),
     createdAt: bigint('created_at', { mode: 'number' }).notNull(),
   },
-  (t) => [index('trackers_user_idx').on(t.userId)]
+  (t) => [primaryKey({ columns: [t.userId, t.id] })]
 );
 
 // One row per user. Core prefs as columns; the hub's UI/layout state is kept as

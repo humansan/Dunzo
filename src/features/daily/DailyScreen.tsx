@@ -26,6 +26,7 @@ import { XpProgressBar } from '@/features/xp';
 import { StarStreak, StarStreakPopup, STAR_CELEBRATE_DELAY_MS } from '@/features/xp';
 import { computeXpStats, getWeeklyXp, computeStarStreak, buildXpHistory, starsToLit } from '@/features/xp';
 import { useDelayedValue } from '@/common/hooks/useDelayedValue';
+import { newId } from '@/common/lib/newId';
 import { DailyList } from '@/features/daily/DailyList';
 import { DatePickerPopover } from '@/common/ui';
 
@@ -160,14 +161,13 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     });
   }, [selectedDate, weekStartsOn]);
 
-  const newTodoId = () => Math.random().toString(36).substr(2, 9);
   // The day's order is expressed as a list of ids; the writes below never carry
   // field data alongside it.
   const idsOf = (list: (Todo | null | undefined)[]) =>
     list.filter(Boolean).map((t) => t!.id);
 
   const buildTodo = (vals: QuickEditValues): Todo => ({
-    id: newTodoId(),
+    id: newId(),
     text: vals.text,
     // A daily-list task always shows on the daily list; whether it ALSO lands in
     // the Task Planner is the user's "Default Visibility" setting (default true).
@@ -225,7 +225,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     if (idx === -1) return;
     const copy: Todo = {
       ...all[idx],
-      id: newTodoId(),
+      id: newId(),
       createdAt: Date.now(),
       completedAt: undefined,
       trackingStartedAt: undefined,

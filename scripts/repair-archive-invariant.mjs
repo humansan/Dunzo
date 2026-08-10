@@ -27,8 +27,13 @@
 //   DATABASE_URL='postgres://…' node scripts/repair-archive-invariant.mjs
 //   DATABASE_URL='…' node scripts/repair-archive-invariant.mjs --dry-run
 //
-// Scoped per user_id implicitly: the recursive walk follows parent_id, and a
-// todo's parent always belongs to the same user.
+// Runs across ALL users in one pass (it's unattended maintenance, not a request),
+// but every step is explicitly keyed on (user_id, id) - the tree walk joins on
+// user_id, and the UPDATE matches the pair. That used to be left implicit, on the
+// reasoning that a todo's parent always belongs to the same user. The reasoning was
+// sound; the SQL relying on it was not. `id` alone is no longer unique - the PK is
+// (user_id, id) - so an id-only join would follow an edge into another account's
+// tree and an id-only UPDATE would write to whichever row it happened to hit.
 
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from 'ws';
@@ -47,12 +52,13 @@ if (!process.env.DATABASE_URL) {
 // grandparent above an archived parent is caught in the same pass.
 const FIND = `
   WITH RECURSIVE chain AS (
-    SELECT id, parent_id FROM todos WHERE archived IS NOT TRUE
+    SELECT user_id, id, parent_id FROM todos WHERE archived IS NOT TRUE
     UNION
-    SELECT t.id, t.parent_id FROM todos t JOIN chain c ON t.id = c.parent_id
+    SELECT t.user_id, t.id, t.parent_id FROM todos t
+      JOIN chain c ON t.id = c.parent_id AND t.user_id = c.user_id
   )
-  SELECT DISTINCT t.id, t.text, t.is_collection
-    FROM chain c JOIN todos t ON t.id = c.id
+  SELECT DISTINCT t.user_id, t.id, t.text, t.is_collection
+    FROM chain c JOIN todos t ON t.id = c.id AND t.user_id = c.user_id
    WHERE t.archived IS TRUE
 `;
 
@@ -66,16 +72,22 @@ try {
   } else {
     console.log(`${rows.length} archived ancestor${rows.length === 1 ? '' : 's'} of live todos:`);
     for (const r of rows) {
-      console.log(`  ${r.id}  ${r.text || '(untitled)'}${r.is_collection ? '  [collection]' : ''}`);
+      // The user is part of the identity now, so print it - a bare id is ambiguous.
+      console.log(
+        `  ${r.user_id}  ${r.id}  ${r.text || '(untitled)'}${r.is_collection ? '  [collection]' : ''}`
+      );
     }
 
     if (dryRun) {
       console.log('\n--dry-run: nothing written.');
     } else {
+      // Matched as a pair, via two parallel arrays zipped back into rows by unnest.
+      const userIds = rows.map((r) => r.user_id);
       const ids = rows.map((r) => r.id);
       const res = await pool.query(
-        'UPDATE todos SET archived = FALSE WHERE id = ANY($1::text[])',
-        [ids]
+        `UPDATE todos SET archived = FALSE
+          WHERE (user_id, id) IN (SELECT * FROM unnest($1::text[], $2::text[]))`,
+        [userIds, ids]
       );
       console.log(`\nUnarchived ${res.rowCount} todo${res.rowCount === 1 ? '' : 's'}.`);
     }
