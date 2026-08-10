@@ -5,6 +5,7 @@ import { Todo } from '@shared/types';
 import { btnGhost } from '@/theme/buttons';
 import { formatTime12h, formatMinutes } from '@/common/lib/time';
 import {
+  caretToEnd,
   CompletedToggle,
   PercentField,
   CollectionBreadcrumb,
@@ -120,7 +121,12 @@ const HubRowImpl: React.FC<HubRowProps> = ({
   // Drop handlers shared by both row variants. stopPropagation so the table's
   // container-level onDrop (a fallback for releases over the header/gaps) doesn't
   // also fire and double-commit.
+  // dragEnter is handled alongside dragOver: an element only becomes a drop target
+  // once one of the two is cancelled ON it, and a row is a stack of nested cells - so
+  // handling dragOver alone leaves a frame on entering each one where the drop is
+  // refused and the cursor flashes the circle-slash.
   const dropProps = {
+    onDragEnter: (e: React.DragEvent) => onRowDragOver?.(todo.id, e),
     onDragOver: (e: React.DragEvent) => onRowDragOver?.(todo.id, e),
     onDrop: (e: React.DragEvent) => { e.preventDefault(); e.stopPropagation(); onRowDrop?.(); },
   };
@@ -226,6 +232,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
           <input
             type="text"
             autoFocus
+            onFocus={caretToEnd}
             defaultValue={todo.text}
             onChange={(e) => saveField({ text: e.target.value })}
             onBlur={stopEdit}
@@ -542,6 +549,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               // text keeps the same wrapping/styling it had as a display cell.
               <textarea
                 autoFocus
+                onFocus={caretToEnd}
                 rows={1}
                 defaultValue={todo.text}
                 onChange={(e) => saveField({ text: e.target.value })}
@@ -554,6 +562,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
               <input
                 type="text"
                 autoFocus
+                onFocus={caretToEnd}
                 defaultValue={todo.text}
                 onChange={(e) => saveField({ text: e.target.value })}
                 onBlur={stopEdit}

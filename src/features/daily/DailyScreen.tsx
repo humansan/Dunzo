@@ -20,6 +20,7 @@ import { Todo, DayTodos, Tracker } from '@shared/types';
 import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '@/features/tasks/model';
 
 import { TrackerCard } from '@/features/trackers';
+import { sortTrackers } from '@/features/trackers/model';
 import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
@@ -93,11 +94,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   onOpenTask,
   onCreateTask,
 }) => {
-  const orderedTrackers = useMemo(() => {
-    const dayTracker = trackers.find(t => t.type === 'day');
-    const others = trackers.filter(t => t.type !== 'day');
-    return dayTracker ? [dayTracker, ...others] : others;
-  }, [trackers]);
+  // The user's order, set on the Time Widgets page (Order menu). The day tracker
+  // used to be pinned first here regardless; it now sits wherever they put it.
+  const orderedTrackers = useMemo(() => sortTrackers(trackers), [trackers]);
 
   // `selectedDate` comes from the route (?date); alias the setter so the existing
   // date-nav call sites (prev/next/today/pick) stay unchanged.

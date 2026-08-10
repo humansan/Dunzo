@@ -49,11 +49,35 @@ export const xpDisabledReason = (dated: boolean, inDailyList: boolean): string |
   return 'XP is earned on the daily list - turn on Daily Tasks';
 };
 
+// Open a text editor with the caret AFTER the existing text, not before it. Focusing
+// a field programmatically (autoFocus) leaves the caret at offset 0, so opening a
+// title or a note put the cursor in front of everything already written - the one
+// place you almost never want to type. Bind to onFocus rather than a mount effect so
+// it also covers a re-focus (tabbing back to the field).
+export const caretToEnd = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const el = e.currentTarget;
+  el.setSelectionRange(el.value.length, el.value.length);
+};
+
 // Default look for the boxed inputs (date/time/percent/xp). Callers can override.
 export const fieldInputClass =
   'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
 
 // ── Completion toggle ────────────────────────────────────────────────────────
+// Commits on click and animates off the REAL `completed` prop - no local "checked
+// while we wait" state. That is what keeps the three things a completion touches
+// in step: the pop, the row's dimmed/struck-through title (which reads the todo,
+// not this component), and the subtask-cascade confirmation, which only writes the
+// status once it's answered - so the check now follows the modal instead of
+// pre-empting it, and cancelling leaves nothing to un-paint.
+//
+// This used to paint a checked state locally and defer the commit by the length of
+// the animation, because checking a task off under Hide completed unmounts its row
+// in the same frame and the pop is never seen. That delay now sits with the filter
+// (useCompletionGrace), which holds a just-completed row on screen for exactly this
+// long - the right place for it, since it's the filter that makes rows vanish.
+export const COMPLETE_ANIM_MS = 400;
+
 export const CompletedToggle: React.FC<{
   completed: boolean;
   // Omitted → read-only check (no click, no hover lit): the Task Finder's results.
@@ -67,7 +91,7 @@ export const CompletedToggle: React.FC<{
   >
     <motion.div
       animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: COMPLETE_ANIM_MS / 1000 }}
       className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : `text-fg-subtle ${onToggle ? 'hover:text-fg' : ''}`}`}
     >
       {completed
@@ -167,6 +191,7 @@ export const NotesField: React.FC<{
       // would get bounced there. Same fix as the title editor in HubRow.
       defaultValue={value}
       autoFocus={autoFocus}
+      onFocus={caretToEnd}
       onBlur={onBlur}
       onChange={(e) => onChange(e.target.value)}
       onInput={resize}

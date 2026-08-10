@@ -134,6 +134,35 @@ body {
   /* Firefox */
 }
 
+/* While a calendar gesture is in flight, the cursor and the text selection have to be
+   decided by the GESTURE, not by whatever element the pointer happens to be over.
+   Without this the cursor flickers between the grid's crosshair, a card's pointer and
+   the default arrow as the pointer crosses them mid-drag, and the browser starts
+   selecting card labels the moment the drag passes over one.
+
+   A class on <body> with `!important` is what it takes: an element's own `cursor`
+   always wins over an ancestor's, so the rule has to reach every descendant. The class
+   is set for the length of the gesture (see CalendarView's drag-cursor effect). */
+body[class^='calendar-drag-'] *,
+body[class*=' calendar-drag-'] * {
+  user-select: none !important;
+}
+
+body.calendar-drag-grabbing,
+body.calendar-drag-grabbing * {
+  cursor: grab !important;
+}
+
+body.calendar-drag-ns-resize,
+body.calendar-drag-ns-resize * {
+  cursor: ns-resize !important;
+}
+
+body.calendar-drag-crosshair,
+body.calendar-drag-crosshair * {
+  cursor: crosshair !important;
+}
+
 /* Premium menu item: each letter hue-rotates on a loop, and a staggered
    per-letter animation-delay offsets the colors so they ripple as a wave. */
 @keyframes premium-wave {

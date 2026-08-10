@@ -21,7 +21,8 @@ import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
 import { clearTokenCache } from '@/lib/query/apiClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from '@/features/tasks/api';
-import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from '@/features/trackers/api';
+import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker, useReorderTrackers } from '@/features/trackers/api';
+import { nextTrackerSortOrder } from '@/features/trackers/model';
 import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from '@/lib/query/workspaces';
 import { useSettings, useUpdateSettings } from '@/lib/query/settings';
 import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
@@ -137,6 +138,7 @@ function useProvideAppData() {
   const createTracker = useCreateTracker();
   const updateTracker = useUpdateTracker();
   const deleteTrackerMut = useDeleteTracker();
+  const reorderTrackers = useReorderTrackers();
   const createWorkspace = useCreateWorkspace();
   const renameWorkspaceMut = useRenameWorkspace();
 
@@ -263,12 +265,19 @@ function useProvideAppData() {
 
   const handleAddTracker = (newTracker: Tracker) => {
     if (editingTracker) updateTracker.mutate(newTracker);
-    else createTracker.mutate(newTracker);
+    // A new widget joins at the END of the user's order (the modal doesn't know
+    // the list, so the position is stamped here).
+    else createTracker.mutate({ ...newTracker, sortOrder: nextTrackerSortOrder(trackers) });
     setEditingTracker(null);
   };
 
   const handleDeleteTracker = (id: string) => {
     deleteTrackerMut.mutate(id);
+  };
+
+  // `ids` is the full widget list in its new order (see the Order menu).
+  const handleReorderTrackers = (ids: string[]) => {
+    reorderTrackers.mutate(ids);
   };
 
   const handleEditTracker = (tracker: Tracker) => {
@@ -955,6 +964,7 @@ function useProvideAppData() {
     handleAddTracker,
     handleDeleteTracker,
     handleEditTracker,
+    handleReorderTrackers,
     openTrackerModal,
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
