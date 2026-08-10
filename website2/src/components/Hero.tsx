@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Play, ArrowRight, X, Sparkles } from 'lucide-react';
+import { Play, ArrowRight, X, Sparkles, CircleChevronRight } from 'lucide-react';
 import { APP_URL } from '../config';
 
 export const Hero: React.FC = () => {
@@ -48,8 +48,8 @@ export const Hero: React.FC = () => {
 
           {/* Early Access Chip: No border, 15% opacity gold background, full gold text */}
           <div className="mb-6 fade-slide-up" style={{ animationDelay: '300ms' }}>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
-              <Sparkles className="w-3.5 h-3.5 fill-gold text-gold" />
+            <div className="inline-flex items-center gap-2 pl-2.5 pr-3.5 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
+              <CircleChevronRight className="w-3.5 h-3.5 text-gold" />
               <span>Free in early access</span>
             </div>
           </div>
