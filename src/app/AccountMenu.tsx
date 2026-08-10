@@ -63,9 +63,6 @@ export const AccountMenu: React.FC<{
           {email ?? 'Signed in'}
         </div>
         <div className="my-1 border-t border-line" />
-        <button onClick={onOpenSettings} className={itemCls}>
-          <Settings size={14} /> Settings
-        </button>
         <button
           onClick={onPremium}
           className="group relative w-full overflow-hidden rounded-lg px-2.5 py-1.5 text-left text-fg-muted transition-colors cursor-pointer"
@@ -80,6 +77,9 @@ export const AccountMenu: React.FC<{
           <span className="relative z-10 flex items-center gap-2.5">
             <PremiumItem />
           </span>
+        </button>
+        <button onClick={onOpenSettings} className={itemCls}>
+          <Settings size={14} /> Settings
         </button>
         <div className="my-1 border-t border-line" />
         <button onClick={onLogout} className={itemCls}>
