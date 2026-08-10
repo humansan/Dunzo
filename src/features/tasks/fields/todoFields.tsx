@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Circle, Check, ChevronRight } from 'lucide-react';
 import CheckCircleCutout from '@/assets/CheckCircleCutout';
@@ -64,14 +64,19 @@ export const fieldInputClass =
   'bg-fill-subtle border border-line rounded-lg px-3 h-9 text-fg text-xs font-mono focus:outline-none focus:border-[var(--accent2)] transition-colors';
 
 // ── Completion toggle ────────────────────────────────────────────────────────
-// The check-off animation runs BEFORE the state change, not with it: checking a
-// task off can remove its row on the spot (the Hide completed filter), and a row
-// that unmounts in the same frame as the click shows no feedback at all. So a
-// click paints the checked state locally, plays the pop, and only then commits -
-// by which time the row can vanish, having been seen to complete.
-// Un-checking commits immediately: there's nothing to animate, and no
-// disappearing act to cover.
-const COMPLETE_ANIM_MS = 300;
+// Commits on click and animates off the REAL `completed` prop - no local "checked
+// while we wait" state. That is what keeps the three things a completion touches
+// in step: the pop, the row's dimmed/struck-through title (which reads the todo,
+// not this component), and the subtask-cascade confirmation, which only writes the
+// status once it's answered - so the check now follows the modal instead of
+// pre-empting it, and cancelling leaves nothing to un-paint.
+//
+// This used to paint a checked state locally and defer the commit by the length of
+// the animation, because checking a task off under Hide completed unmounts its row
+// in the same frame and the pop is never seen. That delay now sits with the filter
+// (useCompletionGrace), which holds a just-completed row on screen for exactly this
+// long - the right place for it, since it's the filter that makes rows vanish.
+export const COMPLETE_ANIM_MS = 400;
 
 export const CompletedToggle: React.FC<{
   completed: boolean;
@@ -79,48 +84,22 @@ export const CompletedToggle: React.FC<{
   onToggle?: () => void;
   size?: number;
   className?: string;
-}> = ({ completed, onToggle, size = 22, className = '' }) => {
-  // Set for the length of the animation, between the click and the commit.
-  const [pendingComplete, setPendingComplete] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // The row often survives the commit (filter off), so drop the local override
-  // once the real state agrees - and never leave a timer running past unmount.
-  useEffect(() => { if (completed) setPendingComplete(false); }, [completed]);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const shown = completed || pendingComplete;
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onToggle) return;
-    if (shown) { // un-checking (or cancelling a pending check) - commit now
-      clearTimeout(timer.current);
-      setPendingComplete(false);
-      onToggle();
-      return;
-    }
-    setPendingComplete(true);
-    timer.current = setTimeout(onToggle, COMPLETE_ANIM_MS);
-  };
-
-  return (
-    <button
-      onClick={onToggle ? handleClick : undefined}
-      className={`shrink-0 cursor-pointer ${className}`}
+}> = ({ completed, onToggle, size = 22, className = '' }) => (
+  <button
+    onClick={onToggle ? (e) => { e.stopPropagation(); onToggle(); } : undefined}
+    className={`shrink-0 cursor-pointer ${className}`}
+  >
+    <motion.div
+      animate={completed ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
+      transition={{ duration: COMPLETE_ANIM_MS / 1000 }}
+      className={`transition-colors duration-200 ${completed ? 'text-[var(--accent1)]' : `text-fg-subtle ${onToggle ? 'hover:text-fg' : ''}`}`}
     >
-      <motion.div
-        animate={shown ? { scale: [1.3, 1], rotate: [15, 0] } : {}}
-        transition={{ duration: COMPLETE_ANIM_MS / 1000 }}
-        className={`transition-colors duration-200 ${shown ? 'text-[var(--accent1)]' : `text-fg-subtle ${onToggle ? 'hover:text-fg' : ''}`}`}
-      >
-        {shown
-          ? <CheckCircleCutout size={size} strokeWidth={2.5} />
-          : <Circle size={size} strokeWidth={2.5} />}
-      </motion.div>
-    </button>
-  );
-};
+      {completed
+        ? <CheckCircleCutout size={size} strokeWidth={2.5} />
+        : <Circle size={size} strokeWidth={2.5} />}
+    </motion.div>
+  </button>
+);
 
 // ── Percent of day (an editor for the time, in percent form) ─────────────────
 // `value` is the DERIVED percent (see model/percent.ts), so a keystroke round-trips

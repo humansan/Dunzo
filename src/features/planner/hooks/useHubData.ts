@@ -26,6 +26,7 @@ import {
   buildGroupedItems,
 } from '@/features/planner/model/viewUtils';
 import { flattenTree } from '@/features/planner/sidebar/treeUtils';
+import { useCompletionGrace } from './useCompletionGrace';
 
 // A stable empty set, so a consumer memoizing on `searchVisibleTaskIds` doesn't
 // see a new identity on every render while no search is running.
@@ -102,6 +103,11 @@ export function useHubData(params: {
     () => getSearchableTodos(dayTodos).filter((e) => inWorkspace(e.todo, activeWorkspaceId)),
     [dayTodos, activeWorkspaceId]
   );
+
+  // Tasks completed within the last moment, exempted from Hide completed below so
+  // their row survives its own check animation. Fed the workspace-wide set, not the
+  // view's, so switching tabs can't look like a fresh completion.
+  const justCompleted = useCompletionGrace(entries);
 
   // Archived todos, for the 'archived' pseudo-view - kept separate from `entries`
   // since everything else in this file (collection tree, all/uncategorized counts,
@@ -290,10 +296,12 @@ export function useHubData(params: {
 
   // Apply the active filters. A failing row takes its subtree with it - see
   // applyFilters, which the sidebar counts below run too so the badges can't
-  // disagree with the rows.
+  // disagree with the rows. `justCompleted` is the one thing the rows have that
+  // the counts don't: a task checked off under Hide completed keeps its row for
+  // the length of the check animation instead of blinking out mid-pop.
   const filteredEntries = useMemo(
-    () => applyFilters(viewEntries, { filters: activeFilters, filterMatch, hideCompleted }, todoById),
-    [viewEntries, activeFilters, filterMatch, hideCompleted, todoById]
+    () => applyFilters(viewEntries, { filters: activeFilters, filterMatch, hideCompleted }, todoById, justCompleted),
+    [viewEntries, activeFilters, filterMatch, hideCompleted, todoById, justCompleted]
   );
 
   // ── In-view search ──────────────────────────────────────────────────────────

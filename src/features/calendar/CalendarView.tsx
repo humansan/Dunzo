@@ -351,7 +351,7 @@ const EventCard: React.FC<{
             {todo.text || 'Untitled'}
           </span>
           {isSmall && (
-            <span className={`text-[10px] truncate text-clip ${isDone(todo) ? 'text-fg-ghost' : ''}`}
+            <span className={`text-[10px] truncate text-clip min-w-10 ${isDone(todo) ? 'text-fg-ghost' : ''}`}
               style={!isDone(todo) ? { color: `color-mix(in srgb, ${accent} 30%, var(--color-fg))` } : undefined}>
               {fullTimeDisplay}
             </span>
@@ -1009,7 +1009,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const row = allDayRowRef.current?.getBoundingClientRect();
     const strip = allDayStripRef.current?.getBoundingClientRect();
     if (!row || !strip) return false;
-    return clientY >= row.top && clientY <= row.bottom && clientX >= strip.left && clientX <= strip.right;
+    return clientY <= row.bottom + 8 && clientX >= strip.left && clientX <= strip.right;
   }, []);
 
   useEffect(() => {
@@ -1475,7 +1475,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   )}
 
                   {/* Hour gridlines */}
-                  {HOURS.map((h) => (
+                  {HOURS.map((h) => h!==0 && (
                     <div
                       key={h}
                       className="absolute left-0 right-0 border-t border-line-subtle"
