@@ -68,8 +68,15 @@
     {
       "idx": 9,
       "version": "7",
+      "when": 1786237648417,
+      "tag": "0009_tracker_sort_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
       "when": 1786373446097,
-      "tag": "0009_slow_dark_beast",
+      "tag": "0010_slow_dark_beast",
       "breakpoints": true
     }
   ]
