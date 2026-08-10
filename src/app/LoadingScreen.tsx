@@ -1,5 +1,5 @@
 import { LoaderCircle } from 'lucide-react';
-import appLogo from '@/assets/icon-invert2.png';
+import appLogo from '@/assets/logo.png';
 
 // Full-screen loading state: app logo, a continuously spinning loader, and a short
 // status message. Shared by the router pending components and the shell bootstrap.

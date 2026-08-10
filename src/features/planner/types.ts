@@ -28,15 +28,15 @@ export interface ColDef {
 }
 
 export const COLUMNS: ColDef[] = [
-  { key: 'title', label: 'Name', defaultWidth: 320 },
-  { key: 'priority', label: 'Priority', defaultWidth: 120 },
-  { key: 'notes', label: 'Notes', defaultWidth: 280 },
-  { key: 'startDate', label: 'Start Date', defaultWidth: 150 },
-  { key: 'start', label: 'Start Time', defaultWidth: 110 },
+  { key: 'title', label: 'Name', defaultWidth: 420 },
+  { key: 'priority', label: 'Priority', defaultWidth: 90 },
+  { key: 'startDate', label: 'Start Date', defaultWidth: 105 },
+  { key: 'start', label: 'Start Time', defaultWidth: 105 },
   { key: 'startPercent', label: 'Start %', defaultWidth: 90 },
-  { key: 'date', label: 'End Date', defaultWidth: 150 },
-  { key: 'end', label: 'End Time', defaultWidth: 110 },
+  { key: 'date', label: 'End Date', defaultWidth: 105 },
+  { key: 'end', label: 'End Time', defaultWidth: 105 },
   { key: 'percent', label: 'End %', defaultWidth: 90 },
+  { key: 'notes', label: 'Notes', defaultWidth: 280 },
   { key: 'status', label: 'Status', defaultWidth: 140 },
   { key: 'collection', label: 'Collection', defaultWidth: 240 },
   { key: 'xp', label: 'xp', defaultWidth: 80 },
