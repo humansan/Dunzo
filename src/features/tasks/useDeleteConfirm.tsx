@@ -116,10 +116,8 @@ export function useDeleteConfirm(params: {
         }
         description={
           cascading
-            ? `This task has ${count(inside, 'subtask')} nested inside. ${
-                inside === 1 ? 'It is' : 'They are'
-              } deleted along with it, and this can't be undone.`
-            : `This task will be permanently deleted. This can't be undone.`
+            ? `This will permanently delete ${count(inside, 'subtask')}. You will lose all associated XP.`
+            : `This task will be permanently deleted. You will lose all associated XP.`
         }
         onClose={() => setPending(null)}
         onDontShowAgainChange={(v) => { dontAsk.current = v; }}
@@ -131,7 +129,7 @@ export function useDeleteConfirm(params: {
         }
         actions={[
           {
-            label: cascading ? `Delete all ${inside + 1}` : 'Delete',
+            label: cascading ? `Delete ${inside + 1} tasks` : 'Delete',
             icon: <Trash2 size={18} />,
             tone: 'danger',
             onSelect: () => {

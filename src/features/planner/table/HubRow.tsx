@@ -369,7 +369,7 @@ const HubRowImpl: React.FC<HubRowProps> = ({
                   wrapNotes ? 'whitespace-pre-wrap wrap-anywhere' : 'truncate'
                 } `}
               >
-                {todo.notes}
+                {todo.notes.trim()}
               </span>
             ) : muted}
           </DisplayCell>
