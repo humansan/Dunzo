@@ -32,6 +32,12 @@ import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascade
 import { useDeleteConfirm } from '@/features/tasks/useDeleteConfirm';
 
 
+// The one browser-persisted piece of task state: which task the daily list is
+// actively tracking, remembered across a reload. It holds a raw todo id, so it is
+// account-specific and MUST be dropped on every identity transition - see the effect
+// in useProvideAppData that clears it alongside the query cache.
+const ACTIVE_TODO_KEY = 'dun-active-todo';
+
 // Flat list → in-memory bucket view, grouped by dueDate (undated → UNDATED).
 // Within-day order follows `dailyOrder` (the daily list's own persisted order;
 // SQL rows come back unordered, so array order can't be relied on). This is a
@@ -66,6 +72,13 @@ function useProvideAppData() {
   const sessionPending = authSession.isPending;
   const isAuthenticated = !!authSession.data;
 
+  // Which task the daily list is actively tracking. Persisted to localStorage (see
+  // below) so a reload doesn't lose it - which is precisely why the effect after it
+  // has to clear it on an account switch. Declared here so that effect can.
+  const [activeTodoId, setActiveTodoId] = useState<string | null>(() =>
+    localStorage.getItem(ACTIVE_TODO_KEY)
+  );
+
   // Defense in depth against cross-account data leaks: whenever the signed-in
   // user identity changes (sign-out, or token swap from another tab), drop the
   // entire query cache so no resident data from the previous user can be served
@@ -87,9 +100,27 @@ function useProvideAppData() {
     // which the cache clear below deliberately skips. There is nothing to keep:
     // a token minted for the previous user is precisely what must not survive.
     clearTokenCache();
-    if (prevUserId.current !== undefined) queryClient.clear();
+    if (prevUserId.current !== undefined) {
+      queryClient.clear();
+      // The active-todo id lives in localStorage, which `queryClient.clear()` does
+      // not touch, so it used to survive an account switch and be applied to the
+      // next account's data. It never resolved there (ids are per-account), but
+      // "set but unresolvable" is the worst of both states: AppShell hides the
+      // stopwatch whenever activeTodoId is truthy, while the active-task card needs
+      // a todo it can't find - so the user got neither. Cleared on the same
+      // transition as the cache, and skipped on the first resolve for the same
+      // reason: a cold load must keep the task it was tracking before the reload.
+      setActiveTodoId(null);
+    }
     prevUserId.current = userId;
   }, [userId]);
+
+  // Mirror the active todo into localStorage. Runs on the reset above too, so the
+  // stored key is dropped with the state.
+  useEffect(() => {
+    if (activeTodoId) localStorage.setItem(ACTIVE_TODO_KEY, activeTodoId);
+    else localStorage.removeItem(ACTIVE_TODO_KEY);
+  }, [activeTodoId]);
 
   // ── Server data (TanStack Query); fetched once authenticated ───────────────
   const todosQuery = useTodos(isAuthenticated);
@@ -214,10 +245,6 @@ function useProvideAppData() {
   const renameWorkspace = (id: string, name: string) =>
     renameWorkspaceMut.mutate({ id, name });
 
-  const [activeTodoId, setActiveTodoId] = useState<string | null>(() => {
-    return localStorage.getItem('dun-active-todo');
-  });
-
   // Derived per-day bucket view for the day-grouped read surfaces (daily list,
   // calendar, stats) that still consume DayTodos[]. Not persisted.
   const dayTodos = useMemo(() => groupByDueDate(todos), [todos]);
@@ -233,14 +260,6 @@ function useProvideAppData() {
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
   }, [themeId, mode]);
-
-  useEffect(() => {
-    if (activeTodoId) {
-      localStorage.setItem('dun-active-todo', activeTodoId);
-    } else {
-      localStorage.removeItem('dun-active-todo');
-    }
-  }, [activeTodoId]);
 
   const handleAddTracker = (newTracker: Tracker) => {
     if (editingTracker) updateTracker.mutate(newTracker);
@@ -875,6 +894,10 @@ function useProvideAppData() {
     // signed-out token in the meantime.
     clearTokenCache();
     queryClient.clear();
+    // Same reasoning for the tracked task: the effect above catches this a render
+    // later, but the stored id should not outlive the session that set it.
+    setActiveTodoId(null);
+    localStorage.removeItem(ACTIVE_TODO_KEY);
   };
 
   return {
