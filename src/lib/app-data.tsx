@@ -26,7 +26,7 @@ import { useSettings, useUpdateSettings } from '@/lib/query/settings';
 import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
-import { buildSeedTrackers } from '@/lib/onboarding';
+import { buildSeedTodos, buildSeedTrackers } from '@/lib/onboarding';
 import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascadeConfirm';
 import { useDeleteConfirm } from '@/features/tasks/useDeleteConfirm';
 
@@ -169,19 +169,31 @@ function useProvideAppData() {
     // duplicate empty "Personal" workspace every time. isSuccess is only true once
     // the server actually returned a list (and stays true with retained data
     // across background refetches), so we never seed off an unconfirmed empty.
-    // The trackers query is gated on too (not just used) so the seed below can
-    // trust `trackers`: a still-loading list also reads as `[]`, and seeding off
-    // that would duplicate the widgets on an account whose workspace create failed.
+    // The trackers and todos queries are gated on too (not just used) so the seed
+    // below can trust `trackers`/`todos`: a still-loading list also reads as `[]`,
+    // and seeding off that would duplicate the content on an account whose
+    // workspace create failed.
     if (!workspacesQuery.isSuccess || !settingsQuery.isSuccess || !trackersQuery.isSuccess) return;
+    if (!todosQuery.isSuccess) return;
     if (workspaces.length === 0) {
       if (seededRef.current) return;
       seededRef.current = true;
       const id = Math.random().toString(36).substr(2, 9);
-      createWorkspace.mutate({ id, name: 'Personal' });
       setActiveWorkspaceId(id);
       // Onboarding content for a brand-new account (see @/lib/onboarding): the
-      // starter time widgets, so the app isn't blank on first sign-in.
+      // starter time widgets, so the app isn't blank on first sign-in, and the
+      // Planner tour collections.
       if (trackers.length === 0) for (const t of buildSeedTrackers()) createTracker.mutate(t);
+      // The tour rows carry `workspaceId`, a foreign key to the workspace being
+      // created right here, so they can only be sent once that POST has actually
+      // landed - hence mutateAsync rather than firing both off together. One batch,
+      // in parent-before-child order (see buildSeedTodos), because `parentId` is a
+      // foreign key too. A failure here leaves the account usable but untoured;
+      // nothing retries, since the workspace now exists and this branch is done.
+      createWorkspace
+        .mutateAsync({ id, name: 'Personal' })
+        .then(() => { if (todos.length === 0) batchTodos.mutate({ upserts: buildSeedTodos(id) }); })
+        .catch(() => {});
       // No view config is seeded: "hide completed tasks" is a code default in
       // resolveViewFilters, so it holds for every account and every workspace
       // without depending on a write here having succeeded.
@@ -190,7 +202,7 @@ function useProvideAppData() {
     if (!workspaces.some(w => w.id === activeWorkspaceId)) {
       setActiveWorkspaceId(workspaces[0].id);
     }
-  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, trackersQuery.isSuccess, workspaces, trackers, activeWorkspaceId]);
+  }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, trackersQuery.isSuccess, todosQuery.isSuccess, workspaces, trackers, todos, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
     const id = Math.random().toString(36).substr(2, 9);
