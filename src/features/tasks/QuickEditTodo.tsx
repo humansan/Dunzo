@@ -19,7 +19,12 @@ export interface QuickEditValues {
   text: string;
   notes: string;
   date: string;            // YYYY-MM-DD - the due date (drives the daily-list day)
-  startTime?: string;      // HH:MM (carried through; cleared alongside the end time)
+  // The start side is carried through rather than edited here (this panel exposes
+  // no start chips), so that clearing the due date can offer to take it with it -
+  // otherwise a "clear" here would silently leave a start behind. See
+  // useClearDueConfirm.
+  startDate?: string;      // YYYY-MM-DD
+  startTime?: string;      // HH:MM (also cleared alongside the end time)
   dueTime?: string;        // HH:MM (its % readout is derived - see model/percent.ts)
   xp?: number;
   status?: TodoStatus;
@@ -35,6 +40,7 @@ interface QuickEditTodoProps {
   initialText?: string;
   initialNotes?: string;
   initialDate: string;
+  initialStartDate?: string;
   initialStartTime?: string;
   initialTime?: string;
   initialXp?: number;
@@ -58,6 +64,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   initialText,
   initialNotes,
   initialDate,
+  initialStartDate,
   initialStartTime,
   initialTime,
   initialXp,
@@ -76,7 +83,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
 }) => {
   // Used to resolve the immediate parent into the collection breadcrumb, plus the
   // XP-chip visibility toggle and the default XP seeded onto new daily tasks.
-  const { todoById, showXpChips, defaultDailyXp, defaultAutoMoveDate } = useAppData();
+  const { todoById, showXpChips, defaultDailyXp, defaultAutoMoveDate, requestClearDue } = useAppData();
 
   // New daily tasks (add mode, no explicit XP) start at the user's default XP
   // (0/None ⇒ unset). Editing an existing task keeps its own value.
@@ -95,8 +102,9 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
   const [text, setText] = useState(initialText || '');
   const [notes, setNotes] = useState(initialNotes || '');
   const [date, setDate] = useState(initialDate);          // due date
-  // The quick editor only exposes an end time, but it carries the start time
-  // through so the Clear button can wipe both (and not silently keep a start).
+  // The quick editor only exposes an end time, but it carries the whole start
+  // side through so the Clear button can wipe both (and not silently keep a start).
+  const [startDate, setStartDate] = useState(initialStartDate || '');
   const [startTime, setStartTime] = useState(initialStartTime || '');
   const [time, setTime] = useState(initialTime || '');    // due time
   const [xpStr, setXpStr] = useState(seededXp?.toString() ?? '');
@@ -134,6 +142,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     text: text.trim(),
     notes,
     date,
+    startDate: startDate || undefined,
     startTime: startTime || undefined,
     dueTime: time || undefined,
     xp: xpStr ? Math.max(0, parseInt(xpStr) || 0) : undefined,
@@ -152,6 +161,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setText(initialText || '');
     setNotes(initialNotes || '');
     setDate(initialDate);
+    setStartDate(initialStartDate || '');
     setStartTime(initialStartTime || '');
     setTime(initialTime || '');
     setXpStr(seededXp?.toString() ?? '');
@@ -161,7 +171,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     setAutoMoveDate(seededAutoMove);
     setShowInDailyList(initialShowInDailyList ?? false);
     committedRef.current = false;
-  }, [initialText, initialNotes, initialDate, initialStartTime, initialTime, seededXp, initialStatus, initialPriority, initialParentId, seededAutoMove, initialShowInDailyList]);
+  }, [initialText, initialNotes, initialDate, initialStartDate, initialStartTime, initialTime, seededXp, initialStatus, initialPriority, initialParentId, seededAutoMove, initialShowInDailyList]);
 
   // On unmount, if an edit panel is force-closed (not via Save/Cancel), persist
   // its current values so switching panels doesn't lose changes.
@@ -182,11 +192,24 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
     if (!val) setStartTime('');
   };
 
-  // A due time can't exist without a due date; clearing the date clears the time
-  // (and the carried start time) so the form never holds a dateless time.
+  // A due time can't exist without a due date, so clearing the date clears the
+  // time with it. The START side is a separate decision - the task would be left
+  // with a beginning and no end - so it's put to the user (and remembered).
   const handleDateChange = (val: string) => {
-    setDate(val);
-    if (!val) { setTime(''); setStartTime(''); }
+    if (val) {
+      setDate(val);
+      return;
+    }
+    requestClearDue({
+      todo: { text, startDate, startTime },
+      apply: (alsoClearStart) => {
+        setDate('');
+        setTime('');
+        // A carried start time with no start date has nothing to hang off once
+        // the due date is gone, so it goes either way.
+        if (alsoClearStart || !startDate) { setStartDate(''); setStartTime(''); }
+      },
+    });
   };
 
   const canSubmit = text.trim().length > 0;
@@ -199,6 +222,7 @@ export const QuickEditTodo: React.FC<QuickEditTodoProps> = ({
       // Keep the panel open for rapid entry (Todoist-style): reset & refocus.
       setText('');
       setNotes('');
+      setStartDate('');
       setStartTime('');
       setTime('');
       setXpStr(seededXp?.toString() ?? '');

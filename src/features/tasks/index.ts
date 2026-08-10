@@ -13,3 +13,4 @@ export { TodoFullView } from './TodoFullView';
 export { QuickEditTodo, type QuickEditValues } from './QuickEditTodo';
 export { TaskTimeChips, CountdownChip, formatCountdown, type CountdownMode } from './TaskTimeChips';
 export { useArchiveConfirm } from './useArchiveConfirm';
+export { useClearDueConfirm, type ClearDueRequest } from './useClearDueConfirm';

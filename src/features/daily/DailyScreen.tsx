@@ -173,6 +173,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     showInDatabase: dailyTasksInPlanner,
     showInDailyList: true,
     notes: vals.notes || undefined,
+    startDate: vals.startDate,
     startTime: vals.startTime,
     dueTime: vals.dueTime,
     xp: vals.xp,
@@ -257,6 +258,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       text: vals.text,
       notes: vals.notes || undefined,
       dueDate: vals.date || undefined,
+      startDate: vals.startDate,
       startTime: vals.startTime,
       dueTime: vals.dueTime,
       xp: vals.xp,
@@ -274,6 +276,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     text: todo.text,
     notes: todo.notes || '',
     date: selectedDate,
+    startDate: todo.startDate,
     startTime: todo.startTime,
     dueTime: todo.dueTime,
     xp: todo.xp,
@@ -292,10 +295,12 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   // Clearing the date drops the task off the daily list entirely, so it's only
   // allowed for tasks that also live in the planner (matching the Clear button's
   // visibility in the menu's calendar panel).
-  const setTodoDate = (id: string, date: string) => {
+  // `clearStart` arrives only from the menu's confirmed "clear start and end"
+  // (useClearDueConfirm); the write boundary drops the orphan start time with it.
+  const setTodoDate = (id: string, date: string, clearStart = false) => {
     const todo = currentDayData.todos.find(t => t && t.id === id);
     if (!todo || (!date && !todo.showInDatabase)) return;
-    patchTodo(id, () => ({ date }));
+    patchTodo(id, () => (clearStart ? { date, startDate: undefined, startTime: undefined } : { date }));
   };
 
   // Clearing the end time drops the start time with it, mirroring the quick editor

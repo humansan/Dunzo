@@ -107,8 +107,9 @@ export interface DailyListProps {
   onAdd: (vals: QuickEditValues) => void;
   /** Row context menu - copy a task in place, just below the original. */
   onDuplicate?: (id: string) => void;
-  /** Row context menu - reschedule to another day (YYYY-MM-DD). */
-  onSetDate?: (id: string, date: string) => void;
+  /** Row context menu - reschedule to another day (YYYY-MM-DD). `clearStart` rides
+   *  along on a confirmed "clear start and end" (see useClearDueConfirm). */
+  onSetDate?: (id: string, date: string, clearStart?: boolean) => void;
   /** Set the due/end time ('' clears it) - the row's time chip and the context menu. */
   onSetTime?: (id: string, time: string) => void;
   /** Set the task's XP (undefined clears it) - the row's XP chip. */
@@ -168,6 +169,7 @@ const TodoItem: React.FC<TodoItemProps> = ({
           initialText={todo.text}
           initialNotes={todo.notes || ''}
           initialDate={date}
+          initialStartDate={todo.startDate}
           initialStartTime={todo.startTime}
           initialTime={todo.dueTime}
           initialXp={todo.xp}
@@ -539,7 +541,7 @@ export const DailyList: React.FC<DailyListProps> = ({
           onClose={() => setMenu(null)}
           onOpenFull={onOpenFull}
           onDuplicate={(id) => onDuplicate?.(id)}
-          onSetDate={(id, d) => onSetDate?.(id, d)}
+          onSetDate={(id, d, clearStart) => onSetDate?.(id, d, clearStart)}
           onSetTime={(id, t) => onSetTime?.(id, t)}
           onSetParent={(id, parentId) => onSetParent?.(id, parentId)}
           onAddAbove={(id) => openInsertPanel(id, 'above')}

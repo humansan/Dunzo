@@ -125,8 +125,12 @@ export const CalendarInput: React.FC<CalendarInputProps> = ({
   const setNextWeek = () => handleDateClick(addDays(new Date(), 7));
 
   const handleClear = () => {
+    // Only ask the parent - the text field follows `value` through the effect
+    // above. Blanking it here too would strand the panel showing an empty date
+    // whenever the clear doesn't go through: the parent may decline it outright
+    // (a daily-only task has nowhere to live undated) or route it via a
+    // confirmation the user then cancels (see useClearDueConfirm).
     onChange('');
-    setText('');
     // Keep the showInDailyList flag: an undated task never reaches a daily list,
     // and re-adding a date later sends it straight back without re-toggling.
   };

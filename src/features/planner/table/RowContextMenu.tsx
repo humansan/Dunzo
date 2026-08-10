@@ -64,7 +64,9 @@ export const RowContextMenu: React.FC<{
   // surface is meaningless - the date can't put it back on the daily list or in a
   // dated view, so the picker would write a field nothing reads. Restore the task
   // first. (Set time additionally needs a date, per the schedule invariant.)
-  onSetDate?: (id: string, date: string) => void;
+  // `clearStart` rides along on a clear (date === '') that the user confirmed
+  // should take the start side with it - see useClearDueConfirm.
+  onSetDate?: (id: string, date: string, clearStart?: boolean) => void;
   onSetTime?: (id: string, time: string) => void;
   onAddTaskAbove?: (id: string) => void;
   onAddTaskBelow?: (id: string) => void;
@@ -93,7 +95,7 @@ export const RowContextMenu: React.FC<{
   onArchive,
   onDelete,
 }) => {
-  const { handleHubSaveTodo } = useAppData();
+  const { handleHubSaveTodo, requestClearDue } = useAppData();
 
   // Which date/time flyout is open beside the menu, if any.
   const [sub, setSub] = useState<'date' | 'time' | null>(null);
@@ -232,7 +234,18 @@ export const RowContextMenu: React.FC<{
                 onShowInDailyListChange={entry.todo.showInDatabase !== false ? ((val) => handleHubSaveTodo({ ...entry.todo, showInDailyList: val })) : undefined}
                 autoMoveDate={entry.todo.autoMoveDate ?? false}
                 onAutoMoveDateChange={(val) => handleHubSaveTodo({ ...entry.todo, autoMoveDate: val })}
-                onChange={(val) => onSetDate?.(menu.id, val)}
+                onChange={(val) => {
+                  if (val) {
+                    onSetDate?.(menu.id, val);
+                    return;
+                  }
+                  // Clearing the anchor of a task that still has a start asks
+                  // whether the start goes too (see useClearDueConfirm).
+                  requestClearDue({
+                    todo: entry.todo,
+                    apply: (clearStart) => onSetDate?.(menu.id, '', clearStart),
+                  });
+                }}
               />
             ) : (
               <TimeInput
