@@ -72,7 +72,7 @@ const RememberCheckbox: React.FC<{ checked: boolean; onChange: (v: boolean) => v
 );
 
 const OrDivider: React.FC = () => (
-  <div className="flex items-center gap-3 my-4">
+  <div className="flex items-center gap-3 my-5">
     <div className="h-px flex-1 bg-line" />
     <span className="text-xs text-fg-faint">OR</span>
     <div className="h-px flex-1 bg-line" />
@@ -478,7 +478,7 @@ const LoginScreen: React.FC<{
               e.preventDefault();
               void handleVerifyOtp(otp);
             }}
-            className="space-y-3.5"
+            className="space-y-4"
           >
             <OtpInput
               value={otp}
@@ -561,7 +561,7 @@ const LoginScreen: React.FC<{
           <p className="text-sm text-fg-subtle mb-5">
             Enter your email and we'll send you a link to reset your password.
           </p>
-          <form onSubmit={handleForgotSubmit} className="space-y-3.5">
+          <form onSubmit={handleForgotSubmit} className="space-y-4">
             <div>
               <label className={`${fieldLabel} mb-1.5`}>Email</label>
               <input
@@ -620,7 +620,7 @@ const LoginScreen: React.FC<{
       return (
         <>
           <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-6">Set new password</h2>
-          <form onSubmit={handleResetSubmit} className="space-y-3.5">
+          <form onSubmit={handleResetSubmit} className="space-y-4">
             <div>
               <label className={`${fieldLabel} mb-1.5`}>New password</label>
               <div className="relative">
@@ -703,7 +703,7 @@ const LoginScreen: React.FC<{
     return (
       <>
         <div className="mb-6">
-          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-1.5">
+          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-2">
             {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
           </h2>
           <p className="text-sm text-fg-subtle">
@@ -733,7 +733,7 @@ const LoginScreen: React.FC<{
           </button>
         )}
 
-        <form onSubmit={onFormSubmit} className="space-y-3.5">
+        <form onSubmit={onFormSubmit} className="space-y-4">
           {showEmailField && (
             <div>
               <label className={`${fieldLabel} mb-1.5`}>Email</label>

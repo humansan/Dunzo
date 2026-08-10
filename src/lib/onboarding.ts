@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import type { Todo, Tracker } from '@shared/types';
+import { newId } from '@/common/lib/newId';
 
 // ── First-run seeding ────────────────────────────────────────────────────────
 // A brand-new account otherwise lands on a completely empty app - no tasks, no
@@ -17,8 +18,6 @@ import type { Todo, Tracker } from '@shared/types';
 const SEED_COLOR1 = '#ffe32e';
 const SEED_COLOR2 = '#2effa4';
 const SEED_PRECISION = 2;
-
-const newId = () => Math.random().toString(36).substr(2, 9);
 
 export function buildSeedTrackers(): Tracker[] {
   const createdAt = Date.now();

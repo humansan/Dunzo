@@ -16,6 +16,7 @@ import { UNDATED, todoIndex, collectionOptions, collectWithDescendants, normaliz
 import { normalizeCompletion, toggledStatus, isDone, reconcileSchedule, reconcileArchived, descendantsToArchive, ancestorsToUnarchive, descendantsToUnarchive } from '@/features/tasks/model';
 import { reconcilePlannerVisibility, descendantsToHide, descendantsToShow, ancestorsToShow } from '@/features/tasks/model';
 import { format } from 'date-fns';
+import { newId } from '@/common/lib/newId';
 import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
 import { clearTokenCache } from '@/lib/query/apiClient';
@@ -178,7 +179,7 @@ function useProvideAppData() {
     if (workspaces.length === 0) {
       if (seededRef.current) return;
       seededRef.current = true;
-      const id = Math.random().toString(36).substr(2, 9);
+      const id = newId();
       setActiveWorkspaceId(id);
       // Onboarding content for a brand-new account (see @/lib/onboarding): the
       // starter time widgets, so the app isn't blank on first sign-in, and the
@@ -205,7 +206,7 @@ function useProvideAppData() {
   }, [isAuthenticated, workspacesQuery.isSuccess, settingsQuery.isSuccess, trackersQuery.isSuccess, todosQuery.isSuccess, workspaces, trackers, todos, activeWorkspaceId]);
 
   const addWorkspace = (): string => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = newId();
     createWorkspace.mutate({ id, name: '' });
     setActiveWorkspaceId(id);
     return id;
@@ -522,7 +523,7 @@ function useProvideAppData() {
     parentId: string | null,
     opts?: { date?: string | null; patch?: Partial<Todo> }
   ): string => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = newId();
     // An explicit group-create date wins over anything in the patch (e.g. a date
     // filter); when none is given we keep whatever dueDate the patch carries.
     const dueDate = opts?.date && opts.date !== UNDATED ? opts.date : undefined;
@@ -647,7 +648,7 @@ function useProvideAppData() {
     workspaceId: string = activeWorkspaceId,
     parentId: string | null = null,
   ): string => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = newId();
     const newCollection: Todo = {
       id,
       text: name,
