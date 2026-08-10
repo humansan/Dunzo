@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Todo } from '@shared/types';
 import { OrganizerEntry, nearestCollectionAt } from '@/features/tasks/model';
 import { FlatNode, GroupRow, SectionsConfig } from '@/features/planner/types';
@@ -55,12 +55,24 @@ export function useRowDnD(params: {
   } = params;
 
   const [rowDragId, setRowDragId] = useState<string | null>(null);
+  // The same id, written synchronously at dragstart. The state update is deliberately
+  // deferred a frame (see onRowDragStart), and every drag-time guard below keys on
+  // "is a drag in progress" - so reading the STATE there means that for the first
+  // frame of every drag the row handlers bail out before preventDefault, the drop is
+  // refused, and the pointer flashes the circle-slash cursor. The ref closes that
+  // window; `rowDragId` stays the render-time value (it dims the dragged row).
+  const rowDragIdRef = useRef<string | null>(null);
   const [rowDrop, setRowDrop] = useState<RowDrop | null>(null);
   // Edge auto-scroll for the table drag surface. Its onDragOver/onDragEnter also
   // keep the whole surface a valid drop zone.
   const tableScroll = useDragAutoScroll<HTMLDivElement>();
 
-  const resetDrag = useStableCallback(() => { setRowDragId(null); setRowDrop(null); tableScroll.stop(); });
+  const resetDrag = useStableCallback(() => {
+    rowDragIdRef.current = null;
+    setRowDragId(null);
+    setRowDrop(null);
+    tableScroll.stop();
+  });
 
   // Nearest collection at or above `startId` (or null) - collections may only nest
   // under collections, so a collection drag snaps its parent up to one. Runs over
@@ -93,11 +105,12 @@ export function useRowDnD(params: {
   // parent; for root-level nodes (parentId null) `sectionOf` additionally requires
   // the same section, so section roots in different sections aren't siblings.
   const isLastSiblingIn = (nodes: FlatNode[], target: FlatNode, sectionOf?: Map<string, string>): boolean => {
+    const dragId = rowDragIdRef.current;
     const idx = nodes.findIndex((n) => n.id === target.id);
     if (idx === -1) return true;
     for (let i = idx + 1; i < nodes.length; i++) {
       const n = nodes[i];
-      if (n.id === rowDragId || (rowDragId !== null && isDescendantOf(n.entry, rowDragId))) continue; // leaving
+      if (n.id === dragId || (dragId !== null && isDescendantOf(n.entry, dragId))) continue; // leaving
       if (n.depth > target.depth) continue; // target's own subtree
       const sameParent =
         n.parentId === target.parentId &&
@@ -119,13 +132,14 @@ export function useRowDnD(params: {
   // (sibling below) point only appears on a last sibling that isn't expanded -
   // otherwise drop after it via the row below. Collections snap to a valid parent.
   const computeTreeDrop = (targetId: string, e: React.DragEvent): RowDrop | null => {
-    if (!rowDragId || targetId === rowDragId) return null;
+    const dragId = rowDragIdRef.current;
+    if (!dragId || targetId === dragId) return null;
     const target = flatById.get(targetId);
     if (!target) return null;
     // Can't drop into the dragged node's own subtree.
-    if (isDescendantOf(target.entry, rowDragId)) return null;
+    if (isDescendantOf(target.entry, dragId)) return null;
 
-    const draggedIsColl = !!byId.get(rowDragId)?.todo.isCollection;
+    const draggedIsColl = !!byId.get(dragId)?.todo.isCollection;
     const targetIsColl = !!target.entry.todo.isCollection;
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -169,10 +183,11 @@ export function useRowDnD(params: {
   // The carried `group` is the target's section, which the commit uses to reassign
   // the grouping attribute when the drop lands at a section root.
   const computeGroupedDrop = (targetId: string, e: React.DragEvent): RowDrop | null => {
-    if (!rowDragId || targetId === rowDragId) return null;
+    const dragId = rowDragIdRef.current;
+    if (!dragId || targetId === dragId) return null;
     const target = groupNodes.find((n) => n.id === targetId);
     if (!target) return null;
-    if (isDescendantOf(target.entry, rowDragId)) return null; // can't drop into own subtree
+    if (isDescendantOf(target.entry, dragId)) return null; // can't drop into own subtree
 
     const rect = e.currentTarget.getBoundingClientRect();
     const r = (e.clientY - rect.top) / rect.height;
@@ -191,6 +206,9 @@ export function useRowDnD(params: {
     (!a && !b) || (!!a && !!b && a.id === b.id && a.pos === b.pos && a.indent === b.indent);
 
   const onRowDragStart = useStableCallback((id: string) => {
+    // The ref is set NOW - the guards below need to know a drag is live from the very
+    // first dragenter/dragover, which arrive before the deferred state lands.
+    rowDragIdRef.current = id;
     // Defer the state update: setting React state synchronously inside dragstart
     // re-renders the dragged row and aborts the native drag (the "first drag does
     // nothing / row stays dimmed" bug). A frame later the drag is committed.
@@ -203,7 +221,7 @@ export function useRowDnD(params: {
 
   // dragOver on a task/collection row - recompute and stash the resolved drop.
   const onRowDragOver = useStableCallback((targetId: string, e: React.DragEvent) => {
-    if (!rowDragId) return;
+    if (!rowDragIdRef.current) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const next = sectionsConfig.groupBy === 'collection'
@@ -214,7 +232,7 @@ export function useRowDnD(params: {
 
   // dragOver on a section header (attribute-grouped mode) - drop at the top of it.
   const onHeaderDragOver = (headerId: string, group: string, e: React.DragEvent) => {
-    if (!rowDragId || sectionsConfig.groupBy === 'collection') return;
+    if (!rowDragIdRef.current || sectionsConfig.groupBy === 'collection') return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     // A section root renders flush (indent 0), so the line is drawn there.
@@ -301,9 +319,12 @@ export function useRowDnD(params: {
   };
 
   const onRowDrop = useStableCallback(() => {
-    if (rowDragId && rowDrop) {
-      if (sectionsConfig.groupBy === 'collection') commitTreeDrop(rowDragId, rowDrop);
-      else commitGroupedDrop(rowDragId, rowDrop);
+    // The ref, like the guards above: a drop can land in the same frame the drag
+    // started (a quick flick), before the state has caught up.
+    const dragId = rowDragIdRef.current;
+    if (dragId && rowDrop) {
+      if (sectionsConfig.groupBy === 'collection') commitTreeDrop(dragId, rowDrop);
+      else commitGroupedDrop(dragId, rowDrop);
     }
     resetDrag();
   });

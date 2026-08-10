@@ -19,8 +19,17 @@ export const PopoverMenu: React.FC<{
   // header only becomes a flex row when this is present, so menus that pass a
   // custom headerClassName keep their exact previous layout without it.
   headerAction?: React.ReactNode;
+  // Drag handlers for a menu whose rows reorder by dragging (Fields, widget Order).
+  // They go on the PANEL, not on the caller's row list, so the whole menu - title,
+  // padding, the gaps between rows - is one uninterrupted drop zone. A drag that
+  // strays onto a region which doesn't preventDefault stops being a drop there, and
+  // the cursor flips to the circle-slash; see useDragAutoScroll, which exists to
+  // hold the same guarantee over the table and the sidebar.
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
   children: React.ReactNode;
-}> = ({ anchor, title, onClose, className = '', headerClassName = DEFAULT_HEADER, headerAction, children }) => (
+}> = ({ anchor, title, onClose, className = '', headerClassName = DEFAULT_HEADER, headerAction, onDragEnter, onDragOver, onDrop, children }) => (
   <>
     <div
       className="fixed inset-0 z-[65]"
@@ -30,6 +39,9 @@ export const PopoverMenu: React.FC<{
     <div
       style={{ position: 'fixed', right: anchor.right, top: anchor.top }}
       className={`z-[66] rounded-lg border border-line bg-surface shadow-2xl ${className}`}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
       {headerAction ? (
         <div className={`${headerClassName} flex items-center justify-between gap-2`}>

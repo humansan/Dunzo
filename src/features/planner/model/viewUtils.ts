@@ -517,6 +517,8 @@ export function buildGroupedItems(
 
 // Apply a view's filter rules to its entries.
 //
+const EMPTY_KEEP: ReadonlySet<string> = new Set<string>();
+
 // A task is kept only when it matches AND every task ancestor of it in this set
 // matches too - so a row that fails takes its whole subtree with it. That mirrors
 // how grouping treats a subtree as one unit (getOwningGroup above: the parent's
@@ -538,12 +540,20 @@ export function buildGroupedItems(
 // `filterMatch`, so switching the match to Or would put completed tasks back on
 // screen while the switch still read "on". A setting has to mean what it says.
 //
+// `keepCompleted` exempts specific tasks from `hideCompleted` for as long as it
+// contains them - the just-checked-off row, held on screen while its check
+// animates (see useCompletionGrace). It is transient render state, which is why it
+// is a separate argument rather than a fourth field on `state`: that object is the
+// view's saved filter config. The rows pass it and the sidebar counts don't, so a
+// badge drops the moment the task completes while its row is still finishing.
+//
 // Pure, and shared by the rendered rows and the sidebar counts, so the two can't
 // disagree about what a view contains.
 export function applyFilters(
   entries: OrganizerEntry[],
   state: { filters: FilterRule[]; filterMatch: FilterMatch; hideCompleted?: boolean },
-  todoById: Map<string, Todo>
+  todoById: Map<string, Todo>,
+  keepCompleted: ReadonlySet<string> = EMPTY_KEEP
 ): OrganizerEntry[] {
   const { filterMatch, hideCompleted = false } = state;
   const rules = state.filters.filter((f) => f.value);
@@ -556,7 +566,7 @@ export function applyFilters(
       ? rules.some((f) => matchesFilter(e, f, todoById))
       : rules.every((f) => matchesFilter(e, f, todoById)));
   const selfMatches = (e: OrganizerEntry) =>
-    (!hideCompleted || !isDone(e.todo)) && matchesRules(e);
+    (!hideCompleted || !isDone(e.todo) || keepCompleted.has(e.todo.id)) && matchesRules(e);
 
   // Kept = self matches && nearest task ancestor present in this set is kept.
   // Memoized per id. A parentId cycle (corrupt data) is broken by treating the

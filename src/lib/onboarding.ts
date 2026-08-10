@@ -30,6 +30,9 @@ export function buildSeedTrackers(): Tracker[] {
       precision: SEED_PRECISION,
       displayMode: 'time_remaining',
       secondaryDisplayMode: 'percent_elapsed',
+      // The seeds share a createdAt, so their order is stated outright rather than
+      // left to a tie-break (the user can drag them afterwards).
+      sortOrder: 0,
       createdAt,
     },
     {
@@ -40,6 +43,7 @@ export function buildSeedTrackers(): Tracker[] {
       precision: SEED_PRECISION,
       displayMode: 'percent_elapsed',
       secondaryDisplayMode: 'time_remaining',
+      sortOrder: 1,
       createdAt,
     },
   ];

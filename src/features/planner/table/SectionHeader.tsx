@@ -102,6 +102,9 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       style={{ gridTemplateColumns }}
       onClick={onActivate}
       onContextMenu={onContextMenu}
+      // dragEnter shares dragOver's handler: cancelling only dragOver leaves the frame
+      // where the pointer enters this row refusing the drop (circle-slash cursor).
+      onDragEnter={onDragOver}
       onDragOver={onDragOver}
       onDrop={onDrop}
       // List view gives sections an airier, Todoist-like rhythm: more space above
