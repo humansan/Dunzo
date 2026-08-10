@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Play, Sparkles } from 'lucide-react';
+import { ArrowRight, ChevronRight, Play, Sparkles } from 'lucide-react';
 import { APP_URL, DEMO_HASH } from '../../config';
 
 const HEADING = 'Everything Dunzo does.';
@@ -29,8 +29,8 @@ export const FeaturesHero: React.FC = () => (
 
     <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
       <div className="mb-6 fade-slide-up" style={{ animationDelay: '100ms' }}>
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
-          <Sparkles className="w-3.5 h-3.5 fill-gold text-gold" />
+        <div className="inline-flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
+          <ChevronRight className="w-3.5 h-3.5 text-gold" />
           <span>Free in early access</span>
         </div>
       </div>
