@@ -4,6 +4,6 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 // just redirects to the default view. (Later: last-visited via settings.)
 export const Route = createFileRoute('/_authed/')({
   beforeLoad: () => {
-    throw redirect({ to: '/today' });
+    throw redirect({ to: '/planner' });
   },
 });

@@ -380,7 +380,7 @@ const LoginScreen: React.FC<{
       // post-OAuth landing via getSession(), so onAuthenticated isn't called here.
       await (authClient as any).signIn.social({
         provider: 'google',
-        callbackURL: window.location.origin + withBase('/today'),
+        callbackURL: window.location.origin + withBase('/planner'),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
