@@ -38,14 +38,18 @@ if (!process.env.DATABASE_URL) {
 // The recursive term walks UP from each visible row; collections are excluded
 // from the result (they are pinned visible by normalizeVisibility and can't be
 // hidden anyway), but the walk still passes through them.
+// Keyed on (user_id, id) throughout - the walk joins on user_id and the UPDATE
+// matches the pair. `id` alone is not unique (the PK is (user_id, id)), so an
+// id-only join would follow a tree edge into another account.
 const FIND = `
   WITH RECURSIVE chain AS (
-    SELECT id, parent_id FROM todos WHERE show_in_database IS TRUE
+    SELECT user_id, id, parent_id FROM todos WHERE show_in_database IS TRUE
     UNION
-    SELECT t.id, t.parent_id FROM todos t JOIN chain c ON t.id = c.parent_id
+    SELECT t.user_id, t.id, t.parent_id FROM todos t
+      JOIN chain c ON t.id = c.parent_id AND t.user_id = c.user_id
   )
-  SELECT DISTINCT t.id, t.text
-    FROM chain c JOIN todos t ON t.id = c.id
+  SELECT DISTINCT t.user_id, t.id, t.text
+    FROM chain c JOIN todos t ON t.id = c.id AND t.user_id = c.user_id
    WHERE t.show_in_database IS NOT TRUE
      AND t.is_collection IS NOT TRUE
 `;
@@ -59,15 +63,17 @@ try {
     console.log('Nothing to repair - every Planner-visible todo already has visible parents.');
   } else {
     console.log(`${rows.length} hidden parent${rows.length === 1 ? '' : 's'} of visible tasks:`);
-    for (const r of rows) console.log(`  ${r.id}  ${r.text || '(untitled)'}`);
+    for (const r of rows) console.log(`  ${r.user_id}  ${r.id}  ${r.text || '(untitled)'}`);
 
     if (dryRun) {
       console.log('\n--dry-run: nothing written.');
     } else {
+      const userIds = rows.map((r) => r.user_id);
       const ids = rows.map((r) => r.id);
       const res = await pool.query(
-        'UPDATE todos SET show_in_database = TRUE WHERE id = ANY($1::text[])',
-        [ids]
+        `UPDATE todos SET show_in_database = TRUE
+          WHERE (user_id, id) IN (SELECT * FROM unnest($1::text[], $2::text[]))`,
+        [userIds, ids]
       );
       console.log(`\nShowed ${res.rowCount} todo${res.rowCount === 1 ? '' : 's'} in the Task Planner.`);
     }
