@@ -101,7 +101,7 @@ const NOTE_XP = paras(
 
 const NOTE_ARCHIVE_DELETE = paras(
   'Archiving a task hides it from all Planner views and Task Finder, but keeps all XP and data.',
-  'Deleting a task is permanent and cannot be undone. It clears all associated XP.'
+  'Deleting a task is permanent and cannot be undone. It clears all associated XP. If you have completed a task and want to keep the XP earned, archive instead.'
 );
 
 // A node in the seed tree. Only the fields the content actually sets; everything

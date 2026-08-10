@@ -30,7 +30,7 @@ export const Hero: React.FC = () => {
   return (
     <section className="relative pt-30 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-canvas">
       {/* Background image blur effect */}
-      <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
+      <div className="absolute inset-0 opacity-60 pointer-events-none mix-blend-screen overflow-hidden">
         {/* Decoded synchronously and fetched at high priority: an async swap-in
             lands after first paint and invalidates the navbar's backdrop, which
             is what makes the seams flash there. */}

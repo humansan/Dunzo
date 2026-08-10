@@ -17,7 +17,7 @@ export const FeaturesHero: React.FC = () => (
     className="relative z-[45] bg-canvas min-h-[calc(50vh+150px)] pt-32 pb-16 md:pt-40 md:pb-20 overflow-hidden"
   >
     {/* Same blurred backdrop as the home hero, so the two pages feel like one site. */}
-    <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
+    <div className="absolute inset-0 opacity-60 pointer-events-none mix-blend-screen overflow-hidden">
       <img
         src="/background.webp"
         alt=""

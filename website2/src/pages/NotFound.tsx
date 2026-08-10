@@ -13,7 +13,7 @@ import { APP_URL } from '../config';
  */
 export const NotFound: React.FC = () => (
   <main className="relative min-h-[70vh] flex items-center justify-center px-4 pt-32 pb-20">
-    <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
+    <div className="absolute inset-0 opacity-60 pointer-events-none mix-blend-screen overflow-hidden">
       <img
         src="/background.webp"
         alt=""
