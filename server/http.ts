@@ -95,6 +95,7 @@ export const TRACKER_FIELDS = [
   'precision',
   'displayMode',
   'secondaryDisplayMode',
+  'sortOrder',
   'createdAt',
 ] as const;
 export const TRACKER_UPDATE_FIELDS = TRACKER_FIELDS.filter(

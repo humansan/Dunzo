@@ -15,6 +15,7 @@ import { TimeInput } from '@/common/ui';
 import { XpSlider } from '@/common/ui';
 import { CollectionPicker, COLLECTION_PANEL_WIDTH } from '@/features/tasks/collection-picker';
 import { EditState } from '@/features/planner/types';
+import { useAppData } from '@/lib/app-data';
 
 // The portaled inline-cell editor: a popover anchored to the cell being edited
 // that swaps in the right control for the column (status/priority chips, a
@@ -46,6 +47,10 @@ export const CellEditorPopover: React.FC<{
   // Set when a schedule edit is rejected for putting start after due. Declared
   // before the early return below so the hook order stays stable.
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  // "Clear start as well?" - the dialog is rendered by AppDataProvider, which is
+  // what lets it outlive this popover (the click that answers it dismisses the
+  // cell editor underneath).
+  const { requestClearDue } = useAppData();
 
   if (!editing.rect) return null;
   const { col } = editing;
@@ -137,7 +142,22 @@ export const CellEditorPopover: React.FC<{
             // Clearing the date keeps the showInDailyList flag - an undated task
             // just never lands on a daily list, and re-adding a date sends it back.
             // reconcileSchedule also drops the due time when the date goes away.
-            saveSchedule({ dueDate: val || undefined }, 'due');
+            if (val) {
+              saveSchedule({ dueDate: val }, 'due');
+              return;
+            }
+            // Dropping the anchor of a task that still has a start is the one
+            // clear that asks first (see useClearDueConfirm).
+            requestClearDue({
+              todo: entry.todo,
+              apply: (alsoClearStart) =>
+                saveSchedule(
+                  alsoClearStart
+                    ? { dueDate: undefined, startDate: undefined, startTime: undefined }
+                    : { dueDate: undefined },
+                  'due',
+                ),
+            });
           }}
         />
       ) : col === 'startDate' ? (

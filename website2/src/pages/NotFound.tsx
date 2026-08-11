@@ -13,12 +13,13 @@ import { APP_URL } from '../config';
  */
 export const NotFound: React.FC = () => (
   <main className="relative min-h-[70vh] flex items-center justify-center px-4 pt-32 pb-20">
-    <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
+    {/* Promoted layer, no blend group — same reasoning as Hero.tsx. */}
+    <div className="absolute inset-0 opacity-50 pointer-events-none overflow-hidden will-change-transform">
       <img
-        src="/background.webp"
+        src="/background-blur.webp"
         alt=""
         decoding="sync"
-        className="w-full h-full object-cover filter blur-xl scale-120"
+        className="w-full h-full object-cover scale-120"
       />
     </div>
 

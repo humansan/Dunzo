@@ -38,7 +38,9 @@ export const DailyRowContextMenu: React.FC<{
   onClose: () => void;
   onOpenFull: (id: string) => void;
   onDuplicate: (id: string) => void;
-  onSetDate: (id: string, date: string) => void;
+  // `clearStart` rides along on a clear (date === '') that the user confirmed
+  // should take the start side with it - see useClearDueConfirm.
+  onSetDate: (id: string, date: string, clearStart?: boolean) => void;
   onSetTime: (id: string, time: string) => void;
   onAddAbove: (id: string) => void;
   onAddBelow: (id: string) => void;
@@ -59,7 +61,7 @@ export const DailyRowContextMenu: React.FC<{
   onSetParent,
   onDelete,
 }) => {
-  const { searchEntries, searchFlatEntries, todoById, handleHubSaveTodo } = useAppData();
+  const { searchEntries, searchFlatEntries, todoById, handleHubSaveTodo, requestClearDue } = useAppData();
 
   // Which flyout is open beside the menu, if any.
   const [sub, setSub] = useState<'date' | 'time' | null>(null);
@@ -169,7 +171,18 @@ export const DailyRowContextMenu: React.FC<{
                 onShowInDailyListChange={todo.showInDatabase ? ((val) => handleHubSaveTodo({ ...todo, showInDailyList: val })) : undefined}
                 autoMoveDate={todo.autoMoveDate ?? false}
                 onAutoMoveDateChange={(val) => handleHubSaveTodo({ ...todo, autoMoveDate: val })}
-                onChange={(val) => onSetDate(todo.id, val)}
+                onChange={(val) => {
+                  if (val) {
+                    onSetDate(todo.id, val);
+                    return;
+                  }
+                  // Clearing the anchor of a task that still has a start asks
+                  // whether the start goes too (see useClearDueConfirm).
+                  requestClearDue({
+                    todo,
+                    apply: (clearStart) => onSetDate(todo.id, '', clearStart),
+                  });
+                }}
               />
             ) : (
               <TimeInput

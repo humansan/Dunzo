@@ -20,6 +20,7 @@ import { Todo, DayTodos, Tracker } from '@shared/types';
 import { todoIndex, collectionOptions as buildCollectionOptions, showsOnDailyChecklist } from '@/features/tasks/model';
 
 import { TrackerCard } from '@/features/trackers';
+import { sortTrackers } from '@/features/trackers/model';
 import { CalendarView } from '@/features/calendar';
 import { QuickEditValues } from '@/features/tasks';
 import { XpProgressBar } from '@/features/xp';
@@ -93,11 +94,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   onOpenTask,
   onCreateTask,
 }) => {
-  const orderedTrackers = useMemo(() => {
-    const dayTracker = trackers.find(t => t.type === 'day');
-    const others = trackers.filter(t => t.type !== 'day');
-    return dayTracker ? [dayTracker, ...others] : others;
-  }, [trackers]);
+  // The user's order, set on the Time Widgets page (Order menu). The day tracker
+  // used to be pinned first here regardless; it now sits wherever they put it.
+  const orderedTrackers = useMemo(() => sortTrackers(trackers), [trackers]);
 
   // `selectedDate` comes from the route (?date); alias the setter so the existing
   // date-nav call sites (prev/next/today/pick) stay unchanged.
@@ -174,6 +173,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     showInDatabase: dailyTasksInPlanner,
     showInDailyList: true,
     notes: vals.notes || undefined,
+    startDate: vals.startDate,
     startTime: vals.startTime,
     dueTime: vals.dueTime,
     xp: vals.xp,
@@ -258,6 +258,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
       text: vals.text,
       notes: vals.notes || undefined,
       dueDate: vals.date || undefined,
+      startDate: vals.startDate,
       startTime: vals.startTime,
       dueTime: vals.dueTime,
       xp: vals.xp,
@@ -275,6 +276,7 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
     text: todo.text,
     notes: todo.notes || '',
     date: selectedDate,
+    startDate: todo.startDate,
     startTime: todo.startTime,
     dueTime: todo.dueTime,
     xp: todo.xp,
@@ -293,10 +295,12 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   // Clearing the date drops the task off the daily list entirely, so it's only
   // allowed for tasks that also live in the planner (matching the Clear button's
   // visibility in the menu's calendar panel).
-  const setTodoDate = (id: string, date: string) => {
+  // `clearStart` arrives only from the menu's confirmed "clear start and end"
+  // (useClearDueConfirm); the write boundary drops the orphan start time with it.
+  const setTodoDate = (id: string, date: string, clearStart = false) => {
     const todo = currentDayData.todos.find(t => t && t.id === id);
     if (!todo || (!date && !todo.showInDatabase)) return;
-    patchTodo(id, () => ({ date }));
+    patchTodo(id, () => (clearStart ? { date, startDate: undefined, startTime: undefined } : { date }));
   };
 
   // Clearing the end time drops the start time with it, mirroring the quick editor

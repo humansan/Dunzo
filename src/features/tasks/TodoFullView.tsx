@@ -32,6 +32,7 @@ import {
   type EditState,
 } from '@/features/planner/table';
 import { useArchiveConfirm } from '@/features/tasks/useArchiveConfirm';
+import type { ClearDueRequest } from '@/features/tasks/useClearDueConfirm';
 import { usePlannerVisibilityConfirm } from '@/features/tasks/usePlannerVisibilityConfirm';
 import {
   CompletedToggle,
@@ -70,6 +71,11 @@ interface TodoFullViewProps {
   // but its parent.
   onDeleteReturn?: () => void;
   onSave: (updated: Todo, newDate: string) => void;
+  // Clearing a due date off a task that still has a start asks first. The dialog
+  // is owned by app data rather than this view: the same question is raised from
+  // the planner and the daily list, and one instance keeps the wording (and the
+  // remembered answer) from drifting. See useClearDueConfirm.
+  requestClearDue: (req: ClearDueRequest) => void;
   onToggle: (id: string) => void;
   // Deleting asks for confirmation first (app-data's requestDeleteTodo), so where
   // to go afterwards is handed over rather than run here: on a cancel nothing
@@ -192,6 +198,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   onClose,
   onDeleteReturn,
   onSave,
+  requestClearDue,
   onToggle,
   onDelete,
   onArchive,
@@ -514,7 +521,22 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     // A SUBTASK is exempt: it's reachable inside its parent task, and forcing it
     // into the Planner here would break the parent/child rule the moment the parent
     // is hidden - the write boundary would just hide it again on the next save.
-    updateSchedule(val || isSubtask ? {} : { showInDatabase: true }, 'due', val);
+    if (val) {
+      updateSchedule({}, 'due', val);
+      return;
+    }
+    const patch: Partial<Todo> = isSubtask ? {} : { showInDatabase: true };
+    // The START side is the user's call: due is the anchor, so dropping it leaves
+    // a task that begins somewhere and is due nowhere (see useClearDueConfirm).
+    requestClearDue({
+      todo: draft,
+      apply: (alsoClearStart) =>
+        updateSchedule(
+          alsoClearStart ? { ...patch, startDate: undefined, startTime: undefined } : patch,
+          'due',
+          '',
+        ),
+    });
   };
 
   // The time is the whole value (its % readout is derived), so these just write it.
@@ -747,8 +769,11 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <RightProp
                 icon={<Clock size={11} />}
                 label="Due"
-                onClear={() => updateSchedule(patchFromTime('due', ''), 'due')}
-                canClear={false}
+                // Clears the whole Due side, the way Start's button clears its
+                // own: the date takes its time with it, and a task that still has
+                // a start gets asked about that first (handleDateChange).
+                onClear={() => handleDateChange('')}
+                canClear={!!dateStr}
               >
                 <div className="flex flex-wrap items-center gap-1.5">
                   <DateChip

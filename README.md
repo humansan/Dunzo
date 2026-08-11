@@ -34,32 +34,32 @@ A full-stack productivity app that combines a **database-style task planner**, a
 <div align="left">
 
 ### Daily Checklist Dashboard
-<img src="website2/public/media/s1.png" alt="Daily checklist" width="100%" />
+<img src="website2/public/media/s1.webp" alt="Daily checklist" width="100%" />
 
 ### Task Planner
-<img src="website2/public/media/s5.png" alt="Task Planner - database-style table view" width="100%" />
+<img src="website2/public/media/s5.webp" alt="Task Planner - database-style table view" width="100%" />
 
 You can change grouping mode, set filters/sorts, and control field visibility and order:
 <br>
-<img src="website2/public/media/planner_triple.png" alt="Task Planner with group by status and fields menu" width="100%" />
+<img src="website2/public/media/planner_triple.webp" alt="Task Planner with group by status and fields menu" width="100%" />
 
 NOTE: Timeline View is currently work in progress
 
 
 ### Calendar
-<img src="website2/public/media/calendar_no_ribbon.png" alt="Calendar page" width="100%" />
+<img src="website2/public/media/calendar_no_ribbon.webp" alt="Calendar page" width="100%" />
 
 ### Time Widgets and Stopwatch/Pomodoro
-<img src="website2/public/media/v2/widgets_main.png" alt="Time-progress trackers" width="73%" />
-<img src="website2/public/media/v2/widget_editor.png" alt="Widget creator" width="26%" />
-<img src="website2/public/media/s16.png" alt="Stopwatch" width="49%" />
-<img src="website2/public/media/s16b.png" alt="Stopwatch in min mode" width="49%" />
+<img src="website2/public/media/v2/widgets_main.webp" alt="Time-progress trackers" width="73%" />
+<img src="website2/public/media/v2/widget_editor.webp" alt="Widget creator" width="26%" />
+<img src="website2/public/media/s16.webp" alt="Stopwatch" width="49%" />
+<img src="website2/public/media/s16b.webp" alt="Stopwatch in min mode" width="49%" />
 
 
 ### Stats & More
-<img src="website2/public/media/s14.png" alt="Stats and XP dashboard" width="100%" />
-<img src="website2/public/media/s14b.png" alt="Collection breakdown" width="100%" />
-<img src="website2/public/media/s18.png" alt="App settings" width="100%" />
+<img src="website2/public/media/s14.webp" alt="Stats and XP dashboard" width="100%" />
+<img src="website2/public/media/s14b.webp" alt="Collection breakdown" width="100%" />
+<img src="website2/public/media/s18.webp" alt="App settings" width="100%" />
 
 </div>
 

@@ -30,6 +30,9 @@ export function buildSeedTrackers(): Tracker[] {
       precision: SEED_PRECISION,
       displayMode: 'time_remaining',
       secondaryDisplayMode: 'percent_elapsed',
+      // The seeds share a createdAt, so their order is stated outright rather than
+      // left to a tie-break (the user can drag them afterwards).
+      sortOrder: 0,
       createdAt,
     },
     {
@@ -40,6 +43,7 @@ export function buildSeedTrackers(): Tracker[] {
       precision: SEED_PRECISION,
       displayMode: 'percent_elapsed',
       secondaryDisplayMode: 'time_remaining',
+      sortOrder: 1,
       createdAt,
     },
   ];
@@ -73,7 +77,7 @@ const NOTE_FULL_VIEW = paras(
 );
 
 const NOTE_COLLECTIONS =
-  'Right click on a collection to show options or edit it. Drag & drop them in the Planner sidebar or main table to reorder or nest collections.';
+  'Right click on a collection to show options or edit it. Drag & drop them in the to reorder or nest. You can also drag  & drop and right click collections in the Planner sidebar on the left!';
 
 const NOTE_PLANNER_VIEW = paras(
   'See the top right planner toolbar for options.',
@@ -97,7 +101,7 @@ const NOTE_XP = paras(
 
 const NOTE_ARCHIVE_DELETE = paras(
   'Archiving a task hides it from all Planner views and Task Finder, but keeps all XP and data.',
-  'Deleting a task is permanent and cannot be undone. It clears all associated XP.'
+  'Deleting a task is permanent and cannot be undone. It clears all associated XP. If you have completed a task and want to keep the XP earned, archive instead.'
 );
 
 // A node in the seed tree. Only the fields the content actually sets; everything
@@ -129,7 +133,6 @@ const ONBOARDING: SeedNode[] = [
           { text: 'Right click a task or collection to show more options ⚙️' },
         ],
       },
-      { text: 'Right click on a task or collection to show options ⚙️' },
       { text: 'Collections categorize tasks, and can also be nested 🧺', notes: NOTE_COLLECTIONS },
       { text: 'Try customizing planner view (see notes) 🗃️', notes: NOTE_PLANNER_VIEW },
       {

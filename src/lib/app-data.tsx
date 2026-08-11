@@ -21,7 +21,8 @@ import { authClient } from '@/lib/auth';
 import { queryClient } from '@/lib/query/queryClient';
 import { clearTokenCache } from '@/lib/query/apiClient';
 import { useTodos, useCreateTodo, useUpdateTodo, useDeleteTodo, useBatchTodos } from '@/features/tasks/api';
-import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker } from '@/features/trackers/api';
+import { useTrackers, useCreateTracker, useUpdateTracker, useDeleteTracker, useReorderTrackers } from '@/features/trackers/api';
+import { nextTrackerSortOrder } from '@/features/trackers/model';
 import { useWorkspaces, useCreateWorkspace, useRenameWorkspace } from '@/lib/query/workspaces';
 import { useSettings, useUpdateSettings } from '@/lib/query/settings';
 import { applyTheme, type ThemeMode } from '@/theme/applyTheme';
@@ -30,6 +31,7 @@ import { DEFAULT_COLLECTION_SLOT } from '@/theme/collectionColor';
 import { buildSeedTodos, buildSeedTrackers } from '@/lib/onboarding';
 import { useFieldCascadeConfirm, type CascadeField } from '@/lib/useFieldCascadeConfirm';
 import { useDeleteConfirm } from '@/features/tasks/useDeleteConfirm';
+import { useClearDueConfirm } from '@/features/tasks/useClearDueConfirm';
 
 
 // The one browser-persisted piece of task state: which task the daily list is
@@ -137,6 +139,7 @@ function useProvideAppData() {
   const createTracker = useCreateTracker();
   const updateTracker = useUpdateTracker();
   const deleteTrackerMut = useDeleteTracker();
+  const reorderTrackers = useReorderTrackers();
   const createWorkspace = useCreateWorkspace();
   const renameWorkspaceMut = useRenameWorkspace();
 
@@ -263,12 +266,19 @@ function useProvideAppData() {
 
   const handleAddTracker = (newTracker: Tracker) => {
     if (editingTracker) updateTracker.mutate(newTracker);
-    else createTracker.mutate(newTracker);
+    // A new widget joins at the END of the user's order (the modal doesn't know
+    // the list, so the position is stamped here).
+    else createTracker.mutate({ ...newTracker, sortOrder: nextTrackerSortOrder(trackers) });
     setEditingTracker(null);
   };
 
   const handleDeleteTracker = (id: string) => {
     deleteTrackerMut.mutate(id);
+  };
+
+  // `ids` is the full widget list in its new order (see the Order menu).
+  const handleReorderTrackers = (ids: string[]) => {
+    reorderTrackers.mutate(ids);
   };
 
   const handleEditTracker = (tracker: Tracker) => {
@@ -725,6 +735,14 @@ function useProvideAppData() {
     onDelete: handleDeleteTodoById,
   });
 
+  // "Clear start as well?" in front of every clear of a DUE date. Unlike the two
+  // above it can't hook a single handler - a clear is just a save with no date,
+  // indistinguishable at the write boundary from any other reschedule - so each
+  // date surface calls this on the way in. It's hosted here for the other reason:
+  // the surfaces that raise it (row menus, the cell popover) unmount as soon as
+  // the dialog takes a click, and a modal they rendered would vanish with them.
+  const { requestClearDue, clearDueConfirmModal } = useClearDueConfirm();
+
   // Archive a todo and its whole subtree; unarchive it and its archived ancestors.
   // Both directions are one constraint - a live todo may not sit under an archived
   // one (shared/domain/todoArchive) - and neither can be expressed as a single-row
@@ -955,6 +973,7 @@ function useProvideAppData() {
     handleAddTracker,
     handleDeleteTracker,
     handleEditTracker,
+    handleReorderTrackers,
     openTrackerModal,
     isModalOpen, setIsModalOpen,
     editingTracker, setEditingTracker,
@@ -973,6 +992,10 @@ function useProvideAppData() {
     // "Delete this?" / "…and the N subtasks inside it?" - raised by every Delete
     // in the app through requestDeleteTodo, rendered by the provider below.
     deleteConfirmModal,
+    // "Clear start as well?" - raised by every surface that clears a due date on
+    // a task that also has a start; the modal is rendered by the provider below.
+    requestClearDue,
+    clearDueConfirmModal,
   };
 }
 
@@ -987,6 +1010,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       {children}
       {value.fieldCascadeModal}
       {value.deleteConfirmModal}
+      {value.clearDueConfirmModal}
     </AppDataContext.Provider>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { GripVertical, Eye, EyeOff, Lock, WrapText } from 'lucide-react';
 import { ColDef, ColKey, NAME_COL_KEY } from '@/features/planner/types';
 import { PopoverMenu } from '@/common/ui';
@@ -23,20 +23,39 @@ export const FieldsMenu: React.FC<{
 }> = ({ anchor, order, colByKey, hidden, wrapped, onMove, onToggle, onToggleWrap, onSetForAll, onClose }) => {
   const [dragKey, setDragKey] = useState<ColKey | null>(null);
   const [dropInfo, setDropInfo] = useState<{ key: ColKey; pos: 'before' | 'after' } | null>(null);
+  // Same value as `dragKey`, written synchronously in onDragStart. The state update
+  // only lands on the next render, and the first dragEnter/dragOver events arrive
+  // before that - reading state there would refuse the drop for the first frames of
+  // every drag. `dragKey` still drives rendering (the dragged row's dim).
+  const dragKeyRef = useRef<ColKey | null>(null);
 
+  // Bound to dragEnter AND dragOver. An element only becomes a drop target once one
+  // of those two is cancelled on it, and a row is several nested elements (grip,
+  // label, the two buttons) - so entering any of them with only dragOver handled
+  // leaves a frame where the drop is refused and the cursor flips to circle-slash.
   const onRowDragOver = (e: React.DragEvent, key: ColKey) => {
-    if (!dragKey || key === NAME_COL_KEY) { if (dropInfo) setDropInfo(null); return; }
+    if (!dragKeyRef.current || key === NAME_COL_KEY) { if (dropInfo) setDropInfo(null); return; }
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const rect = e.currentTarget.getBoundingClientRect();
     const pos: 'before' | 'after' = (e.clientY - rect.top) / rect.height < 0.5 ? 'before' : 'after';
     setDropInfo((prev) => (prev?.key === key && prev.pos === pos ? prev : { key, pos }));
   };
-  const commitDrop = () => {
-    if (dragKey && dropInfo && dropInfo.key !== dragKey) onMove(dragKey, dropInfo.key, dropInfo.pos);
+  const endDrag = () => {
+    dragKeyRef.current = null;
     setDragKey(null);
     setDropInfo(null);
   };
+  const commitDrop = () => {
+    const key = dragKeyRef.current;
+    if (key && dropInfo && dropInfo.key !== key) onMove(key, dropInfo.key, dropInfo.pos);
+    endDrag();
+  };
+
+  // Panel-wide, so the title strip, the panel padding and the gaps between rows are
+  // all still part of the drop zone - the cursor stays a drag cursor for the whole
+  // sweep instead of flickering whenever the pointer leaves a row.
+  const allowDrop = (e: React.DragEvent) => { if (dragKeyRef.current) e.preventDefault(); };
 
   return (
     <PopoverMenu
@@ -45,12 +64,11 @@ export const FieldsMenu: React.FC<{
       onClose={onClose}
       className="w-60 p-1 space-y-2.5"
       headerAction={onSetForAll && <SetForAllButton onConfirm={onSetForAll} what="fields" />}
+      onDragEnter={allowDrop}
+      onDragOver={allowDrop}
+      onDrop={(e) => { e.preventDefault(); commitDrop(); }}
     >
-        <div
-          className="space-y-0.5"
-          onDragOver={(e) => { if (dragKey) e.preventDefault(); }}
-          onDrop={(e) => { e.preventDefault(); commitDrop(); }}
-        >
+        <div className="space-y-0.5">
           {order.map((key) => {
             const col = colByKey.get(key);
             if (!col) return null;
@@ -65,11 +83,13 @@ export const FieldsMenu: React.FC<{
                 draggable={!isName}
                 onDragStart={(e) => {
                   if (isName) return;
+                  dragKeyRef.current = key;
                   setDragKey(key);
                   e.dataTransfer.effectAllowed = 'move';
                   e.dataTransfer.setData('text/plain', key);
                 }}
-                onDragEnd={() => { setDragKey(null); setDropInfo(null); }}
+                onDragEnd={endDrag}
+                onDragEnter={(e) => onRowDragOver(e, key)}
                 onDragOver={(e) => onRowDragOver(e, key)}
               >
                 {drop === 'before' && (

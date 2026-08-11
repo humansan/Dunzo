@@ -14,24 +14,25 @@ export const FeaturesHero: React.FC = () => (
    */
   <section
     id="features"
-    className="relative z-[45] bg-canvas min-h-[calc(50vh+150px)] pt-32 pb-16 md:pt-40 md:pb-20 overflow-hidden"
+    className="relative z-[45] bg-canvas min-h-[calc(50vh+150px)] pt-32 pb-16 md:pt-40 md:pb-32 overflow-hidden"
   >
-    {/* Same blurred backdrop as the home hero, so the two pages feel like one site. */}
-    <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
+    {/* Same pre-blurred backdrop as the home hero, so the two pages feel like one*/}
+    <div className="absolute inset-0 opacity-50 pointer-events-none overflow-hidden will-change-transform">
       <img
-        src="/background.webp"
+        src="/background-blur.webp"
         alt=""
         decoding="sync"
         fetchPriority="high"
-        className="w-full h-full object-cover filter blur-xl scale-120"
+        className="w-full h-full object-cover scale-120"
       />
     </div>
 
     <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-      <div className="mb-6 fade-slide-up" style={{ animationDelay: '100ms' }}>
-        <div className="inline-flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
-          <ChevronRight className="w-3.5 h-3.5 text-gold" />
-          <span>Free in early access</span>
+      
+      <div className="mb-8 fade-slide-up" style={{ animationDelay: '200ms' }}>
+        <div className="inline-flex items-center gap-1 pl-2.5 pr-3.5 py-1.5 rounded-full bg-gold/15 border-none text-sm font-semibold text-gold">
+          <ChevronRight className="w-4 h-4 text-gold" />
+          <span>Currently in early access and free to use</span>
         </div>
       </div>
 
@@ -40,7 +41,7 @@ export const FeaturesHero: React.FC = () => (
           <span
             key={idx}
             className="inline-block mr-[0.25em] word-blur-enter"
-            style={{ animationDelay: `${idx * 100 + 200}ms` }}
+            style={{ animationDelay: `${idx * 100 + 400}ms` }}
           >
             {word}
           </span>
@@ -49,7 +50,7 @@ export const FeaturesHero: React.FC = () => (
 
       <p
         className="mt-6 text-base sm:text-lg text-fg-muted max-w-xl leading-relaxed fade-slide-up"
-        style={{ animationDelay: '700ms' }}
+        style={{ animationDelay: '850ms' }}
       >
         A focused list for today, a planner for everything else, and a calendar that shares the same
         tasks. Here's the whole app, feature by feature.
@@ -57,7 +58,7 @@ export const FeaturesHero: React.FC = () => (
 
       <div
         className="mt-8 flex flex-col sm:flex-row items-center gap-3.5 fade-slide-up"
-        style={{ animationDelay: '800ms' }}
+        style={{ animationDelay: '960ms' }}
       >
         <a href={APP_URL} className="btn-accent-lg w-full sm:w-auto">
           <span>Get Started</span>
@@ -72,8 +73,8 @@ export const FeaturesHero: React.FC = () => (
         </Link>
       </div>
 
-      <p className="mt-6 text-xs text-fg-ghost fade-slide-up" style={{ animationDelay: '900ms' }}>
-        Cloud-synced · desktop-optimized · light and dark
+      <p className="mt-6 text-xs text-fg-ghost fade-slide-up" style={{ animationDelay: '1070ms' }}>
+        Cloud-synced · Desktop-optimized · Data import/export
       </p>
     </div>
   </section>

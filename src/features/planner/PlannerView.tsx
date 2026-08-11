@@ -671,9 +671,15 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
 
   // Context-menu Set date / Set time. Clearing the end time drops the start time
   // with it (a start with no end is meaningless).
-  const setTaskDate = (date: string) => {
+  // `clearStart` arrives only from the menu's confirmed "clear start and end"
+  // (useClearDueConfirm); the write boundary drops the orphan times either way.
+  const setTaskDate = (date: string, clearStart = false) => {
     if (!menuEntry) return;
-    onSaveTodo({ ...menuEntry.todo, dueDate: date || undefined });
+    onSaveTodo({
+      ...menuEntry.todo,
+      dueDate: date || undefined,
+      ...(clearStart ? { startDate: undefined, startTime: undefined } : {}),
+    });
   };
   const setTaskTime = (time: string) => {
     if (!menuEntry) return;
@@ -1005,7 +1011,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({
           // Scheduling is offered per TARGET row, not per view: an archived task has
           // left every dated surface, so a date on it writes a field nothing reads
           // until it's restored.
-          onSetDate={menuEntry?.todo.archived ? undefined : ((_id, date) => setTaskDate(date))}
+          onSetDate={menuEntry?.todo.archived ? undefined : ((_id, date, clearStart) => setTaskDate(date, clearStart))}
           onSetTime={menuEntry?.todo.archived ? undefined : ((_id, time) => setTaskTime(time))}
           onAddTaskAbove={canCreateSibling ? ((id) => addTaskRelative(id, 'above')) : undefined}
           onAddTaskBelow={canCreateSibling ? ((id) => addTaskRelative(id, 'below')) : undefined}

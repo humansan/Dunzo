@@ -30,16 +30,13 @@ export const Hero: React.FC = () => {
   return (
     <section className="relative pt-26 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-canvas">
       {/* Background image blur effect */}
-      <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
-        {/* Decoded synchronously and fetched at high priority: an async swap-in
-            lands after first paint and invalidates the navbar's backdrop, which
-            is what makes the seams flash there. */}
+      <div className="absolute inset-0 opacity-50 pointer-events-none overflow-hidden will-change-transform">
         <img
-          src="/background.webp"
+          src="/background-blur.webp"
           alt=""
           decoding="sync"
           fetchPriority="high"
-          className="w-full h-full object-cover filter blur-xl scale-120"
+          className="w-full h-full object-cover scale-120"
         />
       </div>
 

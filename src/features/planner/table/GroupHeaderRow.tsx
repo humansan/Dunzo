@@ -57,6 +57,7 @@ export const GroupHeaderRow: React.FC<{
           style={{ marginLeft: NAME_BASE_PAD }}
         />
       ) : undefined}
+      // SectionHeader binds this to dragEnter as well - see the note there.
       onDragOver={onHeaderDragOver}
       onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onHeaderDrop?.(); }}
     />

@@ -10,7 +10,7 @@ import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { applyTheme } from '@/theme/applyTheme';
 import { btnAccent } from '@/theme/buttons';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
-import backgroundUrl from '@/assets/background.jpg';
+import backgroundUrl from '@/assets/background-blur.webp';
 import logoUrl from '@/assets/icon-invert2.png';
 // import { Link } from "@tanstack/react-router";
 
@@ -885,15 +885,16 @@ const LoginScreen: React.FC<{
       {/* ── Brand pane ── image + headline, anchored bottom-right. Hidden on narrow
           screens, where there is no room for two panes; the brand block inside the
           form pane takes over. */}
-      <aside className="relative hidden shrink-0 overflow-hidden md:flex md:w-[38%] lg:w-[35%] flex-col justify-end items-end px-9 pb-9 font-jakarta">
+      <aside className="relative hidden shrink-0 overflow-hidden md:flex md:w-[38%] lg:w-[35%] flex-col justify-center items-center font-jakarta ">
         <div
           aria-hidden
           style={{ backgroundImage: `url(${backgroundUrl})` }}
-          className="pointer-events-none absolute inset-0 select-none bg-cover bg-center blur-2xl scale-125"
+          className="pointer-events-none absolute inset-0 select-none bg-cover bg-center scale-120 opacity-90"
         />
         {/* Block anchored right, text left-aligned inside it - so the ragged edge faces
             the divider and the headline keeps its two-to-three line shape. */}
-        <h1 className="relative max-w-sm text-2xl lg:text-3xl font-bold text-white leading-[1.05]">
+        {/* <h1 className="relative max-w-sm text-2xl lg:text-3xl font-bold text-white leading-[1.05]"> */}
+        <h1 className="relative max-w-sm text-3xl lg:text-4xl font-bold text-white leading-[1.05]">
           A <span className="text-xp-tier1">calmer</span> way to <br/> get things done
         </h1>
       </aside>
