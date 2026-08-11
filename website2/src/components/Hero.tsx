@@ -48,7 +48,7 @@ export const Hero: React.FC = () => {
               <ChevronRight className="w-4 h-4 text-gold" />
               <span>Currently in early access and free to use</span>
             </div>
-          </div> */}
+          </div>
 
           {/* Main Tagline: Single-phase smooth word-by-word blur-to-focus stagger */}
           <h1 className="text-4xl sm:text-6xl md:text-8xl font-extrabold tracking-tight text-fg leading-[1.1] max-w-4xl">
@@ -57,7 +57,7 @@ export const Hero: React.FC = () => {
                 key={idx}
                 className="inline-block mr-[0.25em] word-blur-enter"
                 style={{
-                  animationDelay: `${idx * 120 + 250}ms`,
+                  animationDelay: `${idx * 120 + 400}ms`,
                 }}
               >
                 {word === 'calmer' ? (
