@@ -104,7 +104,7 @@ _Everything below is the technical deep-dive: architecture, data model, setup, a
 
 **Auth**
 
-The frontend signs in via Neon Auth and attaches a fresh session JWT as a Bearer token on every request (src/data/apiClient.ts). The backend (server/auth.ts) verifies the token against the auth server's JWKS endpoint and enforces issuer/audience, then stamps req.userId. Every data route requires auth and is filtered by user_id, so users can never read or write each other's rows - even the batch upsert guards against cross-user primary-key hijacking.
+The frontend signs in via Neon Auth and attaches a fresh session JWT as a Bearer token on every request (src/data/apiClient.ts). The backend (server/auth.ts) verifies the token against the auth server's JWKS endpoint and enforces issuer/audience, then stamps req.userId. Every data route requires auth and is filtered by user_id, so users can never read or write each other's rows. Tasks, workspaces and trackers are keyed on `(user_id, id)`, not `id`, so cross-user reference is unrepresentable rather than merely guarded against: the batch upsert's conflict arbiter can only ever match a row the caller owns, and the composite foreign keys on `todos.parent_id`/`workspace_id` cannot point out of the tenant. A client-generated id only has to be unique within its own account.
 
 **Data Layer**
 

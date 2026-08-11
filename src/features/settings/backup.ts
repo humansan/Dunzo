@@ -10,7 +10,36 @@ import type { TodoBatch } from '@/features/tasks/api';
 // ids absent in the DB are inserted, ids that already exist are overwritten with
 // the imported values, and existing rows not present in the backup are left
 // untouched (no deletes). Ids are preserved so the merge can match on them.
+//
+// Merging by id works ACROSS accounts because a row's identity is `(user_id, id)`
+// (see shared/db/schema.ts). Every existence check below asks "do I have this id?",
+// and that is now the same question the database asks. While `id` alone was the PK
+// the two questions differed, and importing another account's backup broke three
+// ways: the workspace and tracker POSTs 500'd on a duplicate key for rows the
+// importer couldn't see, and the todo upsert silently wrote nothing. Preserving ids
+// also means the id-bearing settings blobs (activeWorkspaceId, the
+// `${workspaceId}:${viewId}` keys in hubViews, hubCollapsed, calendarFilter's
+// uncheckedCollections) still resolve after an import - remapping ids would have
+// had to rewrite all of them.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Bumped only when the file layout changes in a way older readers can't handle.
+// `parseBackup` refuses anything higher: a newer Dunzo may write fields this build
+// would silently drop, and dropping half a restore is worse than declining it.
+const CURRENT_BACKUP_VERSION = 2;
+
+/**
+ * A backup file we won't even attempt to import: not JSON, not a backup, or from a
+ * newer version. Distinct from an ApiError so the UI can tell "this file is wrong"
+ * (the user picked the wrong thing) from "the server rejected it" (something else is
+ * broken, and the message matters). `message` is written to be shown as-is.
+ */
+export class BackupFormatError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BackupFormatError';
+  }
+}
 
 // Legacy localStorage keys - only used to read the old localStorage-dump backup
 // format that the pre-DB Export button produced, so those files still import.
@@ -53,6 +82,15 @@ function topoSort(todos: Todo[]): Todo[] {
   return out;
 }
 
+// The rows come straight from the DB, so they carry the exporting account's
+// `user_id`. Drop it: every write path stamps `userId` from the caller's token and
+// ignores whatever the payload claims, so it can't be restored and can't be
+// honoured - it would only sit in a file people hand to each other.
+function stripUserId<T extends object>(row: T): T {
+  const { userId: _dropped, ...rest } = row as T & { userId?: string };
+  return rest as T;
+}
+
 // Snapshot the account's current DB state for download.
 export async function buildBackup(): Promise<BackupData> {
   const [todos, trackers, workspaces, settings] = await Promise.all([
@@ -61,14 +99,25 @@ export async function buildBackup(): Promise<BackupData> {
     apiFetch<Workspace[]>('/workspaces'),
     apiFetch<Partial<UserSettings>>('/settings'),
   ]);
-  return { version: 2, exportedAt: new Date().toISOString(), todos, trackers, workspaces, settings };
+  return {
+    version: CURRENT_BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    todos: todos.map(stripUserId),
+    trackers: trackers.map(stripUserId),
+    workspaces: workspaces.map(stripUserId),
+    settings: settings && stripUserId(settings),
+  };
 }
 
 // Normalize an imported todo: status is the source of truth, the legacy `completed`
 // flag is folded in and dropped (it's a generated column server-side). Ids are
 // preserved (the merge matches on them).
 function normalizeTodoForImport(t: any): Todo {
-  const { completed: _legacy, ...rest } = t ?? {};
+  // `userId` is dropped here too, not just on export - files written before
+  // buildBackup started stripping it still carry the exporting account's id. The
+  // server would ignore it regardless (it stamps userId from the token), but there
+  // is no reason to send another account's identity back to it.
+  const { completed: _legacy, userId: _foreign, ...rest } = t ?? {};
   const done = t?.status === 'completed' || t?.completed === true;
   return {
     ...rest,
@@ -80,22 +129,52 @@ function normalizeTodoForImport(t: any): Todo {
 // Parse a backup file. Accepts the current format (top-level todos/trackers/
 // workspaces arrays) and the legacy localStorage-dump format (`dun-*` keys whose
 // values are JSON strings) produced by the old Export button.
+//
+// Throws BackupFormatError for anything it can't read. It used to accept any JSON
+// object at all: a file matching neither format fell through to the legacy branch,
+// where every key was missing, and returned empty arrays - so picking the wrong file
+// "imported successfully" and did nothing.
 export function parseBackup(raw: string): BackupData {
-  const json = JSON.parse(raw);
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    throw new BackupFormatError("This file isn't valid JSON, so it can't be a backup.");
+  }
+  if (!json || typeof json !== 'object' || Array.isArray(json)) {
+    throw new BackupFormatError("This doesn't look like a Dunzo backup file.");
+  }
+  const obj = json as Record<string, unknown>;
 
-  if (json && (Array.isArray(json.todos) || Array.isArray(json.trackers) || Array.isArray(json.workspaces))) {
+  const hasCurrentShape =
+    Array.isArray(obj.todos) || Array.isArray(obj.trackers) || Array.isArray(obj.workspaces);
+  // Legacy files carry no `version`, so only gate the current shape on it.
+  if (hasCurrentShape) {
+    const version = typeof obj.version === 'number' ? obj.version : CURRENT_BACKUP_VERSION;
+    if (version > CURRENT_BACKUP_VERSION) {
+      throw new BackupFormatError(
+        `This backup was written by a newer version of Dunzo (format ${version}, this build reads ${CURRENT_BACKUP_VERSION}). Update and try again.`
+      );
+    }
     return {
-      version: json.version ?? 2,
-      todos: Array.isArray(json.todos) ? json.todos : [],
-      trackers: Array.isArray(json.trackers) ? json.trackers : [],
-      workspaces: Array.isArray(json.workspaces) ? json.workspaces : [],
-      settings: json.settings,
+      version,
+      todos: Array.isArray(obj.todos) ? (obj.todos as Todo[]) : [],
+      trackers: Array.isArray(obj.trackers) ? (obj.trackers as Tracker[]) : [],
+      workspaces: Array.isArray(obj.workspaces) ? (obj.workspaces as Workspace[]) : [],
+      settings: obj.settings as Partial<UserSettings> | undefined,
     };
+  }
+
+  // Neither shape: refuse rather than "succeed" at importing nothing.
+  if (!Object.values(LS).some((k) => k in obj)) {
+    throw new BackupFormatError(
+      "This doesn't look like a Dunzo backup file - it has no tasks, trackers or workspaces in it."
+    );
   }
 
   // Legacy dump: { "dun-todos": "<json string>", ... }.
   const val = (k: string, fb: any) => {
-    const v = json?.[k];
+    const v = obj[k];
     if (typeof v !== 'string') return fb;
     try {
       return JSON.parse(v);
@@ -103,13 +182,19 @@ export function parseBackup(raw: string): BackupData {
       return fb;
     }
   };
-  const weekRaw = json?.[LS.weekStartsOn];
-  const xpRaw = json?.[LS.xpEnabled];
+  const weekRaw = obj[LS.weekStartsOn];
+  const xpRaw = obj[LS.xpEnabled];
   const settings: Partial<UserSettings> = {};
   const theme = val(LS.theme, undefined);
   if (theme) settings.theme = theme;
   if (typeof weekRaw === 'string' && weekRaw !== '') settings.weekStartsOn = parseInt(weekRaw, 10);
-  if (typeof json?.[LS.countdownMode] === 'string') settings.countdownMode = json[LS.countdownMode];
+  // Checked against the real values rather than cast: this used to read through an
+  // `any`, so a legacy file with anything at all in this key wrote it straight into
+  // settings and the countdown silently stopped rendering.
+  const countdownRaw = obj[LS.countdownMode];
+  if (countdownRaw === 'off' || countdownRaw === 'time' || countdownRaw === 'percent') {
+    settings.countdownMode = countdownRaw;
+  }
   if (typeof xpRaw === 'string') settings.xpEnabled = xpRaw !== 'false';
   const hubViews = val(LS.hubViews, undefined);
   if (hubViews) settings.hubViews = hubViews;
@@ -128,6 +213,9 @@ export function parseBackup(raw: string): BackupData {
 }
 
 // Merge a backup into the DB by id (add new, overwrite conflicts, leave the rest).
+// The existence checks below read the CALLER's rows, which is exactly the scope the
+// `(user_id, id)` key enforces - so an id from another account is genuinely new here
+// and inserts, rather than colliding with a row this account can't see.
 export async function mergeImportToDb(backup: BackupData): Promise<void> {
   // Workspaces first so imported todos' FKs resolve. Add new / rename existing.
   if (backup.workspaces?.length) {
@@ -145,7 +233,9 @@ export async function mergeImportToDb(backup: BackupData): Promise<void> {
 
   // Todos: one transactional batch upsert (insert new / overwrite conflicts;
   // rows not in the backup are left untouched). Null out parentIds that point at
-  // a todo present in neither the DB nor the backup so the FK can't fail.
+  // a todo present in neither the DB nor the backup so the FK can't fail - `known`
+  // is built from this account's rows plus the backup's, which is precisely what
+  // `(user_id, parent_id) REFERENCES todos(user_id, id)` will accept.
   if (backup.todos?.length) {
     const existing = await apiFetch<Todo[]>('/todos');
     const known = new Set<string>([...existing.map((t) => t.id), ...backup.todos.map((t) => t.id)]);

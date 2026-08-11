@@ -4,7 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { X, User, SlidersHorizontal, Database, Upload, Download, LogOut } from 'lucide-react';
 import { type ThemeMode } from '@/theme/applyTheme';
 import { authClient } from '@/lib/auth';
-import { buildBackup, parseBackup, mergeImportToDb } from '@/features/settings/backup';
+import { buildBackup, parseBackup, mergeImportToDb, BackupFormatError } from '@/features/settings/backup';
+import { ApiError } from '@/lib/query/apiClient';
 import backgroundUrl from '@/assets/background.jpg';
 import logoSvg from '@/assets/icon.svg';
 import { ListSelect, textInputCls } from '@/common/ui';
@@ -449,6 +450,21 @@ const SettingsPane: React.FC<{
   );
 };
 
+// What to tell the user when an import fails. BackupFormatError messages are written
+// for display, so they pass through. An ApiError means the file was readable and the
+// server refused it: name that, and include the status, since "the server said no" and
+// "your file is malformed" send the user to completely different places.
+function importErrorText(err: unknown): string {
+  if (err instanceof BackupFormatError) return err.message;
+  if (err instanceof ApiError) {
+    if (err.status === 401 || err.status === 403) {
+      return 'Import failed - your session expired. Sign in again and retry.';
+    }
+    return `Import failed - the server rejected the data (${err.status}). Your existing data was not changed.`;
+  }
+  return 'Import failed - something went wrong. Your existing data was not changed.';
+}
+
 const DataPane: React.FC = () => {
   const importRef = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
@@ -490,7 +506,11 @@ const DataPane: React.FC = () => {
       setDataMsg({ kind: 'ok', text: 'Import complete - your data has been merged.' });
     } catch (err) {
       console.error('[import] failed', err);
-      setDataMsg({ kind: 'err', text: 'Import failed - check that the file is a valid backup.' });
+      // Two very different failures used to share one message: "check that the file
+      // is a valid backup". When the server rejected the write, that message sent
+      // the user off to inspect a file that was never the problem - which is exactly
+      // how the cross-account import bug stayed hidden. Say which one it was.
+      setDataMsg({ kind: 'err', text: importErrorText(err) });
     } finally {
       setBusy(null);
     }

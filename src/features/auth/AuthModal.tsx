@@ -67,12 +67,12 @@ const RememberCheckbox: React.FC<{ checked: boolean; onChange: (v: boolean) => v
   onChange,
 }) => (
   <Checkbox checked={checked} onChange={onChange} gold={true}>
-    <span className="text-sm text-fg-muted">Remember me</span>
+    <span className="text-base text-fg-muted">Remember me</span>
   </Checkbox>
 );
 
 const OrDivider: React.FC = () => (
-  <div className="flex items-center gap-3 my-4">
+  <div className="flex items-center gap-3 my-6">
     <div className="h-px flex-1 bg-line" />
     <span className="text-xs text-fg-faint">OR</span>
     <div className="h-px flex-1 bg-line" />
@@ -380,7 +380,7 @@ const LoginScreen: React.FC<{
       // post-OAuth landing via getSession(), so onAuthenticated isn't called here.
       await (authClient as any).signIn.social({
         provider: 'google',
-        callbackURL: window.location.origin + withBase('/today'),
+        callbackURL: window.location.origin + withBase('/planner'),
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
@@ -453,17 +453,17 @@ const LoginScreen: React.FC<{
 
   // Login-specific field styling (kept local so the account modal is unaffected).
   const fieldClass =
-    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-sm focus:outline-none focus:ring-2 focus:ring-xp-tier1 transition-all ease-linear';
+    'w-full bg-fill-subtle ring ring-line rounded-lg px-4 h-9 text-fg text-base focus:outline-none focus:ring-2 focus:ring-xp-tier1 transition-all ease-linear';
   const fieldLabel =
-    'block text-sm font-medium text-fg-muted';
+    'block text-base font-medium text-fg-muted';
 
   const renderForm = () => {
     // ── Enter the 6-digit code from the verification email ───────────────────
     if (mode === 'verify') {
       return (
         <>
-          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Enter your code</h2>
-          <p className="text-sm text-fg-subtle mb-6">
+          <h2 className="text-3xl font-bold text-fg mb-3">Enter your code</h2>
+          <p className="text-base text-fg-subtle mb-7">
             {verifyReason === 'unverified-login'
               ? 'Your email address isn’t verified yet. We sent a 6-digit code to '
               : verifyReason === 'resume'
@@ -478,7 +478,7 @@ const LoginScreen: React.FC<{
               e.preventDefault();
               void handleVerifyOtp(otp);
             }}
-            className="space-y-3.5"
+            className="space-y-4"
           >
             <OtpInput
               value={otp}
@@ -509,7 +509,7 @@ const LoginScreen: React.FC<{
             </button>
           </form>
 
-          <p className="text-sm text-fg-muted mt-5">
+          <p className="text-base text-fg-muted mt-5">
             Didn’t get it?{' '}
             <button
               type="button"
@@ -520,7 +520,7 @@ const LoginScreen: React.FC<{
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
             </button>
           </p>
-          <p className="text-sm text-fg-muted mt-2">
+          <p className="text-base text-fg-muted mt-2">
             <button
               type="button"
               onClick={() => switchMode('login')}
@@ -538,12 +538,12 @@ const LoginScreen: React.FC<{
       if (forgotSent) {
         return (
           <>
-            <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Check your email</h2>
-            <p className="text-sm text-fg-subtle mb-6">
+            <h2 className="text-3xl font-bold text-fg mb-3">Check your email</h2>
+            <p className="text-base text-fg-subtle mb-7">
               We sent a password reset link to <span className="text-fg">{email}</span>.
               Check your inbox and follow the link to set a new password.
             </p>
-            <p className="text-sm text-fg-muted">
+            <p className="text-base text-fg-muted">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
@@ -557,11 +557,11 @@ const LoginScreen: React.FC<{
       }
       return (
         <>
-          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-2">Reset your password</h2>
-          <p className="text-sm text-fg-subtle mb-5">
+          <h2 className="text-3xl font-bold text-fg mb-2">Reset your password</h2>
+          <p className="text-base text-fg-subtle mb-5">
             Enter your email and we'll send you a link to reset your password.
           </p>
-          <form onSubmit={handleForgotSubmit} className="space-y-3.5">
+          <form onSubmit={handleForgotSubmit} className="space-y-4">
             <div>
               <label className={`${fieldLabel} mb-1.5`}>Email</label>
               <input
@@ -585,7 +585,7 @@ const LoginScreen: React.FC<{
               {submitting ? 'Sending…' : 'Send Reset Link'}
             </button>
           </form>
-          <p className="text-sm text-fg-muted mt-5">
+          <p className="text-base text-fg-muted mt-5">
             <button
               type="button"
               onClick={() => switchMode('login')}
@@ -603,8 +603,8 @@ const LoginScreen: React.FC<{
       if (resetDone) {
         return (
           <>
-            <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-3">Password updated</h2>
-            <p className="text-sm text-fg-subtle mb-6">
+            <h2 className="text-3xl font-bold text-fg mb-3">Password updated</h2>
+            <p className="text-base text-fg-subtle mb-7">
               Your password has been changed. You can now log in with your new password.
             </p>
             <button
@@ -619,8 +619,8 @@ const LoginScreen: React.FC<{
       }
       return (
         <>
-          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-6">Set new password</h2>
-          <form onSubmit={handleResetSubmit} className="space-y-3.5">
+          <h2 className="text-3xl font-bold text-fg mb-7">Set new password</h2>
+          <form onSubmit={handleResetSubmit} className="space-y-4">
             <div>
               <label className={`${fieldLabel} mb-1.5`}>New password</label>
               <div className="relative">
@@ -702,16 +702,16 @@ const LoginScreen: React.FC<{
 
     return (
       <>
-        <div className="mb-6">
-          <h2 className="text-2xl md:text-[28px] font-bold text-fg mb-1.5">
+        <div className="mb-7">
+          <h2 className="text-3xl font-bold text-fg mb-2">
             {mode === 'login' ? 'Log in to Dunzo' : 'Sign up for Dunzo'}
           </h2>
-          <p className="text-sm text-fg-subtle">
+          <p className="text-base text-fg-subtle">
             {mode === 'login' ? 'New to Dunzo? ' : 'Already have an account? '}
             <button
               type="button"
               onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-              className="font-bold text-xp-tier1 hover:text-xp-tier1/75 transition-colors cursor-pointer"
+              className="font-bold text-xp-tier1 hover:text-xp-tier1/80 transition-colors cursor-pointer"
             >
               {mode === 'login' ? 'Create an account' : 'Log in'}
             </button>
@@ -726,14 +726,14 @@ const LoginScreen: React.FC<{
               setSignupStep('email');
               setError(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg transition-colors mb-4 cursor-pointer"
+            className="flex items-center gap-1.5 text-base text-fg-muted hover:text-xp-tier1 transition-colors mb-4 cursor-pointer"
           >
             <ArrowLeft size={15} />
             {email}
           </button>
         )}
 
-        <form onSubmit={onFormSubmit} className="space-y-3.5">
+        <form onSubmit={onFormSubmit} className="space-y-4">
           {showEmailField && (
             <div>
               <label className={`${fieldLabel} mb-1.5`}>Email</label>
@@ -809,7 +809,7 @@ const LoginScreen: React.FC<{
               <button
                 type="button"
                 onClick={() => switchMode('forgot')}
-                className="text-sm text-fg-muted hover:text-xp-tier1 underline transition-colors cursor-pointer"
+                className="text-base text-fg-muted hover:text-xp-tier1 underline transition-colors cursor-pointer"
               >
                 Forgot password?
               </button>
@@ -872,48 +872,67 @@ const LoginScreen: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[70] overflow-hidden bg-canvas">
-      {/* Full-bleed background */}
-      <img
-        src={backgroundUrl}
-        alt=""
-        aria-hidden
-        className="absolute inset-0 h-full w-full object-cover opacity-50 blur-2xl scale-125"
-      />
+    // Two panes, not a floating card over a full-bleed wash. The image is confined to
+    // the narrower left pane at FULL opacity (it used to cover the whole screen at
+    // opacity-50, which is what forced the form card to sit on top of it).
+    //
+    // The shell is `bg-surface` - the form card's own colour - rather than the darker
+    // `bg-canvas` it used to sit on. Pane and card being the SAME colour is the point:
+    // the card loses its visible edge and the right pane reads as one continuous
+    // surface. The card below therefore keeps its padding, while its background and
+    // rounding are now visually inert.
+    <div className="fixed inset-0 z-[70] flex overflow-hidden bg-surface">
+      {/* ── Brand pane ── image + headline, anchored bottom-right. Hidden on narrow
+          screens, where there is no room for two panes; the brand block inside the
+          form pane takes over. */}
+      <aside className="relative hidden shrink-0 overflow-hidden md:flex md:w-[38%] lg:w-[35%] flex-col justify-end items-end px-9 pb-9 font-jakarta">
+        <div
+          aria-hidden
+          style={{ backgroundImage: `url(${backgroundUrl})` }}
+          className="pointer-events-none absolute inset-0 select-none bg-cover bg-center blur-2xl scale-125"
+        />
+        {/* Block anchored right, text left-aligned inside it - so the ragged edge faces
+            the divider and the headline keeps its two-to-three line shape. */}
+        <h1 className="relative max-w-sm text-2xl lg:text-3xl font-bold text-white leading-[1.05]">
+          A <span className="text-xp-tier1">calmer</span> way to <br/> get things done
+        </h1>
+      </aside>
 
-      <div className="relative h-full w-full flex flex-col md:flex-row">
-        {/* ── Brand panel ── */}
-        <div className="flex-1 flex flex-col justify-center items-end px-16 pt-14 pb-6 md:pr-20 md:pb-25 font-jakarta">
-          <div className="max-w-sm">
-            <a href="https://dunzo.work" className="flex items-center gap-3 md:h-24 md:w-24 mb-2">
-              <img
-                src={logoUrl}
-                alt="Dunzo"
-                className="h-12 w-12"
-              />
-              <span className="font-bold text-[33px]">Dunzo</span>
+      {/* ── Form pane ── */}
+      <div className="relative flex flex-1">
+        {/* The scroll area is the FULL height of the pane, so the form centres on the
+            page rather than in the leftover space above the logomark - which is what a
+            footer row in normal flow did. `m-auto` rather than `items-center`, because
+            centred flex + overflow clips the top of a form taller than the viewport and
+            makes it unscrollable. */}
+        <div className="flex flex-1 overflow-y-auto px-5 py-8 sm:px-8">
+          <div className="m-auto w-full max-w-105">
+            {/* Brand, for the narrow layout that has neither left pane nor logomark. */}
+            <a
+              href="https://dunzo.work"
+              className="mb-6 items-center justify-center gap-2.5 font-jakarta md:hidden sm:flex xs:hidden"
+            >
+              <img src={logoUrl} alt="Dunzo" className="h-9 w-9" />
+              <span className="text-2xl font-bold">Dunzo</span>
             </a>
-            <h1 className="text-2xl md:text-5xl font-bold text-white leading-[1.05]">
-              A <span className="text-xp-tier1">calmer</span> way to get things done
-            </h1>
+            <motion.div className="w-full rounded-3xl bg-surface p-8">
+              <div className="w-full md:px-6 md:py-4">{renderForm()}</div>
+            </motion.div>
           </div>
         </div>
 
-        {/* ── Form panel ── */}
-        <div className="w-full md:w-[50%] flex items-center justify-center md:justify-start px-[5%]">
-          {/* Visual block: full-height, hugs the right edge with a 4px gap */}
-          <motion.div
-            // initial={{ opacity: 0, y: 16 }}
-            // animate={{ opacity: 1, y: 0 }}
-            // transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="w-full max-w-105 bg-surface rounded-3xl flex items-center justify-center p-8 mb-8"
-          >
-            {/* Content block: constrained + centered inside the visual block */}
-            <div className="w-full md:px-8 md:py-6">
-              {renderForm()}
-            </div>
-          </motion.div>
-        </div>
+        {/* Logomark, bottom-left. Taken OUT of the flow so it costs the form no vertical
+            space; `bottom-9 left-9` mirrors the headline's `pb-9 pr-9` across the divider,
+            so the two sit on the same baseline and the same distance from the split.
+            `bg-surface` (the page colour, so invisible) makes it occlude rather than
+            collide with a form tall enough to scroll underneath it. */}
+        <a
+          href="https://dunzo.work"
+          className="absolute bottom-9 left-9 hidden items-center gap-3 font-jakarta md:flex"
+        >
+          <img src={logoUrl} alt="Dunzo" className="h-10 w-10" />
+          <span className="text-[27px] font-bold">Dunzo</span>
+        </a>
       </div>
     </div>
   );

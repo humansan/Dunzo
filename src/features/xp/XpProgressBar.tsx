@@ -55,7 +55,10 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
 
   // Tiered, progressive goals: beat yesterday → beat the 7-day best → beat the
   // all-time best. The "lit" colour tracks how far you've climbed.
-  const lit = reachedWeekBest ? VIOLET : reachedTarget ? GOLD : null;
+
+  const lit = !reachedTarget ? null : !reachedAllTimeBest ? GOLD : VIOLET;
+  //!reachedTarget ? null : reachedWeekBest ? VIOLET : GOLD; 
+  //reachedWeekBest ? VIOLET :
 
   // let targets: { label: string; value: number }[] = [
   //   { label: 'yesterday', value: target },
@@ -71,19 +74,19 @@ export const XpProgressBar: React.FC<XpProgressBarProps> = ({ stats, weeklyXp })
     status = reachTarget === 0 ? `Any xp beats ${reachText}` : `${reachTarget - earned} xp to reach ${reachText}`;
   } else if (!reachedWeekBest) {
     // Yesterday cleared (gold). Point at the next goal: the 7-day best.
-    status = `🎉Yesterday beat! ⬩ ${bestLast7Days - earned} xp to 7-day best`;
+    status = `🎉🔥 Reached today's goal! ⬩ ${bestLast7Days - earned} xp to 7-day best`;
   } else if (!reachedAllTimeBest) {
     // 7-day best cleared (violet). Point at the all-time best.
-    status = `🎊🔥On a roll!! ⬩ ${bestAllTime - earned} xp to all-time best`;
+    status = `🎊🔥💫 On a roll!! ⬩ ${bestAllTime - earned} xp to all-time best`;
   } else {
     const over = earned - bestAllTime;
-    status = over > 0 ? `🥳😭🏆New all-time best!!! ⬩ +${over} xp` : 'All-time best matched!!';
+    status = over > 0 ? `🥳🎉😭✨🏅🏆 New all-time best!!! ⬩ +${over} xp` : '🔥🥳🥇 All-time best matched!!';
   }
 
   const pctLabel = `${Math.round(percent)}%`;
   const barColor = (() => {
     if (!reachedTarget) return CORAL;
-    if (!reachedWeekBest) return GOLD;
+    if (!reachedAllTimeBest) return GOLD;
     return VIOLET;
   })();
 

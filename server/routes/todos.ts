@@ -93,6 +93,13 @@ todosRouter.post(
       // normally adds nothing; it's what makes "a live todo under an archived one"
       // unreachable even from a client that didn't. Two recursive CTEs, and only
       // when a batch actually toggles `archived` (reorders never do).
+      //
+      // All four recursive CTEs below (these two and the visibility pair) carry
+      // `user_id` through the CTE and join on it, rather than filtering the
+      // recursive term by `t.user_id = $userId`. Same result - the anchor is
+      // user-scoped, so the walk could never leave the tenant - but the tenant
+      // boundary now lives in the join, which is where the tree edge actually is,
+      // and it matches the `(user_id, parent_id)` FK and the composite PK index.
       const archiveIds = new Set<string>();
       const unarchiveIds = new Set<string>();
       for (const p of patches) {
@@ -109,11 +116,11 @@ todosRouter.post(
       if (archiveIds.size > 0) {
         const ids = await idsOf(sql`
           WITH RECURSIVE subtree AS (
-            SELECT ${todos.id} FROM ${todos}
+            SELECT ${todos.userId}, ${todos.id} FROM ${todos}
              WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...archiveIds]))}
             UNION
-            SELECT t.id FROM ${todos} t JOIN subtree s ON t.parent_id = s.id
-             WHERE t.user_id = ${userId}
+            SELECT t.user_id, t.id FROM ${todos} t
+              JOIN subtree s ON t.parent_id = s.id AND t.user_id = s.user_id
           )
           SELECT id FROM subtree
         `);
@@ -122,11 +129,11 @@ todosRouter.post(
       if (unarchiveIds.size > 0) {
         const ids = await idsOf(sql`
           WITH RECURSIVE chain AS (
-            SELECT ${todos.id}, ${todos.parentId} FROM ${todos}
+            SELECT ${todos.userId}, ${todos.id}, ${todos.parentId} FROM ${todos}
              WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...unarchiveIds]))}
             UNION
-            SELECT t.id, t.parent_id FROM ${todos} t JOIN chain c ON t.id = c.parent_id
-             WHERE t.user_id = ${userId}
+            SELECT t.user_id, t.id, t.parent_id FROM ${todos} t
+              JOIN chain c ON t.id = c.parent_id AND t.user_id = c.user_id
           )
           SELECT id FROM chain
         `);
@@ -154,13 +161,14 @@ todosRouter.post(
         // the two rules. The walk still passes through them.
         const ids = await idsOf(sql`
           WITH RECURSIVE subtree AS (
-            SELECT ${todos.id} FROM ${todos}
+            SELECT ${todos.userId}, ${todos.id} FROM ${todos}
              WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...hideIds]))}
             UNION
-            SELECT t.id FROM ${todos} t JOIN subtree s ON t.parent_id = s.id
-             WHERE t.user_id = ${userId}
+            SELECT t.user_id, t.id FROM ${todos} t
+              JOIN subtree s ON t.parent_id = s.id AND t.user_id = s.user_id
           )
-          SELECT s.id FROM subtree s JOIN ${todos} t ON t.id = s.id
+          SELECT s.id FROM subtree s
+            JOIN ${todos} t ON t.id = s.id AND t.user_id = s.user_id
            WHERE t.is_collection IS NOT TRUE
         `);
         for (const id of ids) visCascade.set(id, false);
@@ -168,11 +176,11 @@ todosRouter.post(
       if (showIds.size > 0) {
         const ids = await idsOf(sql`
           WITH RECURSIVE chain AS (
-            SELECT ${todos.id}, ${todos.parentId} FROM ${todos}
+            SELECT ${todos.userId}, ${todos.id}, ${todos.parentId} FROM ${todos}
              WHERE ${and(eq(todos.userId, userId), inArray(todos.id, [...showIds]))}
             UNION
-            SELECT t.id, t.parent_id FROM ${todos} t JOIN chain c ON t.id = c.parent_id
-             WHERE t.user_id = ${userId}
+            SELECT t.user_id, t.id, t.parent_id FROM ${todos} t
+              JOIN chain c ON t.id = c.parent_id AND t.user_id = c.user_id
           )
           SELECT id FROM chain
         `);
@@ -244,15 +252,23 @@ todosRouter.post(
         // This row may itself be some later row's parent.
         known.set(insertRow.id, insertRec);
 
-        // `where` on the conflict update prevents hijacking a row owned by
-        // another user (PK `id` is global; only own rows get updated).
+        // The PK is `(user_id, id)`, so the arbiter can only ever match a row this
+        // user owns - the key IS the cross-user guard. This used to be `target:
+        // todos.id` plus `where: eq(todos.userId, userId)`, and that `where` did more
+        // than guard: on another user's id it filtered the update out, leaving the
+        // insert already swallowed by the conflict. No row written, no error raised.
+        // That is what made importing another account's backup report success and
+        // write nothing.
         if (Object.keys(setData).length > 0) {
           await tx
             .insert(todos)
             .values(insertRow)
-            .onConflictDoUpdate({ target: todos.id, set: setData, where: eq(todos.userId, userId) });
+            .onConflictDoUpdate({ target: [todos.userId, todos.id], set: setData });
         } else {
-          await tx.insert(todos).values(insertRow).onConflictDoNothing();
+          await tx
+            .insert(todos)
+            .values(insertRow)
+            .onConflictDoNothing({ target: [todos.userId, todos.id] });
         }
       }
 
