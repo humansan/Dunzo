@@ -1,5 +1,5 @@
-import type { RoleName } from './roles';
-import { Theme, RoleValue } from './themes';
+import type { RoleName } from '../src/theme/roles';
+import { Theme, RoleValue } from '../src/theme/themes';
 
 // Shared by both variants for now; alphas are the dark seeds (= today's values, so dark is
 // unchanged). `['fg', N]` auto-inverts to translucent ink in light. Light gets its own

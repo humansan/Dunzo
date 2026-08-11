@@ -1,12 +1,12 @@
 import React from 'react';
-import { ArrowRight, ArrowUp, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowUp, ChevronRight, Sparkles } from 'lucide-react';
 import { APP_URL } from '../../config';
 
 export const FinalCta: React.FC = () => (
   <section id="get-started" className="scroll-mt-28 py-24">
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 text-xs font-semibold text-gold">
-        <Sparkles className="w-3.5 h-3.5 fill-gold text-gold" />
+      <div className="inline-flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-gold/15 text-xs font-semibold text-gold">
+        <ChevronRight className="w-3.5 h-3.5 text-gold" />
         <span>Free in early access</span>
       </div>
 

@@ -19,7 +19,7 @@ export function ViewErrorFallback({ error }: ErrorComponentProps) {
       </div>
       <button
         onClick={() => router.invalidate()}
-        className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold"
+        className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold cursor-pointer"
       >
         Retry
       </button>

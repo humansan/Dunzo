@@ -3,7 +3,7 @@ import { AppDataProvider } from '@/lib/app-data';
 import { StopwatchProvider } from '@/features/stopwatch';
 import { AppShell } from '@/app/AppShell';
 import { LoadingScreen } from '@/app/LoadingScreen';
-import { authClient } from '@/lib/auth';
+import { fetchSession } from '@/lib/auth';
 import { todosQueryOptions } from '@/features/tasks/api';
 import { trackersQueryOptions } from '@/features/trackers/api';
 import { workspacesQueryOptions } from '@/lib/query/workspaces';
@@ -24,9 +24,16 @@ export const Route = createFileRoute('/_authed')({
     task: typeof search.task === 'string' ? search.task : undefined,
     settings: search.settings === true || search.settings === 'true' ? true : undefined,
   }),
+  // Only a CONFIRMED absent session redirects. An auth service that didn't answer
+  // is not a signed-out user, and treating it as an error here is what turned a
+  // transient 500 - Neon's compute waking from auto-suspend - into a full-screen
+  // "Couldn't load your data" on an app the user was still signed into (see
+  // fetchSession). Proceeding is safe: nothing downstream trusts this call, so a
+  // genuinely signed-out user still reaches /login via AppShell's redirect-out
+  // effect once `useSession()` resolves.
   beforeLoad: async ({ location }) => {
-    const { data } = await authClient.getSession();
-    if (!data) {
+    const { data, unavailable } = await fetchSession();
+    if (!data && !unavailable) {
       throw redirect({ to: '/login', search: { redirect: location.href } });
     }
   },
@@ -65,7 +72,7 @@ function DataErrorScreen() {
       <p>Couldn’t load your data.</p>
       <button
         onClick={() => router.invalidate()}
-        className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold"
+        className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold cursor-pointer"
       >
         Retry
       </button>

@@ -82,6 +82,18 @@ html:not(.anim-ready) .word-blur-enter {
   animation-play-state: paused;
 }
 
+/* With JS off nothing ever adds .anim-ready, so the gate above would hold the whole
+   page at opacity 0 forever — and now that the markup is prerendered, that is the
+   difference between a readable page and a blank one. Crawlers parse the DOM and are
+   unaffected either way; this is for humans. index.html clears .no-js inline. */
+html.no-js .fade-slide-up,
+html.no-js .word-blur-enter {
+  animation: none;
+  opacity: 1;
+  filter: none;
+  transform: none;
+}
+
 /* Single-phase smooth word blur-to-focus transition */
 @keyframes wordBlurFocus {
   0% {

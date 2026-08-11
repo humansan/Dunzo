@@ -12,6 +12,7 @@ import { btnAccent } from '@/theme/buttons';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
 import backgroundUrl from '@/assets/background.jpg';
 import logoUrl from '@/assets/icon-invert2.png';
+// import { Link } from "@tanstack/react-router";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -514,7 +515,7 @@ const LoginScreen: React.FC<{
               type="button"
               onClick={handleResend}
               disabled={submitting || resendCooldown > 0}
-              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer disabled:text-fg-faint disabled:cursor-not-allowed"
+              className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer disabled:text-fg-faint disabled:cursor-not-allowed"
             >
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
             </button>
@@ -523,7 +524,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
+              className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer"
             >
               Back to log in
             </button>
@@ -546,7 +547,7 @@ const LoginScreen: React.FC<{
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
+                className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer"
               >
                 Back to log in
               </button>
@@ -588,7 +589,7 @@ const LoginScreen: React.FC<{
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-bold text-[var(--accent2)] hover:text-xp-tier1 transition-colors cursor-pointer"
+              className="font-bold text-fg-muted hover:text-xp-tier1 transition-colors cursor-pointer"
             >
               Back to log in
             </button>
@@ -828,7 +829,7 @@ const LoginScreen: React.FC<{
                   <button
                     type="button"
                     onClick={() => switchMode('login')}
-                    className="font-bold text-[var(--accent2)] hover:text-xp-tier1 underline transition-colors cursor-pointer"
+                    className="font-bold text-fg-muted hover:text-xp-tier1 underline transition-colors cursor-pointer"
                   >
                     Log in instead
                   </button>
@@ -842,7 +843,7 @@ const LoginScreen: React.FC<{
                     type="button"
                     onClick={() => void enterVerifyMode('unverified-login')}
                     disabled={submitting}
-                    className="font-bold text-[var(--accent2)] hover:text-xp-tier1 underline transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    className="font-bold text-fg-muted hover:text-xp-tier1 underline transition-colors cursor-pointer disabled:cursor-not-allowed"
                   >
                     send me a code
                   </button>
@@ -884,14 +885,14 @@ const LoginScreen: React.FC<{
         {/* ── Brand panel ── */}
         <div className="flex-1 flex flex-col justify-center items-end px-16 pt-14 pb-6 md:pr-20 md:pb-25 font-jakarta">
           <div className="max-w-sm">
-            <div className="flex items-center gap-3 md:h-24 md:w-24 mb-2">
+            <a href="https://dunzo.work" className="flex items-center gap-3 md:h-24 md:w-24 mb-2">
               <img
                 src={logoUrl}
                 alt="Dunzo"
                 className="h-12 w-12"
               />
               <span className="font-bold text-[33px]">Dunzo</span>
-            </div>
+            </a>
             <h1 className="text-2xl md:text-5xl font-bold text-white leading-[1.05]">
               A <span className="text-xp-tier1">calmer</span> way to get things done
             </h1>

@@ -67,7 +67,7 @@ export function PlannerScreen({
           onSelectWorkspace={d.setActiveWorkspaceId}
           onAddWorkspace={d.addWorkspace}
           onRenameWorkspace={d.renameWorkspace}
-          onDeleteTodo={d.handleDeleteTodoById}
+          onDeleteTodo={d.requestDeleteTodo}
           onDeleteCollection={d.handleDeleteCollection}
           onArchiveTodo={d.handleArchiveTodo}
           onArchiveTodos={d.handleArchiveTodos}

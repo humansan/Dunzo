@@ -2,12 +2,14 @@ import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { SettingsOverlay } from '@/features/settings';
 import { withBase } from '@/lib/basePath';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
+import { pageHead } from '@/lib/pageTitle';
 
 // Standalone /settings route - only reached by a cold deep-link (reloading the
 // masked URL from the address bar). In-app opens render SettingsOverlay over the
 // current page via a search param instead (see useOverlayNav), so the page never
 // unmounts. Both paths render the same SettingsOverlay.
 export const Route = createFileRoute('/_authed/settings')({
+  head: () => pageHead('Settings'),
   component: SettingsRoute,
   errorComponent: ViewErrorFallback,
 });

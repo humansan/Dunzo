@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Play, ArrowRight, X, Sparkles } from 'lucide-react';
+import { Play, ArrowRight, X, Sparkles, ChevronRight } from 'lucide-react';
 import { APP_URL } from '../config';
 
 export const Hero: React.FC = () => {
@@ -28,14 +28,18 @@ export const Hero: React.FC = () => {
   const taglineWords = taglineText.split(" ");
 
   return (
-    <section className="relative pt-26 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-canvas">
+    <section className="relative pt-30 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-canvas">
       {/* Background image blur effect */}
       <div className="absolute inset-0 opacity-50 pointer-events-none mix-blend-screen overflow-hidden">
+        {/* Decoded synchronously and fetched at high priority: an async swap-in
+            lands after first paint and invalidates the navbar's backdrop, which
+            is what makes the seams flash there. */}
         <img
-          src="/background.jpg"
+          src="/background.webp"
           alt=""
-          decoding="async"
-          className="w-full h-full object-cover filter blur-lg scale-125"
+          decoding="sync"
+          fetchPriority="high"
+          className="w-full h-full object-cover filter blur-xl scale-120"
         />
       </div>
 
@@ -43,12 +47,12 @@ export const Hero: React.FC = () => {
         <div className="flex flex-col items-center text-center">
 
           {/* Early Access Chip: No border, 15% opacity gold background, full gold text */}
-          <div className="mb-6 fade-slide-up" style={{ animationDelay: '300ms' }}>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
-              <Sparkles className="w-3.5 h-3.5 fill-gold text-gold" />
+          {/* <div className="mb-6 fade-slide-up" style={{ animationDelay: '300ms' }}>
+            <div className="inline-flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
+              <ChevronRight className="w-3.5 h-3.5 text-gold" />
               <span>Free in early access</span>
             </div>
-          </div>
+          </div> */}
 
           {/* Main Tagline: Single-phase smooth word-by-word blur-to-focus stagger */}
           <h1 className="text-4xl sm:text-6xl md:text-8xl font-extrabold tracking-tight text-fg leading-[1.1] max-w-4xl">
@@ -57,7 +61,7 @@ export const Hero: React.FC = () => {
                 key={idx}
                 className="inline-block mr-[0.25em] word-blur-enter"
                 style={{
-                  animationDelay: `${idx * 120 + 400}ms`,
+                  animationDelay: `${idx * 120 + 250}ms`,
                 }}
               >
                 {word === 'calmer' ? (
@@ -72,7 +76,7 @@ export const Hero: React.FC = () => {
           {/* Subtitle */}
           <p
             className="mt-6 text-base sm:text-lg text-fg-subtle max-w-xl font-normal leading-relaxed fade-slide-up"
-            style={{ animationDelay: '1400ms' }}
+            style={{ animationDelay: '1300ms' }}
           >
             Dunzo pairs a powerful task database & calendar with a focused daily dashboard + xp gamification designed for mindful momentum.
           </p>
@@ -80,7 +84,7 @@ export const Hero: React.FC = () => {
           {/* Action Buttons */}
           <div
             className="mt-8 flex flex-col sm:flex-row items-center gap-3.5 fade-slide-up"
-            style={{ animationDelay: '1500ms' }}
+            style={{ animationDelay: '1400ms' }}
           >
             <a href={APP_URL} className="btn-accent-lg w-full sm:w-auto">
               <span>Get Started</span>
@@ -101,7 +105,7 @@ export const Hero: React.FC = () => {
             id="demo"
             ref={showcaseRef}
             className="mt-12 relative w-full max-w-5xl scroll-mt-28 fade-slide-up"
-            style={{ animationDelay: '1600ms' }}
+            style={{ animationDelay: '1500ms' }}
           >
             <div
               className={`relative aspect-video rounded-2xl overflow-hidden border border-fg/10 bg-surface group ${
@@ -110,7 +114,7 @@ export const Hero: React.FC = () => {
               onClick={isVideoPlaying ? undefined : () => setIsVideoPlaying(true)}
             >
               <img
-                src="/media/s1.png"
+                src="/media/s1.webp"
                 alt="Dunzo Daily Dashboard"
                 decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"

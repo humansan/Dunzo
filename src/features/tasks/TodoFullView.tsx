@@ -26,6 +26,7 @@ import {
   VARIANTS,
   DEFAULT_SECTIONS_CONFIG,
   NAME_COL_KEY,
+  planAddRows,
   type TableInteraction,
   type TableRowHandlers,
   type EditState,
@@ -36,6 +37,7 @@ import {
   CompletedToggle,
   OptionSelectField,
   patchFromTime,
+  xpDisabledReason,
   STATUS_OPTIONS,
   PRIORITY_OPTIONS,
 } from '@/features/tasks/fields';
@@ -69,7 +71,10 @@ interface TodoFullViewProps {
   onDeleteReturn?: () => void;
   onSave: (updated: Todo, newDate: string) => void;
   onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
+  // Deleting asks for confirmation first (app-data's requestDeleteTodo), so where
+  // to go afterwards is handed over rather than run here: on a cancel nothing
+  // happens, and this view must not navigate away from a delete that didn't occur.
+  onDelete: (id: string, onDeleted: () => void) => void;
   // Archive/unarchive are subtree operations, so they go through the app-data
   // handlers rather than a plain `archived` edit - a single-row write here used to
   // leave live children under an archived parent (shared/domain/todoArchive).
@@ -236,6 +241,36 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   useLayoutEffect(resizeTitle, [draft.text, todo.id]);
   useLayoutEffect(resizeNotes, [draft.notes, todo.id]);
 
+  // Both autosizes above measure the text as it is laid out at that instant, so
+  // anything that REWRAPS it afterwards leaves the box a line or two short - and
+  // since the textareas are `overflow-hidden`, the leftover lines just vanish
+  // rather than becoming scrollable. Two things rewrap it after a measurement:
+  //
+  //  • the webfonts load with `display: swap` (index.css), so a note measured
+  //    during the first paint was measured in the fallback font's metrics;
+  //  • the pane changes width (window resize).
+  //
+  // Re-measuring on both is what makes the autosize hold. The observer is gated on
+  // WIDTH: it watches the textarea, whose height we set ourselves, and reacting to
+  // that would be a feedback loop.
+  useEffect(() => {
+    const resize = () => { resizeTitle(); resizeNotes(); };
+    document.fonts?.ready.then(resize);
+
+    const el = notesRef.current;
+    if (!el) return;
+    let lastWidth = el.getBoundingClientRect().width;
+    const ro = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Set when a schedule edit is rejected for putting start after due; shown under
   // the offending side's chips and cleared by the next accepted schedule edit.
   const [scheduleError, setScheduleError] = useState<{ side: ScheduleSide; message: string } | null>(null);
@@ -340,6 +375,26 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
     [subModel.flattened]
   );
 
+  // Contextual add-rows, exactly as the Planner builds them: one for this list's
+  // root (a direct subtask of the open task) and one under each subtask that has
+  // subtasks of its own, each sitting where the task it creates will appear. This
+  // list holds no collections and no sections, so `leafPosition` never comes up -
+  // it's passed for completeness from the same config the drag layer uses.
+  //
+  // Empty on an ARCHIVED task, for the reason `onNewInView` is omitted below:
+  // anything created inside an archived parent is archived on creation.
+  const subAddRows = useMemo(
+    () =>
+      showArchivedSubtasks
+        ? []
+        : planAddRows(subModel.flattened, { leafPosition: DEFAULT_SECTIONS_CONFIG.showLeafTasks }),
+    [subModel.flattened, showArchivedSubtasks]
+  );
+  const subTableModel = useMemo(
+    () => ({ ...subModel, addRows: subAddRows }),
+    [subModel, subAddRows]
+  );
+
   const subDnd = useRowDnD({
     entries: subtaskEntries,
     processedEntries: subtaskEntries,
@@ -373,29 +428,35 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
       }),
   }), [subEditing]);
 
+  // Create a subtask of `parentId` and drop straight into its title editor - the
+  // one create this list does, shared by its root add-row and its per-task ones.
+  const addSubtaskUnder = (parentId: string) => {
+    const id = onAddSubtask(parentId);
+    setSubEditing({ id, col: NAME_COL_KEY, rect: null });
+  };
+
   const subRowHandlers = useMemo<TableRowHandlers>(() => ({
     onSaveTodo,
     onToggleTodo: onToggle,
     onOpenTask,
-    // "+ New" adds a subtask of the task being viewed and opens its title editor.
-    // It seeds nothing of its own - and unlike the Planner's create surfaces it has
-    // nothing to seed, since this list is not a view: no tab predicate, no filters,
-    // no sections. What the new subtask does get is its parent's two surface flags
-    // (see addHubTodo), so a subtask of a daily-only task is daily-only too rather
-    // than being pulled into the Planner by a setting about Planner-created tasks.
-    // Undated, it shows on neither surface and lives right here inside its parent,
-    // which normalizeVisibility counts as a surface for exactly this case.
+    // The list's root add-row adds a subtask of the task being viewed; a nested
+    // add-row (`onCreateInside`) adds one under the subtask it sits inside.
     //
-    // Omitted on an ARCHIVED task, which drops the add-row entirely (TableRows
-    // renders it only when this is supplied): anything created inside an archived
-    // parent is archived on creation, so the button could only ever add rows to a
-    // subtree that is on its way out. Restore the task to add to it.
-    onNewInView: showArchivedSubtasks
-      ? undefined
-      : () => {
-          const id = onAddSubtask(todo.id);
-          setSubEditing({ id, col: NAME_COL_KEY, rect: null });
-        },
+    // Either way the create seeds nothing of its own - and unlike the Planner's
+    // create surfaces it has nothing to seed, since this list is not a view: no tab
+    // predicate, no filters, no sections. What the new subtask does get is its
+    // parent's two surface flags (see addHubTodo), so a subtask of a daily-only
+    // task is daily-only too rather than being pulled into the Planner by a setting
+    // about Planner-created tasks. Undated, it shows on neither surface and lives
+    // right here inside its parent, which normalizeVisibility counts as a surface
+    // for exactly this case.
+    //
+    // Omitted on an ARCHIVED task, alongside the empty `subAddRows` that already
+    // drops the rows: anything created inside an archived parent is archived on
+    // creation, so these could only ever add rows to a subtree that is on its way
+    // out. Restore the task to add to it.
+    onNewInView: showArchivedSubtasks ? undefined : () => addSubtaskUnder(todo.id),
+    onCreateInside: showArchivedSubtasks ? undefined : addSubtaskUnder,
   }), [onSaveTodo, onToggle, onAddSubtask, onOpenTask, todo.id, showArchivedSubtasks]);
 
   const update = (patch: Partial<Todo>, nextDate: string = dateStr) => {
@@ -476,6 +537,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const plannerOn = draft.showInDatabase === true;
   const dailyFlag = draft.showInDailyList === true;
   const dailyEffective = dailyFlag && dated; // actually reaches a daily list
+  const autoMove = draft.autoMoveDate === true;
   const plannerDisabled = plannerOn && !dailyEffective && !isSubtask;
   const dailyDisabled = dailyEffective && !plannerOn && !isSubtask;
 
@@ -531,8 +593,18 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
         {/* ── Two-pane body ────────────────────────── */}
         <div className="flex flex-1 overflow-hidden min-h-0">
 
-          {/* Left pane: title + notes */}
-          <div className="flex-1 flex flex-col overflow-y-auto min-w-0 px-8 py-6">
+          {/* Left pane: title + notes.
+              `scrollbar-gutter: stable` is load-bearing, not cosmetic. The custom
+              scrollbar is a CLASSIC one (index.css sets ::-webkit-scrollbar to 8px),
+              so it takes layout width, and the autosizing textareas below measure
+              themselves by collapsing to `height: auto` and reading scrollHeight.
+              Collapsing them makes this pane short enough to stop overflowing, which
+              takes the scrollbar away, which makes the textarea 8px WIDER than it
+              will actually be rendered - so the measurement misses the lines that
+              only wrap once the scrollbar comes back, and `overflow-hidden` then
+              clips them. Reserving the gutter permanently keeps the measured width
+              and the rendered width identical. */}
+          <div className="flex-1 flex flex-col overflow-y-auto [scrollbar-gutter:stable] min-w-0 px-8 py-6">
             {/* The task this one sits under - a way UP the tree, not a history
                 step. It used to be the latter, which meant it appeared only for a
                 subtask opened from its parent's own full view: the identical task
@@ -605,7 +677,7 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
               <div className="border-t border-line-subtle">
                 <TaskTable
                   variant={VARIANTS.subtasks}
-                  model={subModel}
+                  model={subTableModel}
                   interaction={subInteraction}
                   rowHandlers={subRowHandlers}
                   dnd={subDnd}
@@ -697,6 +769,25 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                 {scheduleError?.side === 'due' && (
                   <p className="mt-1.5 text-[11px] text-danger">{scheduleError.message}</p>
                 )}
+                {/* Same flag the due-date picker carries, surfaced here too. It's
+                    settable without a date - the sweep just has nothing to roll
+                    forward until one is set (see the auto-move sweep in app-data). */}
+                <div
+                  className="mt-2.5 flex items-center justify-between h-6"
+                  title={autoMove && !dated ? 'Applies once this task has a due date' : undefined}
+                >
+                  <span className="flex flex-col">
+                    <span className="text-xs text-fg-faint">Move forward if overdue</span>
+                    {autoMove && !dated && (
+                      <span className="text-[10px] text-fg-faint">Applies once a date is set</span>
+                    )}
+                  </span>
+                  <Switch
+                    checked={autoMove}
+                    onChange={(val) => update({ autoMoveDate: val })}
+                    aria-label="Move forward if overdue"
+                  />
+                </div>
               </RightProp>
 
               {showXpChips && (
@@ -706,7 +797,17 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                   onClear={() => update({ xp: undefined })}
                   canClear={draft.xp !== undefined}
                 >
-                  <XpChip value={draft.xp} onChange={(val) => update({ xp: val })} />
+                  {/* Gated exactly as the Time chips are gated on a date: XP is
+                      only ever earned on a daily list, so off one it would be a
+                      number nothing can read. `dailyEffective` IS that rule (a
+                      daily flag plus a real date) - the same value the Show-in
+                      switches lock on - so the two can't drift apart. */}
+                  <XpChip
+                    value={draft.xp}
+                    onChange={(val) => update({ xp: val })}
+                    disabled={!dailyEffective}
+                    disabledReason={xpDisabledReason(dated, dailyFlag)}
+                  />
                 </RightProp>
               )}
 
@@ -723,13 +824,13 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
                     />
                   </div>
                   <div
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between h-6"
                     title={dailyFlag && !dated ? 'Applies once this task has a due date' : undefined}
                   >
                     <span className="flex flex-col">
                       <span className="text-xs text-fg-faint">Daily Tasks</span>
                       {dailyFlag && !dated && (
-                        <span className="text-[10px] text-fg-faint">Pending a due date</span>
+                        <span className="text-[10px] text-fg-faint">Applies once a date is set</span>
                       )}
                     </span>
                     <Switch
@@ -797,7 +898,8 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
             <button
               // A task opened from another task's full view returns to it; anything
               // else has no full view behind it, so it closes the chain outright.
-              onClick={() => { onDelete(draft.id); (onDeleteReturn ?? onClose)(); }}
+              // Either way it runs only if the delete is confirmed.
+              onClick={() => onDelete(draft.id, onDeleteReturn ?? onClose)}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-fg-subtle hover:text-red-400 hover:bg-danger-tint transition-all cursor-pointer"
             >
               <Trash2 size={14} />

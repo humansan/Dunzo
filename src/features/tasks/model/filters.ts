@@ -14,6 +14,7 @@ export {
   hasDate,
   showsOnDailyChecklist,
   showsInOrganizer,
+  earnsXp,
   normalizeVisibility,
 } from '@shared/domain/todoVisibility';
 

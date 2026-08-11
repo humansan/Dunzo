@@ -1,12 +1,115 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark no-js">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo.png" />
+    <!-- Cleared immediately, so `.no-js` only ever survives with scripting disabled.
+         See the `html.no-js` rules in index.css: the entrance animations start at
+         opacity 0 and are released by JS, so without this the prerendered markup would
+         render as a blank page for anyone running without it. -->
+    <script>
+      document.documentElement.classList.remove('no-js');
+    </script>
+    <!-- Google crops the SERP favicon to a circle and paints transparency white, so
+         this is a square, full-bleed, alpha-free crop of logo.png rather than the
+         rounded logo itself — the corners would otherwise read as a white ring.
+         Must stay crawlable (see robots.txt) and at a stable URL. -->
+    <link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192" />
+    <link rel="icon" type="image/png" href="/favicon-144.png" sizes="144x144" />
+    <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/favicon-192.png" />
+    <link rel="icon" type="image/png" href="/icon-32.png" sizes="32x32" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dunzo — A calmer way to get things done</title>
-    <meta name="description" content="Dunzo is an intuitive task management app featuring daily focus lists, strategic planner boards, and a gamified XP & streak system designed to eliminate productivity overwhelm." />
+
+    <!-- The hero backdrop sits behind the navbar's backdrop-blur. Fetching it
+         from the HTML parse means it is decoded before first paint, so the
+         blurred bar never has to re-rasterise around a late image swap. -->
+    <link rel="preload" as="image" href="/background.webp" fetchpriority="high" />
+    <title>Dunzo: A calmer way to get things done</title>
+    <!-- Google truncates around 155-160 chars; this is 124. -->
+    <meta name="description" content="An intuitive task manager with daily focus lists, planner boards, and a gamified XP &amp; streak system. Free in early access." />
     
+    <!-- Link previews (Discord, Slack, iMessage, Google Docs, ...). Crawlers do not
+         run JS, so these live in the static HTML. URLs must be absolute. -->
+    <link rel="canonical" href="https://dunzo.work/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dunzo" />
+    <meta property="og:url" content="https://dunzo.work/" />
+    <meta property="og:title" content="Dunzo: A calmer way to get things done" />
+    <meta property="og:description" content="An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system." />
+    <meta property="og:image" content="https://dunzo.work/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Dunzo: A calmer way to get things done" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dunzo: A calmer way to get things done" />
+    <meta name="twitter:description" content="An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system." />
+    <meta name="twitter:image" content="https://dunzo.work/og.png" />
+    <meta name="theme-color" content="#111111" />
+
+    <!-- Google derives the SERP "site name" (the line above the blue title) from this,
+         not from og:site_name — without it you get the bare domain, "dunzo.work".
+         It is only read from the domain root, so prerender.mjs strips this block on
+         every route except "/" — which is what data-root-only marks. Do not remove that
+         attribute without updating the strip in prerender.mjs. -->
+    <script type="application/ld+json" data-root-only>
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://dunzo.work/#website",
+            "name": "Dunzo",
+            "url": "https://dunzo.work/",
+            "publisher": { "@id": "https://dunzo.work/#organization" }
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://dunzo.work/#organization",
+            "name": "Dunzo",
+            "url": "https://dunzo.work/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://dunzo.work/favicon-192.png",
+              "width": 192,
+              "height": 192
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- Describes the product itself, so unlike the block above it belongs on every
+         route. No aggregateRating: Google treats self-declared ratings with no reviews
+         behind them as a structured-data violation, and without one this will not
+         produce a star-rating rich result — it is here for entity understanding. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Dunzo",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Web browser",
+        "url": "https://dunzo.work/",
+        "description": "An intuitive task manager with daily focus lists, planner boards, and a gamified XP & streak system.",
+        "screenshot": "https://dunzo.work/og.png",
+        "softwareHelp": "https://dunzo.work/features",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        },
+        "featureList": [
+          "Daily focus lists",
+          "Task planner with filters, grouping and nested collections",
+          "Calendar sharing the same tasks",
+          "XP, streaks and progress stats",
+          "Pomodoro focus timer and time widgets",
+          "Full-text task search"
+        ]
+      }
+    </script>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -5,8 +5,10 @@ import { DailyScreen } from '@/features/daily';
 import { ViewErrorFallback } from '@/app/ViewErrorFallback';
 import { useAppData } from '@/lib/app-data';
 import { useOverlayNav } from '@/common/hooks/useOverlayNav';
+import { pageHead } from '@/lib/pageTitle';
 
 export const Route = createFileRoute('/_authed/today')({
+  head: () => pageHead('Daily Tasks'),
   validateSearch: validateDateSearch,
   // A `date` that isn't a real day (deleted, typo'd, hand-edited) would otherwise
   // be dropped by validateSearch but stay in the address bar, and the view would
@@ -33,7 +35,7 @@ function TodayRoute() {
           onSaveTodo={d.handleHubSaveTodo}
           onCreateInDay={d.handleCreateInDay}
           onReorderDay={d.handleReorderDay}
-          onDeleteTodo={d.handleDeleteTodoById}
+          onDeleteTodo={d.requestDeleteTodo}
           onStartTracking={d.handleStartTracking}
           activeTodoId={d.activeTodoId}
           onToggleTodo={d.handleToggleTodo}
