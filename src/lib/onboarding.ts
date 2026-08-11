@@ -77,7 +77,7 @@ const NOTE_FULL_VIEW = paras(
 );
 
 const NOTE_COLLECTIONS =
-  'Right click on a collection to show options or edit it. Drag & drop them in the Planner sidebar or main table to reorder or nest collections.';
+  'Right click on a collection to show options or edit it. Drag & drop them in the to reorder or nest. You can also drag  & drop and right click collections in the Planner sidebar on the left!';
 
 const NOTE_PLANNER_VIEW = paras(
   'See the top right planner toolbar for options.',
@@ -133,7 +133,6 @@ const ONBOARDING: SeedNode[] = [
           { text: 'Right click a task or collection to show more options ⚙️' },
         ],
       },
-      { text: 'Right click on a task or collection to show options ⚙️' },
       { text: 'Collections categorize tasks, and can also be nested 🧺', notes: NOTE_COLLECTIONS },
       { text: 'Try customizing planner view (see notes) 🗃️', notes: NOTE_PLANNER_VIEW },
       {
