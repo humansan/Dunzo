@@ -10,7 +10,7 @@ import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { applyTheme } from '@/theme/applyTheme';
 import { btnAccent } from '@/theme/buttons';
 import { DEFAULT_THEME_ID } from '@/theme/themes';
-import backgroundUrl from '@/assets/background.jpg';
+import backgroundUrl from '@/assets/background-blur.webp';
 import logoUrl from '@/assets/icon-invert2.png';
 // import { Link } from "@tanstack/react-router";
 
@@ -889,7 +889,7 @@ const LoginScreen: React.FC<{
         <div
           aria-hidden
           style={{ backgroundImage: `url(${backgroundUrl})` }}
-          className="pointer-events-none absolute inset-0 select-none bg-cover bg-center blur-2xl scale-125 opacity-95"
+          className="pointer-events-none absolute inset-0 select-none bg-cover bg-center scale-120 opacity-90"
         />
         {/* Block anchored right, text left-aligned inside it - so the ragged edge faces
             the divider and the headline keeps its two-to-three line shape. */}

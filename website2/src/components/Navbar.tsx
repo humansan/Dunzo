@@ -12,17 +12,10 @@ export const Navbar: React.FC = () => {
   ];
 
   return (
-    <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-5xl z-50 rounded-2xl pl-4 pr-3.5 py-3 isolate">
-      {/* The blur sits on its own layer rather than on <header> itself. Chrome
-          rasterises a backdrop-filter in tiles, and when the backdrop changes
-          after first paint (the hero's background image decoding, a route
-          swap) the tiles refresh out of step — which shows up for a frame or
-          two as vertical seams across the bar. Pinning this to a dedicated
-          composited layer keeps it off the main content raster so unrelated
-          invalidations no longer redraw it. */}
+    <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-5xl z-50 rounded-2xl pl-4 pr-3.5 py-3">
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 rounded-2xl bg-canvas/40 backdrop-blur-md border border-fg/10 transform-gpu will-change-transform backface-hidden"
+        className="absolute inset-0 -z-10 rounded-2xl bg-canvas/40 backdrop-blur-md border border-fg/10"
       />
 
       <div className="flex items-center justify-between">

@@ -28,18 +28,14 @@ export const Hero: React.FC = () => {
   const taglineWords = taglineText.split(" ");
 
   return (
-    <section className="relative pt-30 pb-20 md:pt-36 md:pb-28 overflow-hidden bg-canvas">
-      {/* Background image blur effect */}
-      <div className="absolute inset-0 opacity-60 pointer-events-none mix-blend-screen overflow-hidden">
-        {/* Decoded synchronously and fetched at high priority: an async swap-in
-            lands after first paint and invalidates the navbar's backdrop, which
-            is what makes the seams flash there. */}
+    <section className="relative pt-26 pb-20 md:pt-32 md:pb-28 overflow-hidden bg-canvas">
+      <div className="absolute inset-0 opacity-65 pointer-events-none overflow-hidden will-change-transform">
         <img
-          src="/background.webp"
+          src="/background-blur.webp"
           alt=""
           decoding="sync"
           fetchPriority="high"
-          className="w-full h-full object-cover filter blur-xl scale-120"
+          className="w-full h-full object-cover scale-120"
         />
       </div>
 
@@ -47,12 +43,12 @@ export const Hero: React.FC = () => {
         <div className="flex flex-col items-center text-center">
 
           {/* Early Access Chip: No border, 15% opacity gold background, full gold text */}
-          {/* <div className="mb-6 fade-slide-up" style={{ animationDelay: '300ms' }}>
+          <div className="mb-6 fade-slide-up" style={{ animationDelay: '300ms' }}>
             <div className="inline-flex items-center gap-2 pl-2 pr-3.5 py-1.5 rounded-full bg-gold/15 border-none text-xs font-semibold text-gold">
               <ChevronRight className="w-3.5 h-3.5 text-gold" />
               <span>Free in early access</span>
             </div>
-          </div> */}
+          </div>
 
           {/* Main Tagline: Single-phase smooth word-by-word blur-to-focus stagger */}
           <h1 className="text-4xl sm:text-6xl md:text-8xl font-extrabold tracking-tight text-fg leading-[1.1] max-w-4xl">

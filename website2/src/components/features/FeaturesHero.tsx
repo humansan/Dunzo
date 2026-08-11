@@ -16,14 +16,14 @@ export const FeaturesHero: React.FC = () => (
     id="features"
     className="relative z-[45] bg-canvas min-h-[calc(50vh+150px)] pt-32 pb-16 md:pt-40 md:pb-20 overflow-hidden"
   >
-    {/* Same blurred backdrop as the home hero, so the two pages feel like one site. */}
-    <div className="absolute inset-0 opacity-60 pointer-events-none mix-blend-screen overflow-hidden">
+    {/* Same pre-blurred backdrop as the home hero, so the two pages feel like one*/}
+    <div className="absolute inset-0 opacity-65 pointer-events-none overflow-hidden will-change-transform">
       <img
-        src="/background.webp"
+        src="/background-blur.webp"
         alt=""
         decoding="sync"
         fetchPriority="high"
-        className="w-full h-full object-cover filter blur-xl scale-120"
+        className="w-full h-full object-cover scale-120"
       />
     </div>
 
