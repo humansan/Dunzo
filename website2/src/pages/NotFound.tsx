@@ -14,7 +14,7 @@ import { APP_URL } from '../config';
 export const NotFound: React.FC = () => (
   <main className="relative min-h-[70vh] flex items-center justify-center px-4 pt-32 pb-20">
     {/* Promoted layer, no blend group — same reasoning as Hero.tsx. */}
-    <div className="absolute inset-0 opacity-65 pointer-events-none overflow-hidden will-change-transform">
+    <div className="absolute inset-0 opacity-50 pointer-events-none overflow-hidden will-change-transform">
       <img
         src="/background-blur.webp"
         alt=""
