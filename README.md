@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="src/assets/icon-invert2.png" alt="Dunzo logo" width="120" />
+<img src="website2/public/og.png" alt="Dunzo" width="100%" />
 
 # Dunzo ([dunzo.work](https://dunzo.work/))
 
@@ -15,12 +15,12 @@ A full-stack productivity app that combines a **database-style task planner**, a
 [![Postgres](https://img.shields.io/badge/Neon_Postgres-008000?logo=postgresql&logoColor=white&style=for-the-badge)](https://neon.tech)
 [![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?logo=tailwindcss&logoColor=white&style=for-the-badge)](https://tailwindcss.com)
 
-**[🔗 Go to App](https://dunzo-todo.vercel.app/)** · **[Features](#-features)** · **[Screenshots](#-screenshots)** · **[Technical](#technical)**
+**[🔗 Go to App](https://dunzo-todo.vercel.app/)** · **[📸 Screenshots](#-screenshots)** · **[🛠️ Technical](#technical)**
 
 </div>
 
 
-## ✨ Why Dunzo?
+## <a id="features"></a>✨ Why Dunzo?
 
 - 🗂️ **Plan with a database** - a full table view with nesting, collections, grouping, and drag-and-drop.
 - ✅ **Work like a checklist** - a distraction-free daily list for what's due today.
