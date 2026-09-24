@@ -8,6 +8,7 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { name: 'Features', to: '/features' },
+    { name: 'Github', to: 'https://github.com/humansan/Dunzo'}
     // { name: 'Why Dunzo?', to: '/#why-dunzo' },
   ];
 
@@ -38,8 +39,8 @@ export const Navbar: React.FC = () => {
         
 
         {/* Right Side: Primary CTA */}
-        <div className="hidden md:flex items-center gap-4">
-          <nav className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
