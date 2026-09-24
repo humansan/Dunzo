@@ -1,5 +1,4 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { format, parseISO } from 'date-fns';
 import {
   X,
@@ -50,7 +49,7 @@ import {
   derivedCollectionId,
 } from '@/features/tasks/chips';
 import { CollectionPickerButton } from '@/features/tasks/collection-picker';
-import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
+import { modalPop, overlayBackdrop, overlayFadeIn } from '@/common/ui/modalMotion';
 
 interface TodoFullViewProps {
   todo: Todo;
@@ -586,16 +585,12 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
   const handleArchive = () => requestArchiveToggle(draft.id);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <div
       {...backdropProps}
-      className={`fixed inset-0 z-[70] p-16 flex items-center justify-center ${overlayBackdrop}`}
+      className={`fixed inset-0 z-[70] p-16 flex items-center justify-center ${overlayBackdrop} ${overlayFadeIn}`}
     >
-      <motion.div
-        {...modalPop}
-        className="w-250 h-full max-h-250 bg-surface border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+      <div
+        className={`${modalPop} w-250 h-full max-h-250 bg-surface border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden`}
       >
         {/* ── Top bar ─────────────────────────────── */}
         <div className="flex items-center justify-between pl-4 pr-2 h-11 border-b border-line-subtle shrink-0">
@@ -932,9 +927,9 @@ export const TodoFullView: React.FC<TodoFullViewProps> = ({
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
       {archiveConfirmModal}
       {plannerVisibilityConfirmModal}
-    </motion.div>
+    </div>
   );
 };

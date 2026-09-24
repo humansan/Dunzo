@@ -1,7 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { motion } from 'motion/react';
-import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
+import { modalPop, overlayBackdrop, overlayFadeIn } from '@/common/ui/modalMotion';
 import { useDismissable } from '@/common/ui/useDismissable';
 
 // The standard popup window: portalled backdrop + centered panel, with the
@@ -45,19 +44,16 @@ export const OverlayShell: React.FC<{
   const { backdropProps } = useDismissable({ onDismiss: onClose, closeOnEsc, closeOnBackdrop });
 
   return createPortal(
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <div
       {...backdropProps}
       className={`fixed inset-0 ${LAYER[layer]} flex justify-center ${
         align === 'center' ? 'items-center' : 'items-start'
-      } ${className} ${overlayBackdrop}`}
+      } ${className} ${overlayBackdrop} ${overlayFadeIn}`}
     >
-      <motion.div {...modalPop} className={panelClassName}>
+      <div className={`${modalPop} ${panelClassName}`}>
         {children}
-      </motion.div>
-    </motion.div>,
+      </div>
+    </div>,
     document.body
   );
 };

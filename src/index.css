@@ -184,6 +184,29 @@ body.calendar-drag-crosshair * {
   to { box-shadow: 0 0 0 0; }
 }
 
+/* Overlay window enter (see common/ui/modalMotion). Plain CSS, not motion: when a
+   motion WAAPI animation finishes it cancels the animation before its final
+   style is written (that lands a frame later), so the element flashes back to
+   its `initial` opacity for one frame. `both` fill keeps the start frame applied
+   from mount and the end state held by the browser - no handoff to drop.
+   Only `from` frames: they animate to the element's own resting style. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.98); }
+}
+
+.animate-overlay-in {
+  /* motion's old default fade: 0.3s, its default opacity curve */
+  animation: overlay-in 300ms cubic-bezier(0.25, 0.1, 0.35, 1) both;
+}
+
+.animate-modal-pop {
+  animation: modal-pop 130ms ease-out both;
+}
+
 @layer utilities {
 
   /* Hide scrollbar for Chrome, Safari and Opera */

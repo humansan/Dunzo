@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { X, User, SlidersHorizontal, Database, Upload, Download, LogOut } from 'lucide-react';
 import { type ThemeMode } from '@/theme/applyTheme';
@@ -10,7 +9,7 @@ import backgroundUrl from '@/assets/background.jpg';
 import logoSvg from '@/assets/icon.svg';
 import { ListSelect, textInputCls } from '@/common/ui';
 import { Switch } from '@/common/ui';
-import { modalPop, overlayBackdrop } from '@/common/ui/modalMotion';
+import { modalPop, overlayBackdrop, overlayFadeIn } from '@/common/ui/modalMotion';
 import { useDismissable } from '@/common/ui/useDismissable';
 import { validatePassword, PASSWORD_HINT } from '@/common/lib/password';
 import { btnGhost, btnNeutral } from '@/theme/buttons';
@@ -601,18 +600,14 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const { backdropProps } = useDismissable({ onDismiss: onClose, active: isOpen });
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+        <div
           {...backdropProps}
-          className={`fixed inset-0 z-[70] flex items-center justify-center p-4 ${overlayBackdrop}`}
+          className={`fixed inset-0 z-[70] flex items-center justify-center p-4 ${overlayBackdrop} ${overlayFadeIn}`}
         >
-          <motion.div
-            {...modalPop}
-            className="relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl"
+          <div
+            className={`${modalPop} relative flex h-[560px] max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl`}
           >
             {/* Nav rail - vibrant sign-in background image with dark text on top. */}
             <div className="relative hidden sm:flex w-52 shrink-0 flex-col overflow-hidden border-r border-line-subtle">
@@ -714,9 +709,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               {section === 'data' && <DataPane />}
               </div>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 };

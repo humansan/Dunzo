@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'motion/react';
 import { X, CalendarDays } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { Tracker, TrackerType, TrackerDisplayMode, TrackerSecondaryDisplayMode } from '@shared/types';
@@ -69,7 +68,7 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
   };
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
         // Escape and a backdrop click discard whatever was typed, same as Cancel.
         <OverlayShell
@@ -244,6 +243,6 @@ export const AddTrackerModal: React.FC<AddTrackerModalProps> = ({ isOpen, onClos
           </form>
         </OverlayShell>
       )}
-    </AnimatePresence>
+    </>
   );
 };
