@@ -10,12 +10,13 @@ const classicRoles: Record<RoleName, RoleValue> = {
   'surface-raised': 'raised',
   overlay: 'overlay',
   scrim: 'black',
+  cardbg: 'cardbg',
   fg: 'fg',
   // Text emphasis ramp - translucent fg (collapses the old text-fg/NN zoo)
   'fg-muted': ['fg', 85],
   'fg-subtle': ['fg', 72],
   'fg-faint': ['fg', 64],
-  'fg-ghost': ['fg', 40],
+  'fg-ghost': ['fg', 35],
   // Hairlines - translucent fg
   'line-subtle': ['fg', 6],
   line: ['fg', 10],
@@ -71,10 +72,10 @@ const classicRoles: Record<RoleName, RoleValue> = {
 const classicLightRoles: Record<RoleName, RoleValue> = {
   ...classicRoles,
   // Text emphasis ramp (translucent near-black fg)
-  'fg-muted': ['fg', 90],
-  'fg-subtle': ['fg', 80],
-  'fg-faint': ['fg', 70],
-  'fg-ghost': ['fg', 60],
+  'fg-muted': ['fg', 70],
+  'fg-subtle': ['fg', 65],
+  'fg-faint': ['fg', 61],
+  'fg-ghost': ['fg', 55],
   // Hairlines
   'line-subtle': ['fg', 7],
   line: ['fg', 11],
@@ -82,14 +83,14 @@ const classicLightRoles: Record<RoleName, RoleValue> = {
   'line-stronger': ['fg', 28],
   // Neutral fills (gentler than dark)
   'fill-subtle': ['fg', 5],
-  fill: ['fg', 9],
-  'fill-strong': ['fg', 12],
-  'fill-stronger': ['fg', 15],
+  fill: ['fg', 7],
+  'fill-strong': ['fg', 9],
+  'fill-stronger': ['fg', 10],
   // Feedback tints
   'danger-tint': ['red', 10],
   'warning-tint': ['gold', 12],
   'success-tint': ['emerald', 10],
-  'info-tint': ['blue', 30],
+  'info-tint': ['blue', 10],
 };
 
 const classicDark: Record<string, string> = {
@@ -97,6 +98,7 @@ const classicDark: Record<string, string> = {
   surface: '#1a1a1a',
   raised: '#1f1f1f',
   overlay: '#2a2a2a',
+  cardbg: '#1f1f1f',
   black: '#000000',
   fg: '#ffffff',
   muted: '#9ca3af',
@@ -123,10 +125,11 @@ const classicLight: Record<string, string> = {
   // the stack brightens toward white so cards/menus separate from the page and read as
   // raised (opposite of dark, where elevation lightens up from black). Depth also comes
   // from the line hairlines + shadows.
-  canvas: '#f3f3f3',   // page (soft gray)
-  surface: '#f8f8f8',  // cards / panels / sidebars
+  canvas: '#ffffff',   // page (soft gray)
+  surface: '#fcfcfc',  // cards / panels / sidebars
   raised: '#fbfbfb',   // raised cards / inputs
   overlay: '#ffffff',  // menus / popovers / modals (top of the stack)
+  cardbg: "#ffffff",
   black: '#000000',
   fg: '#000000',       // near-black primary text (softer than pure #000)
   muted: '#3f4652',   // (legacy solid; text ramp now uses translucent fg)

@@ -27,10 +27,11 @@
   --color-surface-raised: #222222;
   --color-overlay: #2a2a2a;
   --color-scrim: #000000;
+  --color-cardbg: #1f1f1f;
   --color-fg: #ffffff;
   /* Text emphasis ramp - translucent fg (Classic-dark seeds; see theme/token-map.md) */
   --color-fg-muted: color-mix(in srgb, var(--color-fg) 75%, transparent);
-  --color-fg-subtle: color-mix(in srgb, var(--color-fg) 55%, transparent);
+  --color-fg-subtle: color-mix(in srgb, var(--color-fg) 65%, transparent);
   --color-fg-faint: color-mix(in srgb, var(--color-fg) 40%, transparent);
   --color-fg-ghost: color-mix(in srgb, var(--color-fg) 25%, transparent);
   /* Hairlines - translucent fg */

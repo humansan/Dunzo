@@ -336,9 +336,9 @@ export const DailyScreen: React.FC<DailyScreenProps> = ({
   };
 
   return (
-    <div className="mx-auto px-1 pt-2 flex gap-4 h-screen overflow-hidden">
+    <div className="mx-auto px-1 pt-2 flex gap-4 h-screen overflow-visible">
       {/* Left side: Trackers List */}
-      <div className="w-[20%] min-w-45 hidden md:block flex-shrink-0 overflow-y-auto pr-1 pb-12 no-scrollbar">
+      <div className="w-[20%] min-w-45 hidden md:block flex-shrink-0 overflow-visible pr-1 pb-12 no-scrollbar">
         <div className="flex flex-col gap-3 pt-1">
           <AnimatePresence>
             {orderedTrackers.map((tracker) => (

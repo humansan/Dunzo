@@ -6,7 +6,7 @@
 // below) and so applyTheme can iterate them.
 export const ROLE_NAMES = [
   // Surfaces (elevation) + modal backdrop
-  'canvas', 'surface', 'surface-raised', 'overlay', 'scrim',
+  'canvas', 'surface', 'surface-raised', 'overlay', 'scrim', 'cardbg',
   // Text emphasis ramp (translucent fg tiers - see docs/theming/token-map.md)
   'fg', 'fg-muted', 'fg-subtle', 'fg-faint', 'fg-ghost',
   // Hairlines (translucent fg; unused solid `line`/`line-strong` repurposed to the ramp)

@@ -895,7 +895,7 @@ const LoginScreen: React.FC<{
             the divider and the headline keeps its two-to-three line shape. */}
         {/* <h1 className="relative max-w-sm text-2xl lg:text-3xl font-bold text-white leading-[1.05]"> */}
         <h1 className="relative max-w-sm text-3xl lg:text-4xl font-bold text-white leading-[1.05]">
-          A <span className="text-xp-tier1">calmer</span> way to <br/> get things done
+          A <span className="text-[#ffcd4e]">calmer</span> way to <br/> get things done
         </h1>
       </aside>
 
