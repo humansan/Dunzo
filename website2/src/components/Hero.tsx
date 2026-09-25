@@ -39,7 +39,7 @@ export const Hero: React.FC = () => {
         />
       </div>
 
-      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center text-center">
 
           {/* Early Access Chip: No border, 15% opacity gold background, full gold text */}
@@ -100,7 +100,7 @@ export const Hero: React.FC = () => {
           <div
             id="demo"
             ref={showcaseRef}
-            className="mt-12 relative w-full max-w-5xl scroll-mt-28 fade-slide-up"
+            className="mt-12 relative w-full scroll-mt-28 fade-slide-up"
             style={{ animationDelay: '1670ms' }}
           >
             <div
@@ -122,7 +122,7 @@ export const Hero: React.FC = () => {
                   <video
                     ref={videoRef}
                     src="/media/dunzo-v0-new.mp4"
-                    controls={false}
+                    controls={true}
                     autoPlay
                     loop
                     className="absolute inset-0 w-full h-full object-cover bg-black"
