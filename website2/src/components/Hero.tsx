@@ -140,9 +140,9 @@ export const Hero: React.FC = () => {
                 </>
               ) : (
                 /* Minimal Play Overlay */
-                <div className="absolute inset-0 bg-canvas/20 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
+                <div className="absolute inset-0 bg-canvas/10 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
                   <div className="w-14 h-14 rounded-full text-gold flex items-center justify-center">
-                    <Play className="w-7 h-7 fill-gold ml-0.5 group-hover:scale-120 transition-all" />
+                    <Play className="w-7 h-7 fill-gold ml-0.5 group-hover:scale-110 transition-all" />
                   </div>
                   <span className="text-xs font-bold text-fg bg-surface px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
                     Click to play video

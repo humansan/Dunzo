@@ -71,7 +71,7 @@ function DataErrorScreen() {
     <div className="h-screen flex flex-col items-center justify-center gap-4 bg-canvas text-fg-subtle text-sm">
       <p>Couldn’t load your data.</p>
       <button
-        onClick={() => router.invalidate()}
+        onClick={() => {router.invalidate(); window.location.reload()}}
         className="px-4 py-2 rounded-xl bg-fill-subtle hover:bg-fill text-fg font-semibold cursor-pointer"
       >
         Retry
